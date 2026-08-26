@@ -1,0 +1,39 @@
+{
+  "name": "agentic-commerce-os",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.22.0"
+  },
+  "scripts": {
+    "dev": "wrangler dev -c wrangler.edge.jsonc -c wrangler.core.jsonc -c wrangler.dev-provider.jsonc --env dev",
+    "dev:offline": "vitest --config vitest.worker.config.ts",
+    "types": "wrangler types -c wrangler.core.jsonc --env dev --strict-vars=false --include-runtime=false --env-interface CoreEnv src/generated/core-env.d.ts && wrangler types -c wrangler.edge.jsonc --env dev --env-file .dev.vars.example --strict-vars=false --include-runtime=false --env-interface EdgeEnv src/generated/edge-env.d.ts",
+    "types:check": "npm run types && git diff --exit-code -- src/generated",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run test:domain && npm run test:unit",
+    "test:domain": "node --test test/domain/*.test.ts",
+    "test:unit": "vitest run --config vitest.config.ts",
+    "test:workers": "vitest run --config vitest.worker.config.ts",
+    "deploy:dev:dry": "wrangler deploy -c wrangler.dev-provider.jsonc --env dev --dry-run && wrangler deploy -c wrangler.core.jsonc --env dev --dry-run && wrangler deploy -c wrangler.edge.jsonc --env dev --dry-run",
+    "deploy:production:dry": "wrangler deploy -c wrangler.core.jsonc --env production --dry-run && wrangler deploy -c wrangler.edge.jsonc --env production --dry-run",
+    "deploy:dev:core": "wrangler deploy -c wrangler.core.jsonc --env dev",
+    "deploy:dev:edge": "wrangler deploy -c wrangler.edge.jsonc --env dev",
+    "deploy:production:core": "wrangler deploy -c wrangler.core.jsonc --env production",
+    "deploy:production:edge": "wrangler deploy -c wrangler.edge.jsonc --env production",
+    "check": "npm run types:check && npm run typecheck && npm run test && npm run test:workers && npm run deploy:dev:dry && npm run deploy:production:dry"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "0.22.0",
+    "@cloudflare/workers-types": "5.20260826.1",
+    "@types/node": "26.3.0",
+    "typescript": "5.9.3",
+    "vitest": "4.1.11",
+    "wrangler": "4.126.0"
+  }
+}

@@ -1,0 +1,138 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "agentic-commerce-core-local",
+  "main": "src/core/index.ts",
+  "compatibility_date": "2026-08-26",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "preview_urls": false,
+  "observability": {
+    "enabled": true,
+    "logs": { "enabled": true, "head_sampling_rate": 1 }
+  },
+  "durable_objects": {
+    "bindings": [
+      { "name": "AGENT_REGISTRY", "class_name": "AgentRegistry" },
+      { "name": "INTENT_ROUTE", "class_name": "IntentRoute" },
+      { "name": "CHECKOUT_SESSION", "class_name": "CheckoutSession" }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["AgentRegistry", "IntentRoute", "CheckoutSession"]
+    }
+  ],
+  "version_metadata": { "binding": "CF_VERSION_METADATA" },
+  "vars": {
+    "DEPLOY_LANE": "Local",
+    "RELEASE_CANDIDATE_SHA": "local-unreleased",
+    "REGISTRY_ID": "primary",
+    "ACOS_SOURCE_REVISION": "415e914da9e757387b992a5b03d89ac8855cb310",
+    "ACOS_CATALOG_DIGEST": "2aa96c1240edb86579588408606af170abad243995cdd3b5ca77b91635c5f25b",
+    "ACOS_ROUTING_SCHEMA": "agentic-canvas-os-docs-routing/v1",
+    "ACOS_ROUTING_DIGEST": "cba48df57e4e825b2111fee720d81382714baec8e45e0e270f6e496e61a703b3",
+    "ACOS_CATALOG_COUNTS_JSON": "{\"command\":142,\"semantic\":142,\"binding\":136}",
+    "ACOS_REQUIRED_TOKENS_JSON": "[\"/tool.route\",\"#mcp\",\"@mcp-gateway\"]",
+    "CHECKOUT_PROVIDER_EVIDENCE_PIN_JSON": "{\"sourceRevision\":\"source-required\",\"receiptDigest\":\"receipt-required\",\"storageCompatibilityRevision\":\"storage-required\",\"providerVersionId\":\"provider-required\"}",
+    "MARKETPLACE_PROVIDER_EVIDENCE_PIN_JSON": "{\"sourceRevision\":\"source-required\",\"receiptDigest\":\"receipt-required\",\"storageCompatibilityRevision\":\"storage-required\",\"providerVersionId\":\"provider-required\"}"
+  },
+  "env": {
+    "dev": {
+      "name": "agentic-commerce-core-dev",
+      "workers_dev": false,
+      "preview_urls": false,
+      "version_metadata": { "binding": "CF_VERSION_METADATA" },
+      "durable_objects": {
+        "bindings": [
+          { "name": "AGENT_REGISTRY", "class_name": "AgentRegistry" },
+          { "name": "INTENT_ROUTE", "class_name": "IntentRoute" },
+          { "name": "CHECKOUT_SESSION", "class_name": "CheckoutSession" }
+        ]
+      },
+      "services": [
+        { "binding": "ACOS_ADMISSION", "service": "agentic-commerce-provider-dev" },
+        { "binding": "DOCS_MCP", "service": "agentic-commerce-provider-dev" },
+        { "binding": "CHECKOUT_PROVIDER", "service": "agentic-commerce-provider-dev" },
+        { "binding": "MARKETPLACE_PROVIDER", "service": "agentic-commerce-provider-dev" }
+      ],
+      "vars": {
+        "DEPLOY_LANE": "Dev",
+        "RELEASE_CANDIDATE_SHA": "dev-unreleased",
+        "REGISTRY_ID": "primary",
+        "ACOS_SOURCE_REVISION": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "ACOS_CATALOG_DIGEST": "7402c37fc46de9914a6fd9ccff48ccfaae2e975ec66bb6e81530c8c599e376d1",
+        "ACOS_ROUTING_SCHEMA": "agentic-canvas-os-docs-routing/v1",
+        "ACOS_ROUTING_DIGEST": "e7e127092bf699af87abf7426071b6b0126ece232a7ec324d0289c8ba4b470a4",
+        "ACOS_CATALOG_COUNTS_JSON": "{\"command\":1,\"semantic\":1,\"binding\":1}",
+        "ACOS_REQUIRED_TOKENS_JSON": "[\"/tool.route\",\"#mcp\",\"@mcp-gateway\"]",
+        "CHECKOUT_PROVIDER_EVIDENCE_PIN_JSON": "{\"sourceRevision\":\"cccccccccccccccccccccccccccccccccccccccc\",\"receiptDigest\":\"03562b1a8a5b16299466ceee22cf2bd1d61af42e564f7f23e1975d232762952d\",\"storageCompatibilityRevision\":\"checkout-demo/v1\",\"providerVersionId\":\"checkout-dev-fixture-v1\"}",
+        "MARKETPLACE_PROVIDER_EVIDENCE_PIN_JSON": "{\"sourceRevision\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"receiptDigest\":\"802be270fcc3c27103f03794ad437b193e413b3eb337250730dba40356b3f15d\",\"storageCompatibilityRevision\":\"marketplace-demo/v1\",\"providerVersionId\":\"marketplace-dev-fixture-v1\"}"
+      }
+    },
+    "staging": {
+      "name": "agentic-commerce-core-staging",
+      "workers_dev": false,
+      "preview_urls": false,
+      "version_metadata": { "binding": "CF_VERSION_METADATA" },
+      "durable_objects": {
+        "bindings": [
+          { "name": "AGENT_REGISTRY", "class_name": "AgentRegistry" },
+          { "name": "INTENT_ROUTE", "class_name": "IntentRoute" },
+          { "name": "CHECKOUT_SESSION", "class_name": "CheckoutSession" }
+        ]
+      },
+      "services": [
+        { "binding": "ACOS_ADMISSION", "service": "agentic-canvas-os-staging" },
+        { "binding": "DOCS_MCP", "service": "knowgrph-mcp-staging" },
+        { "binding": "CHECKOUT_PROVIDER", "service": "knowgrph-travel-commerce-staging" },
+        { "binding": "MARKETPLACE_PROVIDER", "service": "knowgrph-marketplace-staging" }
+      ],
+      "vars": {
+        "DEPLOY_LANE": "Staging",
+        "RELEASE_CANDIDATE_SHA": "staging-unreleased",
+        "REGISTRY_ID": "primary",
+        "ACOS_SOURCE_REVISION": "415e914da9e757387b992a5b03d89ac8855cb310",
+        "ACOS_CATALOG_DIGEST": "2aa96c1240edb86579588408606af170abad243995cdd3b5ca77b91635c5f25b",
+        "ACOS_ROUTING_SCHEMA": "agentic-canvas-os-docs-routing/v1",
+        "ACOS_ROUTING_DIGEST": "cba48df57e4e825b2111fee720d81382714baec8e45e0e270f6e496e61a703b3",
+        "ACOS_CATALOG_COUNTS_JSON": "{\"command\":142,\"semantic\":142,\"binding\":136}",
+        "ACOS_REQUIRED_TOKENS_JSON": "[\"/tool.route\",\"#mcp\",\"@mcp-gateway\"]",
+        "CHECKOUT_PROVIDER_EVIDENCE_PIN_JSON": "{\"sourceRevision\":\"staging-source-required\",\"receiptDigest\":\"staging-receipt-required\",\"storageCompatibilityRevision\":\"staging-storage-required\",\"providerVersionId\":\"staging-provider-required\"}",
+        "MARKETPLACE_PROVIDER_EVIDENCE_PIN_JSON": "{\"sourceRevision\":\"staging-source-required\",\"receiptDigest\":\"staging-receipt-required\",\"storageCompatibilityRevision\":\"staging-storage-required\",\"providerVersionId\":\"staging-provider-required\"}"
+      }
+    },
+    "production": {
+      "name": "agentic-commerce-core-production",
+      "workers_dev": false,
+      "preview_urls": false,
+      "version_metadata": { "binding": "CF_VERSION_METADATA" },
+      "durable_objects": {
+        "bindings": [
+          { "name": "AGENT_REGISTRY", "class_name": "AgentRegistry" },
+          { "name": "INTENT_ROUTE", "class_name": "IntentRoute" },
+          { "name": "CHECKOUT_SESSION", "class_name": "CheckoutSession" }
+        ]
+      },
+      "services": [
+        { "binding": "ACOS_ADMISSION", "service": "agentic-canvas-os" },
+        { "binding": "DOCS_MCP", "service": "knowgrph-mcp" },
+        { "binding": "CHECKOUT_PROVIDER", "service": "knowgrph-travel-commerce-production" },
+        { "binding": "MARKETPLACE_PROVIDER", "service": "knowgrph-marketplace-production" }
+      ],
+      "vars": {
+        "DEPLOY_LANE": "Production",
+        "RELEASE_CANDIDATE_SHA": "production-release-required-core",
+        "REGISTRY_ID": "primary",
+        "ACOS_SOURCE_REVISION": "415e914da9e757387b992a5b03d89ac8855cb310",
+        "ACOS_CATALOG_DIGEST": "2aa96c1240edb86579588408606af170abad243995cdd3b5ca77b91635c5f25b",
+        "ACOS_ROUTING_SCHEMA": "agentic-canvas-os-docs-routing/v1",
+        "ACOS_ROUTING_DIGEST": "cba48df57e4e825b2111fee720d81382714baec8e45e0e270f6e496e61a703b3",
+        "ACOS_CATALOG_COUNTS_JSON": "{\"command\":142,\"semantic\":142,\"binding\":136}",
+        "ACOS_REQUIRED_TOKENS_JSON": "[\"/tool.route\",\"#mcp\",\"@mcp-gateway\"]",
+        "CHECKOUT_PROVIDER_EVIDENCE_PIN_JSON": "{\"sourceRevision\":\"production-source-required\",\"receiptDigest\":\"production-receipt-required\",\"storageCompatibilityRevision\":\"production-storage-required\",\"providerVersionId\":\"production-provider-required\"}",
+        "MARKETPLACE_PROVIDER_EVIDENCE_PIN_JSON": "{\"sourceRevision\":\"production-source-required\",\"receiptDigest\":\"production-receipt-required\",\"storageCompatibilityRevision\":\"production-storage-required\",\"providerVersionId\":\"production-provider-required\"}"
+      }
+    }
+  }
+}
