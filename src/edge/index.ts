@@ -4,6 +4,7 @@ import * as z from 'zod/v4'
 
 import { bearerAuthorized, originAllowed, validateSecretConfiguration } from '../shared/auth'
 import { isHttpFailure, isRecord, jsonResponse, readJsonObject, readJsonResponse } from '../shared/http'
+import { dashboardResponse } from './dashboard'
 
 const EDGE_CORE_CONTRACT = 'commerce.edge-core/v1'
 const CORE_REQUEST_TIMEOUT_MS = 10_000
@@ -17,6 +18,13 @@ export default {
         return finalizeResponse(jsonResponse({
           ok: true,
           contract: 'commerce.edge-live/v1',
+          lane: env.DEPLOY_LANE,
+          releaseCandidateSha: env.RELEASE_CANDIDATE_SHA,
+          version: env.CF_VERSION_METADATA,
+        }), requestId, request, env)
+      }
+      if (request.method === 'GET' && url.pathname === '/') {
+        return finalizeResponse(dashboardResponse({
           lane: env.DEPLOY_LANE,
           releaseCandidateSha: env.RELEASE_CANDIDATE_SHA,
           version: env.CF_VERSION_METADATA,

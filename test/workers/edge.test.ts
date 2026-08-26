@@ -4,6 +4,20 @@ import { describe, expect, it } from 'vitest'
 import { EDGE_MCP_TOKEN, EDGE_OPERATOR_TOKEN } from './fake-services'
 
 describe('commerce edge Worker', () => {
+  it('serves a mobile-first browser console without exposing operational authority', async () => {
+    const dashboard = await SELF.fetch('https://edge.test/')
+    expect(dashboard.status).toBe(200)
+    expect(dashboard.headers.get('content-type')).toContain('text/html')
+    expect(dashboard.headers.get('content-security-policy')).toContain("default-src 'none'")
+    const html = await dashboard.text()
+    expect(html).toContain('Agentic Commerce OS')
+    expect(html).toContain('Agents discover. Humans decide.')
+    expect(html).toContain('GET /livez')
+    expect(html).toContain('GET /readyz')
+    expect(html).not.toContain(EDGE_MCP_TOKEN)
+    expect(html).not.toContain(EDGE_OPERATOR_TOKEN)
+  })
+
   it('reports production readiness only when secrets and core are ready', async () => {
     const live = await SELF.fetch('https://edge.test/livez')
     expect(live.status).toBe(200)

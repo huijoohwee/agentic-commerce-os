@@ -45,6 +45,7 @@ mutation authority.
 
 | Method and path | Authority | Effect |
 |---|---|---|
+| `GET /` | none | Read-only browser console with sanitized release metadata and probe links |
 | `GET /livez` | none | Process liveness and version metadata |
 | `GET /readyz` | none | Fail-closed dependency and candidate report |
 | `GET /v1/registry` | MCP | Registry snapshot |
@@ -60,7 +61,9 @@ mutation authority.
 | `POST /v1/operator/vendors/{vendorId}/transition` | operator | Forward an explicit lifecycle decision |
 
 Every JSON response has `cache-control: no-store`, a request ID, content sniffing
-protection, and a default-deny content security policy where applicable.
+protection, and a default-deny content security policy where applicable. The
+browser console is also `no-store`, uses no client script or third-party asset,
+and cannot receive MCP or operator bearer credentials.
 
 ## Agent registration
 

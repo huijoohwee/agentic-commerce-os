@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "wrangler dev -c wrangler.edge.jsonc -c wrangler.core.jsonc -c wrangler.dev-provider.jsonc --env dev",
     "dev:offline": "vitest --config vitest.worker.config.ts",
-    "types": "wrangler types -c wrangler.core.jsonc --env dev --strict-vars=false --include-runtime=false --env-interface CoreEnv src/generated/core-env.d.ts && wrangler types -c wrangler.edge.jsonc --env dev --env-file .dev.vars.example --strict-vars=false --include-runtime=false --env-interface EdgeEnv src/generated/edge-env.d.ts",
+    "types": "wrangler types -c wrangler.core.jsonc --env dev --env-file config/core-types.env --strict-vars=false --include-runtime=false --env-interface CoreEnv src/generated/core-env.d.ts && wrangler types -c wrangler.edge.jsonc --env dev --env-file .dev.vars.example --strict-vars=false --include-runtime=false --env-interface EdgeEnv src/generated/edge-env.d.ts",
     "types:check": "npm run types && git diff --exit-code -- src/generated",
     "typecheck": "tsc --noEmit",
     "test": "npm run test:domain && npm run test:unit",

@@ -68,8 +68,8 @@ Production deploys two Workers in one Cloudflare account:
    commerce, and marketplace services.
 2. `agentic-commerce-edge-production` also has `workers.dev`, preview URLs, and
    routes disabled. It binds the core by service name and exposes `/mcp`, the
-   authenticated `/v1/*` facade, `/livez`, and `/readyz` only to a separately
-   authorized consumer.
+   read-only `/` console, authenticated `/v1/*` facade, `/livez`, and `/readyz`
+   only to a separately authorized consumer.
 
 A Cloudflare Service Binding selects a service, not an immutable Worker version.
 Both readiness contracts therefore return their sanitized

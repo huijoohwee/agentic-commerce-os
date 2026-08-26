@@ -53,6 +53,11 @@ locally, including a minimal three-token invocation fixture. It performs no
 cloud or payment mutation. `npm run dev:offline` runs the same boundaries under
 the complete local workerd test harness in watch mode.
 
+Open the edge root (Wrangler defaults to `http://localhost:8787/`) for the
+read-only, mobile-first runtime console. The console exposes only sanitized
+release identity and links to the machine-readable probes; operational routes
+remain bearer-protected.
+
 The release gate is:
 
 ```bash

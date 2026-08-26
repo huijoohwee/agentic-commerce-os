@@ -2,6 +2,12 @@ import { SELF } from 'cloudflare:test'
 import { describe, expect, it } from 'vitest'
 
 describe('commerce edge invalid Production configuration', () => {
+  it('keeps the read-only browser console available for diagnosis', async () => {
+    const dashboard = await SELF.fetch('https://edge.test/')
+    expect(dashboard.status).toBe(200)
+    await expect(dashboard.text()).resolves.toContain('Operational routes remain bearer-protected.')
+  })
+
   it('fails readiness and blocks every operational transport', async () => {
     const ready = await SELF.fetch('https://edge.test/readyz')
     expect(ready.status).toBe(503)
