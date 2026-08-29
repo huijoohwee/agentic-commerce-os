@@ -1,0 +1,97 @@
+{
+  "$schema": "commerce-do-storage-compatibility/v1",
+  "version": 1,
+  "compatibilityPolicy": "exact-persistence-surface",
+  "wrangler": {
+    "configFile": "wrangler.core.jsonc",
+    "migrations": [
+      {
+        "tag": "v1",
+        "new_sqlite_classes": ["AgentRegistry", "IntentRoute", "CheckoutSession"]
+      }
+    ],
+    "productionDurableObjectBindings": [
+      { "name": "AGENT_REGISTRY", "class_name": "AgentRegistry" },
+      { "name": "INTENT_ROUTE", "class_name": "IntentRoute" },
+      { "name": "CHECKOUT_SESSION", "class_name": "CheckoutSession" }
+    ]
+  },
+  "persistenceDependencies": [
+    {
+      "sourceFile": "src/shared/digest.ts",
+      "purpose": "Canonical JSON encoding and SHA-256 hashing used by all persisted records and receipts.",
+      "sourceSha256": "fa329e2381668e50978cb37ca331559a54def6f594c87848bb0f40fa60c62027"
+    },
+    {
+      "sourceFile": "src/core/acos-admission.ts",
+      "purpose": "Normalizes and validates ACOS admission receipts persisted by AgentRegistry.",
+      "sourceSha256": "66be6b2257c8c574c2f8afcb9a556db4ed86fd211d70881c961be54653ce5a13"
+    },
+    {
+      "sourceFile": "src/core/checkout-receipts.ts",
+      "purpose": "Normalizes and hashes checkout receipts persisted by CheckoutSession.",
+      "sourceSha256": "d8205f55102a394e53545799dbff16b415bbee31adb0075604341fa6dbb25ee1"
+    },
+    {
+      "sourceFile": "src/core/discovery-receipt.ts",
+      "purpose": "Normalizes and hashes discovery offers persisted by IntentRoute.",
+      "sourceSha256": "134f7a0b72103d04f4d9a4e48711625d44e3b328a2c1a28a2712f9dae63c4f53"
+    },
+    {
+      "sourceFile": "src/domain/exclusive-category-router.ts",
+      "purpose": "Constructs exclusive routing decisions persisted by AgentRegistry.",
+      "sourceSha256": "d22e560c1f2a57af2f0e90c2aeb6ace8e34ee3b45ccee247f6825cd8bb617508"
+    },
+    {
+      "sourceFile": "src/core/index.ts",
+      "purpose": "Constructs Durable Object inputs and request digests at the core boundary.",
+      "sourceSha256": "da64bcbc5af9ef8662e724f3bccbd6f9a9a05b99ec2c63f34a81d1b5584d67f6"
+    },
+    {
+      "sourceFile": "src/core/checkout-input.ts",
+      "purpose": "Parses and normalizes checkout inputs persisted and hashed by CheckoutSession.",
+      "sourceSha256": "d334e890e3d0f0966866dde3af0150ca15454652640652cb9c853e6389ee8011"
+    }
+  ],
+  "schemaRegions": [
+    {
+      "className": "AgentRegistry",
+      "sourceFile": "src/core/agent-registry.ts",
+      "sourceSha256": "e37241275febd1601bd17a5648fe39a0ab6d772f19aa02369ee2b0a178db518b",
+      "startMarker": "  #migrate(): void {",
+      "endMarker": "\n  async #allStored(",
+      "regionSha256": "e8f0690fced7e0f5fc63e4e934289e8b5b2ff87f9fd9aac6313b083cc2eebe9f",
+      "ddl": [
+        { "object": "table:agent_admission", "sha256": "c92ce3ab38c7e5453559e9e1c956ecf56913d86b12a8b3d9c0b6524b9e682d39" },
+        { "object": "alter:agent_admission:add-column:invocation_proof_json", "sha256": "45fb46cc5af88d0e45336c832090ddbaaa49607b311c15e380c85f9b7a83d8f9" },
+        { "object": "index:one_active_admission_per_category", "sha256": "5d4bc79021f3ee63934b97b0d5997adfafd44c5a0304391dda22e31d8f9e394e" },
+        { "object": "table:registry_event", "sha256": "24ea153e18edce30c06e3def68fb1d5a8799b5ce9debd3de5e6446853b783713" },
+        { "object": "table:route_event", "sha256": "f5d1f6f66ae855b7159c4c2dbcb115e5bb39fee2278707d579c402de82f1c1b5" }
+      ]
+    },
+    {
+      "className": "IntentRoute",
+      "sourceFile": "src/core/intent-route.ts",
+      "sourceSha256": "7d013220347940fcf5867f1e03a0a9fae6c7890ac95c123f28bd04e7e7a029e4",
+      "startMarker": "    state.blockConcurrencyWhile(async () => {",
+      "endMarker": "\n  async dispatch(",
+      "regionSha256": "833c3ffa1dd1c79282990138d70ae854df5dc94d86933ef163c69b554177dd92",
+      "ddl": [
+        { "object": "table:intent_dispatch", "sha256": "b38d0e706daaed740b687e7b81e53c87a749d3928a6e6c2d1396cecb019d55d1" }
+      ]
+    },
+    {
+      "className": "CheckoutSession",
+      "sourceFile": "src/core/checkout-session.ts",
+      "sourceSha256": "e1d9c386c59ec0650b1371600dfc9a290e0356e4d856faf3ccb92b6d65b34939",
+      "startMarker": "    state.blockConcurrencyWhile(async () => {",
+      "endMarker": "\n  async prepare(",
+      "regionSha256": "e59c72a9761c34d7745485eef85f2390e677c7fb33e7e8d78a7860a46b582e89",
+      "ddl": [
+        { "object": "table:checkout_state", "sha256": "d89a3ca217a9c7c91f22ab9c1bba5813e91a49b3e7dc1b45d10df5aa99cf1b7f" },
+        { "object": "table:checkout_event", "sha256": "84f76b413af9c715f6c2fa96a52dd256fb5b4881ad45129fd51181632d19c121" }
+      ]
+    }
+  ],
+  "revision": "6fdee1f4867c84b6cbf605997468cf2777d5e80e3d6e16dba7298ad9f5e86b6c"
+}

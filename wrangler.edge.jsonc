@@ -1,0 +1,64 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "agentic-commerce-edge-local",
+  "main": "src/edge/index.ts",
+  "compatibility_date": "2026-08-26",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "preview_urls": true,
+  "observability": {
+    "enabled": true,
+    "logs": { "enabled": true, "head_sampling_rate": 1 }
+  },
+  "version_metadata": { "binding": "CF_VERSION_METADATA" },
+  "vars": {
+    "DEPLOY_LANE": "Local",
+    "RELEASE_CANDIDATE_SHA": "local-unreleased",
+    "ALLOWED_ORIGINS_JSON": "[\"http://localhost:3000\",\"http://localhost:5173\",\"http://localhost:8787\",\"http://127.0.0.1:3000\",\"http://127.0.0.1:5173\",\"http://127.0.0.1:8787\"]"
+  },
+  "env": {
+    "dev": {
+      "name": "agentic-commerce-edge-dev",
+      "workers_dev": true,
+      "preview_urls": true,
+      "version_metadata": { "binding": "CF_VERSION_METADATA" },
+      "services": [
+        { "binding": "COMMERCE_CORE", "service": "agentic-commerce-core-dev" }
+      ],
+      "vars": {
+        "DEPLOY_LANE": "Dev",
+        "RELEASE_CANDIDATE_SHA": "dev-unreleased",
+        "ALLOWED_ORIGINS_JSON": "[\"http://localhost:3000\",\"http://localhost:5173\",\"http://localhost:8787\",\"http://127.0.0.1:3000\",\"http://127.0.0.1:5173\",\"http://127.0.0.1:8787\",\"https://airvio.co\"]"
+      }
+    },
+    "staging": {
+      "name": "agentic-commerce-edge-staging",
+      "workers_dev": true,
+      "preview_urls": false,
+      "version_metadata": { "binding": "CF_VERSION_METADATA" },
+      "services": [
+        { "binding": "COMMERCE_CORE", "service": "agentic-commerce-core-staging" }
+      ],
+      "vars": {
+        "DEPLOY_LANE": "Staging",
+        "RELEASE_CANDIDATE_SHA": "staging-unreleased",
+        "ALLOWED_ORIGINS_JSON": "[\"https://airvio.co\"]"
+      }
+    },
+    "production": {
+      "name": "agentic-commerce-edge-production",
+      "workers_dev": false,
+      "preview_urls": false,
+      "version_metadata": { "binding": "CF_VERSION_METADATA" },
+      "routes": [],
+      "services": [
+        { "binding": "COMMERCE_CORE", "service": "agentic-commerce-core-production" }
+      ],
+      "vars": {
+        "DEPLOY_LANE": "Production",
+        "RELEASE_CANDIDATE_SHA": "production-release-required-edge",
+        "ALLOWED_ORIGINS_JSON": "[\"https://airvio.co\"]"
+      }
+    }
+  }
+}

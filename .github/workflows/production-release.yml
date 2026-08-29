@@ -1,0 +1,597 @@
+name: Production Release
+run-name: Production candidate ${{ inputs.candidate_sha }}
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_sha:
+        description: Exact current protected main commit to deploy
+        required: true
+        type: string
+      consumer_readiness_url:
+        description: Exact HTTPS /readyz URL on airvio.co for the private-edge consumer
+        required: true
+        type: string
+      prior_release_run_id:
+        description: Successful Production Release run containing the sealed last-known-good receipt
+        required: true
+        type: string
+      prior_release_artifact_id:
+        description: Exact artifact ID from that prior release run
+        required: true
+        type: string
+      prior_release_receipt_sha256:
+        description: Published SHA-256 of release.json inside that artifact
+        required: true
+        type: string
+permissions:
+  actions: read
+  contents: read
+concurrency:
+  group: agentic-commerce-production
+  cancel-in-progress: false
+jobs:
+  verify:
+    name: Verify Candidate and Prior Receipt
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      candidate_digest: ${{ steps.identity.outputs.candidate_digest }}
+      candidate_sha: ${{ steps.identity.outputs.candidate_sha }}
+      candidate_tree: ${{ steps.identity.outputs.candidate_tree }}
+      package_lock_digest: ${{ steps.identity.outputs.package_lock_digest }}
+      core_config_digest: ${{ steps.identity.outputs.core_config_digest }}
+      edge_config_digest: ${{ steps.identity.outputs.edge_config_digest }}
+      storage_revision: ${{ steps.identity.outputs.storage_revision }}
+      prior_candidate_sha: ${{ steps.prior.outputs.candidate_sha }}
+      prior_core_version_id: ${{ steps.prior.outputs.core_version_id }}
+      prior_edge_version_id: ${{ steps.prior.outputs.edge_version_id }}
+      prior_core_binding_digest: ${{ steps.prior.outputs.core_binding_digest }}
+      prior_edge_binding_digest: ${{ steps.prior.outputs.edge_binding_digest }}
+      prior_receipt_digest: ${{ steps.prior.outputs.receipt_digest }}
+    env:
+      CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+      CONSUMER_READINESS_URL: ${{ inputs.consumer_readiness_url }}
+      PRIOR_RELEASE_RUN_ID: ${{ inputs.prior_release_run_id }}
+      PRIOR_RELEASE_ARTIFACT_ID: ${{ inputs.prior_release_artifact_id }}
+      PRIOR_RELEASE_RECEIPT_SHA256: ${{ inputs.prior_release_receipt_sha256 }}
+    steps:
+      - name: Validate immutable inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$PRIOR_RELEASE_RUN_ID" =~ ^[1-9][0-9]{0,19}$ ]]
+          [[ "$PRIOR_RELEASE_ARTIFACT_ID" =~ ^[1-9][0-9]{0,19}$ ]]
+          [[ "$PRIOR_RELEASE_RECEIPT_SHA256" =~ ^[0-9a-f]{64}$ ]]
+          node <<'NODE'
+          const raw = process.env.CONSUMER_READINESS_URL ?? ''
+          let url
+          try { url = new URL(raw) } catch { process.exit(1) }
+          const host = url.hostname === 'airvio.co' || url.hostname.endsWith('.airvio.co')
+          const path = url.pathname.startsWith('/') && url.pathname.endsWith('/readyz')
+            && !url.pathname.includes('//') && !/%(?:2f|5c)/iu.test(url.pathname)
+          const valid = url.protocol === 'https:' && host && path
+            && (url.port === '' || url.port === '443') && url.username === ''
+            && url.password === '' && url.search === '' && url.hash === ''
+            && url.toString() === raw
+          if (!valid) process.exit(1)
+          NODE
+      - name: Checkout exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ inputs.candidate_sha }}
+      - name: Verify candidate is current protected main
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$CANDIDATE_SHA"
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install and verify locked candidate
+        run: |
+          timeout --foreground --kill-after=30s 8m npm ci
+          timeout --foreground --kill-after=30s 15m npm run check
+      - name: Validate private Production topology
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('node:fs')
+          const assert = require('node:assert/strict')
+          const core = JSON.parse(fs.readFileSync('wrangler.core.jsonc', 'utf8'))
+          const edge = JSON.parse(fs.readFileSync('wrangler.edge.jsonc', 'utf8'))
+          const coreProduction = core.env.production
+          const edgeProduction = edge.env.production
+          const names = (items) => items.map(({ name }) => name).sort()
+          assert.equal(coreProduction.name, 'agentic-commerce-core-production')
+          assert.equal(edgeProduction.name, 'agentic-commerce-edge-production')
+          for (const lane of [coreProduction, edgeProduction]) {
+            assert.equal(lane.workers_dev, false)
+            assert.equal(lane.preview_urls, false)
+            assert.deepEqual(lane.routes ?? [], [])
+            assert.equal(lane.vars.DEPLOY_LANE, 'Production')
+            assert.equal(lane.version_metadata.binding, 'CF_VERSION_METADATA')
+          }
+          assert.deepEqual(names(coreProduction.durable_objects.bindings), [
+            'AGENT_REGISTRY', 'CHECKOUT_SESSION', 'INTENT_ROUTE',
+          ])
+          assert.deepEqual(names(coreProduction.services), [
+            'ACOS_ADMISSION', 'CHECKOUT_PROVIDER', 'DOCS_MCP', 'MARKETPLACE_PROVIDER',
+          ])
+          assert.deepEqual(names(edgeProduction.services), ['COMMERCE_CORE'])
+          for (const key of [
+            'ACOS_SOURCE_REVISION', 'ACOS_CATALOG_DIGEST', 'ACOS_ROUTING_SCHEMA',
+            'ACOS_ROUTING_DIGEST', 'ACOS_CATALOG_COUNTS_JSON', 'ACOS_REQUIRED_TOKENS_JSON',
+            'CHECKOUT_PROVIDER_EVIDENCE_PIN_JSON', 'MARKETPLACE_PROVIDER_EVIDENCE_PIN_JSON',
+          ]) assert.equal(typeof coreProduction.vars[key], 'string')
+          for (const config of [core, coreProduction, edge, edgeProduction]) {
+            for (const key of ['d1_databases', 'kv_namespaces', 'r2_buckets', 'queues']) {
+              assert.equal(config[key], undefined)
+            }
+          }
+          assert.doesNotMatch(coreProduction.vars.RELEASE_CANDIDATE_SHA, /^[0-9a-f]{40}$/u)
+          assert.doesNotMatch(edgeProduction.vars.RELEASE_CANDIDATE_SHA, /^[0-9a-f]{40}$/u)
+          assert.notEqual(coreProduction.vars.RELEASE_CANDIDATE_SHA, edgeProduction.vars.RELEASE_CANDIDATE_SHA)
+          NODE
+      - name: Verify sealed prior release receipt
+        id: prior
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          prior_dir="$RUNNER_TEMP/agentic-commerce-prior"
+          mkdir -p "$prior_dir"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$PRIOR_RELEASE_RUN_ID" > "$prior_dir/run.json"
+          jq -e --arg sha "$CANDIDATE_SHA" '
+            .event == "workflow_dispatch" and .conclusion == "success"
+            and .path == ".github/workflows/production-release.yml"
+            and .head_branch == "main" and .head_sha != $sha
+          ' "$prior_dir/run.json"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$PRIOR_RELEASE_RUN_ID/artifacts?per_page=100" \
+            > "$prior_dir/artifacts.json"
+          jq -e --argjson id "$PRIOR_RELEASE_ARTIFACT_ID" '
+            [.artifacts[] | select(.id == $id and .expired == false and .size_in_bytes > 0 and .size_in_bytes <= 1048576 and (.name | startswith("production-release-")))]
+            | length == 1
+          ' "$prior_dir/artifacts.json"
+          artifact_name="$(jq -r --argjson id "$PRIOR_RELEASE_ARTIFACT_ID" '.artifacts[] | select(.id == $id) | .name' "$prior_dir/artifacts.json")"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$PRIOR_RELEASE_ARTIFACT_ID/zip" \
+            > "$prior_dir/artifact.zip"
+          mapfile -t receipt_entries < <(unzip -Z1 "$prior_dir/artifact.zip" | grep -E '(^|/)release\.json$')
+          test "${#receipt_entries[@]}" -eq 1
+          unzip -p "$prior_dir/artifact.zip" "${receipt_entries[0]}" > "$prior_dir/release.json"
+          receipt_digest="$(sha256sum "$prior_dir/release.json" | cut -d' ' -f1)"
+          test "$receipt_digest" = "$PRIOR_RELEASE_RECEIPT_SHA256"
+          jq -e '
+            .schema == "agentic-commerce-production-release/v2"
+            and (.candidateSha | test("^[0-9a-f]{40}$"))
+            and (.candidateTree | test("^[0-9a-f]{40}$"))
+            and (.packageLockDigest | test("^[0-9a-f]{64}$"))
+            and (.coreConfigDigest | test("^[0-9a-f]{64}$"))
+            and (.edgeConfigDigest | test("^[0-9a-f]{64}$"))
+            and (.durableObjectStorageCompatibilityRevision | test("^[0-9a-f]{64}$"))
+            and (.core.versionId | test("^[A-Za-z0-9_-]{1,128}$"))
+            and (.edge.versionId | test("^[A-Za-z0-9_-]{1,128}$"))
+            and (.core.bindingDigest | test("^[0-9a-f]{64}$"))
+            and (.edge.bindingDigest | test("^[0-9a-f]{64}$"))
+            and .core.candidateSha == .candidateSha and .edge.candidateSha == .candidateSha
+            and .live.schema == "agentic-commerce-live-readiness/v2" and .live.candidateSha == .candidateSha
+            and .live.coreVersionId == .core.versionId and .live.edgeVersionId == .edge.versionId
+            and .live.edge.contract == "commerce.edge-readiness/v1" and .live.edge.lane == "Production"
+            and (.live.edge.checks | length >= 3 and all(.[]; .ok == true))
+            and .live.core.contract == "commerce.core-readiness/v1" and .live.core.lane == "Production"
+            and (.live.core.checks | length >= 11 and all(.[]; .ok == true))
+            and (["release_candidate","acos_admission","registry","invocation_catalog","mcp_tools","commerce_provider","commerce_provider_contract","checkout_provider_evidence","marketplace_provider","marketplace_provider_contract","marketplace_provider_evidence"] - [.live.core.checks[].name] | length) == 0
+          ' "$prior_dir/release.json"
+          prior_sha="$(jq -r .candidateSha "$prior_dir/release.json")"
+          test "$artifact_name" = "production-release-$prior_sha"
+          git cat-file -e "$prior_sha^{commit}"
+          git merge-base --is-ancestor "$prior_sha" "$CANDIDATE_SHA"
+          test "$(git rev-parse "$prior_sha^{tree}")" = "$(jq -r .candidateTree "$prior_dir/release.json")"
+          for entry in 'package-lock.json:packageLockDigest' 'wrangler.core.jsonc:coreConfigDigest' 'wrangler.edge.jsonc:edgeConfigDigest'; do
+            path="${entry%%:*}"
+            field="${entry#*:}"
+            actual="$(git show "$prior_sha:$path" | sha256sum | cut -d' ' -f1)"
+            test "$actual" = "$(jq -r ".$field" "$prior_dir/release.json")"
+          done
+          mkdir -p "$prior_dir/source"
+          git archive "$prior_sha" docs/do-storage-compatibility.json wrangler.core.jsonc src/core/agent-registry.ts src/core/intent-route.ts src/core/checkout-session.ts src/shared/digest.ts src/core/acos-admission.ts src/core/checkout-receipts.ts src/core/discovery-receipt.ts src/domain/exclusive-category-router.ts src/core/index.ts src/core/checkout-input.ts | tar -x -C "$prior_dir/source"
+          storage_revision="$(node scripts/validate-do-storage-compatibility.ts --root "$prior_dir/source")"
+          test "$storage_revision" = "$(jq -r .durableObjectStorageCompatibilityRevision "$prior_dir/release.json")"
+          echo "candidate_sha=$prior_sha" >> "$GITHUB_OUTPUT"
+          echo "core_version_id=$(jq -r .core.versionId "$prior_dir/release.json")" >> "$GITHUB_OUTPUT"
+          echo "edge_version_id=$(jq -r .edge.versionId "$prior_dir/release.json")" >> "$GITHUB_OUTPUT"
+          echo "core_binding_digest=$(jq -r .core.bindingDigest "$prior_dir/release.json")" >> "$GITHUB_OUTPUT"
+          echo "edge_binding_digest=$(jq -r .edge.bindingDigest "$prior_dir/release.json")" >> "$GITHUB_OUTPUT"
+          echo "receipt_digest=$receipt_digest" >> "$GITHUB_OUTPUT"
+      - name: Capture verified candidate identity
+        id: identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          candidate_tree="$(git rev-parse HEAD^{tree})"
+          package_lock_digest="$(sha256sum package-lock.json | cut -d' ' -f1)"
+          core_config_digest="$(sha256sum wrangler.core.jsonc | cut -d' ' -f1)"
+          edge_config_digest="$(sha256sum wrangler.edge.jsonc | cut -d' ' -f1)"
+          storage_revision="$(node scripts/validate-do-storage-compatibility.ts)"
+          test "$storage_revision" = "$(jq -r .durableObjectStorageCompatibilityRevision "$RUNNER_TEMP/agentic-commerce-prior/release.json")"
+          candidate_json="$(jq -cn \
+            --arg schema 'agentic-commerce-production-candidate/v2' \
+            --arg sourceSha "$CANDIDATE_SHA" --arg sourceTree "$candidate_tree" \
+            --arg packageLockDigest "$package_lock_digest" --arg coreConfigDigest "$core_config_digest" \
+            --arg edgeConfigDigest "$edge_config_digest" --arg storageRevision "$storage_revision" \
+            --arg consumerReadinessUrl "$CONSUMER_READINESS_URL" \
+            --arg priorReceiptDigest '${{ steps.prior.outputs.receipt_digest }}' \
+            '{schema:$schema,sourceSha:$sourceSha,sourceTree:$sourceTree,packageLockDigest:$packageLockDigest,coreConfigDigest:$coreConfigDigest,edgeConfigDigest:$edgeConfigDigest,durableObjectStorageCompatibilityRevision:$storageRevision,consumerReadinessUrl:$consumerReadinessUrl,priorReleaseReceiptDigest:$priorReceiptDigest}')"
+          candidate_digest="$(printf '%s' "$candidate_json" | sha256sum | cut -d' ' -f1)"
+          echo "candidate_sha=$CANDIDATE_SHA" >> "$GITHUB_OUTPUT"
+          echo "candidate_tree=$candidate_tree" >> "$GITHUB_OUTPUT"
+          echo "package_lock_digest=$package_lock_digest" >> "$GITHUB_OUTPUT"
+          echo "core_config_digest=$core_config_digest" >> "$GITHUB_OUTPUT"
+          echo "edge_config_digest=$edge_config_digest" >> "$GITHUB_OUTPUT"
+          echo "storage_revision=$storage_revision" >> "$GITHUB_OUTPUT"
+          echo "candidate_digest=$candidate_digest" >> "$GITHUB_OUTPUT"
+  deploy:
+    name: Approve, Deploy, Probe, or Roll Back
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    environment:
+      name: production
+    env:
+      CANDIDATE_DIGEST: ${{ needs.verify.outputs.candidate_digest }}
+      CANDIDATE_SHA: ${{ needs.verify.outputs.candidate_sha }}
+      CANDIDATE_TREE: ${{ needs.verify.outputs.candidate_tree }}
+      PACKAGE_LOCK_DIGEST: ${{ needs.verify.outputs.package_lock_digest }}
+      CORE_CONFIG_DIGEST: ${{ needs.verify.outputs.core_config_digest }}
+      EDGE_CONFIG_DIGEST: ${{ needs.verify.outputs.edge_config_digest }}
+      STORAGE_REVISION: ${{ needs.verify.outputs.storage_revision }}
+      PRIOR_CANDIDATE_SHA: ${{ needs.verify.outputs.prior_candidate_sha }}
+      PRIOR_CORE_VERSION_ID: ${{ needs.verify.outputs.prior_core_version_id }}
+      PRIOR_EDGE_VERSION_ID: ${{ needs.verify.outputs.prior_edge_version_id }}
+      PRIOR_CORE_BINDING_DIGEST: ${{ needs.verify.outputs.prior_core_binding_digest }}
+      PRIOR_EDGE_BINDING_DIGEST: ${{ needs.verify.outputs.prior_edge_binding_digest }}
+      PRIOR_RECEIPT_DIGEST: ${{ needs.verify.outputs.prior_receipt_digest }}
+      CONSUMER_READINESS_URL: ${{ inputs.consumer_readiness_url }}
+    steps:
+      - name: Checkout authorized candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ needs.verify.outputs.candidate_sha }}
+      - name: Reverify authorized source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          test "$(git rev-parse HEAD^{tree})" = "$CANDIDATE_TREE"
+          test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$CANDIDATE_SHA"
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+          cache: npm
+      - name: Re-run locked checks without deployment credentials
+        run: |
+          timeout --foreground --kill-after=30s 8m npm ci
+          timeout --foreground --kill-after=30s 15m npm run check
+      - name: Initialize validators and release evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence_dir="$RUNNER_TEMP/agentic-commerce-production"
+          mkdir -p "$evidence_dir" "$RUNNER_TEMP/agentic-commerce-raw"
+          git show "$PRIOR_CANDIDATE_SHA:wrangler.core.jsonc" > "$RUNNER_TEMP/prior-core.jsonc"
+          git show "$PRIOR_CANDIDATE_SHA:wrangler.edge.jsonc" > "$RUNNER_TEMP/prior-edge.jsonc"
+          cat > "$RUNNER_TEMP/validate-worker-version.mjs" <<'NODE'
+          import assert from 'node:assert/strict'
+          import crypto from 'node:crypto'
+          import fs from 'node:fs'
+          const [configPath, versionPath, expectedId, candidate, expectedDigest = '', kind] = process.argv.slice(2)
+          const config = JSON.parse(fs.readFileSync(configPath, 'utf8')).env.production
+          const version = JSON.parse(fs.readFileSync(versionPath, 'utf8'))
+          const bindings = version.resources?.bindings ?? []
+          assert.match(expectedId, /^[A-Za-z0-9_-]{1,128}$/u)
+          assert.equal(version.id, expectedId)
+          assert.equal(version.annotations?.['workers/tag'], candidate)
+          const byName = new Map(bindings.map((binding) => [binding.name, binding]))
+          assert.equal(byName.size, bindings.length)
+          for (const [name, configured] of Object.entries(config.vars)) {
+            const expected = name === 'RELEASE_CANDIDATE_SHA' ? candidate : String(configured)
+            assert.deepEqual(byName.get(name), { name, type: 'plain_text', text: expected })
+          }
+          for (const service of config.services ?? []) {
+            const actual = byName.get(service.binding)
+            assert.equal(actual?.type, 'service')
+            assert.equal(actual?.service, service.service)
+            if (service.environment !== undefined) assert.equal(actual.environment, service.environment)
+          }
+          for (const durable of config.durable_objects?.bindings ?? []) {
+            const actual = byName.get(durable.name)
+            assert.equal(actual?.type, 'durable_object_namespace')
+            assert.equal(actual?.class_name, durable.class_name)
+          }
+          assert.equal(byName.get(config.version_metadata.binding)?.type, 'version_metadata')
+          const secrets = kind === 'edge' ? ['MCP_BEARER_TOKEN', 'OPERATOR_BEARER_TOKEN'] : []
+          for (const name of secrets) assert.equal(byName.get(name)?.type, 'secret_text')
+          const expectedNames = [
+            ...Object.keys(config.vars), ...(config.services ?? []).map(({ binding }) => binding),
+            ...(config.durable_objects?.bindings ?? []).map(({ name }) => name),
+            config.version_metadata.binding, ...secrets,
+          ].sort()
+          assert.deepEqual([...byName.keys()].sort(), expectedNames)
+          const canonical = (value) => Array.isArray(value)
+            ? `[${value.map(canonical).join(',')}]`
+            : value && typeof value === 'object'
+              ? `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${canonical(value[key])}`).join(',')}}`
+              : JSON.stringify(value)
+          const safe = bindings.map((binding) => binding.type === 'secret_text'
+            ? { name: binding.name, type: binding.type } : binding)
+            .sort((left, right) => `${left.name}:${left.type}`.localeCompare(`${right.name}:${right.type}`))
+          const digest = crypto.createHash('sha256').update(canonical(safe)).digest('hex')
+          if (expectedDigest) assert.equal(digest, expectedDigest)
+          process.stdout.write(digest)
+          NODE
+          cat > "$RUNNER_TEMP/probe-readiness.sh" <<'BASH'
+          set -euo pipefail
+          candidate="$1"; edge_id="$2"; core_id="$3"; output="$4"
+          raw="$RUNNER_TEMP/agentic-commerce-raw/readiness.json"
+          code="$(curl --silent --show-error --fail-with-body --proto '=https' --tlsv1.2 \
+            --connect-timeout 10 --max-time 30 --max-filesize 1048576 --retry 2 --retry-delay 2 \
+            --retry-all-errors --header 'accept: application/json' --output "$raw" --write-out '%{http_code}' \
+            "$CONSUMER_READINESS_URL")"
+          test "$code" = 200
+          jq -e --arg candidate "$candidate" --arg edge "$edge_id" --arg core "$core_id" '
+            .ok == true and .contract == "commerce.edge-readiness/v1" and .lane == "Production"
+            and .releaseCandidateSha == $candidate and .version.id == $edge and .version.tag == $candidate
+            and (.checks | type == "array" and length >= 3 and all(.[]; .ok == true))
+            and ([.checks[] | select(.name == "secret_configuration")] | length) == 1
+            and ([.checks[] | select(.name == "release_candidate" and .expected == $candidate and .observed == $candidate)] | length) == 1
+            and ([.checks[] | select(.name == "commerce_core")][0].detail) as $coreReport
+            | $coreReport.ok == true and $coreReport.contract == "commerce.core-readiness/v1"
+            and $coreReport.lane == "Production" and $coreReport.releaseCandidateSha == $candidate
+            and $coreReport.version.id == $core and $coreReport.version.tag == $candidate
+            and ($coreReport.checks | type == "array" and length >= 11 and all(.[]; .ok == true))
+            and (["release_candidate","acos_admission","registry","invocation_catalog","mcp_tools","commerce_provider","commerce_provider_contract","checkout_provider_evidence","marketplace_provider","marketplace_provider_contract","marketplace_provider_evidence"]
+              - [$coreReport.checks[].name] | length) == 0
+          ' "$raw"
+          jq --arg schema 'agentic-commerce-live-readiness/v2' --arg candidate "$candidate" '
+            ([.checks[] | select(.name == "commerce_core")][0].detail) as $core
+            | {schema:$schema,candidateSha:$candidate,edgeVersionId:.version.id,coreVersionId:$core.version.id,
+              edge:{contract,lane,checks:[.checks[] | {name,ok,code}]},
+              core:{contract:$core.contract,lane:$core.lane,checks:[$core.checks[] | {name,ok,code}]}}
+          ' "$raw" > "$output"
+          rm -f "$raw"
+          BASH
+          jq -n --arg schema 'agentic-commerce-production-request/v2' \
+            --arg candidateSha "$CANDIDATE_SHA" --arg candidateTree "$CANDIDATE_TREE" \
+            --arg candidateDigest "$CANDIDATE_DIGEST" --arg priorReceiptDigest "$PRIOR_RECEIPT_DIGEST" \
+            --arg consumerReadinessUrl "$CONSUMER_READINESS_URL" \
+            '{schema:$schema,candidateSha:$candidateSha,candidateTree:$candidateTree,candidateDigest:$candidateDigest,priorReleaseReceiptDigest:$priorReceiptDigest,consumerReadinessUrl:$consumerReadinessUrl}' \
+            > "$evidence_dir/request.json"
+
+      - name: Validate Cloudflare authority and sealed rollback pair
+        shell: bash
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          [[ "$CLOUDFLARE_ACCOUNT_ID" =~ ^[0-9a-f]{32}$ ]]
+          test -n "$CLOUDFLARE_API_TOKEN"
+          raw="$RUNNER_TEMP/agentic-commerce-raw"
+          for kind in core edge; do
+            if [[ "$kind" == core ]]; then
+              config=wrangler.core.jsonc; prior_config="$RUNNER_TEMP/prior-core.jsonc"
+              version="$PRIOR_CORE_VERSION_ID"; digest="$PRIOR_CORE_BINDING_DIGEST"
+            else
+              config=wrangler.edge.jsonc; prior_config="$RUNNER_TEMP/prior-edge.jsonc"
+              version="$PRIOR_EDGE_VERSION_ID"; digest="$PRIOR_EDGE_BINDING_DIGEST"
+            fi
+            timeout --foreground --kill-after=30s 2m npx --no-install wrangler versions view "$version" \
+              -c "$config" --env production --json > "$raw/prior-$kind.json"
+            node "$RUNNER_TEMP/validate-worker-version.mjs" "$prior_config" "$raw/prior-$kind.json" \
+              "$version" "$PRIOR_CANDIDATE_SHA" "$digest" "$kind"
+            active="$(timeout --foreground --kill-after=30s 2m npx --no-install wrangler deployments status \
+              -c "$config" --env production --json | jq -r 'select(.versions | length == 1) | select(.versions[0].percentage == 100) | .versions[0].version_id')"
+            test "$active" = "$version"
+            rm -f "$raw/prior-$kind.json"
+          done
+      - name: Mark core mutation boundary
+        id: core_attempt
+        run: echo 'attempted=true' >> "$GITHUB_OUTPUT"
+      - name: Deploy and verify private core
+        id: core
+        shell: bash
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          timeout --foreground --kill-after=30s 8m npm run deploy:production:core -- --strict \
+            --tag "$CANDIDATE_SHA" --message "candidate $CANDIDATE_SHA core" \
+            --var "RELEASE_CANDIDATE_SHA:$CANDIDATE_SHA"
+          raw="$RUNNER_TEMP/agentic-commerce-raw/core"
+          timeout --foreground --kill-after=30s 2m npx --no-install wrangler deployments status \
+            -c wrangler.core.jsonc --env production --json > "$raw-deployment.json"
+          version="$(jq -r 'select(.versions | length == 1) | select(.versions[0].percentage == 100) | .versions[0].version_id' "$raw-deployment.json")"
+          test -n "$version"
+          timeout --foreground --kill-after=30s 2m npx --no-install wrangler versions view "$version" \
+            -c wrangler.core.jsonc --env production --json > "$raw-version.json"
+          digest="$(node "$RUNNER_TEMP/validate-worker-version.mjs" wrangler.core.jsonc "$raw-version.json" "$version" "$CANDIDATE_SHA" '' core)"
+          jq -n --arg schema 'agentic-commerce-worker-deployment/v2' --arg candidateSha "$CANDIDATE_SHA" \
+            --arg versionId "$version" --arg bindingDigest "$digest" \
+            '{schema:$schema,worker:"core",candidateSha:$candidateSha,versionId:$versionId,percentage:100,bindingDigest:$bindingDigest}' \
+            > "$RUNNER_TEMP/agentic-commerce-production/core.json"
+          echo "version_id=$version" >> "$GITHUB_OUTPUT"
+          rm -f "$raw-deployment.json" "$raw-version.json"
+      - name: Mark edge mutation boundary
+        id: edge_attempt
+        run: echo 'attempted=true' >> "$GITHUB_OUTPUT"
+      - name: Deploy and verify private edge
+        id: edge
+        shell: bash
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          timeout --foreground --kill-after=30s 8m npm run deploy:production:edge -- --strict \
+            --tag "$CANDIDATE_SHA" --message "candidate $CANDIDATE_SHA edge" \
+            --var "RELEASE_CANDIDATE_SHA:$CANDIDATE_SHA"
+          raw="$RUNNER_TEMP/agentic-commerce-raw/edge"
+          timeout --foreground --kill-after=30s 2m npx --no-install wrangler deployments status \
+            -c wrangler.edge.jsonc --env production --json > "$raw-deployment.json"
+          version="$(jq -r 'select(.versions | length == 1) | select(.versions[0].percentage == 100) | .versions[0].version_id' "$raw-deployment.json")"
+          test -n "$version"
+          timeout --foreground --kill-after=30s 2m npx --no-install wrangler versions view "$version" \
+            -c wrangler.edge.jsonc --env production --json > "$raw-version.json"
+          digest="$(node "$RUNNER_TEMP/validate-worker-version.mjs" wrangler.edge.jsonc "$raw-version.json" "$version" "$CANDIDATE_SHA" '' edge)"
+          jq -n --arg schema 'agentic-commerce-worker-deployment/v2' --arg candidateSha "$CANDIDATE_SHA" \
+            --arg versionId "$version" --arg bindingDigest "$digest" \
+            '{schema:$schema,worker:"edge",candidateSha:$candidateSha,versionId:$versionId,percentage:100,bindingDigest:$bindingDigest}' \
+            > "$RUNNER_TEMP/agentic-commerce-production/edge.json"
+          echo "version_id=$version" >> "$GITHUB_OUTPUT"
+          rm -f "$raw-deployment.json" "$raw-version.json"
+      - name: Verify live candidate through authorized consumer
+        shell: bash
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          bash "$RUNNER_TEMP/probe-readiness.sh" "$CANDIDATE_SHA" \
+            '${{ steps.edge.outputs.version_id }}' '${{ steps.core.outputs.version_id }}' \
+            "$RUNNER_TEMP/agentic-commerce-production/live.json"
+          core_active="$(timeout --foreground --kill-after=30s 2m npx --no-install wrangler deployments status -c wrangler.core.jsonc --env production --json | jq -r 'select(.versions | length == 1) | select(.versions[0].percentage == 100) | .versions[0].version_id')"
+          edge_active="$(timeout --foreground --kill-after=30s 2m npx --no-install wrangler deployments status -c wrangler.edge.jsonc --env production --json | jq -r 'select(.versions | length == 1) | select(.versions[0].percentage == 100) | .versions[0].version_id')"
+          test "$core_active" = '${{ steps.core.outputs.version_id }}'
+          test "$edge_active" = '${{ steps.edge.outputs.version_id }}'
+      - name: Seal release receipt
+        id: receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence="$RUNNER_TEMP/agentic-commerce-production"
+          jq -n --arg schema 'agentic-commerce-production-release/v2' \
+            --arg candidateSha "$CANDIDATE_SHA" --arg candidateTree "$CANDIDATE_TREE" \
+            --arg packageLockDigest "$PACKAGE_LOCK_DIGEST" --arg coreConfigDigest "$CORE_CONFIG_DIGEST" \
+            --arg edgeConfigDigest "$EDGE_CONFIG_DIGEST" --arg storageRevision "$STORAGE_REVISION" \
+            --arg candidateDigest "$CANDIDATE_DIGEST" --arg priorReceiptDigest "$PRIOR_RECEIPT_DIGEST" \
+            --slurpfile core "$evidence/core.json" --slurpfile edge "$evidence/edge.json" \
+            --slurpfile live "$evidence/live.json" \
+            '{schema:$schema,candidateSha:$candidateSha,candidateTree:$candidateTree,packageLockDigest:$packageLockDigest,coreConfigDigest:$coreConfigDigest,edgeConfigDigest:$edgeConfigDigest,durableObjectStorageCompatibilityRevision:$storageRevision,candidateDigest:$candidateDigest,priorReleaseReceiptDigest:$priorReceiptDigest,core:$core[0],edge:$edge[0],live:$live[0]}' \
+            > "$evidence/release.json"
+          digest="$(sha256sum "$evidence/release.json" | cut -d' ' -f1)"
+          echo "receipt_digest=$digest" >> "$GITHUB_OUTPUT"
+      - name: Upload successful release evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: production-release-${{ needs.verify.outputs.candidate_sha }}
+          path: ${{ runner.temp }}/agentic-commerce-production
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Restore and prove sealed prior pair on failure
+        id: rollback
+        if: ${{ failure() && (steps.core_attempt.outputs.attempted == 'true' || steps.edge_attempt.outputs.attempted == 'true') }}
+        shell: bash
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          set +e
+          evidence="$RUNNER_TEMP/agentic-commerce-production"
+          raw="$RUNNER_TEMP/agentic-commerce-raw"
+          mkdir -p "$evidence" "$raw"
+          edge_ok=true; core_ok=true; versions_verified=false; readiness_verified=false
+          current_version() {
+            timeout --foreground --kill-after=30s 2m npx --no-install wrangler deployments status \
+              -c "$1" --env production --json 2>/dev/null \
+              | jq -r 'select(.versions | length == 1) | select(.versions[0].percentage == 100) | .versions[0].version_id' 2>/dev/null
+          }
+          restore_pin() {
+            config="$1"; pin="$2"; current="$(current_version "$config")" || return 1
+            [[ "$current" == "$pin" ]] && return 0
+            [[ -n "$current" ]] || return 1
+            timeout --foreground --kill-after=30s 2m npx --no-install wrangler versions view "$current" \
+              -c "$config" --env production --json > "$raw/current.json" 2>/dev/null || return 1
+            jq -e --arg id "$current" --arg candidate "$CANDIDATE_SHA" '
+              .id == $id and .annotations["workers/tag"] == $candidate
+              and ([.resources.bindings[]? | select(.name == "RELEASE_CANDIDATE_SHA" and .type == "plain_text" and .text == $candidate)] | length) == 1
+            ' "$raw/current.json" >/dev/null || return 1
+            timeout --foreground --kill-after=30s 8m npx --no-install wrangler rollback "$pin" \
+              -c "$config" --env production --yes --message "restore after failed candidate $CANDIDATE_SHA" || return 1
+            [[ "$(current_version "$config")" == "$pin" ]]
+          }
+          if [[ '${{ steps.edge_attempt.outputs.attempted }}' == true ]]; then
+            restore_pin wrangler.edge.jsonc "$PRIOR_EDGE_VERSION_ID" || edge_ok=false
+          fi
+          if [[ '${{ steps.core_attempt.outputs.attempted }}' == true ]]; then
+            if [[ "$edge_ok" == true ]]; then
+              restore_pin wrangler.core.jsonc "$PRIOR_CORE_VERSION_ID" || core_ok=false
+            else
+              core_ok=false
+            fi
+          fi
+          if [[ "$edge_ok" == true && "$core_ok" == true \
+            && "$(current_version wrangler.edge.jsonc)" == "$PRIOR_EDGE_VERSION_ID" \
+            && "$(current_version wrangler.core.jsonc)" == "$PRIOR_CORE_VERSION_ID" ]]; then
+            timeout --foreground --kill-after=30s 2m npx --no-install wrangler versions view "$PRIOR_EDGE_VERSION_ID" \
+              -c wrangler.edge.jsonc --env production --json > "$raw/restored-edge.json"
+            timeout --foreground --kill-after=30s 2m npx --no-install wrangler versions view "$PRIOR_CORE_VERSION_ID" \
+              -c wrangler.core.jsonc --env production --json > "$raw/restored-core.json"
+            node "$RUNNER_TEMP/validate-worker-version.mjs" "$RUNNER_TEMP/prior-edge.jsonc" "$raw/restored-edge.json" \
+              "$PRIOR_EDGE_VERSION_ID" "$PRIOR_CANDIDATE_SHA" "$PRIOR_EDGE_BINDING_DIGEST" edge >/dev/null \
+              && node "$RUNNER_TEMP/validate-worker-version.mjs" "$RUNNER_TEMP/prior-core.jsonc" "$raw/restored-core.json" \
+                "$PRIOR_CORE_VERSION_ID" "$PRIOR_CANDIDATE_SHA" "$PRIOR_CORE_BINDING_DIGEST" core >/dev/null \
+              && versions_verified=true
+          fi
+          if [[ "$versions_verified" == true ]] && bash "$RUNNER_TEMP/probe-readiness.sh" \
+            "$PRIOR_CANDIDATE_SHA" "$PRIOR_EDGE_VERSION_ID" "$PRIOR_CORE_VERSION_ID" "$evidence/rollback-live.json" \
+            && [[ "$(current_version wrangler.edge.jsonc)" == "$PRIOR_EDGE_VERSION_ID" ]] \
+            && [[ "$(current_version wrangler.core.jsonc)" == "$PRIOR_CORE_VERSION_ID" ]]; then
+            readiness_verified=true
+          fi
+          restored=false
+          [[ "$versions_verified" == true && "$readiness_verified" == true ]] && restored=true
+          jq -n --arg schema 'agentic-commerce-production-rollback/v2' --arg failedCandidateSha "$CANDIDATE_SHA" \
+            --arg priorCandidateSha "$PRIOR_CANDIDATE_SHA" --arg edgeVersionId "$PRIOR_EDGE_VERSION_ID" \
+            --arg coreVersionId "$PRIOR_CORE_VERSION_ID" --argjson versionsVerified "$versions_verified" \
+            --argjson readinessVerified "$readiness_verified" --argjson restored "$restored" \
+            '{schema:$schema,failedCandidateSha:$failedCandidateSha,priorCandidateSha:$priorCandidateSha,order:["edge","core"],edgeVersionId:$edgeVersionId,coreVersionId:$coreVersionId,cloudflareVersionsVerified:$versionsVerified,consumerReadinessVerified:$readinessVerified,restored:$restored}' \
+            > "$evidence/rollback.json"
+          echo "restored=$restored" >> "$GITHUB_OUTPUT"
+          [[ "$restored" == true ]]
+
+      - name: Upload failure and rollback evidence
+        if: ${{ failure() }}
+        continue-on-error: true
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: production-release-failure-${{ needs.verify.outputs.candidate_sha }}
+          path: ${{ runner.temp }}/agentic-commerce-production
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Summarize production decision
+        if: ${{ always() }}
+        continue-on-error: true
+        shell: bash
+        run: |
+          {
+            echo '## Agentic Commerce production decision'
+            echo
+            echo "- Candidate: \`$CANDIDATE_SHA\`"
+            echo "- Core version: \`${{ steps.core.outputs.version_id || 'not-verified' }}\`"
+            echo "- Edge version: \`${{ steps.edge.outputs.version_id || 'not-verified' }}\`"
+            echo "- Sealed receipt: \`${{ steps.receipt.outputs.receipt_digest || 'not-sealed' }}\`"
+            echo "- Prior pair fully restored: \`${{ steps.rollback.outputs.restored || 'not-required' }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"

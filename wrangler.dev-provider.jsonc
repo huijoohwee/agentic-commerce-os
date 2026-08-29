@@ -1,0 +1,21 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "agentic-commerce-provider-dev",
+  "main": "src/dev/provider.ts",
+  "compatibility_date": "2026-08-26",
+  "workers_dev": false,
+  "preview_urls": false,
+  "vars": {
+    "DEMO_ONLY": "true"
+  },
+  "env": {
+    "dev": {
+      "name": "agentic-commerce-provider-dev",
+      "workers_dev": false,
+      "preview_urls": false,
+      "vars": {
+        "DEMO_ONLY": "true"
+      }
+    }
+  }
+}
