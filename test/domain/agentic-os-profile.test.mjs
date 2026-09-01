@@ -1,14 +1,11 @@
 import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  RETAIN_ALL_CLEANUP,
-  validateRepositoryProfile,
-} from 'agentic-os';
+import { validateRepositoryProfile } from 'agentic-os';
 
 const root = new URL('../../', import.meta.url);
 
-test('repository profile pins the protected retain-only ADLC consumer contract', async () => {
+test('repository profile pins protected ADLC and bounded worktree quarantine', async () => {
   const profile = JSON.parse(await readFile(new URL('.agentic-os.json', root), 'utf8'));
   const validated = validateRepositoryProfile(profile);
 
@@ -20,17 +17,25 @@ test('repository profile pins the protected retain-only ADLC consumer contract',
   });
   assert.deepEqual(profile.requiredChecks, ['Integration Gate']);
   assert.deepEqual(profile.authority, { runtime: 'consumer', release: 'consumer' });
-  assert.deepEqual(profile.cleanup, RETAIN_ALL_CLEANUP);
+  assert.deepEqual(profile.cleanup, {
+    worktreeProjection: 'quarantine',
+    worktreeRegistration: 'quarantine',
+    remoteTrackingRef: 'retain',
+    localBranch: 'retain',
+    remoteBranch: 'retain',
+    unreachableObjects: 'retain',
+  });
   assert.ok(profile.capabilities.includes('protected-integration:pull-request'));
   assert.ok(profile.capabilities.includes('integration-method:squash'));
-  assert.ok(profile.capabilities.includes('retain-all-cleanup'));
+  assert.ok(profile.capabilities.includes('quarantine-worktree-cleanup-opt-in'));
+  assert.ok(!profile.capabilities.includes('retain-all-cleanup'));
 });
 
 test('package scripts and dependency pin the exact governing runtime', async () => {
   const pkg = JSON.parse(await readFile(new URL('package.json', root), 'utf8'));
 
   assert.equal(pkg.devDependencies['agentic-os'],
-    'https://codeload.github.com/huijoohwee/agentic-os/tar.gz/3d27ffd564d311709193ca11dd20746e0851b96a');
+    'https://codeload.github.com/huijoohwee/agentic-os/tar.gz/5c16f240835978df99ccb464def70d8a3fe1f296');
   assert.deepEqual({
     setup: pkg.scripts.setup,
     doctor: pkg.scripts.doctor,
