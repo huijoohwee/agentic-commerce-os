@@ -107,10 +107,12 @@ integration. `npm run sync:canonical` only plans a guarded synchronization of a
 clean canonical checkout; applying that plan requires its printed authorization
 and exclusive-operation tokens.
 
-The repository profile is retain-only. A green check, merged pull request, or
-successful `reap` result is evidence, not cleanup authority. Worktree, branch,
-tracking-ref, and object retirement remain separate owner-authenticated effects
-and require target-specific clean-detachment and no-remaining-value receipts.
+The repository profile permits owner-authenticated quarantine of only the exact
+worktree projection and its registration. A green check, merged pull request,
+or successful `reap` result is evidence, not cleanup authority. Remote-tracking
+refs, local and remote branches, and unreachable objects remain retained;
+quarantine still requires target-specific clean-detachment and no-remaining-value
+receipts.
 Product deployment, rollback, and Production authorization remain governed by
 the Commerce runtime contracts below.
 
