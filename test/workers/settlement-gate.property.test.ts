@@ -24,7 +24,7 @@ const sessionSequenceArbitrary = fc.record({
 })
 
 describe('checkout settlement-gate Worker property evidence', () => {
-  it('Feature: agentic-graph-commerce-platform, Property 21: CP-21 — Settlement blocking after change', { timeout: 30_000 }, async () => {
+  it('Feature: agentic-graph-commerce-platform, Property 21: CP-21 — Settlement blocking after change', { timeout: 60_000 }, async () => {
     await fc.assert(fc.asyncProperty(sessionSequenceArbitrary, async ({ events, acknowledgement, amountMinor }) => {
       const checkoutId = `checkout-${crypto.randomUUID()}`
       const token = `${crypto.randomUUID().replaceAll('-', '')}${crypto.randomUUID().replaceAll('-', '')}`

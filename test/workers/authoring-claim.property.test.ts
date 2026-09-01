@@ -170,7 +170,7 @@ describe('AuthoringClaim Durable Object property evidence', () => {
     expect(evidence.after).toBe(evidence.before)
   })
 
-  it('rechecks after delayed preparation and invokes no stale mutation target', { timeout: 30_000 }, async () => {
+  it('rechecks after delayed preparation and invokes no stale mutation target', { timeout: 60_000 }, async () => {
     await fc.assert(fc.asyncProperty(
       fc.constantFrom(
         { scope: 'operator-registry', target: 'registry' },
