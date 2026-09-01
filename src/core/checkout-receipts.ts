@@ -152,6 +152,22 @@ export async function normalizeSettlementReceipt(
   return normalized
 }
 
+export async function restoreSettlementReceipt(
+  serialized: string | null,
+  expected: Omit<SettlementReceipt, 'schema' | 'settlementId' | 'state' | 'receiptDigest'>,
+): Promise<SettlementReceipt | null> {
+  if (!serialized) return null
+  try {
+    return await normalizeSettlementReceipt(Object.freeze({
+      contract: CHECKOUT_PROVIDER_CONTRACT,
+      ok: true,
+      settlementReceipt: JSON.parse(serialized) as unknown,
+    }), expected)
+  } catch {
+    return null
+  }
+}
+
 export function digestGuardrailReceipt(receipt: Omit<GuardrailReceipt, 'receiptDigest'> | GuardrailReceipt): Promise<string> {
   return sha256Hex(canonicalJson(withoutReceiptDigest(receipt)))
 }

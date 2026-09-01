@@ -5,11 +5,12 @@ import { readJsonObject } from '../../src/shared/http'
 
 describe('edge request boundaries', () => {
   it('matches bearer secrets exactly and keeps production authorities distinct', async () => {
+    const authority = crypto.randomUUID()
     const request = new Request('https://edge.test', {
-      headers: { authorization: 'Bearer exact-secret' },
+      headers: { authorization: `Bearer ${authority}` },
     })
-    await expect(bearerAuthorized(request, 'exact-secret')).resolves.toBe(true)
-    await expect(bearerAuthorized(request, 'exact-secret-extra')).resolves.toBe(false)
+    await expect(bearerAuthorized(request, authority)).resolves.toBe(true)
+    await expect(bearerAuthorized(request, `${authority}-mismatch`)).resolves.toBe(false)
     expect(validateSecretConfiguration('Production', 'a'.repeat(32), 'b'.repeat(32))).toEqual({ ok: true })
     expect(validateSecretConfiguration('Production', 'same'.repeat(8), 'same'.repeat(8))).toMatchObject({
       ok: false,

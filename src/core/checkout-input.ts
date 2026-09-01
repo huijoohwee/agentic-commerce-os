@@ -1,10 +1,13 @@
-import type { CheckoutConfirmInput, CheckoutPrepareInput } from './checkout-session.js'
+import type { CheckoutConfirmInput, CheckoutPrepareInput } from './checkout-state.js'
 
 const PREPARE_FIELDS = new Set([
   'agentId', 'amountMinor', 'budgetMinor', 'checkoutId', 'currency', 'intentId',
   'offerId', 'offerReceiptDigest',
 ])
-const CONFIRM_FIELDS = new Set(['amountMinor', 'checkoutId', 'confirmationToken', 'offerId'])
+const CONFIRM_FIELDS = new Set([
+  'amountMinor', 'blockerDigest', 'checkoutId', 'confirmationToken', 'currency', 'offerId',
+  'shopperPrincipalDigest',
+])
 
 export function checkoutInputFieldsAllowed(
   body: Readonly<Record<string, unknown>>,
@@ -41,5 +44,8 @@ export function exactCheckoutConfirmInput(
     confirmationToken: body.confirmationToken,
     offerId: body.offerId,
     amountMinor: body.amountMinor,
+    currency: body.currency,
+    blockerDigest: body.blockerDigest,
+    shopperPrincipalDigest: body.shopperPrincipalDigest,
   }) as unknown as CheckoutConfirmInput
 }

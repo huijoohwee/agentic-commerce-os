@@ -34,5 +34,7 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
-      - name: Run repository checks
-        run: npm run check
+      # Protected source integration is distinct from external task-verdict and
+      # deployment authority. Those remain fail-closed under `npm run check`.
+      - name: Run protected source Integration Gate
+        run: npm run check:integration

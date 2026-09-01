@@ -6,21 +6,50 @@ import {
   type AcosAdmissionReceipt,
 } from './acos-admission'
 import {
-  normalizeAgentCategory,
+  readPinnedRouteAuthority,
   routeIntentExclusively,
+  type PinnedRouteAuthority,
   type RegisteredAgent,
   type RoutingIntent,
 } from '../domain/exclusive-category-router'
+import {
+  readSelectionPolicy,
+  type DeclaredAttributes,
+  type SelectionPolicy,
+} from '../domain/selection-policy.js'
 import { canonicalJson, sha256Hex } from '../shared/digest'
 import { isRecord } from '../shared/http'
+import type { RegistrationDryRunRecord } from './sandbox-registration.js'
+import {
+  AGENT_REGISTRY_CLAIM,
+  authoringMutationRequestDigest,
+  type ClaimMutationPermit,
+} from '../domain/authoring-claim-policy.js'
+import { runAuthoringFencedMutation } from './authoring-mutation-fence.js'
+import {
+  invocationAligned,
+  readCommerceProjection,
+  readStoredAgent,
+  registrationContentHash,
+  sameRegistration,
+  validAgentId,
+  validInvocationProof,
+  validRegistrationEnvelope,
+  validRegistrationIntent,
+  verifyStoredAgent,
+  type StoredAgent,
+} from './agent-registry-record.js'
+
+export { invocationAligned } from './agent-registry-record.js'
 
 const SHA256_PATTERN = /^[0-9a-f]{64}$/u
-const TOOL_NAME_PATTERN = /^[A-Za-z][A-Za-z0-9._:-]{0,127}$/u
 const REQUIRED_CATEGORIES = Object.freeze(['flight', 'shopping'])
 
 export type CommerceAgentProjection = Readonly<{
   category: string
   discoveryTool: string
+  declaredAttributes: DeclaredAttributes
+  fallbackAgentId: string | null
 }>
 
 export type InvocationPinProof = Readonly<{
@@ -38,7 +67,27 @@ export type AgentRegistrationInput = Readonly<{
   invocationProof: InvocationPinProof
   commerceProjection: unknown
   expectedPreviousContentHash: string | null
+  sandboxDryRun: RegistrationDryRunRecord
 }>
+
+export type AgentRegistrationIntent = Omit<AgentRegistrationInput, 'admissionReceipt'>
+
+export function agentRegistrationMutationIntent(
+  input: AgentRegistrationInput | AgentRegistrationIntent,
+): unknown {
+  const { startedAt: _startedAt, endedAt: _endedAt, ...stableDryRun } = input.sandboxDryRun
+  return Object.freeze({
+    admissionInputs: input.admissionInputs,
+    invocationProof: input.invocationProof,
+    commerceProjection: input.commerceProjection,
+    expectedPreviousContentHash: input.expectedPreviousContentHash,
+    sandboxDryRun: Object.freeze(stableDryRun),
+  })
+}
+
+export function agentDeregistrationMutationIntent(agentId: string, expectedContentHash: string): unknown {
+  return Object.freeze({ kind: 'deregister', agentId, expectedContentHash })
+}
 
 export type AgentRegistryRecord = RegisteredAgent & Readonly<{
   commerceProjection: CommerceAgentProjection
@@ -48,10 +97,9 @@ export type AgentRegistryRecord = RegisteredAgent & Readonly<{
   admissionInputHash: string
   contentHash: string
   discoveryTool: string
+  sandboxDryRun: RegistrationDryRunRecord | null
   updatedAt: string
 }>
-
-type StoredRegistryRecord = Omit<AgentRegistryRecord, 'admissionVerified'>
 
 export class AgentRegistry extends DurableObject<CoreEnv> {
   readonly #sql: SqlStorage
@@ -64,7 +112,24 @@ export class AgentRegistry extends DurableObject<CoreEnv> {
     })
   }
 
-  async register(input: AgentRegistrationInput): Promise<unknown> {
+  async preflightRegistration(input: AgentRegistrationIntent): Promise<unknown> {
+    if (!validRegistrationIntent(input)) return rejected('registration_malformed')
+    const projection = readCommerceProjection(input.commerceProjection, input.admissionInputs)
+    const definition = isRecord(input.admissionInputs.agentDefinition) ? input.admissionInputs.agentDefinition : null
+    if (!projection || typeof definition?.id !== 'string' || !validAgentId(definition.id)) {
+      return rejected('commerce_projection_invalid')
+    }
+    const existing = await this.#readStored(definition.id)
+    const admissionInputHash = await sha256Hex(canonicalJson(input.admissionInputs))
+    if (!existing && input.expectedPreviousContentHash !== null) return rejected('registration_precondition_failed')
+    if (existing && existing.contentHash !== input.expectedPreviousContentHash
+      && !sameRegistration(existing, admissionInputHash, input.invocationProof, projection)) {
+      return rejected('registration_precondition_failed')
+    }
+    return Object.freeze({ ok: true })
+  }
+
+  async register(input: AgentRegistrationInput, permit: ClaimMutationPermit): Promise<unknown> {
     if (!validRegistrationEnvelope(input)) return rejected('registration_malformed')
     if (!isAcosAdmissionReceiptBoundToInputs(input.admissionReceipt, input.admissionInputs)) {
       return rejected('acos_admission_receipt_invalid')
@@ -80,77 +145,114 @@ export class AgentRegistry extends DurableObject<CoreEnv> {
       input.invocationProof,
       commerceProjection,
     )
+    const requestDigest = await authoringMutationRequestDigest(
+      AGENT_REGISTRY_CLAIM,
+      agentRegistrationMutationIntent(input),
+    )
     const existing = await this.#readStored(agentId)
-    if (!existing && input.expectedPreviousContentHash !== null) return rejected('registration_precondition_failed')
-    if (existing && existing.contentHash !== input.expectedPreviousContentHash) {
-      if (sameRegistration(existing, admissionInputHash, input.invocationProof, commerceProjection)) {
-        return this.#registrationResult(existing, true)
-      }
-      return rejected('registration_precondition_failed')
-    }
-    if (existing && sameRegistration(existing, admissionInputHash, input.invocationProof, commerceProjection)) {
-      return this.#registrationResult(existing, true)
-    }
-    const categoryOwner = (await this.#allStored()).find((record) => (
-      record.registrationState === 'active'
-      && record.category === commerceProjection.category
-      && record.agentId !== agentId
-    ))
-    if (categoryOwner) return rejected('category_already_registered')
-
     const updatedAt = new Date().toISOString()
-    this.ctx.storage.transactionSync(() => {
-      this.#sql.exec(
-        `INSERT INTO agent_admission (
-          agent_id, category, discovery_tool, admission_input_json,
-          admission_input_hash, admission_receipt_json, invocation_proof_json, content_hash,
-          registration_state, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', ?)
-        ON CONFLICT(agent_id) DO UPDATE SET
-          category = excluded.category,
-          discovery_tool = excluded.discovery_tool,
-          admission_input_json = excluded.admission_input_json,
-          admission_input_hash = excluded.admission_input_hash,
-          admission_receipt_json = excluded.admission_receipt_json,
-          invocation_proof_json = excluded.invocation_proof_json,
-          content_hash = excluded.content_hash,
-          registration_state = 'active',
-          updated_at = excluded.updated_at`,
-        agentId,
-        commerceProjection.category,
-        commerceProjection.discoveryTool,
-        canonicalJson(input.admissionInputs),
-        admissionInputHash,
-        canonicalJson(input.admissionReceipt),
-        canonicalJson(input.invocationProof),
-        contentHash,
-        updatedAt,
-      )
-      this.#appendEvent('registered', agentId, contentHash)
-    })
-    const record = await this.#readStored(agentId)
-    return record ? this.#registrationResult(record, false) : rejected('registration_persistence_failed')
+    const record = Object.freeze({
+      agentId,
+      category: commerceProjection.category,
+      declaredAttributes: commerceProjection.declaredAttributes,
+      fallbackAgentId: commerceProjection.fallbackAgentId,
+      commerceProjection,
+      admissionInputs: input.admissionInputs,
+      admissionReceipt: input.admissionReceipt,
+      invocationProof: input.invocationProof,
+      admissionInputHash,
+      contentHash,
+      discoveryTool: commerceProjection.discoveryTool,
+      sandboxDryRun: input.sandboxDryRun,
+      registrationState: 'active' as const,
+      updatedAt,
+      admissionVerified: true,
+    }) satisfies AgentRegistryRecord
+    const fenced = runAuthoringFencedMutation(
+      this.ctx.storage,
+      this.#sql,
+      permit,
+      AGENT_REGISTRY_CLAIM,
+      requestDigest,
+      () => {
+        if (!existing && input.expectedPreviousContentHash !== null) return rejected('registration_precondition_failed')
+        if (existing && existing.contentHash !== input.expectedPreviousContentHash) {
+          return sameRegistration(existing, admissionInputHash, input.invocationProof, commerceProjection)
+            ? this.#registrationResult(existing, true)
+            : rejected('registration_precondition_failed')
+        }
+        if (existing && sameRegistration(existing, admissionInputHash, input.invocationProof, commerceProjection)) {
+          return this.#registrationResult(existing, true)
+        }
+        this.#sql.exec(
+          `INSERT INTO agent_admission (
+            agent_id, category, discovery_tool, declared_attributes_json, fallback_agent_id, admission_input_json,
+            admission_input_hash, admission_receipt_json, invocation_proof_json, content_hash,
+            sandbox_dry_run_json, registration_state, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?)
+          ON CONFLICT(agent_id) DO UPDATE SET
+            category = excluded.category,
+            discovery_tool = excluded.discovery_tool,
+            declared_attributes_json = excluded.declared_attributes_json,
+            fallback_agent_id = excluded.fallback_agent_id,
+            admission_input_json = excluded.admission_input_json,
+            admission_input_hash = excluded.admission_input_hash,
+            admission_receipt_json = excluded.admission_receipt_json,
+            invocation_proof_json = excluded.invocation_proof_json,
+            content_hash = excluded.content_hash,
+            sandbox_dry_run_json = excluded.sandbox_dry_run_json,
+            registration_state = 'active',
+            updated_at = excluded.updated_at`,
+          agentId,
+          commerceProjection.category,
+          commerceProjection.discoveryTool,
+          canonicalJson(commerceProjection.declaredAttributes),
+          commerceProjection.fallbackAgentId,
+          canonicalJson(input.admissionInputs),
+          admissionInputHash,
+          canonicalJson(input.admissionReceipt),
+          canonicalJson(input.invocationProof),
+          contentHash,
+          canonicalJson(input.sandboxDryRun),
+          updatedAt,
+        )
+        this.#appendEvent('registered', agentId, contentHash)
+        return this.#registrationResult(record, false)
+      },
+    )
+    return fenced.ok ? fenced.value : fenced
   }
 
-  async deregister(agentId: string, expectedContentHash: string): Promise<unknown> {
+  async deregister(agentId: string, expectedContentHash: string, permit: ClaimMutationPermit): Promise<unknown> {
     if (!validAgentId(agentId) || !SHA256_PATTERN.test(expectedContentHash)) {
       return rejected('deregistration_malformed')
     }
     const existing = await this.#readStored(agentId)
-    if (!existing) return rejected('agent_not_found')
-    if (existing.contentHash !== expectedContentHash) return rejected('registration_precondition_failed')
-    if (existing.registrationState === 'inactive') return this.#registrationResult(existing, true)
     const updatedAt = new Date().toISOString()
-    this.ctx.storage.transactionSync(() => {
+    const requestDigest = await authoringMutationRequestDigest(
+      AGENT_REGISTRY_CLAIM,
+      agentDeregistrationMutationIntent(agentId, expectedContentHash),
+    )
+    const fenced = runAuthoringFencedMutation(
+      this.ctx.storage,
+      this.#sql,
+      permit,
+      AGENT_REGISTRY_CLAIM,
+      requestDigest,
+      () => {
+      if (!existing) return rejected('agent_not_found')
+      if (existing.contentHash !== expectedContentHash) return rejected('registration_precondition_failed')
+      if (existing.registrationState === 'inactive') return this.#registrationResult(existing, true)
       this.#sql.exec(
         "UPDATE agent_admission SET registration_state = 'inactive', updated_at = ? WHERE agent_id = ?",
         updatedAt,
         agentId,
       )
       this.#appendEvent('deregistered', agentId, expectedContentHash)
-    })
-    const record = await this.#readStored(agentId)
-    return record ? this.#registrationResult(record, false) : rejected('registration_persistence_failed')
+      return this.#registrationResult(Object.freeze({ ...existing, registrationState: 'inactive', updatedAt }), false)
+    },
+    )
+    return fenced.ok ? fenced.value : fenced
   }
 
   async list(): Promise<Readonly<{
@@ -165,20 +267,29 @@ export class AgentRegistry extends DurableObject<CoreEnv> {
     return Object.freeze({ ok: true, revision, digest, agents })
   }
 
-  async route(intent: RoutingIntent, expectedInvocationProof: InvocationPinProof): Promise<unknown> {
-    if (!validInvocationProof(expectedInvocationProof)) return rejected('invocation_pin_invalid')
+  async route(
+    intent: RoutingIntent,
+    expectedInvocationProof: InvocationPinProof,
+    selectionPolicy: SelectionPolicy,
+    routingAuthority: PinnedRouteAuthority | null = null,
+  ): Promise<unknown> {
+    const authority = routingAuthority === null ? null : readPinnedRouteAuthority(routingAuthority)
+    if (!validInvocationProof(expectedInvocationProof) || !readSelectionPolicy(selectionPolicy)
+      || (routingAuthority !== null && !authority)) {
+      return rejected('routing_configuration_invalid')
+    }
     const agents = (await this.#allStored()).map((agent) => Object.freeze({
       ...agent,
       admissionVerified: agent.admissionVerified && invocationAligned(agent, expectedInvocationProof),
     }))
-    const decision = routeIntentExclusively(intent, agents)
+    const decision = routeIntentExclusively(intent, agents, selectionPolicy, authority)
     const prior = this.#sql.exec<{
       intent_id: string
       intent_digest: string
       decision_json: string
     }>('SELECT intent_id, intent_digest, decision_json FROM route_event WHERE intent_id = ?', intent.intentId)
       .toArray()[0]
-    const intentDigest = await sha256Hex(canonicalJson(intent))
+    const intentDigest = await sha256Hex(canonicalJson({ intent, routingAuthority: authority }))
     if (prior) {
       if (prior.intent_digest !== intentDigest) return rejected('intent_precondition_failed')
       const priorDecision = JSON.parse(prior.decision_json) as unknown
@@ -212,7 +323,7 @@ export class AgentRegistry extends DurableObject<CoreEnv> {
         && agent.category === category
       )).length,
     ]))
-    const ready = Object.values(categories).every((count) => count === 1) && staleAgents.length === 0
+    const ready = Object.values(categories).every((count) => count >= 1) && staleAgents.length === 0
     return Object.freeze({
       ok: ready,
       contract: 'commerce.agent-registry/v1',
@@ -221,7 +332,7 @@ export class AgentRegistry extends DurableObject<CoreEnv> {
       staleAgents: Object.freeze(staleAgents),
       reason: ready ? null : staleAgents.length > 0
         ? 'active_admission_invocation_pin_mismatch'
-        : 'exactly_one_verified_active_admission_per_required_category_required',
+        : 'at_least_one_verified_active_admission_per_required_category_required',
     })
   }
 
@@ -249,15 +360,43 @@ export class AgentRegistry extends DurableObject<CoreEnv> {
   }
 
   #migrate(): void {
+    this.#sql.exec(`CREATE TABLE IF NOT EXISTS authoring_mutation_fence (
+      semantic_scope TEXT PRIMARY KEY,
+      claim_id TEXT NOT NULL,
+      lease_epoch INTEGER NOT NULL,
+      fence_revision TEXT NOT NULL,
+      mutation_id TEXT NOT NULL,
+      mutation_sequence INTEGER NOT NULL,
+      request_digest TEXT NOT NULL,
+      lease_expires_at_ms INTEGER NOT NULL
+    )`)
+    const fenceColumns = this.#sql.exec<{ name: string }>('PRAGMA table_info(authoring_mutation_fence)').toArray()
+    if (!fenceColumns.some(({ name }) => name === 'mutation_sequence')) {
+      this.#sql.exec('ALTER TABLE authoring_mutation_fence ADD COLUMN mutation_sequence INTEGER NOT NULL DEFAULT 0')
+    }
+    if (!fenceColumns.some(({ name }) => name === 'request_digest')) {
+      this.#sql.exec("ALTER TABLE authoring_mutation_fence ADD COLUMN request_digest TEXT NOT NULL DEFAULT ''")
+    }
+    this.#sql.exec(`CREATE TABLE IF NOT EXISTS authoring_mutation_outcome (
+      mutation_id TEXT PRIMARY KEY,
+      semantic_scope TEXT NOT NULL,
+      mutation_sequence INTEGER NOT NULL,
+      permit_json TEXT NOT NULL,
+      request_digest TEXT NOT NULL,
+      outcome_json TEXT NOT NULL
+    )`)
     this.#sql.exec(`CREATE TABLE IF NOT EXISTS agent_admission (
       agent_id TEXT PRIMARY KEY,
       category TEXT NOT NULL,
       discovery_tool TEXT NOT NULL,
+      declared_attributes_json TEXT,
+      fallback_agent_id TEXT,
       admission_input_json TEXT NOT NULL,
       admission_input_hash TEXT NOT NULL,
       admission_receipt_json TEXT NOT NULL,
       invocation_proof_json TEXT,
       content_hash TEXT NOT NULL,
+      sandbox_dry_run_json TEXT NOT NULL,
       registration_state TEXT NOT NULL CHECK (registration_state IN ('active', 'inactive')),
       updated_at TEXT NOT NULL
     )`)
@@ -265,8 +404,16 @@ export class AgentRegistry extends DurableObject<CoreEnv> {
     if (!columns.some(({ name }) => name === 'invocation_proof_json')) {
       this.#sql.exec('ALTER TABLE agent_admission ADD COLUMN invocation_proof_json TEXT')
     }
-    this.#sql.exec(`CREATE UNIQUE INDEX IF NOT EXISTS one_active_admission_per_category
-      ON agent_admission(category) WHERE registration_state = 'active'`)
+    if (!columns.some(({ name }) => name === 'declared_attributes_json')) {
+      this.#sql.exec('ALTER TABLE agent_admission ADD COLUMN declared_attributes_json TEXT')
+    }
+    if (!columns.some(({ name }) => name === 'fallback_agent_id')) {
+      this.#sql.exec('ALTER TABLE agent_admission ADD COLUMN fallback_agent_id TEXT')
+    }
+    if (!columns.some(({ name }) => name === 'sandbox_dry_run_json')) {
+      this.#sql.exec('ALTER TABLE agent_admission ADD COLUMN sandbox_dry_run_json TEXT')
+    }
+    this.#sql.exec('DROP INDEX IF EXISTS one_active_admission_per_category')
     this.#sql.exec(`CREATE TABLE IF NOT EXISTS registry_event (
       event_id INTEGER PRIMARY KEY AUTOINCREMENT,
       event_type TEXT NOT NULL,
@@ -314,137 +461,6 @@ export class AgentRegistry extends DurableObject<CoreEnv> {
   #registrationResult(record: AgentRegistryRecord, idempotent: boolean): unknown {
     return Object.freeze({ ok: true, idempotent, record })
   }
-}
-
-type StoredAgent = {
-  agent_id: string
-  category: string
-  discovery_tool: string
-  admission_input_json: string
-  admission_input_hash: string
-  admission_receipt_json: string
-  invocation_proof_json: string | null
-  content_hash: string
-  registration_state: 'active' | 'inactive'
-  updated_at: string
-}
-
-function readStoredAgent(row: StoredAgent): StoredRegistryRecord {
-  const commerceProjection = Object.freeze({ category: row.category, discoveryTool: row.discovery_tool })
-  return Object.freeze({
-    agentId: row.agent_id,
-    category: row.category,
-    commerceProjection,
-    admissionInputs: JSON.parse(row.admission_input_json) as AcosAdmissionInputs,
-    admissionReceipt: JSON.parse(row.admission_receipt_json) as AcosAdmissionReceipt,
-    invocationProof: row.invocation_proof_json
-      ? JSON.parse(row.invocation_proof_json) as InvocationPinProof
-      : invalidInvocationProof(),
-    admissionInputHash: row.admission_input_hash,
-    contentHash: row.content_hash,
-    discoveryTool: row.discovery_tool,
-    registrationState: row.registration_state,
-    updatedAt: row.updated_at,
-  })
-}
-
-async function verifyStoredAgent(record: StoredRegistryRecord): Promise<AgentRegistryRecord> {
-  const expectedInputHash = await sha256Hex(canonicalJson(record.admissionInputs))
-  const expectedContentHash = await registrationContentHash(
-    record.admissionInputs,
-    record.admissionReceipt,
-    record.invocationProof,
-    record.commerceProjection,
-  )
-  const admissionVerified = record.agentId === record.admissionReceipt.agent_definition_id
-    && record.category === record.commerceProjection.category
-    && record.discoveryTool === record.commerceProjection.discoveryTool
-    && isAcosAdmissionReceiptBoundToInputs(record.admissionReceipt, record.admissionInputs)
-    && validInvocationProof(record.invocationProof)
-    && readCommerceProjection(record.commerceProjection, record.admissionInputs) !== null
-    && record.admissionInputHash === expectedInputHash
-    && record.contentHash === expectedContentHash
-  return Object.freeze({ ...record, admissionVerified })
-}
-
-function readCommerceProjection(
-  value: unknown,
-  admissionInputs: AcosAdmissionInputs,
-): CommerceAgentProjection | null {
-  if (!isRecord(value)
-    || Object.keys(value).some((key) => key !== 'category' && key !== 'discoveryTool')) return null
-  const category = normalizeAgentCategory(value.category)
-  if (!category || typeof value.discoveryTool !== 'string' || !TOOL_NAME_PATTERN.test(value.discoveryTool)) return null
-  const allowlist = isRecord(admissionInputs.toolAllowlistEntry) ? admissionInputs.toolAllowlistEntry : null
-  if (!allowlist || !Array.isArray(allowlist.tool_names) || !allowlist.tool_names.includes(value.discoveryTool)) return null
-  return Object.freeze({ category, discoveryTool: value.discoveryTool })
-}
-
-function validRegistrationEnvelope(input: AgentRegistrationInput): boolean {
-  return Boolean(input)
-    && typeof input.admissionInputs?.operatorInstructionRef === 'string'
-    && input.admissionInputs.operatorInstructionRef.trim().length > 0
-    && validInvocationProof(input.invocationProof)
-    && (input.expectedPreviousContentHash === null || SHA256_PATTERN.test(input.expectedPreviousContentHash))
-}
-
-function validAgentId(value: string): boolean {
-  return value.trim().length > 0 && value.length <= 256
-}
-
-async function registrationContentHash(
-  admissionInputs: AcosAdmissionInputs,
-  admissionReceipt: AcosAdmissionReceipt,
-  invocationProof: InvocationPinProof,
-  commerceProjection: CommerceAgentProjection,
-): Promise<string> {
-  return sha256Hex(canonicalJson({ admissionInputs, admissionReceipt, invocationProof, commerceProjection }))
-}
-
-function sameRegistration(
-  existing: AgentRegistryRecord,
-  admissionInputHash: string,
-  invocationProof: InvocationPinProof,
-  commerceProjection: CommerceAgentProjection,
-): boolean {
-  return existing.registrationState === 'active'
-    && existing.admissionVerified
-    && existing.admissionInputHash === admissionInputHash
-    && canonicalJson(existing.invocationProof) === canonicalJson(invocationProof)
-    && canonicalJson(existing.commerceProjection) === canonicalJson(commerceProjection)
-}
-
-function validInvocationProof(value: InvocationPinProof): boolean {
-  return Boolean(value)
-    && /^[0-9a-f]{40}$/u.test(value.sourceRevision)
-    && SHA256_PATTERN.test(value.catalogDigest)
-    && /^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$/u.test(value.routingSchema)
-    && SHA256_PATTERN.test(value.routingDigest)
-    && [value.counts?.command, value.counts?.semantic, value.counts?.binding]
-      .every((count) => Number.isSafeInteger(count) && count >= 0)
-    && Array.isArray(value.requiredTokens)
-    && value.requiredTokens.length === 3
-    && value.requiredTokens.every((token) => /^[/#@][A-Za-z0-9][A-Za-z0-9._-]{0,95}:?$/u.test(token))
-    && new Set(value.requiredTokens).size === value.requiredTokens.length
-}
-
-export function invocationAligned(record: AgentRegistryRecord, expected: InvocationPinProof): boolean {
-  return record.admissionVerified
-    && canonicalJson(record.invocationProof) === canonicalJson(expected)
-    && expected.requiredTokens.every((token, index) => (
-      record.admissionReceipt.invocation_register_tokens[index] === token
-    ))
-}
-
-function invalidInvocationProof(): InvocationPinProof {
-  return Object.freeze({
-    sourceRevision: '',
-    catalogDigest: '',
-    routingSchema: '',
-    routingDigest: '',
-    counts: Object.freeze({ command: -1, semantic: -1, binding: -1 }),
-    requiredTokens: Object.freeze([]),
-  })
 }
 
 function rejected(code: string): Readonly<{ ok: false; code: string }> {

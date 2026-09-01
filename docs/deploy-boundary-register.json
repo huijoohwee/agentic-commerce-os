@@ -1,0 +1,94 @@
+{
+  "schema": "agentic-commerce-deploy-boundary-register/v1",
+  "deployLane": "Dev",
+  "productionMirror": {
+    "path": "GitHub/huijoohwee/content/agentic-commerce-os",
+    "generatedOutput": true,
+    "authoredEditTargets": []
+  },
+  "deliveryRoute": {
+    "pattern": "airvio.co/agentic-commerce-os",
+    "declared": true,
+    "servingCandidateVerified": false
+  },
+  "boundaries": [
+    {
+      "id": "sandbox-to-mirror",
+      "state": "pending-protected-integration",
+      "openingConditions": ["protected pull request integration receipt"]
+    },
+    {
+      "id": "mirror-to-delivery",
+      "state": "closed",
+      "openingConditions": ["exact-candidate human authorization within 24 hours", "rollback disposition"]
+    },
+    {
+      "id": "agent-registration-to-routable",
+      "state": "closed",
+      "openingConditions": ["admission receipt bound to the exact registry entry"]
+    },
+    {
+      "id": "webmcp-to-delivery",
+      "state": "closed",
+      "openingConditions": ["task 12.4 and 12.7 drift/capable/incapable browser lanes pass inside one provisioned Sandbox instance", "browser support set is verified"]
+    },
+    {
+      "id": "sandbox-executor-to-delivery",
+      "state": "closed",
+      "openingConditions": ["separate protected delivery authorization"]
+    },
+    {
+      "id": "take-rate-live-billing",
+      "state": "closed",
+      "openingConditions": ["authorized live provider", "external-principal settlement evidence"]
+    }
+  ],
+  "webMcp": {
+    "standardStage": "origin-trial",
+    "supportDisposition": "partial-evolving-recorded",
+    "supportedBrowsers": [
+      {
+        "name": "Google Chrome",
+        "minimumVersion": 149,
+        "supportMode": "origin-trial",
+        "evidence": "https://github.com/webmachinelearning/webmcp/blob/main/implementation-status.md"
+      },
+      {
+        "name": "Microsoft Edge",
+        "minimumVersion": 150,
+        "supportMode": "origin-trial",
+        "evidence": "https://github.com/webmachinelearning/webmcp/blob/main/implementation-status.md"
+      }
+    ],
+    "testedBrowserHarnesses": [
+      {
+        "name": "Chromium",
+        "minimumVersion": 151,
+        "mode": "injected-model-context-contract",
+        "nativeSupportClaimed": false
+      }
+    ],
+    "isolationEvidence": {
+      "exactRuntimeDriftHarness": "passed-under-node-child-process-isolation",
+      "task12_7BrowserLaneInsideProvisionedSandbox": "not-proven",
+      "deliveryDisposition": "closed"
+    },
+    "readinessRung": "dev-proven"
+  },
+  "deferredCapabilities": [
+    {
+      "id": "autonomous-cart-rederivation",
+      "status": "unbuilt",
+      "reason": "Detection and reconfirmation ship first; dependency-graph re-derivation remains upstream-owned."
+    },
+    {
+      "id": "real-time-markup-resettlement",
+      "status": "unbuilt",
+      "reason": "No automatic money mutation is added to the held-offer observer."
+    }
+  ],
+  "readiness": {
+    "sourceLevel": "pending-complete-verification",
+    "liveRelease": "not-ready"
+  }
+}
