@@ -13,7 +13,7 @@
     "types:check": "npm run types && git diff --exit-code -- src/generated",
     "typecheck": "tsc --noEmit",
     "test": "npm run test:domain && npm run test:unit",
-    "test:domain": "node --test test/domain/*.test.ts",
+    "test:domain": "node --test test/domain/*.test.ts test/domain/*.test.mjs",
     "test:unit": "vitest run --config vitest.config.ts",
     "test:workers": "vitest run --config vitest.worker.config.ts",
     "deploy:dev:dry": "wrangler deploy -c wrangler.dev-provider.jsonc --env dev --dry-run && wrangler deploy -c wrangler.core.jsonc --env dev --dry-run && wrangler deploy -c wrangler.edge.jsonc --env dev --dry-run",
@@ -22,6 +22,14 @@
     "deploy:dev:edge": "wrangler deploy -c wrangler.edge.jsonc --env dev",
     "deploy:production:core": "wrangler deploy -c wrangler.core.jsonc --env production",
     "deploy:production:edge": "wrangler deploy -c wrangler.edge.jsonc --env production",
+    "setup": "agentic-os setup",
+    "doctor": "agentic-os doctor",
+    "lane": "agentic-os start",
+    "land": "agentic-os land",
+    "status": "agentic-os status",
+    "reap": "agentic-os reap",
+    "sync:canonical": "agentic-os canonical-sync",
+    "queue:show": "agentic-os queue show",
     "check": "npm run types:check && npm run typecheck && npm run test && npm run test:workers && npm run deploy:dev:dry && npm run deploy:production:dry"
   },
   "dependencies": {
@@ -32,6 +40,7 @@
     "@cloudflare/vitest-pool-workers": "0.22.0",
     "@cloudflare/workers-types": "5.20260826.1",
     "@types/node": "26.3.0",
+    "agentic-os": "https://codeload.github.com/huijoohwee/agentic-os/tar.gz/3d27ffd564d311709193ca11dd20746e0851b96a",
     "typescript": "5.9.3",
     "vitest": "4.1.11",
     "wrangler": "4.126.0"

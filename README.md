@@ -68,6 +68,22 @@ It regenerates binding types, compiles strictly, runs domain and invocation
 tests, runs real Workers plus SQLite Durable Objects under workerd, and bundles
 both Dev and Production targets without deploying.
 
+## Repository lifecycle
+
+This repository consumes the universal ADLC contracts pinned from `agentic-os`.
+Use `npm run lane -- <intent>` to open isolated work, `npm run land` to publish
+its exact head for protected review, and `npm run reap` to classify exact
+integration. `npm run sync:canonical` only plans a guarded synchronization of a
+clean canonical checkout; applying that plan requires its printed authorization
+and exclusive-operation tokens.
+
+The repository profile is retain-only. A green check, merged pull request, or
+successful `reap` result is evidence, not cleanup authority. Worktree, branch,
+tracking-ref, and object retirement remain separate owner-authenticated effects
+and require target-specific clean-detachment and no-remaining-value receipts.
+Product deployment, rollback, and Production authorization remain governed by
+the Commerce runtime contracts below.
+
 ## Readiness boundary
 
 `GET /livez` proves only that the edge code is executing. `GET /readyz` is
