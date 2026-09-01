@@ -1,4 +1,9 @@
 import { isHttpFailure, isRecord, readJsonResponse } from '../shared/http.ts'
+import type { ClaimMutationPermit } from '../domain/authoring-claim-policy.js'
+import {
+  authoringMutationHeaders,
+  responseMatchesAuthoringMutation,
+} from './authoring-mutation-headers.ts'
 
 export const ACOS_ADMISSION_RECEIPT_SCHEMA = 'acos-adapter-registration/v1' as const
 export const ACOS_ADMISSION_PROVIDER_CONTRACT = 'commerce.acos-admission-provider/v1' as const
@@ -36,17 +41,24 @@ export type AcosAdmissionReceipt = Readonly<{
 
 export type AcosAdmissionResult =
   | Readonly<{ ok: true; receipt: AcosAdmissionReceipt }>
-  | Readonly<{ ok: false; code: string; providerStatus: number; finding: unknown }>
+  | Readonly<{
+      ok: false
+      code: string
+      providerStatus: number
+      finding: unknown
+      reservationSafeToComplete: boolean
+    }>
 
 export async function requestAcosAdmission(
   binding: Fetcher,
   input: AcosAdmissionInputs,
+  permit: ClaimMutationPermit,
 ): Promise<AcosAdmissionResult> {
   let response: Response
   try {
     response = await binding.fetch(new Request(`https://acos-admission.internal${ACOS_ADMISSION_PATH}`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: { 'content-type': 'application/json', ...authoringMutationHeaders(permit) },
       body: JSON.stringify({
         agent_definition: input.agentDefinition,
         tool_allowlist_entry: input.toolAllowlistEntry,
@@ -56,20 +68,24 @@ export async function requestAcosAdmission(
       signal: AbortSignal.timeout(3_000),
     }))
   } catch {
-    return rejected('acos_admission_provider_unavailable', 503, null)
+    return rejected('acos_admission_provider_unavailable', 503, null, false)
+  }
+
+  if (!responseMatchesAuthoringMutation(response, permit)) {
+    return rejected('acos_admission_fence_unconfirmed', response.status, null, false)
   }
 
   const payload = await readJsonResponse(response, MAXIMUM_ADMISSION_RESPONSE_BYTES)
-  if (isHttpFailure(payload)) return rejected('acos_admission_response_invalid', response.status, null)
+  if (isHttpFailure(payload)) return rejected('acos_admission_response_invalid', response.status, null, false)
   if (!response.ok) {
-    return rejected('acos_admission_rejected', response.status, isRecord(payload) ? payload.finding ?? null : null)
+    return rejected('acos_admission_rejected', response.status, isRecord(payload) ? payload.finding ?? null : null, true)
   }
   if (!isRecord(payload)
     || !hasExactKeys(payload, ['status', 'record', 'finding'])
     || payload.status !== 'registered'
     || payload.finding !== null
     || !isAcosAdmissionReceiptBoundToInputs(payload.record, input)) {
-    return rejected('acos_admission_receipt_invalid', response.status, null)
+    return rejected('acos_admission_receipt_invalid', response.status, null, false)
   }
   return Object.freeze({ ok: true, receipt: payload.record })
 }
@@ -92,7 +108,7 @@ export async function probeAcosAdmission(binding: Fetcher): Promise<unknown> {
     && payload.receiptSchema === ACOS_ADMISSION_RECEIPT_SCHEMA
     && Array.isArray(payload.operations)
     && payload.operations.length === 1
-    && payload.operations[0] === 'register'
+    && payload.operations[0] === 'register-fenced'
   return Object.freeze({
     ok: response.ok && valid,
     status: response.status,
@@ -151,6 +167,7 @@ function rejected(
   code: string,
   providerStatus: number,
   finding: unknown,
-): Readonly<{ ok: false; code: string; providerStatus: number; finding: unknown }> {
-  return Object.freeze({ ok: false, code, providerStatus, finding })
+  reservationSafeToComplete: boolean,
+): Exclude<AcosAdmissionResult, { ok: true }> {
+  return Object.freeze({ ok: false, code, providerStatus, finding, reservationSafeToComplete })
 }

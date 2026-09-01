@@ -67,8 +67,8 @@ test('ACOS admission accepts only an exact active receipt bound to all four auth
 
 test('exclusive router dispatches exactly one verified active ACOS admission', () => {
   const registry: RegisteredAgent[] = [
-    { agentId: 'agent-shopping', category: 'shopping', admissionVerified: true, registrationState: 'active' },
-    { agentId: 'agent-flight', category: 'flight', admissionVerified: true, registrationState: 'active' },
+    agent('agent-shopping', 'shopping'),
+    agent('agent-flight', 'flight'),
   ]
   const result = routeIntentExclusively({
     intentId: 'intent-1',
@@ -84,22 +84,22 @@ test('exclusive router dispatches exactly one verified active ACOS admission', (
 test('exclusive router never dispatches unverified, inactive, ambiguous, or corrupt state', () => {
   const intent = { intentId: 'intent-2', category: 'flight', constraints: {} }
   assert.equal(routeIntentExclusively(intent, [
-    { agentId: 'agent-flight', category: 'flight', admissionVerified: false, registrationState: 'active' },
+    { ...agent('agent-flight', 'flight'), admissionVerified: false },
   ]).status, 'no-dispatch')
   assert.equal(routeIntentExclusively(intent, [
-    { agentId: 'agent-flight', category: 'flight', admissionVerified: true, registrationState: 'inactive' },
+    { ...agent('agent-flight', 'flight'), registrationState: 'inactive' },
   ]).status, 'no-dispatch')
 
   const ambiguous = routeIntentExclusively(intent, [
-    { agentId: 'agent-flight', category: 'flight', admissionVerified: true, registrationState: 'active' },
-    { agentId: 'agent-backup', category: 'flight', admissionVerified: true, registrationState: 'active' },
+    agent('agent-flight', 'flight'),
+    agent('agent-backup', 'flight'),
   ])
-  assert.equal(ambiguous.status, 'no-dispatch')
-  if (ambiguous.status === 'no-dispatch') assert.equal(ambiguous.reason, 'ambiguous-category')
+  assert.equal(ambiguous.status, 'dispatch')
+  if (ambiguous.status === 'dispatch') assert.equal(ambiguous.agentId, 'agent-backup')
 
   const duplicate = routeIntentExclusively(intent, [
-    { agentId: 'agent-flight', category: 'flight', admissionVerified: true, registrationState: 'active' },
-    { agentId: 'agent-flight', category: 'flight', admissionVerified: true, registrationState: 'active' },
+    agent('agent-flight', 'flight'),
+    agent('agent-flight', 'flight'),
   ])
   assert.equal(duplicate.status, 'no-dispatch')
   if (duplicate.status === 'no-dispatch') assert.equal(duplicate.reason, 'registry-conflict')
@@ -114,6 +114,24 @@ test('exclusive router rejects unknown intent fields and non-JSON constraints', 
   assert.equal(routeIntentExclusively({
     intentId: 'intent-4', category: 'flight', constraints: cyclic,
   }, []).status, 'no-dispatch')
+  assert.equal(routeIntentExclusively({
+    intentId: 'intent-merchant-partial', category: 'flight', constraints: {}, merchantId: 'merchant-1',
+  }, []).status, 'no-dispatch')
+})
+
+test('exclusive router binds a complete merchant listing target into its discovery input', () => {
+  const decision = routeIntentExclusively({
+    intentId: 'intent-merchant',
+    category: 'flight',
+    constraints: { origin: 'SIN' },
+    merchantId: 'merchant-1',
+    listingId: 'listing-1',
+  }, [agent('agent-flight', 'flight')])
+  assert.equal(decision.status, 'dispatch')
+  if (decision.status === 'dispatch') {
+    assert.equal(decision.discoveryInput.merchantId, 'merchant-1')
+    assert.equal(decision.discoveryInput.listingId, 'listing-1')
+  }
 })
 
 test('exclusive router rejects payment credentials before discovery egress', () => {
@@ -122,11 +140,19 @@ test('exclusive router rejects payment credentials before discovery egress', () 
     category: 'flight',
     constraints: { origin: 'SIN', payment: { cardNumber: '4111111111111111' } },
   }, [{
-    agentId: 'flight-primary',
-    category: 'flight',
-    admissionVerified: true,
-    registrationState: 'active',
+    ...agent('flight-primary', 'flight'),
   }])
   assert.equal(decision.status, 'no-dispatch')
   if (decision.status === 'no-dispatch') assert.equal(decision.reason, 'invalid-intent')
 })
+
+function agent(agentId: string, category: string): RegisteredAgent {
+  return Object.freeze({
+    agentId,
+    category,
+    declaredAttributes: Object.freeze({ priceMinor: 100, qualityScore: 100, latencyMs: 100 }),
+    fallbackAgentId: null,
+    admissionVerified: true,
+    registrationState: 'active',
+  })
+}

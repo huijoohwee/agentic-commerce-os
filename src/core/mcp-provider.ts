@@ -1,6 +1,12 @@
 import { isRecord } from '../shared/http'
 import { canonicalJson } from '../shared/digest'
 import { DOCS_INVOCATION_ENDPOINT, MCP_PROTOCOL_VERSION } from '../invocation'
+import { DISCOVERY_PROVIDER_CONTRACT } from './provider-contract'
+import {
+  bindOperationalProviderRequest,
+  responseMatchesOperationalEvidence,
+  type OperationalEvidencePermit,
+} from './provider-operation-gate'
 
 const MAXIMUM_RESPONSE_BYTES = 1_000_000
 const MCP_REQUEST_TIMEOUT_MS = 10_000
@@ -12,22 +18,31 @@ export type McpToolCall = Readonly<{
   arguments: Readonly<Record<string, unknown>>
 }>
 
-export async function callMcpTool(binding: Fetcher, call: McpToolCall): Promise<unknown> {
-  const session = await initialize(binding)
+export type McpToolCallOptions = Readonly<{
+  signal?: AbortSignal
+  operationalEvidencePermit?: OperationalEvidencePermit
+}>
+
+export async function callMcpTool(
+  binding: Fetcher,
+  call: McpToolCall,
+  options: McpToolCallOptions = {},
+): Promise<unknown> {
+  const session = await initialize(binding, options.signal)
   try {
     const rpc = await postRpc(binding, session.endpoint, session.sessionId, {
       jsonrpc: '2.0',
       id: 2,
       method: 'tools/call',
       params: { name: call.name, arguments: call.arguments },
-    })
+    }, options.signal, options.operationalEvidencePermit)
     if (isRecord(rpc.error)) throw new Error(readError(rpc.error))
     if (!isRecord(rpc.result) || rpc.result.isError === true) {
       throw new Error('MCP tool returned an error result.')
     }
     return extractToolPayload(rpc.result)
   } finally {
-    await close(binding, session.endpoint, session.sessionId)
+    await close(binding, session.endpoint, session.sessionId, options.signal)
   }
 }
 
@@ -53,12 +68,15 @@ export async function listMcpToolNames(binding: Fetcher): Promise<readonly strin
   }
 }
 
-async function initialize(binding: Fetcher): Promise<Readonly<{ endpoint: string; sessionId: string }>> {
+async function initialize(
+  binding: Fetcher,
+  parentSignal?: AbortSignal,
+): Promise<Readonly<{ endpoint: string; sessionId: string }>> {
   const endpoint = DOCS_INVOCATION_ENDPOINT
   const response = await binding.fetch(endpoint, {
     method: 'POST',
     headers: mcpHeaders(),
-    signal: AbortSignal.timeout(MCP_REQUEST_TIMEOUT_MS),
+    signal: requestSignal(parentSignal),
     body: JSON.stringify({
       jsonrpc: '2.0',
       id: 1,
@@ -86,7 +104,7 @@ async function initialize(binding: Fetcher): Promise<Readonly<{ endpoint: string
   const notification = await binding.fetch(endpoint, {
     method: 'POST',
     headers: mcpHeaders(sessionId),
-    signal: AbortSignal.timeout(MCP_REQUEST_TIMEOUT_MS),
+    signal: requestSignal(parentSignal),
     body: JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }),
   })
   if (!notification.ok) throw new Error('MCP initialized notification failed.')
@@ -99,13 +117,27 @@ async function postRpc(
   endpoint: string,
   sessionId: string,
   body: JsonRpc,
+  parentSignal?: AbortSignal,
+  operationalEvidencePermit?: OperationalEvidencePermit,
 ): Promise<JsonRpc> {
-  const response = await binding.fetch(endpoint, {
+  const request = new Request(endpoint, {
     method: 'POST',
-    headers: mcpHeaders(sessionId),
-    signal: AbortSignal.timeout(MCP_REQUEST_TIMEOUT_MS),
+    headers: mcpHeaders(sessionId, operationalEvidencePermit !== undefined),
+    signal: requestSignal(parentSignal),
     body: JSON.stringify(body),
   })
+  const prepared = operationalEvidencePermit
+    ? await bindOperationalProviderRequest(operationalEvidencePermit, request)
+    : null
+  if (operationalEvidencePermit && (!prepared || !prepared.ok)) {
+    throw new Error('MCP operational evidence request binding failed.')
+  }
+  const dispatched = prepared?.ok ? prepared.request : request
+  const response = await binding.fetch(dispatched)
+  if (prepared?.ok && !responseMatchesOperationalEvidence(response, prepared.binding)) {
+    await response.body?.cancel()
+    throw new Error('MCP operational evidence response binding mismatch.')
+  }
   const rpc = parseMcpEnvelope(await boundedResponseText(response))
   if (!response.ok) throw new Error(`MCP request failed with HTTP ${response.status}.`)
   if (rpc.jsonrpc !== '2.0' || rpc.id !== body.id) {
@@ -114,12 +146,16 @@ async function postRpc(
   return rpc
 }
 
-function mcpHeaders(sessionId = ''): Headers {
+function mcpHeaders(sessionId = '', operational = false): Headers {
   const headers = new Headers({
     accept: 'application/json, text/event-stream',
     'content-type': 'application/json',
   })
-  if (sessionId) headers.set('mcp-session-id', sessionId)
+  if (operational) headers.set('x-commerce-contract', DISCOVERY_PROVIDER_CONTRACT)
+  if (sessionId) {
+    headers.set('mcp-protocol-version', MCP_PROTOCOL_VERSION)
+    headers.set('mcp-session-id', sessionId)
+  }
   return headers
 }
 
@@ -203,15 +239,25 @@ function readError(error: Record<string, unknown>): string {
     : 'MCP request failed.'
 }
 
-async function close(binding: Fetcher, endpoint: string, sessionId: string): Promise<void> {
+async function close(
+  binding: Fetcher,
+  endpoint: string,
+  sessionId: string,
+  parentSignal?: AbortSignal,
+): Promise<void> {
   try {
     const response = await binding.fetch(endpoint, {
       method: 'DELETE',
       headers: mcpHeaders(sessionId),
-      signal: AbortSignal.timeout(MCP_REQUEST_TIMEOUT_MS),
+      signal: requestSignal(parentSignal),
     })
     await response.body?.cancel()
   } catch {
     // The tool result is authoritative; best-effort session cleanup cannot replace it.
   }
+}
+
+function requestSignal(parentSignal?: AbortSignal): AbortSignal {
+  const requestTimeout = AbortSignal.timeout(MCP_REQUEST_TIMEOUT_MS)
+  return parentSignal ? AbortSignal.any([parentSignal, requestTimeout]) : requestTimeout
 }

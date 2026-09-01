@@ -13,7 +13,7 @@ describe('commerce edge invalid Production configuration', () => {
     expect(ready.status).toBe(503)
     await expect(ready.json()).resolves.toMatchObject({
       ok: false,
-      contract: 'commerce.edge-readiness/v1',
+      contract: 'commerce.edge-readiness/v2',
     })
 
     const http = await SELF.fetch('https://edge.test/v1/registry', {

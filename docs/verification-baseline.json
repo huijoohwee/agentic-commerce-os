@@ -1,0 +1,23 @@
+{
+  "schema": "agentic-commerce-verification-baseline/v1",
+  "implementationBaseline": "2e39e5c43f2f49866f4dd6849994f7bfdf677ec1",
+  "aggregateCheck": "npm run check:implementation",
+  "evidenceArtifactDirectory": "docs/evidence-verdicts",
+  "evidenceCaptureCommand": "node scripts/capture-check-output.ts --task=<taskId> --role=<existing-verification|task-named-check> --performer=<expectedPerformingMechanism> --dispatch-receipt=<trustedSignedReceiptPath>",
+  "evidenceVerdictCommand": "node scripts/checks/evidence.ts --task=<taskId> --performer=<performingMechanism> --evaluator=evidence-verdict-runner [--finding=<openFinding>]",
+  "trustedDispatchIssuers": [],
+  "externalTrustDisposition": "Blocked until an evaluator-owned trust anchor pins this document digest, the dispatch issuer keys, and an out-of-workspace Git binary digest.",
+  "isolatedExecutorDisposition": "Blocked until an evaluator injects a default-deny filesystem and network isolated check executor; candidate CLI execution remains disabled.",
+  "artifactSinkDisposition": "Blocked until the same evaluator trust policy attests exclusive access and stable ancestry for the exact evidence artifact sink; capture refuses to run without that sink authority.",
+  "passingChecks": [
+    "types:check",
+    "typecheck",
+    "test:domain",
+    "test:unit",
+    "test:workers",
+    "deploy:dev:dry",
+    "deploy:production:dry"
+  ],
+  "migrationRule": "The baseline check set remains present; named feature checks extend it without weakening behavior-bearing assertions.",
+  "productionDryRunDisposition": "Retained in the aggregate and controller-guarded as an explicitly non-mutating bundle operation."
+}

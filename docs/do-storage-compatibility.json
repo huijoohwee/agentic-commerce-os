@@ -1,97 +1,365 @@
 {
   "$schema": "commerce-do-storage-compatibility/v1",
-  "version": 1,
+  "version": 2,
   "compatibilityPolicy": "exact-persistence-surface",
   "wrangler": {
     "configFile": "wrangler.core.jsonc",
     "migrations": [
       {
         "tag": "v1",
-        "new_sqlite_classes": ["AgentRegistry", "IntentRoute", "CheckoutSession"]
+        "new_sqlite_classes": [
+          "AgentRegistry",
+          "IntentRoute",
+          "CheckoutSession"
+        ]
+      },
+      {
+        "tag": "v2",
+        "new_sqlite_classes": [
+          "RevenueLedger"
+        ]
+      },
+      {
+        "tag": "v3",
+        "new_sqlite_classes": [
+          "ThemeDeployment"
+        ]
+      },
+      {
+        "tag": "v4"
+      },
+      {
+        "tag": "v5",
+        "new_sqlite_classes": [
+          "AuthoringClaim"
+        ]
       }
     ],
     "productionDurableObjectBindings": [
-      { "name": "AGENT_REGISTRY", "class_name": "AgentRegistry" },
-      { "name": "INTENT_ROUTE", "class_name": "IntentRoute" },
-      { "name": "CHECKOUT_SESSION", "class_name": "CheckoutSession" }
+      {
+        "name": "AGENT_REGISTRY",
+        "class_name": "AgentRegistry"
+      },
+      {
+        "name": "INTENT_ROUTE",
+        "class_name": "IntentRoute"
+      },
+      {
+        "name": "CHECKOUT_SESSION",
+        "class_name": "CheckoutSession"
+      },
+      {
+        "name": "REVENUE_LEDGER",
+        "class_name": "RevenueLedger"
+      },
+      {
+        "name": "THEME_DEPLOYMENT",
+        "class_name": "ThemeDeployment"
+      },
+      {
+        "name": "AUTHORING_CLAIM",
+        "class_name": "AuthoringClaim"
+      }
     ]
   },
   "persistenceDependencies": [
     {
       "sourceFile": "src/shared/digest.ts",
-      "purpose": "Canonical JSON encoding and SHA-256 hashing used by all persisted records and receipts.",
+      "purpose": "Canonical JSON and SHA-256 binding for persisted records.",
       "sourceSha256": "fa329e2381668e50978cb37ca331559a54def6f594c87848bb0f40fa60c62027"
     },
     {
+      "sourceFile": "src/shared/theme-manifest.ts",
+      "purpose": "Validated and default-resolved theme codec persisted by ThemeDeployment.",
+      "sourceSha256": "32ea64a0f7926d3e9139a2177aac98c410850db30a2c00bf32df2b66b87b59d9"
+    },
+    {
       "sourceFile": "src/core/acos-admission.ts",
-      "purpose": "Normalizes and validates ACOS admission receipts persisted by AgentRegistry.",
-      "sourceSha256": "66be6b2257c8c574c2f8afcb9a556db4ed86fd211d70881c961be54653ce5a13"
+      "purpose": "ACOS admission receipt codec persisted by AgentRegistry.",
+      "sourceSha256": "3e41124be2b3b93b1e6f8c08c02de8779697d5ae4562c8b35e6a2bf7a1486594"
+    },
+    {
+      "sourceFile": "src/core/agent-registry-record.ts",
+      "purpose": "AgentRegistry persisted record decoding and verification.",
+      "sourceSha256": "e4ad5e8fa2691ddcfd8f8b0fce503e724c0fa18488f297a635d7f95954c3df5a"
+    },
+    {
+      "sourceFile": "src/core/authoring-mutation-fence.ts",
+      "purpose": "Transactional mutation high-water and terminal outcome journal codec.",
+      "sourceSha256": "af281628486d08c6d7d09b9e1d404d19d07cd1880b206f9ec512673db8c6cfba"
     },
     {
       "sourceFile": "src/core/checkout-receipts.ts",
-      "purpose": "Normalizes and hashes checkout receipts persisted by CheckoutSession.",
-      "sourceSha256": "d8205f55102a394e53545799dbff16b415bbee31adb0075604341fa6dbb25ee1"
+      "purpose": "Guardrail and settlement receipt codecs persisted by CheckoutSession.",
+      "sourceSha256": "a0ec297f51bf97bebd9e30fb3e048bfe4d592755ee157acc2063af00d42e35f4"
+    },
+    {
+      "sourceFile": "src/core/checkout-state.ts",
+      "purpose": "Checkout input and result invariants bound to persisted session state.",
+      "sourceSha256": "5571cab7b8ea254eaf11c8b1f6c80ac25e8589a223dd7195104b7293314aa9b5"
+    },
+    {
+      "sourceFile": "src/core/checkout-finalization.ts",
+      "purpose": "Post-settlement finalization preserves the committed result across evidence failures.",
+      "sourceSha256": "670756a0ba01d6cadd3a6c010bc1ea2c435bb5367bcbebf63827d9d0bf077f96"
+    },
+    {
+      "sourceFile": "src/core/checkout-markup.ts",
+      "purpose": "Post-settlement ledger-line construction used by CheckoutSession.",
+      "sourceSha256": "e4db30b3d6a817a1837fb3b30c43e6a76ff642eeb6bd92d914718d3dfaf4ba48"
+    },
+    {
+      "sourceFile": "src/core/checkout-provider-client.ts",
+      "purpose": "Settlement receipt normalization before CheckoutSession persistence.",
+      "sourceSha256": "fca5869af3e9aee6f30dab9285bf55e5f6a2863076170d9fe1a94f8c6d81b687"
     },
     {
       "sourceFile": "src/core/discovery-receipt.ts",
-      "purpose": "Normalizes and hashes discovery offers persisted by IntentRoute.",
+      "purpose": "Discovery offer codec persisted by IntentRoute.",
       "sourceSha256": "134f7a0b72103d04f4d9a4e48711625d44e3b328a2c1a28a2712f9dae63c4f53"
     },
     {
-      "sourceFile": "src/domain/exclusive-category-router.ts",
-      "purpose": "Constructs exclusive routing decisions persisted by AgentRegistry.",
-      "sourceSha256": "d22e560c1f2a57af2f0e90c2aeb6ace8e34ee3b45ccee247f6825cd8bb617508"
+      "sourceFile": "src/core/offer-watch.ts",
+      "purpose": "Held-offer observation events persisted by CheckoutSession.",
+      "sourceSha256": "5b057204277dda79b7a00c3bb1cf423db7f7451d0b5e2a43c64ffd62ac46855b"
     },
     {
-      "sourceFile": "src/core/index.ts",
-      "purpose": "Constructs Durable Object inputs and request digests at the core boundary.",
-      "sourceSha256": "da64bcbc5af9ef8662e724f3bccbd6f9a9a05b99ec2c63f34a81d1b5584d67f6"
+      "sourceFile": "src/core/take-rate.ts",
+      "purpose": "Integer take-rate arithmetic persisted by RevenueLedger.",
+      "sourceSha256": "95b7d4d018ad39580ab3fb9970ca408244f78ab2a85f42e04bdaa811135e6971"
+    },
+    {
+      "sourceFile": "src/core/theme-deployment.ts",
+      "purpose": "Theme activation record construction persisted by ThemeDeployment.",
+      "sourceSha256": "c6eba579670a7f8fd6da23cdd97e98da5c14506c32b714aa04e8926582f7ceb2"
+    },
+    {
+      "sourceFile": "src/domain/exclusive-category-router.ts",
+      "purpose": "Routing decision construction persisted by AgentRegistry.",
+      "sourceSha256": "e2adcd93146f1debd8ebfc8cac844173af23faaad7346b3f0457dc7e3485fa3d"
+    },
+    {
+      "sourceFile": "src/domain/selection-policy.ts",
+      "purpose": "Deterministic selection projection persisted in route decisions.",
+      "sourceSha256": "ba3b0f9d593c9458fc0bf72d63f8efbda0560a4bb1d64831dc6ad72c50086430"
+    },
+    {
+      "sourceFile": "src/domain/authoring-claim-policy.ts",
+      "purpose": "Authoring permit v2 schema and stable operation digest persisted by coordinator and targets.",
+      "sourceSha256": "e72b0d1d4975d86a396a7199070e82e98fe7801bc07f7f6dfb269d2a9fdf17e4"
+    },
+    {
+      "sourceFile": "src/core/core-actions.ts",
+      "purpose": "Boundary normalization for records passed to Durable Objects.",
+      "sourceSha256": "aa395eda822b40a25f9776f80fe35d8f054252425374e2260da698cc9f0d07f0"
     },
     {
       "sourceFile": "src/core/checkout-input.ts",
-      "purpose": "Parses and normalizes checkout inputs persisted and hashed by CheckoutSession.",
-      "sourceSha256": "d334e890e3d0f0966866dde3af0150ca15454652640652cb9c853e6389ee8011"
+      "purpose": "Exact checkout request normalization before session persistence.",
+      "sourceSha256": "a857ab079e97ffb643f4c2b2fd1c1dbcd9c327b2e0ec43104c9dd9b83325cd6f"
     }
   ],
   "schemaRegions": [
     {
       "className": "AgentRegistry",
       "sourceFile": "src/core/agent-registry.ts",
-      "sourceSha256": "e37241275febd1601bd17a5648fe39a0ab6d772f19aa02369ee2b0a178db518b",
+      "sourceSha256": "52098c512b6ad63dad9f4a78babd6bdae937ace023b348ca8ba9422f56dd1d11",
       "startMarker": "  #migrate(): void {",
       "endMarker": "\n  async #allStored(",
-      "regionSha256": "e8f0690fced7e0f5fc63e4e934289e8b5b2ff87f9fd9aac6313b083cc2eebe9f",
+      "regionSha256": "2ceee0058def6b29658d601ba1687daed7dd9affd7f71606143520fc2fccc849",
       "ddl": [
-        { "object": "table:agent_admission", "sha256": "c92ce3ab38c7e5453559e9e1c956ecf56913d86b12a8b3d9c0b6524b9e682d39" },
-        { "object": "alter:agent_admission:add-column:invocation_proof_json", "sha256": "45fb46cc5af88d0e45336c832090ddbaaa49607b311c15e380c85f9b7a83d8f9" },
-        { "object": "index:one_active_admission_per_category", "sha256": "5d4bc79021f3ee63934b97b0d5997adfafd44c5a0304391dda22e31d8f9e394e" },
-        { "object": "table:registry_event", "sha256": "24ea153e18edce30c06e3def68fb1d5a8799b5ce9debd3de5e6446853b783713" },
-        { "object": "table:route_event", "sha256": "f5d1f6f66ae855b7159c4c2dbcb115e5bb39fee2278707d579c402de82f1c1b5" }
+        {
+          "object": "table:authoring_mutation_fence",
+          "sha256": "dfc78a88e2bab0828dbc9f500ed1b1ecb9f20e0db2bab5c8f3c7f2fdb6080e7b"
+        },
+        {
+          "object": "alter:authoring_mutation_fence:add-column:mutation_sequence",
+          "sha256": "41ea8f7fe710e359414339f0a64da7ea51db1fc9bb3f470109fe85fb543c1d26"
+        },
+        {
+          "object": "alter:authoring_mutation_fence:add-column:request_digest",
+          "sha256": "f089fda6c8fc6e6fb10a16b0ec6364a23897a1200ef85675dee457c85570110f"
+        },
+        {
+          "object": "table:authoring_mutation_outcome",
+          "sha256": "d3d06733496209ab4624ce818e2cd26c96aee62b23c9ce9a7e65e6592d759737"
+        },
+        {
+          "object": "table:agent_admission",
+          "sha256": "cb0d9af899f52846c6f286d574342db890abafbf1d1362d0b1a7457477f02687"
+        },
+        {
+          "object": "alter:agent_admission:add-column:invocation_proof_json",
+          "sha256": "45fb46cc5af88d0e45336c832090ddbaaa49607b311c15e380c85f9b7a83d8f9"
+        },
+        {
+          "object": "alter:agent_admission:add-column:declared_attributes_json",
+          "sha256": "aaeba69ed4858de743ce7aa39dd1105ebfcea3fbd5bdc665aa3caeeacff02956"
+        },
+        {
+          "object": "alter:agent_admission:add-column:fallback_agent_id",
+          "sha256": "3b396f0a544175f6c0d7ece3a155c872f551494dbfe2514a318cc4c3291f19a8"
+        },
+        {
+          "object": "alter:agent_admission:add-column:sandbox_dry_run_json",
+          "sha256": "4585b7b97b92d2fc3912a9ad980133fb89ef02308e7dc61ad85fc7f8c3fe61dc"
+        },
+        {
+          "object": "drop:one_active_admission_per_category",
+          "sha256": "8f9f3cf8ec7ec4352bb172693b87cbfebc03ff22f162cc5afd13bf68b82d15bf"
+        },
+        {
+          "object": "table:registry_event",
+          "sha256": "24ea153e18edce30c06e3def68fb1d5a8799b5ce9debd3de5e6446853b783713"
+        },
+        {
+          "object": "table:route_event",
+          "sha256": "f5d1f6f66ae855b7159c4c2dbcb115e5bb39fee2278707d579c402de82f1c1b5"
+        }
       ]
     },
     {
       "className": "IntentRoute",
       "sourceFile": "src/core/intent-route.ts",
-      "sourceSha256": "7d013220347940fcf5867f1e03a0a9fae6c7890ac95c123f28bd04e7e7a029e4",
+      "sourceSha256": "46f774bc2ec79518e03eac664260852b31f3337987c501e9b5b589e75bbd2d78",
       "startMarker": "    state.blockConcurrencyWhile(async () => {",
       "endMarker": "\n  async dispatch(",
-      "regionSha256": "833c3ffa1dd1c79282990138d70ae854df5dc94d86933ef163c69b554177dd92",
+      "regionSha256": "62009cebf93cf2c7d5dad89a58e9a529c3d7d60f48b497d3784a8ca6fabaf7b5",
       "ddl": [
-        { "object": "table:intent_dispatch", "sha256": "b38d0e706daaed740b687e7b81e53c87a749d3928a6e6c2d1396cecb019d55d1" }
+        {
+          "object": "table:intent_dispatch",
+          "sha256": "0ae5a8b16a942e74453e05ce2afa2e5339da735f9221d051dda33dc5724efe07"
+        },
+        {
+          "object": "alter:intent_dispatch:add-column:fallback_agent_id",
+          "sha256": "88d4da2bf5046904ac70475fc23365449c1212887a1f33afa2172e123cdcdb58"
+        },
+        {
+          "object": "alter:intent_dispatch:add-column:attempts_json",
+          "sha256": "84e49a12f5dfa971796e315a0ab11410b73cc3c52d6a6f53bfdb5d2e90788adb"
+        }
       ]
     },
     {
       "className": "CheckoutSession",
       "sourceFile": "src/core/checkout-session.ts",
-      "sourceSha256": "e1d9c386c59ec0650b1371600dfc9a290e0356e4d856faf3ccb92b6d65b34939",
+      "sourceSha256": "61f84eb7976d3bede0a2026bc4d8fa87f52c4a3734d2d0c7b92e9bf8b9f7a30f",
       "startMarker": "    state.blockConcurrencyWhile(async () => {",
       "endMarker": "\n  async prepare(",
-      "regionSha256": "e59c72a9761c34d7745485eef85f2390e677c7fb33e7e8d78a7860a46b582e89",
+      "regionSha256": "0d46dcbcf16954068d1db6159555e92b9a8fd0f501cb88ad88f32bb82b6444fe",
       "ddl": [
-        { "object": "table:checkout_state", "sha256": "d89a3ca217a9c7c91f22ab9c1bba5813e91a49b3e7dc1b45d10df5aa99cf1b7f" },
-        { "object": "table:checkout_event", "sha256": "84f76b413af9c715f6c2fa96a52dd256fb5b4881ad45129fd51181632d19c121" }
+        {
+          "object": "table:checkout_state",
+          "sha256": "5bd30a0d35afd11df1db8160ee03bf750e3e0582f002e3c5b89ad7a487893066"
+        },
+        {
+          "object": "alter:checkout_state:add-column:observation_failure_count",
+          "sha256": "ffe5c5de35a1d4af19e532017b603de6b34c054ffe119124bc88240fae115db7"
+        },
+        {
+          "object": "alter:checkout_state:add-column:settlement_receipt_json",
+          "sha256": "e3cc4b8c5db74ee80bb10ffe14bc44a8a4684940dc66433ff6120128d2532df5"
+        },
+        {
+          "object": "alter:checkout_state:add-column:applied_rate_basis_points",
+          "sha256": "a8ccc6b45bb9018bc5ba6456ef1fd6fb961acf3f029e1a661277c0046026c028"
+        },
+        {
+          "object": "alter:checkout_state:add-column:markup_outbox_json",
+          "sha256": "f1be88f4951ba51686d0a0c558885c8f472ab2b20332babee33d4367b60aca51"
+        },
+        {
+          "object": "alter:checkout_state:add-column:markup_finalization_state",
+          "sha256": "c2b6e03008ffc17d897a155925215ce9f4c27953d2dfca03c617fc977f8cd0df"
+        },
+        {
+          "object": "alter:checkout_state:add-column:markup_finalization_json",
+          "sha256": "6da663ca78bbed50e015042ded98ccf01e3b3d83e88d3a39c1cd638a8da709bb"
+        },
+        {
+          "object": "table:checkout_event",
+          "sha256": "84f76b413af9c715f6c2fa96a52dd256fb5b4881ad45129fd51181632d19c121"
+        }
+      ]
+    },
+    {
+      "className": "RevenueLedger",
+      "sourceFile": "src/core/revenue-ledger.ts",
+      "sourceSha256": "0afed9725f593a174bfbb2098ccbea70bb27c3959bb2b86a73c61fdb2c7879eb",
+      "startMarker": "    state.blockConcurrencyWhile(async () => {",
+      "endMarker": "\n  async appendLine(",
+      "regionSha256": "ef9fa390e978cd272145932c4d1263b61cfdc9d905d6b44c5b17d4caae630e75",
+      "ddl": [
+        {
+          "object": "table:revenue_line",
+          "sha256": "9f3f96c5b410db758a30fe47b85df04bcaab85fcad372b3e17f153a387a5fb1e"
+        },
+        {
+          "object": "index:revenue_line_period",
+          "sha256": "df978edccc8723c52085ace658b98741615223fc21663340876eaad0afafe63e"
+        }
+      ]
+    },
+    {
+      "className": "ThemeDeployment",
+      "sourceFile": "src/core/theme-deployment-store.ts",
+      "sourceSha256": "601e7146181068bf19a3ea6f37cfc0d5ec6ac22cb63cfcff9c15e7a31c04f7fd",
+      "startMarker": "    state.blockConcurrencyWhile(async () => {",
+      "endMarker": "\n  async activate(",
+      "regionSha256": "1ed44a2343a14d5b821c382ad2dac72c0d181e5dcfcae38b6a068e1e67a60b77",
+      "ddl": [
+        {
+          "object": "table:theme_deployment",
+          "sha256": "1f3d58b6b33c8c4fa5ec65f4daca0d3bbd7d316af0d82da47c2931cd25c5de4f"
+        },
+        {
+          "object": "table:authoring_mutation_fence",
+          "sha256": "dfc78a88e2bab0828dbc9f500ed1b1ecb9f20e0db2bab5c8f3c7f2fdb6080e7b"
+        },
+        {
+          "object": "alter:authoring_mutation_fence:add-column:mutation_sequence",
+          "sha256": "41ea8f7fe710e359414339f0a64da7ea51db1fc9bb3f470109fe85fb543c1d26"
+        },
+        {
+          "object": "alter:authoring_mutation_fence:add-column:request_digest",
+          "sha256": "f089fda6c8fc6e6fb10a16b0ec6364a23897a1200ef85675dee457c85570110f"
+        },
+        {
+          "object": "table:authoring_mutation_outcome",
+          "sha256": "d3d06733496209ab4624ce818e2cd26c96aee62b23c9ce9a7e65e6592d759737"
+        }
+      ]
+    },
+    {
+      "className": "AuthoringClaim",
+      "sourceFile": "src/core/authoring-claim.ts",
+      "sourceSha256": "2b46ec8b0391b24f283814adebfb31d95a74368affc35dc68fc3929fb4fd471a",
+      "startMarker": "    state.blockConcurrencyWhile(async () => {",
+      "endMarker": "\n  async acquire(",
+      "regionSha256": "df0e0aa46c0b5befe5535668adb5c8f6384f6e3fe199b6f9846bdbacc19657f6",
+      "ddl": [
+        {
+          "object": "table:authoring_claim",
+          "sha256": "f73ae6ee2e596b94fbdc6c50b909a2663ddc0f79310c19a1853161d53b334751"
+        },
+        {
+          "object": "index:authoring_claim_active_lease",
+          "sha256": "0d715afd0f184c76a4a9916b6d18b638612c8cc8e7660f044f8d1ec89bd79f5b"
+        },
+        {
+          "object": "table:authoring_mutation_reservation",
+          "sha256": "cc0c64e77366b8764b1186fb6d31e6432e2f687c5c2914360c8af2345813c8a1"
+        },
+        {
+          "object": "table:authoring_mutation_sequence",
+          "sha256": "79c95fba298373a79aaa72cf0a9f790af0031257566547a163ed07b8aa1cf42d"
+        },
+        {
+          "object": "table:authoring_mutation_completion",
+          "sha256": "8dce2f3ef61ee7ffc0dcd9a6993d07452dfe6ce0e0b30f1ea6022f138372789f"
+        }
       ]
     }
   ],
-  "revision": "6fdee1f4867c84b6cbf605997468cf2777d5e80e3d6e16dba7298ad9f5e86b6c"
+  "revision": "c32521bc319f80305f560c6eb51dce304cb4b39710ffa088307e45d0971044d2"
 }

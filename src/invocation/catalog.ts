@@ -1,7 +1,7 @@
 export const DOCS_INVOCATION_ENDPOINT =
-  "https://airvio.co/knowgrph/control-plane/mcp";
+  "https://airvio.co/agenticgraph/control-plane/mcp";
 export const DOCS_INVOCATION_TOOL =
-  "knowgrph.agentic_canvas_os.docs.invoke";
+  "agenticgraph.agentic_canvas_os.docs.invoke";
 export const INVOCATION_ROUTING_SCHEMA = "agentic-canvas-os-docs-routing/v1";
 export const MCP_PROTOCOL_VERSION = "2025-06-18";
 

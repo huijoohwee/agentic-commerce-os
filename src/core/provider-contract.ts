@@ -1,5 +1,6 @@
-import { isRecord } from '../shared/http.js'
+import { isRecord } from '../shared/http.ts'
 
+export const DISCOVERY_PROVIDER_CONTRACT = 'commerce.discovery-provider/v1'
 export const CHECKOUT_PROVIDER_CONTRACT = 'commerce.checkout-provider/v1'
 export const MARKETPLACE_PROVIDER_CONTRACT = 'commerce.marketplace-provider/v1'
 

@@ -8,6 +8,8 @@ const PAYMENT_CREDENTIAL_FIELDS = new Set([
 export type RegisteredAgent = Readonly<{
   agentId: string
   category: string
+  declaredAttributes: DeclaredAttributes
+  fallbackAgentId: string | null
   admissionVerified: boolean
   registrationState: 'active' | 'inactive'
 }>
@@ -16,20 +18,29 @@ export type RoutingIntent = Readonly<{
   intentId: string
   category: string
   constraints: Readonly<Record<string, unknown>>
+  merchantId?: string
+  listingId?: string
+}>
+
+export type PinnedRouteAuthority = Readonly<{
+  pinnedAgentId: string
+  fallbackAgentId: string | null
 }>
 
 export type DispatchDecision = Readonly<{
   status: 'dispatch'
   intentId: string
   agentId: string
+  fallbackAgentId: string | null
   category: string
   discoveryInput: RoutingIntent
+  consideredAgentIds: readonly string[]
+  decidingAttributes: Readonly<Record<string, DeclaredAttributes>>
 }>
 
 export type NoDispatchReason =
   | 'invalid-intent'
   | 'unmatched-category'
-  | 'ambiguous-category'
   | 'registry-conflict'
 
 export type NoDispatchDecision = Readonly<{
@@ -50,9 +61,16 @@ export type RouteDecision = DispatchDecision | NoDispatchDecision
 export function routeIntentExclusively(
   candidate: unknown,
   registry: readonly RegisteredAgent[],
+  policy: SelectionPolicy = DEFAULT_SELECTION_POLICY,
+  routingAuthority: PinnedRouteAuthority | null = null,
 ): RouteDecision {
   const intent = readRoutingIntent(candidate)
   if (!intent) return noDispatch(candidate, null, 'invalid-intent', [])
+
+  const pinnedAuthority = routingAuthority === null ? null : readPinnedRouteAuthority(routingAuthority)
+  if (routingAuthority !== null && !pinnedAuthority) {
+    return noDispatch(intent, intent.category, 'registry-conflict', [])
+  }
 
   const registryConflict = findRegistryConflict(registry)
   if (registryConflict) {
@@ -63,38 +81,80 @@ export function routeIntentExclusively(
     .filter((record) => record.registrationState === 'active')
     .filter((record) => record.admissionVerified)
     .filter((record) => record.category === intent.category)
-    .map((record) => record.agentId)
-    .sort(compareText)
+    .sort((left, right) => compareText(left.agentId, right.agentId))
 
-  const agentId = candidates[0]
-  if (agentId === undefined) {
-    return noDispatch(intent, intent.category, 'unmatched-category', candidates)
+  if (candidates.length === 0) return noDispatch(intent, intent.category, 'unmatched-category', [])
+  const winnerCandidates = pinnedAuthority
+    ? candidates.filter(({ agentId }) => agentId === pinnedAuthority.pinnedAgentId)
+    : candidates
+  if (winnerCandidates.length !== 1 && pinnedAuthority) {
+    return noDispatch(intent, intent.category, 'unmatched-category', candidates.map(({ agentId }) => agentId))
   }
-  if (candidates.length > 1) {
-    return noDispatch(intent, intent.category, 'ambiguous-category', candidates)
+  const selection = selectAgent(winnerCandidates.map((record) => Object.freeze({
+    agentId: record.agentId,
+    attributes: record.declaredAttributes,
+  })), policy)
+  if (!selection) return noDispatch(intent, intent.category, 'registry-conflict', candidates.map(({ agentId }) => agentId))
+  const selected = candidates.find(({ agentId }) => agentId === selection.selectedAgentId)
+  if (!selected) return noDispatch(intent, intent.category, 'registry-conflict', selection.consideredAgentIds)
+  const requestedFallbackId = pinnedAuthority
+    ? pinnedAuthority.fallbackAgentId
+    : selected.fallbackAgentId
+  if (pinnedAuthority && requestedFallbackId !== null && selected.fallbackAgentId !== requestedFallbackId) {
+    return noDispatch(intent, intent.category, 'registry-conflict', selection.consideredAgentIds)
+  }
+  const fallback = requestedFallbackId
+    ? candidates.find(({ agentId }) => agentId === requestedFallbackId)
+    : null
+  if (pinnedAuthority && requestedFallbackId !== null && !fallback) {
+    return noDispatch(intent, intent.category, 'registry-conflict', selection.consideredAgentIds)
   }
 
   return Object.freeze({
     status: 'dispatch',
     intentId: intent.intentId,
-    agentId,
+    agentId: selected.agentId,
+    fallbackAgentId: fallback?.agentId ?? null,
     category: intent.category,
     discoveryInput: intent,
+    consideredAgentIds: selection.consideredAgentIds,
+    decidingAttributes: selection.decidingAttributes,
+  })
+}
+
+export function readPinnedRouteAuthority(value: unknown): PinnedRouteAuthority | null {
+  if (!isRecord(value)
+    || Object.keys(value).some((field) => !['pinnedAgentId', 'fallbackAgentId'].includes(field))
+    || typeof value.pinnedAgentId !== 'string'
+    || !INTENT_IDENTIFIER_PATTERN.test(value.pinnedAgentId)
+    || (value.fallbackAgentId !== null
+      && (typeof value.fallbackAgentId !== 'string' || !INTENT_IDENTIFIER_PATTERN.test(value.fallbackAgentId)))
+    || value.fallbackAgentId === value.pinnedAgentId) return null
+  return Object.freeze({
+    pinnedAgentId: value.pinnedAgentId,
+    fallbackAgentId: value.fallbackAgentId,
   })
 }
 
 export function readRoutingIntent(candidate: unknown): RoutingIntent | null {
   if (!isRecord(candidate)) return null
-  const allowedFields = new Set(['intentId', 'category', 'constraints'])
+  const allowedFields = new Set(['intentId', 'category', 'constraints', 'merchantId', 'listingId'])
   if (Object.keys(candidate).some((field) => !allowedFields.has(field))) return null
   if (typeof candidate.intentId !== 'string' || !INTENT_IDENTIFIER_PATTERN.test(candidate.intentId)) return null
   const category = normalizeAgentCategory(candidate.category)
   if (!category || !isRecord(candidate.constraints)) return null
+  const merchantTargetAbsent = candidate.merchantId === undefined && candidate.listingId === undefined
+  const merchantTargetValid = typeof candidate.merchantId === 'string'
+    && typeof candidate.listingId === 'string'
+    && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/u.test(candidate.merchantId)
+    && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/u.test(candidate.listingId)
+  if (!merchantTargetAbsent && !merchantTargetValid) return null
   if (!isJsonCompatible(candidate.constraints) || containsCredentialMaterial(candidate.constraints)) return null
   return Object.freeze({
     intentId: candidate.intentId,
     category,
     constraints: freezeJsonRecord(candidate.constraints),
+    ...(merchantTargetValid ? { merchantId: String(candidate.merchantId), listingId: String(candidate.listingId) } : {}),
   })
 }
 
@@ -124,7 +184,15 @@ function isRegistryRecordShape(value: unknown): value is RegisteredAgent {
   if (value.registrationState !== 'active' && value.registrationState !== 'inactive') return false
   return typeof value.agentId === 'string'
     && typeof value.category === 'string'
+    && isDeclaredAttributes(value.declaredAttributes)
+    && (value.fallbackAgentId === null || typeof value.fallbackAgentId === 'string')
     && typeof value.admissionVerified === 'boolean'
+}
+
+function isDeclaredAttributes(value: unknown): value is DeclaredAttributes {
+  if (!isRecord(value)) return false
+  return [value.priceMinor, value.qualityScore, value.latencyMs]
+    .every((entry) => Number.isSafeInteger(entry) && Number(entry) >= 0)
 }
 
 function noDispatch(
@@ -190,3 +258,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function compareText(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0
 }
+import {
+  DEFAULT_SELECTION_POLICY,
+  selectAgent,
+  type DeclaredAttributes,
+  type SelectionPolicy,
+} from './selection-policy.ts'

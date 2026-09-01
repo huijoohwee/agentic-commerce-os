@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "agentic-commerce-task-bounds.schema.json",
+  "title": "Agentic Commerce Task Bounds",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "taskId",
+    "namedCheck",
+    "tokenCeiling",
+    "iterationCeiling",
+    "wallClockMinutes",
+    "contextCeiling",
+    "circuitBreaker"
+  ],
+  "properties": {
+    "taskId": { "type": "string", "minLength": 1 },
+    "namedCheck": { "type": "string", "minLength": 1 },
+    "tokenCeiling": { "type": "integer", "minimum": 1 },
+    "iterationCeiling": { "type": "integer", "minimum": 1 },
+    "wallClockMinutes": { "type": "integer", "minimum": 1 },
+    "contextCeiling": { "type": "integer", "minimum": 1 },
+    "circuitBreaker": { "type": "string", "minLength": 1 }
+  }
+}
