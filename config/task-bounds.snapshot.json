@@ -1,0 +1,31 @@
+{
+  "schema": "agentic-commerce-task-bounds-snapshot/v2",
+  "source": ".kiro/specs/agentic-graph-commerce-platform/tasks.md",
+  "sourceSha256": "6b9e4351321ba913e9bf701fa3bb5c9698488e50751618398e81e30dc4fa35ea",
+  "taskCount": 100,
+  "boundsCount": 100,
+  "findingCount": 0,
+  "namedCheckGroups": [
+    { "namedCheck": "npm --prefix \"$AGENTIC_CANVAS_OS_ROOT\" run worktree:lifecycle:check", "taskIds": ["1.1"] },
+    { "namedCheck": "npm run check:task-bounds -- --tasks=.kiro/specs/agentic-graph-commerce-platform/tasks.md", "taskIds": ["1.2", "1.3"] },
+    { "namedCheck": "npm run check:evidence-contract", "taskIds": ["1.4", "20.2"] },
+    { "namedCheck": "npm run check:authored-limits", "taskIds": ["1.5", "20.4"] },
+    { "namedCheck": "npm run test:unit", "taskIds": ["1.6", "2.4", "9.4", "12.5", "12.6", "18.3", "18.4", "19.6", "20.3"] },
+    { "namedCheck": "npm run check:terminology", "taskIds": ["2.1", "2.2", "2.3", "2.5"] },
+    { "namedCheck": "npm run check:implementation", "taskIds": ["2.6", "20.1"] },
+    { "namedCheck": "npm run check:convergence", "taskIds": ["3.1", "3.5", "3.6"] },
+    { "namedCheck": "npm run test:domain", "taskIds": ["3.2", "3.3", "3.4", "5.2", "5.3", "7.3", "7.4", "7.6", "10.3", "10.4", "13.2", "13.4", "15.3", "15.4", "15.5"] },
+    { "namedCheck": "npm run test:workers", "taskIds": ["3.7", "5.4", "5.5", "5.8", "7.11", "9.6", "10.6", "13.6", "13.9", "13.10", "15.6", "16.2", "16.4", "16.5"] },
+    { "namedCheck": "npm run check:take-rate", "taskIds": ["5.1", "5.6", "5.7"] },
+    { "namedCheck": "npm run check:template-pack", "taskIds": ["7.1", "7.2", "7.5", "7.7", "7.8"] },
+    { "namedCheck": "npm run check:browser", "taskIds": ["7.9", "7.10", "12.7"] },
+    { "namedCheck": "npm run check:deploy-boundary", "taskIds": ["9.1", "9.2", "9.3", "9.5", "12.8", "20.5"] },
+    { "namedCheck": "npm run check:invocation-surface", "taskIds": ["10.1", "10.2", "10.5"] },
+    { "namedCheck": "npm run check:webmcp", "taskIds": ["12.1", "12.2", "12.3", "12.4"] },
+    { "namedCheck": "npm run check:routing", "taskIds": ["13.1", "13.3", "13.5", "13.7", "13.8"] },
+    { "namedCheck": "npm run check:local-first", "taskIds": ["15.1", "15.2", "15.7", "15.8"] },
+    { "namedCheck": "npm run check:offer-watch", "taskIds": ["16.1", "16.3"] },
+    { "namedCheck": "npm run check:sandbox", "taskIds": ["18.1", "18.2", "18.5", "18.6", "18.7"] },
+    { "namedCheck": "npm run check:merge-agent", "taskIds": ["19.1", "19.2", "19.3", "19.4", "19.5", "19.7"] }
+  ]
+}

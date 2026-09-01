@@ -1,8 +1,18 @@
-import { isRecord } from '../shared/http.js'
-import { canonicalJson, sha256Hex } from '../shared/digest.js'
+import { isRecord } from '../shared/http.ts'
+import { canonicalJson, sha256Hex } from '../shared/digest.ts'
+import {
+  declaredRequirements,
+  evaluateConvergence,
+} from './convergence-evaluator.ts'
 
 export const UPSTREAM_RUNTIME_EVIDENCE_SCHEMA = 'commerce.upstream-runtime-evidence/v1'
 export const COMMERCE_PRD_REVISION = '0.3.0'
+
+export const DISCOVERY_EVIDENCE_CHECKS = Object.freeze([
+  'invocation_catalog_parity',
+  'registered_agent_dispatch',
+  'offer_receipt_binding',
+])
 
 export const CHECKOUT_EVIDENCE_CHECKS = Object.freeze([
   'guardrail_before_confirmation',
@@ -12,6 +22,7 @@ export const CHECKOUT_EVIDENCE_CHECKS = Object.freeze([
 ])
 
 export const MARKETPLACE_EVIDENCE_CHECKS = Object.freeze([
+  'authoring_fence_atomic',
   'registry_canvas_parity',
   'active_vendor_at_dispatch',
   'same_transaction_split_projection',
@@ -61,54 +72,20 @@ export async function verifyUpstreamRuntimeEvidence(
   requiredChecks: readonly string[],
 ): Promise<Readonly<Record<string, unknown>>> {
   if (!pin) return result(false, 'evidence_pin_invalid')
-  if (!isRecord(value)
-    || Object.keys(value).sort().join(',') !== 'contract,evidence,ok'
-    || value.ok !== true
-    || value.contract !== expectedContract
-    || !isRecord(value.evidence)) {
-    return result(false, 'evidence_envelope_invalid')
-  }
-  const evidence = value.evidence
-  if (Object.keys(evidence).sort().join(',')
-    !== 'checks,prdRevision,providerVersionId,receiptDigest,schema,sourceRevision,storageCompatibilityRevision') {
-    return result(false, 'evidence_envelope_invalid')
-  }
-  const checks = Array.isArray(evidence.checks) ? evidence.checks : []
-  const names = checks.map((check) => (
-    isRecord(check)
-      && Object.keys(check).sort().join(',') === 'name,ok'
-      && check.ok === true
-      && typeof check.name === 'string'
-      ? check.name
-      : ''
-  ))
-  const exactChecks = names.length === requiredChecks.length
-    && new Set(names).size === names.length
-    && [...names].sort().join(',') === [...requiredChecks].sort().join(',')
-  const providerVersionId = typeof evidence.providerVersionId === 'string'
-    && /^[A-Za-z0-9_-]{1,128}$/u.test(evidence.providerVersionId)
-    ? evidence.providerVersionId
-    : null
-  const ok = evidence.schema === UPSTREAM_RUNTIME_EVIDENCE_SCHEMA
-    && evidence.prdRevision === COMMERCE_PRD_REVISION
-    && evidence.sourceRevision === pin.sourceRevision
-    && evidence.receiptDigest === pin.receiptDigest
-    && evidence.storageCompatibilityRevision === pin.storageCompatibilityRevision
-    && providerVersionId === pin.providerVersionId
-    && exactChecks
-    && evidence.receiptDigest === await digestUpstreamRuntimeEvidence({
-      schema: evidence.schema,
-      prdRevision: evidence.prdRevision,
-      sourceRevision: evidence.sourceRevision,
-      storageCompatibilityRevision: evidence.storageCompatibilityRevision,
-      providerVersionId: evidence.providerVersionId,
-      checks,
-    })
+  const verdict = await evaluateConvergence(
+    value,
+    declaredRequirements(expectedContract, expectedContract, requiredChecks, pin),
+  )
+  const evidence = isRecord(value) && isRecord(value.evidence) ? value.evidence : null
+  const checks = Array.isArray(evidence?.checks) ? evidence.checks : []
+  const names = checks.filter(isRecord).map(({ name }) => typeof name === 'string' ? name : '')
+  const ok = verdict.state !== 'blocked'
   return result(ok, ok ? null : 'evidence_receipt_mismatch', {
-    providerVersionId,
-    sourceRevision: typeof evidence.sourceRevision === 'string' ? evidence.sourceRevision : null,
-    receiptDigest: typeof evidence.receiptDigest === 'string' ? evidence.receiptDigest : null,
-    storageCompatibilityRevision: typeof evidence.storageCompatibilityRevision === 'string'
+    verdict,
+    providerVersionId: typeof evidence?.providerVersionId === 'string' ? evidence.providerVersionId : null,
+    sourceRevision: typeof evidence?.sourceRevision === 'string' ? evidence.sourceRevision : null,
+    receiptDigest: typeof evidence?.receiptDigest === 'string' ? evidence.receiptDigest : null,
+    storageCompatibilityRevision: typeof evidence?.storageCompatibilityRevision === 'string'
       ? evidence.storageCompatibilityRevision
       : null,
     checks: Object.freeze(names),

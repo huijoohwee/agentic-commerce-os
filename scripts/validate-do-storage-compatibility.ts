@@ -10,11 +10,23 @@ const SHA256_PATTERN = /^[0-9a-f]{64}$/u
 const REQUIRED_PERSISTENCE_DEPENDENCIES = Object.freeze([
   'src/shared/digest.ts',
   'src/core/acos-admission.ts',
+  'src/core/agent-registry-record.ts',
+  'src/core/authoring-mutation-fence.ts',
   'src/core/checkout-receipts.ts',
+  'src/core/checkout-state.ts',
+  'src/core/checkout-finalization.ts',
+  'src/core/checkout-markup.ts',
+  'src/core/checkout-provider-client.ts',
   'src/core/discovery-receipt.ts',
+  'src/core/offer-watch.ts',
+  'src/core/take-rate.ts',
+  'src/core/theme-deployment.ts',
+  'src/shared/theme-manifest.ts',
   'src/domain/exclusive-category-router.ts',
-  'src/core/index.ts',
+  'src/domain/selection-policy.ts',
+  'src/core/core-actions.ts',
   'src/core/checkout-input.ts',
+  'src/domain/authoring-claim-policy.ts',
 ].sort())
 
 type JsonObject = Readonly<Record<string, unknown>>
@@ -167,7 +179,7 @@ function ddlObject(statement: string): string {
 
 function validateTemplate(manifest: StorageManifest): void {
   assert.equal(manifest.$schema, MANIFEST_SCHEMA)
-  assert.equal(manifest.version, 1)
+  assert.equal(manifest.version, 2)
   assert.equal(manifest.compatibilityPolicy, COMPATIBILITY_POLICY)
   assert.equal(manifest.wrangler.configFile, 'wrangler.core.jsonc')
   assert.ok(Array.isArray(manifest.persistenceDependencies))
@@ -250,6 +262,14 @@ function main(): void {
   const rootDirectory = rootIndex === -1 ? process.cwd() : arguments_[rootIndex + 1]
   const manifestPath = manifestIndex === -1 ? undefined : arguments_[manifestIndex + 1]
   assert.ok(rootDirectory, '--root requires a directory')
+  if (arguments_.includes('--write')) {
+    const resolvedManifestPath = manifestPath ?? 'docs/do-storage-compatibility.json'
+    const template = readManifest(rootDirectory, resolvedManifestPath)
+    const materialized = materializeStorageManifest(rootDirectory, template)
+    fs.writeFileSync(resolveInside(rootDirectory, resolvedManifestPath), `${JSON.stringify(materialized, null, 2)}\n`)
+    process.stdout.write(`${materialized.revision}\n`)
+    return
+  }
   const manifest = validateStorageCompatibility(rootDirectory, manifestPath)
   if (arguments_.includes('--json')) process.stdout.write(`${JSON.stringify(manifest)}\n`)
   else process.stdout.write(`${manifest.revision}\n`)

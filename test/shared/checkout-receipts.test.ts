@@ -7,6 +7,7 @@ import {
   digestSettlementReceipt,
   normalizeGuardrailReceipt,
   normalizeSettlementReceipt,
+  restoreSettlementReceipt,
   type GuardrailReceipt,
   type SettlementReceipt,
 } from '../../src/core/checkout-receipts.ts'
@@ -95,6 +96,12 @@ describe('checkout receipt validation', () => {
     }, expected)).rejects.toThrow('settlement_receipt_invalid')
     await expect(normalizeSettlementReceipt({ ...payload, unexpected: true }, expected))
       .rejects.toThrow('settlement_receipt_invalid')
+    await expect(restoreSettlementReceipt(JSON.stringify(receipt), expected)).resolves.toEqual(receipt)
+    await expect(restoreSettlementReceipt(JSON.stringify(receipt), {
+      ...expected,
+      checkoutId: 'checkout-other',
+    })).resolves.toBeNull()
+    await expect(restoreSettlementReceipt('{', expected)).resolves.toBeNull()
   })
 })
 
