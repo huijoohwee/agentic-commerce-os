@@ -11,6 +11,9 @@
     "logs": { "enabled": true, "head_sampling_rate": 1 }
   },
   "version_metadata": { "binding": "CF_VERSION_METADATA" },
+  "secrets": {
+    "required": ["MCP_BEARER_TOKEN", "OPERATOR_BEARER_TOKEN", "STOREFRONT_SESSION_SECRET"]
+  },
   "vars": {
     "DEPLOY_LANE": "Local",
     "RELEASE_CANDIDATE_SHA": "local-unreleased",
@@ -22,6 +25,9 @@
       "workers_dev": true,
       "preview_urls": true,
       "version_metadata": { "binding": "CF_VERSION_METADATA" },
+      "secrets": {
+        "required": ["MCP_BEARER_TOKEN", "OPERATOR_BEARER_TOKEN", "STOREFRONT_SESSION_SECRET"]
+      },
       "services": [
         { "binding": "COMMERCE_CORE", "service": "agentic-commerce-core-dev" }
       ],
@@ -36,12 +42,16 @@
       "workers_dev": true,
       "preview_urls": false,
       "version_metadata": { "binding": "CF_VERSION_METADATA" },
+      "secrets": {
+        "required": ["MCP_BEARER_TOKEN", "OPERATOR_BEARER_TOKEN", "STOREFRONT_SESSION_SECRET"]
+      },
       "services": [
         { "binding": "COMMERCE_CORE", "service": "agentic-commerce-core-staging" }
       ],
       "vars": {
         "DEPLOY_LANE": "Staging",
         "RELEASE_CANDIDATE_SHA": "staging-unreleased",
+        "HUMAN_CONFIRMATION_TRUST_ANCHOR_JSON": "external-trust-anchor-required",
         "ALLOWED_ORIGINS_JSON": "[\"https://airvio.co\"]"
       }
     },
@@ -50,13 +60,19 @@
       "workers_dev": false,
       "preview_urls": false,
       "version_metadata": { "binding": "CF_VERSION_METADATA" },
-      "routes": [],
+      "secrets": {
+        "required": ["MCP_BEARER_TOKEN", "OPERATOR_BEARER_TOKEN", "STOREFRONT_SESSION_SECRET"]
+      },
+      "routes": [
+        { "pattern": "airvio.co/agentic-commerce-os", "zone_name": "airvio.co" }
+      ],
       "services": [
         { "binding": "COMMERCE_CORE", "service": "agentic-commerce-core-production" }
       ],
       "vars": {
         "DEPLOY_LANE": "Production",
         "RELEASE_CANDIDATE_SHA": "production-release-required-edge",
+        "HUMAN_CONFIRMATION_TRUST_ANCHOR_JSON": "external-trust-anchor-required",
         "ALLOWED_ORIGINS_JSON": "[\"https://airvio.co\"]"
       }
     }

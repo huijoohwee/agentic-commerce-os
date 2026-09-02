@@ -1,0 +1,55 @@
+{
+  "schema": "agentic-commerce-merge-bounds/v1",
+  "tokenCeiling": 80000,
+  "iterationCeiling": 10,
+  "wallClockMinutes": 30,
+  "circuitBreaker": "stop before mutation when the lease or fence is stale, a requested path is outside the declared write set, or two identical repair approaches leave the same check failing",
+  "executionPolicy": {
+    "automaticMutation": "disabled",
+    "automaticCheckExecution": "disabled",
+    "reason": "No portable default-deny runner can observe or execute candidate-controlled tools without exposing host authority."
+  },
+  "laneBinding": {
+    "source": "runtime-input",
+    "requiredFields": ["lane", "claimId", "leaseEpoch", "fenceRevision"],
+    "mutationAdmissionRequiredFields": [
+      "semanticScope",
+      "leaseExpiresAtMs",
+      "observedFenceRevision",
+      "declaredWriteSet",
+      "requiredWriteTarget"
+    ]
+  },
+  "commandPolicy": {
+    "observationCommands": [
+      { "executable": "gh", "argsPrefix": ["pr", "view"] },
+      { "executable": "gh", "argsPrefix": ["api"] },
+      { "executable": "git", "args": ["diff", "--name-only", "--diff-filter=U", "--"] },
+      { "executable": "git", "args": ["rev-parse", "--show-toplevel"] },
+      { "executable": "git", "args": ["branch", "--show-current"] },
+      { "executable": "git", "args": ["rev-parse", "HEAD"] },
+      { "executable": "git", "args": ["apply", "--numstat", "-z", "-"] },
+      { "executable": "git", "args": ["apply", "--check", "--whitespace=nowarn", "-"] }
+    ],
+    "mutationCommands": [
+      { "executable": "git", "args": ["apply", "--whitespace=nowarn", "-"] },
+      { "executable": "git", "argsPrefix": ["add", "--"] }
+    ],
+    "allowedActions": ["comment-change", "check-repair", "conflict-resolution"],
+    "requiredCheckCommands": [
+      {
+        "identity": "Integration Gate",
+        "script": "check:integration",
+        "args": [],
+        "closureSha256": "3a59badea51fa5c01c1fe4bf56747c5fe2937fccecf996b7564b7fadac8acc14"
+      }
+    ]
+  },
+  "authority": {
+    "canonicalWrite": false,
+    "forceUpdate": false,
+    "historyRewrite": false,
+    "deployment": false,
+    "canonicalAdvanceMechanism": "protected Release Workflow"
+  }
+}

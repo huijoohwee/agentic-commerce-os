@@ -1,5 +1,9 @@
 import { isHttpFailure, isRecord, readJsonObject } from '../shared/http.js'
-import { CHECKOUT_PROVIDER_CONTRACT, MARKETPLACE_PROVIDER_CONTRACT } from '../core/provider-contract.js'
+import {
+  CHECKOUT_PROVIDER_CONTRACT,
+  DISCOVERY_PROVIDER_CONTRACT,
+  MARKETPLACE_PROVIDER_CONTRACT,
+} from '../core/provider-contract.js'
 import {
   ACOS_ADMISSION_PATH,
   ACOS_ADMISSION_PROVIDER_CONTRACT,
@@ -10,13 +14,6 @@ import {
   DOCS_INVOCATION_TOOL,
   MCP_PROTOCOL_VERSION,
 } from '../invocation/index.js'
-import {
-  CHECKOUT_EVIDENCE_CHECKS,
-  COMMERCE_PRD_REVISION,
-  MARKETPLACE_EVIDENCE_CHECKS,
-  UPSTREAM_RUNTIME_EVIDENCE_SCHEMA,
-  type UpstreamEvidencePin,
-} from '../core/upstream-evidence.js'
 import {
   DISCOVERY_OFFER_SCHEMA,
   DISCOVERY_RECEIPT_CONTRACT,
@@ -32,24 +29,24 @@ import {
   type SettlementReceipt,
 } from '../core/checkout-receipts.js'
 import { sha256Hex } from '../shared/digest.js'
+import {
+  operationalEvidenceResponseHeaders,
+  type OperationalEvidenceBinding,
+} from '../core/provider-operation-gate.js'
+import { AGENT_REGISTRY_CLAIM, vendorTransitionClaim, type ClaimMutationPermit } from '../domain/authoring-claim-policy.js'
+import { admitDevAuthoringMutation, devAuthoringHeaders } from './authoring-fence.js'
+import {
+  DEV_CHECKOUT_EVIDENCE_PIN,
+  DEV_DISCOVERY_EVIDENCE_PIN,
+  DEV_MARKETPLACE_EVIDENCE_PIN,
+  checkoutOperationBinding,
+  devRuntimeEvidenceResponse,
+  discoveryOperationBinding,
+  marketplaceOperationBinding,
+} from './provider-evidence.js'
 
 const INVOCATION_PATH = new URL(DOCS_INVOCATION_ENDPOINT).pathname
 const DEMO_CONTRACT = 'commerce.dev-provider/v1'
-const CHECKOUT_PROVIDER_VERSION_ID = 'checkout-dev-fixture-v1'
-const MARKETPLACE_PROVIDER_VERSION_ID = 'marketplace-dev-fixture-v1'
-
-const CHECKOUT_EVIDENCE_PIN: UpstreamEvidencePin = Object.freeze({
-  sourceRevision: 'c'.repeat(40),
-  receiptDigest: '03562b1a8a5b16299466ceee22cf2bd1d61af42e564f7f23e1975d232762952d',
-  storageCompatibilityRevision: 'checkout-demo/v1',
-  providerVersionId: CHECKOUT_PROVIDER_VERSION_ID,
-})
-const MARKETPLACE_EVIDENCE_PIN: UpstreamEvidencePin = Object.freeze({
-  sourceRevision: 'e'.repeat(40),
-  receiptDigest: '802be270fcc3c27103f03794ad437b193e413b3eb337250730dba40356b3f15d',
-  storageCompatibilityRevision: 'marketplace-demo/v1',
-  providerVersionId: MARKETPLACE_PROVIDER_VERSION_ID,
-})
 
 const DEV_SETTLEMENTS = new Map<string, SettlementReceipt>()
 
@@ -89,8 +86,9 @@ export const DEV_PROVIDER_PINS = Object.freeze({
   ...DEV_INVOCATION_METADATA,
   requiredTokens: Object.freeze(CATALOG.map(({ token }) => token)),
   releaseCandidateSha: 'b'.repeat(40),
-  checkoutEvidence: CHECKOUT_EVIDENCE_PIN,
-  marketplaceEvidence: MARKETPLACE_EVIDENCE_PIN,
+  discoveryEvidence: DEV_DISCOVERY_EVIDENCE_PIN,
+  checkoutEvidence: DEV_CHECKOUT_EVIDENCE_PIN,
+  marketplaceEvidence: DEV_MARKETPLACE_EVIDENCE_PIN,
 })
 
 type DevProviderEnv = Readonly<{ DEMO_ONLY: string }>
@@ -112,7 +110,7 @@ export async function devProviderFetch(request: Request): Promise<Response> {
       ok: true,
       contract: ACOS_ADMISSION_PROVIDER_CONTRACT,
       receiptSchema: ACOS_ADMISSION_RECEIPT_SCHEMA,
-      operations: ['register'],
+      operations: ['register-fenced'],
     })
   }
   if (request.method === 'POST' && url.pathname === ACOS_ADMISSION_PATH) {
@@ -125,7 +123,7 @@ export async function devProviderFetch(request: Request): Promise<Response> {
     return capabilityResponse(url.hostname)
   }
   if (request.method === 'GET' && url.pathname === '/v1/runtime-evidence') {
-    return runtimeEvidenceResponse(url.hostname)
+    return devRuntimeEvidenceResponse(url.hostname)
   }
   if (request.method === 'POST' && url.pathname === '/internal/v1/checkouts/prepare') {
     return checkoutPrepareResponse(request)
@@ -134,45 +132,59 @@ export async function devProviderFetch(request: Request): Promise<Response> {
     return checkoutConfirmResponse(request)
   }
   if (request.method === 'GET' && url.pathname === '/internal/v1/checkouts/status') {
-    return checkoutStatusResponse(url)
+    return checkoutStatusResponse(request)
+  }
+  if (request.method === 'GET' && /^\/internal\/v1\/offers\/[^/]+\/observe$/u.test(url.pathname)) {
+    return offerObservationResponse(request)
   }
   if (request.method === 'GET' && url.pathname === '/v1/vendors') {
     return Response.json({ ok: true, contract: MARKETPLACE_PROVIDER_CONTRACT, demo: true, vendors: [] })
   }
   if (request.method === 'GET' && /^\/v1\/settlements\/[^/]+$/u.test(url.pathname)) {
-    return Response.json({
+    const binding = await marketplaceOperationBinding(request)
+    if (!binding) return providerError(MARKETPLACE_PROVIDER_CONTRACT, 'operational_evidence_binding_invalid', 409)
+    return providerJson({
       ok: true,
       contract: MARKETPLACE_PROVIDER_CONTRACT,
       demo: true,
       splitId: url.pathname.split('/').at(-1),
       state: 'settled',
-    })
+    }, 200, binding)
   }
   if (request.method === 'POST' && /^\/v1\/vendors\/[^/]+\/transition$/u.test(url.pathname)) {
+    const binding = await marketplaceOperationBinding(request)
+    if (!binding) return providerError(MARKETPLACE_PROVIDER_CONTRACT, 'operational_evidence_binding_invalid', 409)
     const body = await bodyRecord(request)
-    if (!body || typeof body.state !== 'string') {
-      return providerError(MARKETPLACE_PROVIDER_CONTRACT, 'vendor_transition_malformed', 400)
+    const vendorId = decodeURIComponent(url.pathname.split('/')[3] ?? '')
+    const fenced = admitDevAuthoringMutation(request, vendorTransitionClaim(vendorId))
+    if (!fenced.ok) {
+      return providerError(MARKETPLACE_PROVIDER_CONTRACT, fenced.code, 409, binding, fenced.permit)
     }
-    return Response.json({
+    if (!body || typeof body.state !== 'string') {
+      return providerError(MARKETPLACE_PROVIDER_CONTRACT, 'vendor_transition_malformed', 400, binding, fenced.permit)
+    }
+    return providerJson({
       ok: true,
       contract: MARKETPLACE_PROVIDER_CONTRACT,
       demo: true,
-      vendorId: decodeURIComponent(url.pathname.split('/')[3] ?? ''),
+      vendorId,
       state: body.state,
-    })
+    }, 200, binding, fenced.permit)
   }
   return Response.json({ ok: false, contract: DEMO_CONTRACT, code: 'not_found' }, { status: 404 })
 }
 
 async function admissionResponse(request: Request): Promise<Response> {
   const body = await bodyRecord(request)
+  const fenced = admitDevAuthoringMutation(request, AGENT_REGISTRY_CLAIM)
+  if (!fenced.ok) return admissionRejection(fenced.code, fenced.permit)
   const fields = body ? Object.keys(body).sort() : []
   if (!body || JSON.stringify(fields) !== JSON.stringify([
     'agent_definition',
     'invocation_register_entry',
     'operator_instruction_ref',
     'tool_allowlist_entry',
-  ])) return admissionRejection('registration_input_invalid')
+  ])) return admissionRejection('registration_input_invalid', fenced.permit)
 
   const definition = isRecord(body.agent_definition) ? body.agent_definition : null
   const allowlist = isRecord(body.tool_allowlist_entry) ? body.tool_allowlist_entry : null
@@ -195,7 +207,7 @@ async function admissionResponse(request: Request): Promise<Response> {
     || !invocation
     || invocationTokens.some((token) => typeof token !== 'string' || !declaredTokens.has(token))
     || typeof reference !== 'string'
-    || reference.trim().length === 0) return admissionRejection('registration_input_rejected')
+    || reference.trim().length === 0) return admissionRejection('registration_input_rejected', fenced.permit)
 
   return Response.json({
     status: 'registered',
@@ -210,10 +222,10 @@ async function admissionResponse(request: Request): Promise<Response> {
       registered_at_ms: 1_787_702_400_000,
     },
     finding: null,
-  })
+  }, { headers: devAuthoringHeaders(fenced.permit) })
 }
 
-function admissionRejection(reasonCode: string): Response {
+function admissionRejection(reasonCode: string, permit: ClaimMutationPermit | null): Response {
   return Response.json({
     status: 'rejected',
     record: null,
@@ -225,16 +237,24 @@ function admissionRejection(reasonCode: string): Response {
       message: 'The demo-only ACOS admission fixture rejected the registration.',
       details: {},
     },
-  }, { status: 409 })
+  }, { status: 409, headers: devAuthoringHeaders(permit) })
 }
 
 function capabilityResponse(hostname: string): Response {
+  if (hostname === 'discovery-provider.internal') {
+    return Response.json({
+      ok: true,
+      contract: DISCOVERY_PROVIDER_CONTRACT,
+      demo: true,
+      operations: ['mcp-dispatch-evidence-bound'],
+    })
+  }
   if (hostname === 'checkout-provider.internal') {
     return Response.json({
       ok: true,
       contract: CHECKOUT_PROVIDER_CONTRACT,
       demo: true,
-      operations: ['prepare', 'confirm', 'status'],
+      operations: ['prepare', 'confirm', 'status', 'offer-observe'],
     })
   }
   if (hostname === 'marketplace-provider.internal') {
@@ -242,51 +262,15 @@ function capabilityResponse(hostname: string): Response {
       ok: true,
       contract: MARKETPLACE_PROVIDER_CONTRACT,
       demo: true,
-      operations: ['vendor-list', 'vendor-transition', 'settlement-read'],
+      operations: ['vendor-list', 'vendor-transition-fenced', 'settlement-read'],
     })
   }
   return Response.json({ ok: false, contract: DEMO_CONTRACT, code: 'provider_unknown' }, { status: 404 })
 }
 
-function runtimeEvidenceResponse(hostname: string): Response {
-  if (hostname === 'checkout-provider.internal') {
-    return upstreamEvidenceResponse(
-      CHECKOUT_PROVIDER_CONTRACT,
-      CHECKOUT_EVIDENCE_PIN,
-      CHECKOUT_EVIDENCE_CHECKS,
-    )
-  }
-  if (hostname === 'marketplace-provider.internal') {
-    return upstreamEvidenceResponse(
-      MARKETPLACE_PROVIDER_CONTRACT,
-      MARKETPLACE_EVIDENCE_PIN,
-      MARKETPLACE_EVIDENCE_CHECKS,
-    )
-  }
-  return providerError(DEMO_CONTRACT, 'provider_unknown', 404)
-}
-
-function upstreamEvidenceResponse(
-  contract: string,
-  pin: UpstreamEvidencePin,
-  checks: readonly string[],
-): Response {
-  return Response.json({
-    ok: true,
-    contract,
-    evidence: {
-      schema: UPSTREAM_RUNTIME_EVIDENCE_SCHEMA,
-      prdRevision: COMMERCE_PRD_REVISION,
-      sourceRevision: pin.sourceRevision,
-      receiptDigest: pin.receiptDigest,
-      storageCompatibilityRevision: pin.storageCompatibilityRevision,
-      providerVersionId: pin.providerVersionId,
-      checks: checks.map((name) => ({ name, ok: true })),
-    },
-  })
-}
-
 async function checkoutPrepareResponse(request: Request): Promise<Response> {
+  const binding = await checkoutOperationBinding(request)
+  if (!binding) return providerError(CHECKOUT_PROVIDER_CONTRACT, 'operational_evidence_binding_invalid', 409)
   const body = await bodyRecord(request)
   if (!body
     || Object.keys(body).sort().join(',') !== 'agentId,amountMinor,budgetMinor,checkoutId,contract,currency,idempotencyKey,intentId,offerId,offerProviderRevision,offerReceiptDigest'
@@ -303,7 +287,7 @@ async function checkoutPrepareResponse(request: Request): Promise<Response> {
     || Number(body.amountMinor) > Number(body.budgetMinor)
     || typeof body.currency !== 'string'
     || !/^[A-Z]{3}$/u.test(body.currency)) {
-    return providerError(CHECKOUT_PROVIDER_CONTRACT, 'checkout_prepare_malformed', 400)
+    return providerError(CHECKOUT_PROVIDER_CONTRACT, 'checkout_prepare_malformed', 400, binding)
   }
   const partial: Omit<GuardrailReceipt, 'receiptDigest'> = Object.freeze({
     schema: GUARDRAIL_RECEIPT_SCHEMA,
@@ -315,21 +299,23 @@ async function checkoutPrepareResponse(request: Request): Promise<Response> {
     amountMinor: Number(body.amountMinor),
     budgetMinor: Number(body.budgetMinor),
     currency: body.currency,
-    providerRevision: CHECKOUT_EVIDENCE_PIN.sourceRevision,
+    providerRevision: DEV_CHECKOUT_EVIDENCE_PIN.sourceRevision,
   })
   const guardrailReceipt: GuardrailReceipt = Object.freeze({
     ...partial,
     receiptDigest: await digestGuardrailReceipt(partial),
   })
-  return Response.json({
+  return providerJson({
     ok: true,
     contract: CHECKOUT_PROVIDER_CONTRACT,
     guardrailPassed: true,
     guardrailReceipt,
-  })
+  }, 200, binding)
 }
 
 async function checkoutConfirmResponse(request: Request): Promise<Response> {
+  const binding = await checkoutOperationBinding(request)
+  if (!binding) return providerError(CHECKOUT_PROVIDER_CONTRACT, 'operational_evidence_binding_invalid', 409)
   const body = await bodyRecord(request)
   if (!body
     || Object.keys(body).sort().join(',') !== 'amountMinor,checkoutId,contract,currency,guardrailReceipt,guardrailReceiptDigest,humanConfirmationDigest,idempotencyKey,offerId'
@@ -345,7 +331,7 @@ async function checkoutConfirmResponse(request: Request): Promise<Response> {
     || body.idempotencyKey.length > 256
     || !validSha256(body.humanConfirmationDigest)
     || !validSha256(body.guardrailReceiptDigest)) {
-    return providerError(CHECKOUT_PROVIDER_CONTRACT, 'checkout_confirmation_malformed', 400)
+    return providerError(CHECKOUT_PROVIDER_CONTRACT, 'checkout_confirmation_malformed', 400, binding)
   }
   const prior = DEV_SETTLEMENTS.get(body.idempotencyKey)
   if (prior) {
@@ -356,8 +342,8 @@ async function checkoutConfirmResponse(request: Request): Promise<Response> {
       && prior.humanConfirmationDigest === body.humanConfirmationDigest
       && prior.guardrailReceiptDigest === body.guardrailReceiptDigest
     return sameRequest
-      ? settlementResponse(prior)
-      : providerError(CHECKOUT_PROVIDER_CONTRACT, 'checkout_confirmation_precondition_failed', 409)
+      ? settlementResponse(prior, binding)
+      : providerError(CHECKOUT_PROVIDER_CONTRACT, 'checkout_confirmation_precondition_failed', 409, binding)
   }
   const partial: Omit<SettlementReceipt, 'receiptDigest'> = Object.freeze({
     schema: SETTLEMENT_RECEIPT_SCHEMA,
@@ -369,7 +355,7 @@ async function checkoutConfirmResponse(request: Request): Promise<Response> {
     idempotencyKey: body.idempotencyKey,
     humanConfirmationDigest: body.humanConfirmationDigest,
     guardrailReceiptDigest: body.guardrailReceiptDigest,
-    providerRevision: CHECKOUT_EVIDENCE_PIN.sourceRevision,
+    providerRevision: DEV_CHECKOUT_EVIDENCE_PIN.sourceRevision,
     state: 'settled',
   })
   const receipt: SettlementReceipt = Object.freeze({
@@ -377,26 +363,48 @@ async function checkoutConfirmResponse(request: Request): Promise<Response> {
     receiptDigest: await digestSettlementReceipt(partial),
   })
   DEV_SETTLEMENTS.set(body.idempotencyKey, receipt)
-  return settlementResponse(receipt)
+  return settlementResponse(receipt, binding)
 }
 
-function checkoutStatusResponse(url: URL): Response {
+async function checkoutStatusResponse(request: Request): Promise<Response> {
+  const binding = await checkoutOperationBinding(request)
+  if (!binding) return providerError(CHECKOUT_PROVIDER_CONTRACT, 'operational_evidence_binding_invalid', 409)
+  const url = new URL(request.url)
   const idempotencyKey = url.searchParams.get('idempotencyKey')
   if (!idempotencyKey || [...url.searchParams.keys()].join(',') !== 'idempotencyKey') {
-    return providerError(CHECKOUT_PROVIDER_CONTRACT, 'checkout_status_malformed', 400)
+    return providerError(CHECKOUT_PROVIDER_CONTRACT, 'checkout_status_malformed', 400, binding)
   }
   const receipt = DEV_SETTLEMENTS.get(idempotencyKey)
   return receipt
-    ? settlementResponse(receipt)
-    : providerError(CHECKOUT_PROVIDER_CONTRACT, 'settlement_not_found', 404)
+    ? settlementResponse(receipt, binding)
+    : providerError(CHECKOUT_PROVIDER_CONTRACT, 'settlement_not_found', 404, binding)
 }
 
-function settlementResponse(receipt: SettlementReceipt): Response {
-  return Response.json({ ok: true, contract: CHECKOUT_PROVIDER_CONTRACT, settlementReceipt: receipt })
+async function offerObservationResponse(request: Request): Promise<Response> {
+  const binding = await checkoutOperationBinding(request)
+  if (!binding) return providerError(CHECKOUT_PROVIDER_CONTRACT, 'operational_evidence_binding_invalid', 409)
+  const url = new URL(request.url)
+  const offerId = decodeURIComponent(url.pathname.split('/')[4] ?? '')
+  const agentId = url.searchParams.get('agentId')
+  if (!validIdentifier(offerId) || !validIdentifier(agentId)) {
+    return providerError(CHECKOUT_PROVIDER_CONTRACT, 'offer_observation_malformed', 400, binding)
+  }
+  return providerJson({
+    ok: true,
+    contract: CHECKOUT_PROVIDER_CONTRACT,
+    observed: { priceMinor: 12_500, available: true },
+  }, 200, binding)
+}
+
+function settlementResponse(receipt: SettlementReceipt, binding: OperationalEvidenceBinding): Response {
+  return providerJson({ ok: true, contract: CHECKOUT_PROVIDER_CONTRACT, settlementReceipt: receipt }, 200, binding)
 }
 
 async function mcpResponse(request: Request): Promise<Response> {
   if (request.method === 'DELETE') return new Response(null, { status: 204 })
+  const discoveryBinding = request.headers.get('x-commerce-contract') === DISCOVERY_PROVIDER_CONTRACT
+    ? await discoveryOperationBinding(request)
+    : null
   const rpc = await bodyRecord(request)
   if (!rpc) return rpcError(null, -32_700, 'Parse error')
   if (rpc.method === 'notifications/initialized') return new Response(null, { status: 204 })
@@ -418,14 +426,19 @@ async function mcpResponse(request: Request): Promise<Response> {
     return rpcError(rpc.id, -32_601, 'Method not found')
   }
   const args = isRecord(rpc.params.arguments) ? rpc.params.arguments : {}
-  const payload = rpc.params.name === DOCS_INVOCATION_TOOL
+  const invocationCall = rpc.params.name === DOCS_INVOCATION_TOOL
+  if (!invocationCall
+    && !discoveryBinding) {
+    return rpcError(rpc.id, -32_003, 'Discovery operational evidence binding invalid')
+  }
+  const payload = invocationCall
     ? invocationPayload(args)
     : await discoveryPayload(rpc.params.name, args)
   return rpcResult(rpc.id, {
     content: [{ type: 'text', text: JSON.stringify(payload) }],
     structuredContent: payload,
     isError: payload.ok === false,
-  })
+  }, discoveryBinding ? operationalEvidenceResponseHeaders(discoveryBinding) : {})
 }
 
 function invocationPayload(args: Record<string, unknown>): Record<string, unknown> {
@@ -468,7 +481,7 @@ async function discoveryPayload(toolName: unknown, args: Record<string, unknown>
     offerId: 'offer-1',
     amountMinor: 12_500,
     currency: 'USD',
-    providerRevision: CHECKOUT_EVIDENCE_PIN.sourceRevision,
+    providerRevision: DEV_CHECKOUT_EVIDENCE_PIN.sourceRevision,
   })
   const offer: DiscoveryOfferReceipt = Object.freeze({
     ...partial,
@@ -490,8 +503,32 @@ async function bodyRecord(request: Request): Promise<Record<string, unknown> | n
   return isHttpFailure(body) ? null : body
 }
 
-function providerError(contract: string, code: string, status: number): Response {
-  return Response.json({ ok: false, contract, code }, { status })
+function providerJson(
+  value: unknown,
+  status: number,
+  binding: OperationalEvidenceBinding,
+  permit: ClaimMutationPermit | null = null,
+): Response {
+  return Response.json(value, { status, headers: providerHeaders(binding, permit) })
+}
+
+function providerError(
+  contract: string,
+  code: string,
+  status: number,
+  binding?: OperationalEvidenceBinding,
+  permit: ClaimMutationPermit | null = null,
+): Response {
+  const init: ResponseInit = binding
+    ? { status, headers: providerHeaders(binding, permit) }
+    : { status }
+  return Response.json({ ok: false, contract, code }, init)
+}
+
+function providerHeaders(binding: OperationalEvidenceBinding, permit: ClaimMutationPermit | null): Headers {
+  const headers = new Headers(operationalEvidenceResponseHeaders(binding))
+  for (const [name, value] of Object.entries(devAuthoringHeaders(permit))) headers.set(name, value)
+  return headers
 }
 
 function rpcResult(id: unknown, result: unknown, headers: HeadersInit = {}): Response {

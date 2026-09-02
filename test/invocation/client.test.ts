@@ -12,7 +12,7 @@ import {
 
 const SOURCE_REVISION = "a".repeat(40);
 const SESSION_ID = "fixture-session-1";
-const ENDPOINT = "https://commerce.test/knowgrph/control-plane/mcp";
+const ENDPOINT = "https://commerce.test/agenticgraph/control-plane/mcp";
 
 const CATALOG: readonly InvocationCatalogEntry[] = Object.freeze([
   Object.freeze({

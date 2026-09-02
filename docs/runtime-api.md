@@ -1,176 +1,252 @@
 # Runtime API and ownership contract
 
-## Boundaries
+## Boundaries and authorities
 
-The edge Worker is the only client-facing component in this repository. Its
-Production configuration has no public route: an authorized consumer Worker must
-bind or proxy it. The core Worker has no public route in any environment and
-accepts application calls only through the `commerce.edge-core/v1` internal
-contract header and exact release-candidate header.
+The edge Worker is the only client-facing runtime in this repository. Production
+declares the single route `airvio.co/agentic-commerce-os`; the core Worker has no
+public route and accepts application calls only through the
+`commerce.edge-core/v1` Service Binding contract and the exact serving candidate
+header.
 
-Two bearer authorities are intentionally separate:
+Four authorities remain distinct:
 
-- `MCP_BEARER_TOKEN` authorizes MCP and non-operator HTTP calls.
-- `OPERATOR_BEARER_TOKEN` authorizes agent registration, deregistration, registry
-  event reads, and vendor lifecycle transitions.
+- public reads expose only sanitized storefront, liveness, public-agent, and
+  merchant-catalog projections;
+- the origin-bound `__Host-ag_session` cookie permits only `storefront:read` and
+  `checkout:prepare` for 15 minutes;
+- `MCP_BEARER_TOKEN` authorizes agent MCP and protected agent HTTP calls; and
+- `OPERATOR_BEARER_TOKEN` authorizes the separate operator MCP and operator HTTP
+  surface. Mutations additionally carry the current authoring claim and fence.
 
-Both must be distinct. Production rejects either value below 32 characters.
-Allowed browser origins are an exact origin list including scheme and port; responses include an exact
-origin CORS header only after that check passes. Request and dependency response
-bodies are streamed under explicit byte bounds.
+The bearer secrets must be distinct and at least 32 characters in Production.
+`STOREFRONT_SESSION_SECRET` must also be at least 32 characters and signs only
+the first-party session and its short-lived checkout challenge. Generate all three with a cryptographically
+secure password generator and install them as Worker secrets; never commit or
+log their values. Allowed browser origins are an exact scheme, host, and port
+list.
 
-## MCP endpoint
+Staging and Production also require the public
+`HUMAN_CONFIRMATION_TRUST_ANCHOR_JSON` variable. It names one issuer and one
+Ed25519 SPKI public key under
+`agentic-graph-human-presence-trust-anchor/v1`. The key is not a secret, but an
+invalid, absent, or placeholder anchor makes the operational edge and readiness
+fail closed. The same-origin browser adapter `globalThis.agenticGraphHumanPresence.authorize`
+must return a fresh `agentic-graph-human-presence-receipt/v2` signed by that
+issuer. The signed assertion binds the stable
+`agentic-graph-commerce-checkout` audience and exact HTTPS relying-party origin
+in addition to the checkout facts; the repository never holds the issuer's
+private key.
 
-`POST /mcp` implements stateless Streamable HTTP using MCP protocol
-`2025-06-18`. Every request requires `Authorization: Bearer <MCP_BEARER_TOKEN>`.
-The transport accepts bounded JSON objects and returns JSON rather than holding
-an SSE stream.
+## MCP endpoints and the one token authority
 
-| Tool | Mutation | Contract |
-|---|---:|---|
-| `commerce.runtime.status` | no | Exact edge/core readiness report |
-| `commerce.invocation.resolve` | no | Resolve exact `/`, `#`, and `@` tokens through the pinned canonical projection |
-| `commerce.registry.list` | no | Revision- and digest-bound active/inactive agent snapshot |
-| `commerce.intent.route` | discovery call | Persist one routing decision, then call at most one registered tool |
-| `commerce.checkout.prepare` | guardrail only | Require completed routing evidence, evaluate guardrails, and return a short-lived confirmation token |
-| `commerce.checkout.confirm` | yes | Persist human confirmation before one settlement-provider call |
-| `commerce.vendor.list` | no | Read the marketplace-owner vendor projection |
-| `commerce.settlement.get` | no | Read one stored settlement/split projection |
+`POST /mcp` and `POST /mcp/operator` implement stateless Streamable HTTP with
+JSON responses. The first requires the agent bearer; the second requires the
+operator bearer. Operator mutation tools forward
+`x-authoring-semantic-scope`, `x-authoring-claim-id`,
+`x-authoring-lease-epoch`, and `x-authoring-fence-revision` to the core. Core
+admission additionally binds each requested mutation to its exact required
+write target; matching only the broader declared write set is insufficient.
+After read-only preparation, core reserves the exact epoch immediately before
+the first mutation. Permit v2 binds a stable operation identifier, canonical
+request digest, and monotonic per-scope mutation sequence. The coordinator
+resumes only that exact operation; a different operation receives
+`mutation_reconciliation_required`, and lease expiry never deletes or reopens
+an unresolved reservation. Its status RPC reports `reconciliation_required`
+until the exact terminal result is completed. Durable Object targets persist
+the sequence high-water mark and a terminal outcome journal in the same
+transaction as the business write. The latest exact retry receives its cached
+outcome, while an A/B/A same-lease replay is stale. Fenced provider requests
+must echo every permit field. Unknown or unconfirmed provider outcomes remain
+held for explicit reconciliation because those providers expose no atomic
+terminal journal or cancellation proof.
 
-Agent and vendor administration are deliberately absent from MCP. They remain
-operator-authorized HTTP operations so tool discovery cannot be mistaken for
-mutation authority.
+Every tool first resolves the existing `/tool.route` command through the pinned
+upstream Invocation Catalog. `config/capability-token-map.json` is a projection,
+not another dictionary: every action reuses only `/tool.route`, `#mcp`, and
+`@mcp-gateway`. It records the MCP tool and any equivalent HTTP route so an
+action cannot quietly become HTTP-only.
+
+Agent tools:
+
+| Tool | Effect |
+|---|---|
+| `commerce.runtime.status` | Read split source/live readiness |
+| `commerce.invocation.resolve` | Resolve pinned `/`, `#`, and `@` entries |
+| `commerce.registry.list` | Read the authority-bearing registry |
+| `commerce.catalog.public.list` | Read the allowlisted public projection |
+| `commerce.catalog.merchant.read` | Read one merchant-scoped catalog |
+| `commerce.intent.route` | Select and dispatch at most one eligible agent, then at most one fallback |
+| `commerce.checkout.prepare` | Validate routing evidence and obtain a short-lived confirmation challenge |
+| `commerce.checkout.confirm` | Return `human_confirmation_required`; backend MCP never forwards settlement |
+| `commerce.revenue.period.read` | Read ordered derived-markup lines and a recomputed total |
+| `commerce.vendor.list` | Read the upstream vendor projection |
+| `commerce.settlement.get` | Read one upstream settlement/split projection |
+
+Operator tools:
+
+| Tool | Effect |
+|---|---|
+| `commerce.agent.register` | Store an exact ACOS-admitted registration |
+| `commerce.agent.deregister` | CAS-bound deregistration |
+| `commerce.registry.events` | Read ordered registry evidence |
+| `commerce.vendor.transition` | Forward an authority-checked lifecycle decision |
+| `commerce.theme.deploy` | Validate and activate one merchant theme |
+| `commerce.release.boundary.read` | Read boundaries without advancing them |
+| `commerce.authoring.claim.acquire` | Acquire one bounded semantic-scope claim |
+| `commerce.authoring.claim.release` | Release the exact claim and epoch |
+| `commerce.authoring.claim.admit` | Verify claim, lease, scope, and fence without mutation |
+
+`commerce.checkout.confirm` remains discoverable through authenticated backend
+MCP but always returns `human_confirmation_required`. Direct backend MCP and
+agent HTTP calls never forward settlement. A storefront session alone and the
+WebMCP surface cannot call confirm or supply a substitute for visual human
+confirmation.
 
 ## HTTP edge
 
 | Method and path | Authority | Effect |
 |---|---|---|
-| `GET /` | none | Read-only browser console with sanitized release metadata and probe links |
-| `GET /livez` | none | Process liveness and version metadata |
-| `GET /readyz` | none | Fail-closed dependency and candidate report |
-| `GET /v1/registry` | MCP | Registry snapshot |
-| `POST /v1/intents/route` | MCP | Exclusive, idempotent intent dispatch |
-| `POST /v1/checkouts/{id}/prepare` | MCP | Guardrail evaluation after exact routing evidence |
-| `POST /v1/checkouts/{id}/confirm` | MCP | One-time human-confirmed settlement request |
-| `GET /v1/checkouts/{id}` | MCP | Checkout state and ordered evidence events |
-| `GET /v1/vendors` | MCP | Vendor-owner projection |
-| `GET /v1/settlements/{splitId}` | MCP | Settlement-owner projection |
-| `POST /v1/operator/agents` | operator | Request authoritative ACOS admission and store its receipt |
-| `DELETE /v1/operator/agents/{agentId}` | operator | CAS-bound deregistration |
-| `GET /v1/operator/registry/events` | operator | Ordered registration audit events |
-| `POST /v1/operator/vendors/{vendorId}/transition` | operator | Forward an explicit lifecycle decision |
+| `GET /` | public | Default mobile-first Storefront Console in a direct Worker/Dev request |
+| `GET /agentic-commerce-os` | public | Exact Production route: closed-boundary HTML plus no-store typed route-readiness headers |
+| `GET /s/{merchantId}` | public | The same console with an activated merchant theme |
+| `GET /assets/storefront.js` | public | First-party client module |
+| `GET /livez` | public | Lane, candidate, and version metadata |
+| `GET /readyz` | public | Fail-closed dependency, source, and live-release report |
+| `POST /v1/session` | same-origin public request | Issue the bounded first-party shopper session |
+| `GET /v1/public/agents` | public | Sanitized active-agent projection |
+| `GET /v1/public/merchants/{merchantId}/catalog` | public | Theme-scoped merchant listings |
+| `GET /v1/registry` | agent | Authority-bearing registry snapshot |
+| `POST /v1/intents/route` | shopper session or agent | Deterministic selection and bounded dispatch |
+| `POST /v1/checkouts/{id}/prepare` | shopper session or agent | Guardrail preparation only |
+| `POST /v1/checkouts/{id}/confirm` | agent only | Return `human_confirmation_required`; never forward settlement |
+| `POST /v1/human/checkouts/{id}/confirm` | same-origin session + CSRF + one-use proof + externally signed user-presence receipt | Validate the exact visual facts and then forward settlement |
+| `GET /v1/revenue` | agent | Ordered derived-markup period read |
+| `GET /v1/vendors` | agent | Upstream vendor projection |
+| `GET /v1/settlements/{splitId}` | agent | Upstream settlement projection |
+| `POST /v1/operator/agents` | operator + claim | ACOS-admitted registration |
+| `DELETE /v1/operator/agents/{agentId}` | operator + claim | CAS-bound deregistration |
+| `GET /v1/operator/registry/events` | operator | Ordered registration evidence |
+| `POST /v1/operator/vendors/{vendorId}/transition` | operator + claim | Vendor transition |
+| `POST /v1/operator/merchants/{merchantId}/theme` | operator + claim | Theme activation |
+| `POST /v1/operator/claims/{acquire,release,admit}` | operator | Claim lifecycle or admission check |
+| `GET /v1/operator/release-boundaries` | operator | Read-only boundary projection |
 
-Every JSON response has `cache-control: no-store`, a request ID, content sniffing
-protection, and a default-deny content security policy where applicable. The
-browser console is also `no-store`, uses no client script or third-party asset,
-and cannot receive MCP or operator bearer credentials.
+JSON responses are `no-store`, carry a request identifier and content-sniffing
+protection, and expose no secret. The console uses only the same
+`StorefrontActions` functions that the three page WebMCP tools use: catalog
+search, offer selection, and checkout initiation. Browsers without a
+model-context registration API retain the complete visual surface without a
+shopper-facing registration error.
 
-## Agent registration
+The configured Production route is exactly
+`https://airvio.co/agentic-commerce-os`, without a wildcard. That request does
+not expose the nested API, asset, merchant-storefront, MCP, WebMCP, or Sandbox
+surfaces listed above. It renders closed-boundary HTML and derives live evidence
+only for that same request, returning
+`x-commerce-live-readiness-contract`, `x-commerce-live-readiness`,
+`x-commerce-live-readiness-reason`, and—only when verified—the candidate and
+edge/core version identifiers. `GET /readyz` remains a fail-closed source/live
+diagnostic when the Worker is reached directly; its result is never reused as
+proof for the exact Production route.
 
-Registration accepts the authoritative ACOS inputs `agentDefinition`,
-`toolAllowlistEntry`, `invocationRegisterEntry`, and
-`operatorInstructionRef`, plus a local `commerceProjection` containing only
-`category` and `discoveryTool`, and `expectedPreviousContentHash`. The core
-forwards exactly those four authoritative inputs over the private
-`ACOS_ADMISSION` Service Binding. It does not maintain another Agent Definition
-schema or validation policy.
+## Registration, routing, and public projection
 
-An active local record is created only when the provider returns a successful
-wrapper containing an exact `acos-adapter-registration/v1` record. The receipt
-must bind the Agent Definition id, allowlist entry and adapter identity, ordered
-Invocation Register tokens, active result, operator instruction reference, and
-registration time to the forwarded inputs. The projected discovery tool must
-also be present in the admitted allowlist entry.
+Registration forwards the authoritative `agentDefinition`,
+`toolAllowlistEntry`, `invocationRegisterEntry`, and `operatorInstructionRef` to
+`ACOS_ADMISSION`. The local projection adds declared category, discovery tool,
+selection attributes, and optional fallback. Stored rows bind the exact
+admission receipt, content hash, and pinned invocation proof. Multiple active
+agents may share a category; readiness requires at least one verified active
+`flight` and one verified active `shopping` agent and zero stale invocation pin.
 
-Before admission, the core resolves the configured `/tool.route`, `#mcp`, and
-`@mcp-gateway` tuple through the pinned catalog. It stores that invocation proof
-with the four inputs, exact receipt, local commerce projection, SHA-256 input
-digest, and a SHA-256 digest over inputs + receipt + invocation proof +
-projection.
-Every read recomputes both digests; only a verified active record is routable or
-checkout-eligible. The record and event commit in one SQLite transaction, with
-compare-and-swap replacement and exactly one active owner per local category.
-Readiness requires a valid ACOS admission capability probe, exactly one verified
-active `flight` and `shopping` admission, and every active row to match the
-current catalog revision, catalog/routing digests, counts, and required tuple.
+Selection is deterministic and model-free. Price, quality, and latency are
+normalized under the externalized policy; equal scores resolve by ascending
+agent identifier. The core persists the eligible set, selected agent, declared
+attributes, and fallback before provider egress. The public projection includes
+only agent identifier, declared category, declared capabilities, and declared
+trust status. A merchant catalog is the intersection of that public projection
+and the activated Theme Manifest scope.
 
-## Routing and checkout ordering
+## Checkout, offer observation, and derived revenue
 
-One `IntentRoute` Durable Object is keyed by `intentId`. It stores the request
-digest and selected agent before calling the discovery MCP tool. The tool must
-return an exact `commerce.discovery-receipt/v1` envelope. Every offer is bound to
-the intent and its digest, admitted agent, offer id, amount, currency, pinned
-provider revision, and its own recomputed digest. Arbitrary tool output and
-duplicate offers fail closed. Replaying the same intent returns the stored
-receipt; changing a reused `intentId` is rejected. An interrupted provider call
-becomes an unknown result and is never automatically reissued.
-Known payment-credential fields are rejected before discovery egress, and
-checkout accepts only its exact field set, so caller-supplied credential material
-cannot be propagated to either provider.
+An `IntentRoute` object seals request identity before calling the selected
+discovery tool. An interrupted discovery result is not blindly replayed.
+Checkout preparation requires the exact stored offer, its receipt digest and
+provider revision, a still-active agent, and the same amount and currency.
 
-Checkout preparation requires one exact stored offer for the same `intentId`,
-`agentId`, `offerId`, amount, currency, receipt digest, and pinned provider
-revision, plus a still-active registry row. One `CheckoutSession` object is
-keyed by `checkoutId` and persists:
+`CheckoutSession` records guardrail evidence and a ten-minute confirmation
+challenge. Its alarm observes held price, availability, and agent activity at
+bounded intervals. A change or suspended observation invalidates prior
+confirmation. The edge then mints a fresh challenge over the complete ordered
+blocker-set digest, displays every old/new value and event type, and accepts only
+a new signed presence receipt over that exact set. The receipt also binds the
+shopper-principal digest, storefront-session nonce digest, checkout, offer,
+integer minor-unit amount, ISO currency, expiry, and issuer. The
+human-confirmed event is committed before settlement egress. Ambiguous egress
+becomes `reconciliation_required` and only status readback with the original
+idempotency key can settle it.
 
-1. the bounded request and routing identity;
-2. an exact digest-bound upstream guardrail-pass receipt;
-3. a ten-minute human-confirmation token and digest;
-4. the human-confirm event before provider egress; and
-5. an exact settlement receipt bound to the guardrail receipt, human-confirmation
-   digest, provider revision, and stable idempotency key.
+After settlement is recorded, the configured integer basis-point rate produces
+a half-up markup line. `RevenueLedger` is an idempotent, append-only derived
+ledger keyed by settlement identifier; it never changes the amount sent to the
+payment owner. A ledger failure appends `markup_deferred` without reversing the
+settlement. The `commerce.markup-outbox/v2` record pins the validated integer
+`appliedRateBasisPoints` alongside the settlement inputs before any deferred
+recovery. Finalization stays pending under a capped exponential alarm (at most
+fifteen minutes between attempts), and recovery derives the line only from that
+pinned rate, even after configuration changes. It retries only the derived
+ledger append and never resubmits the provider charge. Legacy deferred records
+without a pinned rate fail closed. This is capability evidence, not proof of
+external paying demand.
 
-Prepare and confirm use stable provider idempotency keys. Once confirm egress has
-started, a timeout, non-success response, or malformed receipt becomes
-`reconciliation_required`, never `failed`. Repeating the same confirmation does
-not issue another settlement POST: it performs the provider's status GET with
-the stored idempotency key and advances only on the same exact settlement
-receipt. The upstream service remains the sole money and reconciliation owner.
+## Theme, local-first, and isolation boundaries
 
-## Canonical invocation reuse
+Theme validation bounds the manifest to 64 KiB, its catalog scope to 500 agent
+identifiers, and shopper copy to 280 characters per field. Activation occurs
+only after all scoped agents are registered and external assets pass the bounded
+fetch checks; otherwise the prior activation remains current. Default and
+merchant deployments use the same Storefront Console implementation.
 
-The invocation client owns no copied command dictionary. It initializes the
-existing docs MCP endpoint, hydrates all three sigils, recomputes canonical
-catalog and routing SHA-256 digests, verifies exact counts and revision-bound
-source URLs, and then rechecks every requested token against the same proof.
-Metadata drift between any response fails closed.
+The client keeps the last completed snapshot and up to 500 ordered local changes
+in IndexedDB. Offline mode disables checkout settlement and replay retains each
+change until acknowledgement. Core merge is a deterministic per-field merge
+with an append-only event log. `AuthoringClaim` separately enforces one active
+writer per semantic scope and rejects stale leases and fences. A point-in-time
+admission is not mutation authority: every stateful target receives a reserved
+permit and atomically advances its local epoch high-water mark with the write.
 
-The current Staging/Production pinned proof is declared in each non-inheritable
-Wrangler environment:
+The Sandbox Executor is a separate Dev-only Worker using the exact-pinned
+Cloudflare Sandbox SDK. It accepts only `theme-build`, `registration-dry-run`, or
+`unshipped-surface-build` purposes, applies an explicit request wall-clock bound
+and the configured 256 MiB container ceiling, records attempted calls, refuses
+calls outside the declared allowlist, and terminates the instance. The
+repository-owned unshipped-surface harness byte-binds the exact shipped WebMCP
+runtime and strictly validates its drift-refusal result. This is not evidence
+that the task 12.7 browser lane ran inside a provisioned container; that
+evidence gap keeps the WebMCP and Sandbox delivery boundaries closed. The
+Sandbox Worker has no Production route or release authority.
 
-| Field | Value |
-|---|---|
-| Source revision | `415e914da9e757387b992a5b03d89ac8855cb310` |
-| Catalog digest | `2aa96c1240edb86579588408606af170abad243995cdd3b5ca77b91635c5f25b` |
-| Routing schema | `agentic-canvas-os-docs-routing/v1` |
-| Routing digest | `cba48df57e4e825b2111fee720d81382714baec8e45e0e270f6e496e61a703b3` |
-| Counts | command 142, semantic 142, binding 136 |
-| Required tuple | `/tool.route`, `#mcp`, `@mcp-gateway` |
+## Upstream convergence and ownership
 
-Local Dev uses a demo-only 1/1/1 catalog containing only that required tuple.
-It is a deterministic fixture, carries an all-`a` non-release source revision,
-and is never accepted by the Production pins or release-candidate check.
+The core accepts a provider only when every declared required check is present
+and passing and the exact source, receipt, storage, and provider identities
+match. Named surplus checks do not block, and a compatible higher minor PRD
+revision is reported as convergence with surplus. Missing, failing, unnamed, or
+incompatible evidence remains blocking.
 
-Upstream renaming must advance the service target and this proof through a
-reviewed release. No downstream alias map or compatibility shim is created.
+The source-readiness verdict is not reused as an operational permit. Immediately
+before discovery and every checkout or marketplace operation that can move or
+reconcile value, the core re-fetches the bounded evidence envelope. Provider
+requests bind all four pinned identities, the declared required-check-set digest,
+and the exact method, URL, semantic headers, and body digest. Discovery,
+checkout, and marketplace responses must echo that complete binding; absence
+or drift fails closed before the response can mutate local state. Discovery
+uses its own `DISCOVERY_PROVIDER_EVIDENCE_PIN_JSON` and
+`commerce.discovery-provider/v1` contract on the actual `DOCS_MCP` binding;
+checkout evidence cannot authorize that different service.
 
-## Upstream provider contracts
-
-The logical bindings keep money and graph authority outside this repository:
-
-- `CHECKOUT_PROVIDER` must expose `commerce.checkout-provider/v1`, advertise
-  `prepare`, `confirm`, and `status`, and own guardrail, issuance, settlement,
-  and idempotency-key readback effects.
-- `MARKETPLACE_PROVIDER` must expose `commerce.marketplace-provider/v1`,
-  advertise `vendor-list`, `vendor-transition`, and `settlement-read`, and own
-  vendor D1, split persistence, payout dispatch, and audit reconstruction.
-
-The core probes capabilities without mutating state. Each provider must also
-return an exact `commerce.upstream-runtime-evidence/v1` record matching the
-configured source revision, receipt digest, storage-compatibility revision,
-provider version, PRD `0.3.0`, and the complete required VCC check set. Every
-operational provider response must carry its exact expected contract; mismatches
-fail closed and do not fall back. This repository contains no commission,
-vendor-lifecycle, split-projection, money-ledger, or payout implementation; only
-the upstream owner may commit a bundle and all split rows in one authoritative
-transaction.
+`CHECKOUT_PROVIDER` remains the authoritative guardrail, issuance, settlement,
+and reconciliation owner. `MARKETPLACE_PROVIDER` remains the authoritative
+vendor, split, payout, and audit owner. This repository owns only the receipt-
+bound coordination state and the derived markup projection; it does not create
+a second money ledger, vendor database, payout path, or token dictionary.

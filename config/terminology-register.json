@@ -1,0 +1,60 @@
+{
+  "schema": "agentic-graph-terminology-register/v1",
+  "environmentKeyPrefix": "AG_",
+  "fileScope": {
+    "include": ["**/*"],
+    "exclude": [
+      ".git/**",
+      ".recovery/**",
+      ".wrangler/**",
+      "coverage/**",
+      "dist/**",
+      "node_modules/**",
+      "package-lock.json",
+      "playwright-report/**",
+      "src/generated/**",
+      "test-results/**",
+      "config/terminology-register.json"
+    ]
+  },
+  "matcher": {
+    "boundaryAware": true,
+    "caseSensitiveTerms": ["KG_", "kgc"],
+    "caseInsensitiveTerms": [
+      "knowgrph",
+      "knowledgegraph",
+      "knowledge-graph",
+      "knowledge_graph",
+      "knowledge.graph"
+    ]
+  },
+  "occurrences": [
+    {
+      "path": "README.md",
+      "line": 13,
+      "legacyIdentifier": "knowgrph-agentic-commerce-platform-prd-tad-adr.md",
+      "supersedingIdentifier": "agentic-graph-commerce-platform-prd-tad-adr.md",
+      "disposition": "historical-record",
+      "preservingArtifact": "committed v0.3.0 implementation-baseline attribution",
+      "readOnly": true
+    },
+    {
+      "path": "README.md",
+      "line": 13,
+      "legacyIdentifier": "Knowgrph",
+      "supersedingIdentifier": "AgenticGraph",
+      "disposition": "historical-record",
+      "preservingArtifact": "committed v0.3.0 implementation-baseline attribution",
+      "readOnly": true
+    },
+    {
+      "path": "test/shared/terminology-guard.property.test.ts",
+      "line": 14,
+      "legacyIdentifier": "knowgrph', 'knowledgegraph', 'knowledge-graph', 'knowledge_graph', 'knowledge.graph', 'kgc', 'KG_",
+      "supersedingIdentifier": "agenticgraph legacy-identity generator set",
+      "disposition": "historical-record",
+      "preservingArtifact": "negative property-test inputs proving every superseded identity is rejected",
+      "readOnly": true
+    }
+  ]
+}

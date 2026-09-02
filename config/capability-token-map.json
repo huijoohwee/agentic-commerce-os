@@ -1,0 +1,178 @@
+[
+  {
+    "capabilityAction": "runtime.status.read",
+    "commandToken": "/tool.route",
+    "semanticTokens": ["#mcp"],
+    "bindingTokens": ["@mcp-gateway"],
+    "mcpTool": "commerce.runtime.status",
+    "httpRoute": "/readyz"
+  },
+  {
+    "capabilityAction": "invocation.resolve",
+    "commandToken": "/tool.route",
+    "semanticTokens": ["#mcp"],
+    "bindingTokens": ["@mcp-gateway"],
+    "mcpTool": "commerce.invocation.resolve",
+    "httpRoute": null
+  },
+  {
+    "capabilityAction": "registry.read",
+    "commandToken": "/tool.route",
+    "semanticTokens": ["#mcp"],
+    "bindingTokens": ["@mcp-gateway"],
+    "mcpTool": "commerce.registry.list",
+    "httpRoute": "/v1/registry"
+  },
+  {
+    "capabilityAction": "revenue.period.read",
+    "commandToken": "/tool.route",
+    "semanticTokens": ["#mcp"],
+    "bindingTokens": ["@mcp-gateway"],
+    "mcpTool": "commerce.revenue.period.read",
+    "httpRoute": "/v1/revenue"
+  },
+  {
+    "capabilityAction": "revenue.demand-evidence.read",
+    "commandToken": "/tool.route",
+    "semanticTokens": ["#mcp"],
+    "bindingTokens": ["@mcp-gateway"],
+    "mcpTool": "commerce.revenue.demand-evidence.read",
+    "httpRoute": "/v1/revenue/demand-evidence"
+  },
+  {
+    "capabilityAction": "catalog.public.read",
+    "commandToken": "/tool.route",
+    "semanticTokens": ["#mcp"],
+    "bindingTokens": ["@mcp-gateway"],
+    "mcpTool": "commerce.catalog.public.list",
+    "httpRoute": "/v1/public/agents"
+  },
+  {
+    "capabilityAction": "catalog.merchant.read",
+    "commandToken": "/tool.route",
+    "semanticTokens": ["#mcp"],
+    "bindingTokens": ["@mcp-gateway"],
+    "mcpTool": "commerce.catalog.merchant.read",
+    "httpRoute": "/v1/public/merchants/{merchantId}/catalog"
+  },
+  {
+    "capabilityAction": "intent.route",
+    "commandToken": "/tool.route",
+    "semanticTokens": ["#mcp"],
+    "bindingTokens": ["@mcp-gateway"],
+    "mcpTool": "commerce.intent.route",
+    "httpRoute": "/v1/intents/route"
+  },
+  {
+    "capabilityAction": "sync.merge",
+    "commandToken": "/tool.route",
+    "semanticTokens": ["#mcp"],
+    "bindingTokens": ["@mcp-gateway"],
+    "mcpTool": "commerce.sync.merge",
+    "httpRoute": "/v1/sync/merge"
+  },
+  {
+    "capabilityAction": "checkout.prepare",
+    "commandToken": "/tool.route",
+    "semanticTokens": ["#mcp"],
+    "bindingTokens": ["@mcp-gateway"],
+    "mcpTool": "commerce.checkout.prepare",
+    "httpRoute": "/v1/checkouts/{id}/prepare"
+  },
+  {
+    "capabilityAction": "checkout.confirm",
+    "commandToken": "/tool.route",
+    "semanticTokens": ["#mcp"],
+    "bindingTokens": ["@mcp-gateway"],
+    "mcpTool": "commerce.checkout.confirm",
+    "httpRoute": "/v1/checkouts/{id}/confirm"
+  },
+  {
+    "capabilityAction": "vendor.read",
+    "commandToken": "/tool.route",
+    "semanticTokens": ["#mcp"],
+    "bindingTokens": ["@mcp-gateway"],
+    "mcpTool": "commerce.vendor.list",
+    "httpRoute": "/v1/vendors"
+  },
+  {
+    "capabilityAction": "settlement.read",
+    "commandToken": "/tool.route",
+    "semanticTokens": ["#mcp"],
+    "bindingTokens": ["@mcp-gateway"],
+    "mcpTool": "commerce.settlement.get",
+    "httpRoute": "/v1/settlements/{splitId}"
+  },
+  {
+    "capabilityAction": "agent.register",
+    "commandToken": "/tool.route",
+    "semanticTokens": ["#mcp"],
+    "bindingTokens": ["@mcp-gateway"],
+    "mcpTool": "commerce.agent.register",
+    "httpRoute": "/v1/operator/agents"
+  },
+  {
+    "capabilityAction": "agent.deregister",
+    "commandToken": "/tool.route",
+    "semanticTokens": ["#mcp"],
+    "bindingTokens": ["@mcp-gateway"],
+    "mcpTool": "commerce.agent.deregister",
+    "httpRoute": "/v1/operator/agents/{id}"
+  },
+  {
+    "capabilityAction": "registry.events.read",
+    "commandToken": "/tool.route",
+    "semanticTokens": ["#mcp"],
+    "bindingTokens": ["@mcp-gateway"],
+    "mcpTool": "commerce.registry.events",
+    "httpRoute": "/v1/operator/registry/events"
+  },
+  {
+    "capabilityAction": "vendor.transition",
+    "commandToken": "/tool.route",
+    "semanticTokens": ["#mcp"],
+    "bindingTokens": ["@mcp-gateway"],
+    "mcpTool": "commerce.vendor.transition",
+    "httpRoute": "/v1/operator/vendors/{vendorId}/transition"
+  },
+  {
+    "capabilityAction": "theme.deploy",
+    "commandToken": "/tool.route",
+    "semanticTokens": ["#mcp"],
+    "bindingTokens": ["@mcp-gateway"],
+    "mcpTool": "commerce.theme.deploy",
+    "httpRoute": "/v1/operator/merchants/{id}/theme"
+  },
+  {
+    "capabilityAction": "authoring.claim.acquire",
+    "commandToken": "/tool.route",
+    "semanticTokens": ["#mcp"],
+    "bindingTokens": ["@mcp-gateway"],
+    "mcpTool": "commerce.authoring.claim.acquire",
+    "httpRoute": "/v1/operator/claims/acquire"
+  },
+  {
+    "capabilityAction": "authoring.claim.release",
+    "commandToken": "/tool.route",
+    "semanticTokens": ["#mcp"],
+    "bindingTokens": ["@mcp-gateway"],
+    "mcpTool": "commerce.authoring.claim.release",
+    "httpRoute": "/v1/operator/claims/release"
+  },
+  {
+    "capabilityAction": "authoring.claim.admit",
+    "commandToken": "/tool.route",
+    "semanticTokens": ["#mcp"],
+    "bindingTokens": ["@mcp-gateway"],
+    "mcpTool": "commerce.authoring.claim.admit",
+    "httpRoute": "/v1/operator/claims/admit"
+  },
+  {
+    "capabilityAction": "release.boundary.read",
+    "commandToken": "/tool.route",
+    "semanticTokens": ["#mcp"],
+    "bindingTokens": ["@mcp-gateway"],
+    "mcpTool": "commerce.release.boundary.read",
+    "httpRoute": "/v1/operator/release-boundaries"
+  }
+]

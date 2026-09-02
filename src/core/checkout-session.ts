@@ -1,45 +1,49 @@
 import { DurableObject } from 'cloudflare:workers'
-
-import { constantTimeTextMatch } from '../shared/auth'
-import { canonicalJson, sha256Hex } from '../shared/digest'
-import { readJsonResponse } from '../shared/http'
+import { constantTimeTextMatch } from '../shared/auth.js'
+import { canonicalJson, sha256Hex } from '../shared/digest.js'
+import { settledResult } from './checkout-finalization.js'
 import {
-  normalizeGuardrailReceipt,
-  normalizeSettlementReceipt,
-  type GuardrailReceipt,
-  type SettlementReceipt,
-} from './checkout-receipts'
-import { CHECKOUT_PROVIDER_CONTRACT } from './provider-contract'
+  createSettlementMarkupOutbox,
+  readSettlementMarkupOutbox,
+  recordSettlementMarkup,
+  type MarkupOutcome,
+} from './checkout-markup.js'
+import {
+  reconcileSettlement,
+  requestGuardrail,
+  submitSettlement,
+  type SettlementProviderResult,
+} from './checkout-provider-client.js'
+import {
+  digestCheckoutBlockers,
+  digestHumanConfirmation,
+  preparedResult,
+  rejected,
+  validConfirm,
+  validPrepare,
+  type CheckoutConfirmInput,
+  type CheckoutPrepareInput,
+  type StoredCheckout,
+} from './checkout-state.js'
+import { restoreSettlementReceipt } from './checkout-receipts.js'
+import { readRateBasisPoints } from './take-rate.js'
+import {
+  MAXIMUM_OBSERVATION_RETRIES,
+  OBSERVATION_INTERVAL_MS,
+  observeHeldOffer,
+  type ChangeEvent,
+  type HeldOffer,
+  type ObservationOutcome,
+} from './offer-watch.js'
 
-const IDENTIFIER_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/u
-const CURRENCY_PATTERN = /^[A-Z]{3}$/u
-const SHA256_PATTERN = /^[0-9a-f]{64}$/u
-const REVISION_PATTERN = /^[0-9a-f]{40}$/u
+export type { CheckoutConfirmInput, CheckoutPrepareInput } from './checkout-state.js'
 const CONFIRMATION_TTL_MS = 10 * 60 * 1_000
-const PROVIDER_REQUEST_TIMEOUT_MS = 10_000
-const MAXIMUM_PROVIDER_RESPONSE_BYTES = 65_536
-
-export type CheckoutPrepareInput = Readonly<{
-  checkoutId: string
-  intentId: string
-  agentId: string
-  offerId: string
-  offerReceiptDigest: string
-  offerProviderRevision: string
-  amountMinor: number
-  budgetMinor: number
-  currency: string
-}>
-
-export type CheckoutConfirmInput = Readonly<{
-  checkoutId: string
-  confirmationToken: string
-  offerId: string
-  amountMinor: number
-}>
+const MARKUP_RETRY_MAX_MS = 15 * 60 * 1_000
+const BLOCKING_EVENT_TYPES = Object.freeze(['offer_changed', 'offer_observation_suspended', 'offer_agent_inactive'])
 
 export class CheckoutSession extends DurableObject<CoreEnv> {
   readonly #sql: SqlStorage
+  #offerGate: Promise<void> = Promise.resolve()
 
   constructor(state: DurableObjectState, env: CoreEnv) {
     super(state, env)
@@ -65,10 +69,23 @@ export class CheckoutSession extends DurableObject<CoreEnv> {
         confirmation_expires_at INTEGER,
         human_confirmation_digest TEXT,
         settlement_idempotency_key TEXT,
+        applied_rate_basis_points INTEGER,
         provider_result_json TEXT,
+        settlement_receipt_json TEXT,
+        markup_outbox_json TEXT,
+        markup_finalization_state TEXT NOT NULL DEFAULT 'pending',
+        markup_finalization_json TEXT,
         failure_code TEXT,
+        observation_failure_count INTEGER NOT NULL DEFAULT 0,
         updated_at TEXT NOT NULL
       )`)
+      const columns = this.#sql.exec<{ name: string }>('PRAGMA table_info(checkout_state)').toArray()
+      if (!columns.some(({ name }) => name === 'observation_failure_count')) this.#sql.exec('ALTER TABLE checkout_state ADD COLUMN observation_failure_count INTEGER NOT NULL DEFAULT 0')
+      if (!columns.some(({ name }) => name === 'settlement_receipt_json')) this.#sql.exec('ALTER TABLE checkout_state ADD COLUMN settlement_receipt_json TEXT')
+      if (!columns.some(({ name }) => name === 'applied_rate_basis_points')) this.#sql.exec('ALTER TABLE checkout_state ADD COLUMN applied_rate_basis_points INTEGER')
+      if (!columns.some(({ name }) => name === 'markup_outbox_json')) this.#sql.exec('ALTER TABLE checkout_state ADD COLUMN markup_outbox_json TEXT')
+      if (!columns.some(({ name }) => name === 'markup_finalization_state')) this.#sql.exec("ALTER TABLE checkout_state ADD COLUMN markup_finalization_state TEXT NOT NULL DEFAULT 'pending'")
+      if (!columns.some(({ name }) => name === 'markup_finalization_json')) this.#sql.exec('ALTER TABLE checkout_state ADD COLUMN markup_finalization_json TEXT')
       this.#sql.exec(`CREATE TABLE IF NOT EXISTS checkout_event (
         sequence INTEGER PRIMARY KEY AUTOINCREMENT,
         event_type TEXT NOT NULL,
@@ -85,9 +102,7 @@ export class CheckoutSession extends DurableObject<CoreEnv> {
     if (prior) {
       if (prior.request_digest !== requestDigest) return rejected('checkout_prepare_precondition_failed')
       if (prior.state === 'confirmation_required') return preparedResult(prior, true)
-      return rejected(prior.state === 'preparing'
-        ? 'checkout_prepare_result_unknown'
-        : 'checkout_not_preparable')
+      return rejected(prior.state === 'preparing' ? 'checkout_prepare_result_unknown' : 'checkout_not_preparable')
     }
 
     this.ctx.storage.transactionSync(() => {
@@ -108,61 +123,11 @@ export class CheckoutSession extends DurableObject<CoreEnv> {
         input.currency,
         new Date().toISOString(),
       )
-      this.#appendEvent('checkout_prepare_requested', {
-        checkoutId: input.checkoutId,
-        intentId: input.intentId,
-        agentId: input.agentId,
-        offerId: input.offerId,
-        offerReceiptDigest: input.offerReceiptDigest,
-        offerProviderRevision: input.offerProviderRevision,
-        amountMinor: input.amountMinor,
-        budgetMinor: input.budgetMinor,
-        currency: input.currency,
-      })
+      this.#appendEvent('checkout_prepare_requested', input)
     })
 
-    let response: Response
-    try {
-      response = await this.env.CHECKOUT_PROVIDER.fetch(
-        new Request('https://commerce.internal/internal/v1/checkouts/prepare', {
-          method: 'POST',
-          headers: {
-            'content-type': 'application/json',
-            'x-commerce-contract': CHECKOUT_PROVIDER_CONTRACT,
-          },
-          body: JSON.stringify({
-            contract: CHECKOUT_PROVIDER_CONTRACT,
-            ...input,
-            idempotencyKey: `checkout-prepare:${input.checkoutId}`,
-          }),
-          signal: AbortSignal.timeout(PROVIDER_REQUEST_TIMEOUT_MS),
-        }),
-      )
-    } catch {
-      return this.#prepareFailure('guardrail_provider_unavailable')
-    }
-    let payload: unknown
-    try {
-      payload = await readJsonResponse(response, MAXIMUM_PROVIDER_RESPONSE_BYTES)
-    } catch {
-      return this.#prepareFailure('guardrail_provider_unavailable')
-    }
-    if (!response.ok) return this.#prepareFailure('guardrail_provider_rejected')
-    let receipt: GuardrailReceipt
-    try {
-      receipt = await normalizeGuardrailReceipt(payload, {
-        checkoutId: input.checkoutId,
-        intentId: input.intentId,
-        agentId: input.agentId,
-        offerReceiptDigest: input.offerReceiptDigest,
-        amountMinor: input.amountMinor,
-        budgetMinor: input.budgetMinor,
-        currency: input.currency,
-        providerRevision: input.offerProviderRevision,
-      })
-    } catch {
-      return this.#prepareFailure('guardrail_receipt_invalid')
-    }
+    const receipt = await requestGuardrail(this.env, input)
+    if (!receipt) return this.#prepareFailure('guardrail_provider_unavailable')
     try {
       const token = `${crypto.randomUUID()}${crypto.randomUUID()}`
       const tokenDigest = await sha256Hex(token)
@@ -170,9 +135,9 @@ export class CheckoutSession extends DurableObject<CoreEnv> {
       this.ctx.storage.transactionSync(() => {
         this.#sql.exec(
           `UPDATE checkout_state SET state = 'confirmation_required', guardrail_receipt_json = ?,
-            guardrail_receipt_digest = ?,
-            confirmation_token = ?, confirmation_token_digest = ?, confirmation_expires_at = ?,
-            updated_at = ? WHERE singleton = 1 AND state = 'preparing'`,
+            guardrail_receipt_digest = ?, confirmation_token = ?, confirmation_token_digest = ?,
+            confirmation_expires_at = ?, updated_at = ?
+           WHERE singleton = 1 AND state = 'preparing'`,
           canonicalJson(receipt),
           receipt.receiptDigest,
           token,
@@ -182,6 +147,7 @@ export class CheckoutSession extends DurableObject<CoreEnv> {
         )
         this.#appendEvent('guardrail_passed', receipt)
       })
+      await this.ctx.storage.setAlarm(Date.now() + OBSERVATION_INTERVAL_MS)
       const stored = this.#read()
       return stored ? preparedResult(stored, false) : rejected('checkout_persistence_failed')
     } catch {
@@ -190,10 +156,15 @@ export class CheckoutSession extends DurableObject<CoreEnv> {
   }
 
   async confirm(input: CheckoutConfirmInput): Promise<unknown> {
+    return this.#withOfferGate(() => this.#confirm(input))
+  }
+  async #confirm(input: CheckoutConfirmInput): Promise<unknown> {
     if (!validConfirm(input)) return rejected('checkout_confirmation_malformed')
     const state = this.#read()
     if (!state || state.checkout_id !== input.checkoutId) return rejected('checkout_not_prepared')
-    if (state.offer_id !== input.offerId || state.amount_minor !== input.amountMinor) {
+    if (state.offer_id !== input.offerId
+      || state.amount_minor !== input.amountMinor
+      || state.currency !== input.currency) {
       return rejected('checkout_confirmation_precondition_failed')
     }
     const candidateTokenDigest = await sha256Hex(input.confirmationToken)
@@ -204,225 +175,344 @@ export class CheckoutSession extends DurableObject<CoreEnv> {
     const humanConfirmationDigest = await digestHumanConfirmation(input, candidateTokenDigest)
 
     if (state.state === 'settled' && state.provider_result_json) {
-      if (!state.human_confirmation_digest
-        || !await constantTimeTextMatch(humanConfirmationDigest, state.human_confirmation_digest)) {
+      if (state.human_confirmation_digest !== humanConfirmationDigest) {
         return rejected('checkout_confirmation_precondition_failed')
       }
-      return settledResult(JSON.parse(state.provider_result_json) as unknown, true)
+      return this.#resumeSettledFinalization(state, true)
     }
-
     if (state.state === 'confirming' || state.state === 'reconciliation_required') {
-      if (!state.human_confirmation_digest
-        || !state.settlement_idempotency_key
-        || !await constantTimeTextMatch(humanConfirmationDigest, state.human_confirmation_digest)) {
+      if (state.human_confirmation_digest !== humanConfirmationDigest || !state.settlement_idempotency_key) {
         return rejected('checkout_confirmation_precondition_failed')
       }
-      return this.#reconcileSettlement(state, humanConfirmationDigest, state.settlement_idempotency_key)
+      if (!await this.#armRecoveryAlarm()) return rejected('checkout_recovery_alarm_unavailable')
+      return this.#reconcile(state, humanConfirmationDigest, state.settlement_idempotency_key)
     }
-
     if (state.state !== 'confirmation_required') return rejected('checkout_not_confirmable')
     if (!state.confirmation_expires_at || Date.now() > state.confirmation_expires_at) {
       return this.#terminalFailure('confirmation_expired')
     }
-    if (!state.guardrail_receipt_json
-      || !state.guardrail_receipt_digest
-      || !state.offer_provider_revision) {
+    if (!state.guardrail_receipt_json || !state.guardrail_receipt_digest || !state.offer_provider_revision) {
       return rejected('guardrail_receipt_required')
     }
 
-    const idempotencyKey = `checkout-confirm:${input.checkoutId}`
+    const blockers = this.#unacknowledgedBlockingEvents()
+    const blockerDigest = await digestCheckoutBlockers(blockers)
+    const inactive = blockers.findLast(({ eventType }) => eventType === 'offer_agent_inactive')
+    if (inactive) {
+      return rejected('offer_agent_inactive', {
+        blockerDigest,
+        blockers: Object.freeze(blockers),
+        eventSequence: inactive.sequence,
+        evidence: inactive.evidence,
+      })
+    }
+    if (input.blockerDigest !== blockerDigest) {
+      return rejected('offer_reconfirmation_required', {
+        blockerDigest,
+        blockers: Object.freeze(blockers),
+      })
+    }
 
+    const appliedRateBasisPoints = readRateBasisPoints(this.env.AG_TAKE_RATE_BASIS_POINTS)
+    if (appliedRateBasisPoints === null) return rejected('rate_basis_points_invalid')
+    const idempotencyKey = `checkout-confirm:${input.checkoutId}`
+    // Arm recovery before consuming the confirmation. If alarm persistence is
+    // unavailable, the checkout remains retryable and no provider call occurs.
+    if (!await this.#armRecoveryAlarm()) return rejected('checkout_recovery_alarm_unavailable')
     let confirmationRecorded = false
     this.ctx.storage.transactionSync(() => {
       const update = this.#sql.exec(
         `UPDATE checkout_state SET state = 'confirming', confirmation_token = NULL,
-          human_confirmation_digest = ?, settlement_idempotency_key = ?, failure_code = NULL,
+          human_confirmation_digest = ?, settlement_idempotency_key = ?, applied_rate_basis_points = ?, failure_code = NULL,
           updated_at = ? WHERE singleton = 1 AND state = 'confirmation_required'`,
         humanConfirmationDigest,
         idempotencyKey,
+        appliedRateBasisPoints,
         new Date().toISOString(),
       )
       confirmationRecorded = update.rowsWritten === 1
       if (confirmationRecorded) {
+        for (const blocker of blockers) {
+          this.#appendEvent('offer_change_acknowledged', {
+            eventSequence: blocker.sequence,
+            blockerDigest,
+          })
+        }
         this.#appendEvent('human_confirmed', {
           checkoutId: input.checkoutId,
           offerId: input.offerId,
           amountMinor: input.amountMinor,
+          currency: input.currency,
+          blockerDigest,
+          shopperPrincipalDigest: input.shopperPrincipalDigest,
+          acknowledgedEventSequences: blockers.map(({ sequence }) => sequence),
           humanConfirmationDigest,
           idempotencyKey,
+          appliedRateBasisPoints,
         })
       }
     })
-
-    if (!confirmationRecorded) {
-      const concurrent = this.#read()
-      if (concurrent?.state === 'settled' && concurrent.provider_result_json) {
-        return settledResult(JSON.parse(concurrent.provider_result_json) as unknown, true)
-      }
-      if (concurrent
-        && (concurrent.state === 'confirming' || concurrent.state === 'reconciliation_required')
-        && concurrent.human_confirmation_digest === humanConfirmationDigest
-        && concurrent.settlement_idempotency_key === idempotencyKey) {
-        return this.#reconcileSettlement(concurrent, humanConfirmationDigest, idempotencyKey)
-      }
-      return rejected('checkout_confirmation_precondition_failed')
+    if (!confirmationRecorded) return rejected('checkout_confirmation_precondition_failed')
+    const confirming = this.#read()
+    if (!confirming || confirming.applied_rate_basis_points !== appliedRateBasisPoints) {
+      return rejected('rate_basis_points_pin_persistence_failed')
     }
-
-    return this.#submitSettlement(state, humanConfirmationDigest, idempotencyKey)
+    return this.#consumeSettlement(
+      await submitSettlement(this.env, confirming, humanConfirmationDigest, idempotencyKey),
+      false,
+    )
   }
 
-  async #submitSettlement(
-    state: StoredCheckout,
-    humanConfirmationDigest: string,
-    idempotencyKey: string,
-  ): Promise<unknown> {
-    try {
-      const response = await this.env.CHECKOUT_PROVIDER.fetch(
-        new Request('https://commerce.internal/internal/v1/checkouts/confirm', {
-          method: 'POST',
-          headers: {
-            'content-type': 'application/json',
-            'x-commerce-contract': CHECKOUT_PROVIDER_CONTRACT,
-          },
-          body: JSON.stringify({
-            contract: CHECKOUT_PROVIDER_CONTRACT,
-            checkoutId: state.checkout_id,
-            offerId: state.offer_id,
-            amountMinor: state.amount_minor,
-            currency: state.currency,
-            guardrailReceipt: JSON.parse(state.guardrail_receipt_json ?? 'null') as unknown,
-            guardrailReceiptDigest: state.guardrail_receipt_digest,
-            humanConfirmationDigest,
-            idempotencyKey,
-          }),
-          signal: AbortSignal.timeout(PROVIDER_REQUEST_TIMEOUT_MS),
-        }),
-      )
-      return await this.#consumeSettlementResponse(
-        response, state, humanConfirmationDigest, idempotencyKey, false,
-      )
-    } catch {
-      return this.#requireReconciliation('settlement_provider_result_unknown')
-    }
+  override async alarm(): Promise<void> {
+    await this.#withOfferGate(async () => {
+      const state = this.#read()
+      if (state?.state === 'settled'
+        && state.provider_result_json
+        && state.markup_finalization_state !== 'completed') {
+        await this.#resumeSettledFinalization(state, true)
+        return
+      }
+      if (state && ['confirming', 'reconciliation_required'].includes(state.state)
+        && state.human_confirmation_digest && state.settlement_idempotency_key) {
+        await this.#observeHeldOffer()
+        const observed = this.#read()
+        if (observed && ['confirming', 'reconciliation_required'].includes(observed.state)
+          && observed.human_confirmation_digest && observed.settlement_idempotency_key) {
+          await this.#reconcile(observed, observed.human_confirmation_digest, observed.settlement_idempotency_key)
+          const remaining = this.#read()
+          if (remaining && ['confirming', 'reconciliation_required'].includes(remaining.state)
+            && await this.ctx.storage.getAlarm() === null) await this.#armRecoveryAlarm()
+        }
+        return
+      }
+      await this.#observeHeldOffer()
+    })
   }
-
-  async #reconcileSettlement(
-    state: StoredCheckout,
-    humanConfirmationDigest: string,
-    idempotencyKey: string,
-  ): Promise<unknown> {
+  async #observeHeldOffer(): Promise<void> {
+    const state = this.#read()
+    if (!state || !['confirmation_required', 'confirming', 'reconciliation_required'].includes(state.state)) {
+      if (state) await this.#stopObservation(state.state === 'settled' ? 'settled' : 'closed')
+      return
+    }
+    const priorChanges = this.#events('offer_changed').map(({ evidence }) => evidence).filter(isChangeEvent)
+    const held: HeldOffer = Object.freeze({
+      offerId: state.offer_id,
+      agentId: state.agent_id,
+      recorded: Object.freeze({ priceMinor: state.amount_minor, available: true, agentActive: true }),
+      priorChanges: Object.freeze(priorChanges),
+      failedAttempts: state.observation_failure_count ?? 0,
+    })
+    const outcome = await observeHeldOffer(this.env, held)
+    const suspended = this.#recordObservation(outcome)
+    if (!suspended) await this.ctx.storage.setAlarm(Date.now() + OBSERVATION_INTERVAL_MS)
+  }
+  async status(): Promise<unknown> {
+    const state = this.#read()
+    if (!state) return rejected('checkout_not_found')
+    return Object.freeze({
+      ok: true,
+      checkoutId: state.checkout_id,
+      status: state.state,
+      failureCode: state.failure_code,
+      events: Object.freeze(this.#events()),
+    })
+  }
+  async #reconcile(state: StoredCheckout, digest: string, key: string): Promise<unknown> {
+    if (readRateBasisPoints(state.applied_rate_basis_points) === null) {
+      return this.#requireReconciliation('rate_basis_points_pin_required')
+    }
     this.ctx.storage.transactionSync(() => {
       const update = this.#sql.exec(
         `UPDATE checkout_state SET state = 'reconciliation_required', updated_at = ?
          WHERE singleton = 1 AND state IN ('confirming', 'reconciliation_required')`,
         new Date().toISOString(),
       )
-      if (update.rowsWritten === 1) {
-        this.#appendEvent('settlement_reconciliation_requested', {
-          checkoutId: state.checkout_id,
-          humanConfirmationDigest,
-          idempotencyKey,
-        })
-      }
+      if (update.rowsWritten === 1) this.#appendEvent('settlement_reconciliation_requested', {
+        checkoutId: state.checkout_id, humanConfirmationDigest: digest, idempotencyKey: key,
+      })
     })
-    const statusUrl = new URL('/internal/v1/checkouts/status', 'https://commerce.internal')
-    statusUrl.searchParams.set('idempotencyKey', idempotencyKey)
-    try {
-      const response = await this.env.CHECKOUT_PROVIDER.fetch(new Request(statusUrl, {
-        method: 'GET',
-        headers: {
-          accept: 'application/json',
-          'x-commerce-contract': CHECKOUT_PROVIDER_CONTRACT,
-        },
-        signal: AbortSignal.timeout(PROVIDER_REQUEST_TIMEOUT_MS),
-      }))
-      return await this.#consumeSettlementResponse(
-        response, state, humanConfirmationDigest, idempotencyKey, true,
-      )
-    } catch {
-      return this.#requireReconciliation('settlement_reconciliation_incomplete')
-    }
+    return this.#consumeSettlement(await reconcileSettlement(this.env, state, digest, key), true)
   }
-
-  async #consumeSettlementResponse(
-    response: Response,
-    state: StoredCheckout,
-    humanConfirmationDigest: string,
-    idempotencyKey: string,
+  async #consumeSettlement(
+    provider: SettlementProviderResult,
     idempotent: boolean,
   ): Promise<unknown> {
-    if (!response.ok) return this.#requireReconciliation('settlement_provider_result_unknown')
-    const payload = await readJsonResponse(response, MAXIMUM_PROVIDER_RESPONSE_BYTES)
-    let receipt: SettlementReceipt
-    try {
-      receipt = await normalizeSettlementReceipt(payload, {
-        checkoutId: state.checkout_id,
-        offerId: state.offer_id,
-        amountMinor: state.amount_minor,
-        currency: state.currency,
-        idempotencyKey,
-        humanConfirmationDigest,
-        guardrailReceiptDigest: state.guardrail_receipt_digest ?? '',
-        providerRevision: state.offer_provider_revision,
-      })
-    } catch {
-      return this.#requireReconciliation('settlement_receipt_invalid')
-    }
+    if (!provider.ok) return this.#requireReconciliation(provider.code)
+    const pending = this.#read()
+    if (!pending) return rejected('checkout_persistence_failed')
+    const appliedRateBasisPoints = readRateBasisPoints(pending.applied_rate_basis_points)
+    if (appliedRateBasisPoints === null) return this.#requireReconciliation('rate_basis_points_pin_required')
+    const markupOutbox = createSettlementMarkupOutbox(appliedRateBasisPoints, pending, provider.receipt, Date.now())
     let recorded = false
     this.ctx.storage.transactionSync(() => {
       const update = this.#sql.exec(
-        `UPDATE checkout_state SET state = 'settled', provider_result_json = ?, failure_code = NULL,
+        `UPDATE checkout_state SET state = 'settled', provider_result_json = ?, settlement_receipt_json = ?,
+          markup_outbox_json = ?, markup_finalization_state = 'pending', markup_finalization_json = NULL,
+          failure_code = NULL,
           updated_at = ? WHERE singleton = 1 AND state IN ('confirming', 'reconciliation_required')`,
-        canonicalJson(payload),
+        canonicalJson(provider.payload),
+        canonicalJson(provider.receipt),
+        canonicalJson(markupOutbox),
         new Date().toISOString(),
       )
       recorded = update.rowsWritten === 1
-      if (recorded) this.#appendEvent('settlement_recorded', receipt)
+      if (recorded) this.#appendEvent('settlement_recorded', provider.receipt)
     })
     const stored = this.#read()
     if (!stored?.provider_result_json) return rejected('checkout_persistence_failed')
-    return settledResult(JSON.parse(stored.provider_result_json) as unknown, idempotent || !recorded)
+    return this.#resumeSettledFinalization(stored, recorded ? idempotent : true)
   }
 
-  async status(): Promise<unknown> {
-    const state = this.#read()
-    if (!state) return rejected('checkout_not_found')
-    const events = this.#sql.exec<{
-      sequence: number
-      event_type: string
-      evidence_json: string
-      created_at: string
-    }>('SELECT sequence, event_type, evidence_json, created_at FROM checkout_event ORDER BY sequence')
-      .toArray()
-      .map((event) => Object.freeze({
-        sequence: event.sequence,
-        eventType: event.event_type,
-        evidence: JSON.parse(event.evidence_json) as unknown,
-        createdAt: event.created_at,
-      }))
-    return Object.freeze({
-      ok: true,
+  async #resumeSettledFinalization(state: StoredCheckout, idempotent: boolean): Promise<unknown> {
+    const providerResult = JSON.parse(state.provider_result_json ?? 'null') as unknown
+    if (state.markup_finalization_state === 'completed' && state.markup_finalization_json) {
+      return settledResult(providerResult, idempotent, JSON.parse(state.markup_finalization_json) as unknown)
+    }
+    let observationStopDisposition: 'completed' | 'deferred' = 'completed'
+    try {
+      await this.ctx.storage.setAlarm(Date.now() + OBSERVATION_INTERVAL_MS)
+      this.#recordObservationStopped('settled')
+    } catch {
+      observationStopDisposition = 'deferred'
+    }
+    const receipt = await restoreSettlementReceipt(state.settlement_receipt_json, {
       checkoutId: state.checkout_id,
-      status: state.state,
-      failureCode: state.failure_code,
-      events: Object.freeze(events),
+      offerId: state.offer_id,
+      amountMinor: state.amount_minor,
+      currency: state.currency,
+      idempotencyKey: state.settlement_idempotency_key ?? '',
+      humanConfirmationDigest: state.human_confirmation_digest ?? '',
+      guardrailReceiptDigest: state.guardrail_receipt_digest ?? '',
+      providerRevision: state.offer_provider_revision,
     })
+    const markupOutbox = readSettlementMarkupOutbox(state.markup_outbox_json)
+    let markup: MarkupOutcome
+    try {
+      markup = receipt && markupOutbox
+        ? await recordSettlementMarkup(this.env, markupOutbox)
+        : Object.freeze({ stage: 'deferred', failingStage: 'unexpected', attempts: 3 })
+    } catch {
+      markup = Object.freeze({ stage: 'deferred', failingStage: 'unexpected', attempts: 3 })
+    }
+    const retryAttempt = this.#events('markup_deferred').length + 1
+    const retryAt = markup.stage === 'deferred'
+      ? Date.now() + Math.min(MARKUP_RETRY_MAX_MS, OBSERVATION_INTERVAL_MS * (2 ** Math.min(retryAttempt - 1, 4)))
+      : null
+    const finalization = Object.freeze({
+      ...markup,
+      evidenceDisposition: 'persisted' as const,
+      observationStopDisposition,
+      retryAt,
+    })
+    try {
+      this.ctx.storage.transactionSync(() => {
+        if (markup.stage === 'deferred' || this.#events('markup_recorded').length === 0) {
+          this.#appendEvent(
+            markup.stage === 'recorded' ? 'markup_recorded' : 'markup_deferred',
+            { settlementId: receipt?.settlementId ?? null, ...markup, retryAttempt, retryAt },
+          )
+        }
+        this.#sql.exec(
+          `UPDATE checkout_state SET markup_finalization_state = ?, markup_finalization_json = ?,
+            updated_at = ? WHERE singleton = 1 AND state = 'settled'`,
+          markup.stage === 'recorded' ? 'completed' : 'pending',
+          canonicalJson(finalization),
+          new Date().toISOString(),
+        )
+      })
+    } catch {
+      return settledResult(providerResult, idempotent, Object.freeze({
+        ...markup,
+        evidenceDisposition: 'response-only-deferred' as const,
+        observationStopDisposition,
+      }))
+    }
+    try {
+      if (retryAt === null) await this.ctx.storage.deleteAlarm()
+      else await this.ctx.storage.setAlarm(retryAt)
+    } catch { /* The already-armed recovery alarm remains the fallback. */ }
+    return settledResult(providerResult, idempotent, finalization)
   }
 
+  async #armRecoveryAlarm(): Promise<boolean> {
+    try { await this.ctx.storage.setAlarm(Date.now() + OBSERVATION_INTERVAL_MS) } catch { return false }
+    return await this.ctx.storage.getAlarm() !== null
+  }
+  #recordObservation(outcome: ObservationOutcome): boolean {
+    if (outcome.kind === 'changed') {
+      this.ctx.storage.transactionSync(() => {
+        for (const event of outcome.events) this.#appendEvent(event.eventType, event)
+        this.#setObservationFailures(0)
+      })
+      return false
+    }
+    if (outcome.kind === 'agent-inactive') {
+      if (this.#events('offer_agent_inactive').length === 0) {
+        this.#appendEvent('offer_agent_inactive', { agentId: outcome.agentId, observedAt: new Date().toISOString() })
+      }
+      return false
+    }
+    if (outcome.kind === 'failed') {
+      this.ctx.storage.transactionSync(() => {
+        this.#setObservationFailures(outcome.attempt)
+        this.#appendEvent('offer_observation_failed', {
+          attempt: outcome.attempt,
+          observedAt: new Date().toISOString(),
+        })
+      })
+      return false
+    }
+    if (outcome.kind === 'suspended') {
+      if (this.#events('offer_observation_suspended').length === 0) {
+        this.#appendEvent('offer_observation_suspended', {
+          attempts: MAXIMUM_OBSERVATION_RETRIES,
+          observedAt: new Date().toISOString(),
+        })
+      }
+      this.#setObservationFailures(MAXIMUM_OBSERVATION_RETRIES)
+      return true
+    }
+    this.#setObservationFailures(0)
+    return false
+  }
+  #unacknowledgedBlockingEvents(): StoredEvent[] {
+    const acknowledged = new Set(this.#events('offer_change_acknowledged').map(({ evidence }) => (
+      isRecord(evidence) && Number.isSafeInteger(evidence.eventSequence) ? Number(evidence.eventSequence) : -1
+    )))
+    return this.#events().filter(({ eventType }) => BLOCKING_EVENT_TYPES.includes(eventType))
+      .filter(({ sequence }) => !acknowledged.has(sequence))
+  }
+  async #withOfferGate<Result>(operation: () => Promise<Result>): Promise<Result> {
+    const prior = this.#offerGate
+    let release: () => void = () => undefined
+    this.#offerGate = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    await prior
+    try {
+      return await operation()
+    } finally {
+      release()
+    }
+  }
+  async #stopObservation(reason: 'settled' | 'closed'): Promise<void> {
+    this.#recordObservationStopped(reason)
+    await this.ctx.storage.deleteAlarm()
+  }
+  #recordObservationStopped(reason: 'settled' | 'closed'): void {
+    if (this.#events('offer_observation_stopped').length === 0) {
+      this.#appendEvent('offer_observation_stopped', { reason, stoppedAt: new Date().toISOString() })
+    }
+  }
   #prepareFailure(code: string): unknown {
     this.ctx.storage.transactionSync(() => {
-      this.#sql.exec(
-        "UPDATE checkout_state SET state = 'failed', failure_code = ?, updated_at = ? WHERE singleton = 1",
-        code,
-        new Date().toISOString(),
-      )
+      this.#sql.exec("UPDATE checkout_state SET state = 'failed', failure_code = ?, updated_at = ? WHERE singleton = 1", code, new Date().toISOString())
       this.#appendEvent('checkout_prepare_failed', { code })
     })
     return rejected(code)
   }
 
   #requireReconciliation(code: string): unknown {
-    let recorded = false
     this.ctx.storage.transactionSync(() => {
       const update = this.#sql.exec(
         `UPDATE checkout_state SET state = 'reconciliation_required', failure_code = ?, updated_at = ?
@@ -430,8 +520,7 @@ export class CheckoutSession extends DurableObject<CoreEnv> {
         code,
         new Date().toISOString(),
       )
-      recorded = update.rowsWritten === 1
-      if (recorded) this.#appendEvent('settlement_reconciliation_required', { code })
+      if (update.rowsWritten === 1) this.#appendEvent('settlement_reconciliation_required', { code })
     })
     const stored = this.#read()
     if (stored?.state === 'settled' && stored.provider_result_json) {
@@ -440,7 +529,7 @@ export class CheckoutSession extends DurableObject<CoreEnv> {
     return Object.freeze({ ok: false, status: 'reconciliation_required', code })
   }
 
-  #terminalFailure(code: string): unknown {
+  async #terminalFailure(code: string): Promise<unknown> {
     this.ctx.storage.transactionSync(() => {
       this.#sql.exec(
         `UPDATE checkout_state SET state = 'failed', confirmation_token = NULL,
@@ -450,16 +539,39 @@ export class CheckoutSession extends DurableObject<CoreEnv> {
       )
       this.#appendEvent('checkout_failed', { code })
     })
+    await this.#stopObservation('closed')
     return rejected(code)
   }
 
-  #appendEvent(eventType: string, evidence: unknown): void {
+  #setObservationFailures(value: number): void {
+    this.#sql.exec('UPDATE checkout_state SET observation_failure_count = ? WHERE singleton = 1', value)
+  }
+
+  #appendEvent(eventType: string, evidence: unknown): number {
     this.#sql.exec(
       'INSERT INTO checkout_event (event_type, evidence_json, created_at) VALUES (?, ?, ?)',
       eventType,
       canonicalJson(evidence),
       new Date().toISOString(),
     )
+    return this.#sql.exec<{ sequence: number }>('SELECT MAX(sequence) AS sequence FROM checkout_event').one()?.sequence ?? 0
+  }
+
+  #events(eventType?: string): StoredEvent[] {
+    const rows = eventType
+      ? this.#sql.exec<StoredEventRow>(
+          'SELECT sequence, event_type, evidence_json, created_at FROM checkout_event WHERE event_type = ? ORDER BY sequence',
+          eventType,
+        ).toArray()
+      : this.#sql.exec<StoredEventRow>(
+          'SELECT sequence, event_type, evidence_json, created_at FROM checkout_event ORDER BY sequence',
+        ).toArray()
+    return rows.map((event) => Object.freeze({
+      sequence: event.sequence,
+      eventType: event.event_type,
+      evidence: JSON.parse(event.evidence_json) as unknown,
+      createdAt: event.created_at,
+    }))
   }
 
   #read(): StoredCheckout | null {
@@ -467,80 +579,21 @@ export class CheckoutSession extends DurableObject<CoreEnv> {
   }
 }
 
-type StoredCheckout = {
-  checkout_id: string
-  request_digest: string
-  intent_id: string
-  agent_id: string
-  offer_id: string
-  offer_receipt_digest: string
-  offer_provider_revision: string
-  amount_minor: number
-  budget_minor: number
-  currency: string
-  state: string
-  guardrail_receipt_json: string | null
-  guardrail_receipt_digest: string | null
-  confirmation_token: string | null
-  confirmation_token_digest: string | null
-  confirmation_expires_at: number | null
-  human_confirmation_digest: string | null
-  settlement_idempotency_key: string | null
-  provider_result_json: string | null
-  failure_code: string | null
+type StoredEventRow = Readonly<{
+  sequence: number; event_type: string; evidence_json: string; created_at: string
+}>
+
+type StoredEvent = Readonly<{
+  sequence: number; eventType: string; evidence: unknown; createdAt: string
+}>
+
+function isChangeEvent(value: unknown): value is ChangeEvent {
+  return isRecord(value)
+    && value.eventType === 'offer_changed'
+    && ['priceMinor', 'available', 'agentActive'].includes(String(value.attribute))
+    && 'observedValue' in value
 }
 
-function validPrepare(input: CheckoutPrepareInput): boolean {
-  return [input.checkoutId, input.intentId, input.agentId, input.offerId]
-    .every((value) => IDENTIFIER_PATTERN.test(value))
-    && SHA256_PATTERN.test(input.offerReceiptDigest)
-    && REVISION_PATTERN.test(input.offerProviderRevision)
-    && Number.isSafeInteger(input.amountMinor)
-    && input.amountMinor > 0
-    && Number.isSafeInteger(input.budgetMinor)
-    && input.budgetMinor >= input.amountMinor
-    && CURRENCY_PATTERN.test(input.currency)
-}
-
-function validConfirm(input: CheckoutConfirmInput): boolean {
-  return IDENTIFIER_PATTERN.test(input.checkoutId)
-    && IDENTIFIER_PATTERN.test(input.offerId)
-    && typeof input.confirmationToken === 'string'
-    && /^[\x21-\x7e]{64,128}$/u.test(input.confirmationToken)
-    && Number.isSafeInteger(input.amountMinor)
-    && input.amountMinor > 0
-}
-
-function digestHumanConfirmation(
-  input: CheckoutConfirmInput,
-  confirmationTokenDigest: string,
-): Promise<string> {
-  return sha256Hex(canonicalJson({
-    checkoutId: input.checkoutId,
-    offerId: input.offerId,
-    amountMinor: input.amountMinor,
-    confirmationTokenDigest,
-  }))
-}
-
-function preparedResult(state: StoredCheckout, idempotent: boolean): unknown {
-  return Object.freeze({
-    ok: true,
-    status: 'confirmation_required',
-    idempotent,
-    checkoutId: state.checkout_id,
-    confirmationToken: state.confirmation_token,
-    confirmationExpiresAt: state.confirmation_expires_at,
-    guardrailReceipt: state.guardrail_receipt_json
-      ? JSON.parse(state.guardrail_receipt_json) as unknown
-      : null,
-  })
-}
-
-function settledResult(result: unknown, idempotent: boolean): unknown {
-  return Object.freeze({ ok: true, status: 'settled', idempotent, result })
-}
-
-function rejected(code: string): Readonly<{ ok: false; status: 'rejected'; code: string }> {
-  return Object.freeze({ ok: false, status: 'rejected', code })
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
