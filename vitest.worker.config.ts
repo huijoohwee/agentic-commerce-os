@@ -16,6 +16,7 @@ const TEST_COMPATIBILITY_DATE = '2026-08-22'
 
 export default defineConfig({
   test: {
+    fileParallelism: false,
     projects: [
       defineProject({
         plugins: [cloudflareTest({
