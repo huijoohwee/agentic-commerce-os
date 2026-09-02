@@ -346,11 +346,9 @@ async function coldFirstContentfulPaint(browser: Browser): Promise<number> {
   const page = await context.newPage()
   await applyNetworkProfile(page)
   await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 15_000 })
-  await page.waitForFunction(
-    "performance.getEntriesByName('first-contentful-paint').length > 0",
-    undefined,
-    { timeout: 5_000 },
-  )
+  await expect.poll(() => page.evaluate(() => (
+    performance.getEntriesByName('first-contentful-paint').length
+  )), { timeout: 5_000 }).toBeGreaterThan(0)
   const paint = await page.evaluate(() => (
     performance.getEntriesByName('first-contentful-paint')[0]?.startTime ?? Number.POSITIVE_INFINITY
   ))
