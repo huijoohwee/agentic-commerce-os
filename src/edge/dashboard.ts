@@ -7,6 +7,7 @@ export type ConsoleMetadata = Readonly<{
 }>
 
 export type ConsoleOptions = Readonly<{
+  basePath?: string
   catalogPath?: string
   clientModulePath?: string
   deliveryBoundary?: 'open' | 'closed'
@@ -22,8 +23,10 @@ export function consoleResponse(
   const releaseCandidateSha = escapeHtml(metadata.releaseCandidateSha)
   const versionId = escapeHtml(metadata.version.id ?? 'local')
   const versionTimestamp = escapeHtml(formatTimestamp(metadata.version.timestamp))
-  const catalogPath = escapeHtml(options.catalogPath ?? '/v1/public/agents')
-  const modulePath = escapeHtml(options.clientModulePath ?? '/assets/storefront.js')
+  const basePath = options.basePath ?? ''
+  const catalogPath = escapeHtml(options.catalogPath ?? `${basePath}/v1/public/agents`)
+  const modulePath = escapeHtml(options.clientModulePath ?? `${basePath}/assets/storefront.js`)
+  const homePath = escapeHtml(basePath ? `${basePath}/` : '/')
   const deliveryClosed = options.deliveryBoundary === 'closed'
   const brand = escapeHtml(manifest.copy.brand)
   const headline = escapeHtml(manifest.copy.headline)
@@ -54,7 +57,7 @@ export function consoleResponse(
     ? ''
     : `<article class="card">
         <div class="card-head"><h2>Machine probes</h2><span class="index">03</span></div>
-        <div class="routes"><a class="route" href="/livez"><code>GET /livez</code><span>liveness →</span></a><a class="route" href="/readyz"><code>GET /readyz</code><span>dependencies →</span></a></div>
+        <div class="routes"><a class="route" href="${escapeHtml(`${basePath}/livez`)}"><code>GET /livez</code><span>liveness →</span></a><a class="route" href="${escapeHtml(`${basePath}/readyz`)}"><code>GET /readyz</code><span>dependencies →</span></a></div>
       </article>`
   const clientModule = deliveryClosed ? '' : `<script type="module" nonce="${nonce}" src="${modulePath}"></script>`
   const contentSecurityPolicy = deliveryClosed
@@ -68,6 +71,7 @@ export function consoleResponse(
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="${escapeHtml(manifest.palette.background)}">
   <meta name="ag-catalog-path" content="${catalogPath}">
+  <meta name="ag-runtime-base-path" content="${escapeHtml(basePath)}">
   <title>${brand}</title>
   <style>
     :root { color-scheme: dark; --ink: ${manifest.palette.ink}; --muted: ${manifest.palette.muted}; --line: ${manifest.palette.line}; --panel: ${manifest.palette.panel}; --accent: ${manifest.palette.accent}; --background: ${manifest.palette.background}; }
@@ -130,7 +134,7 @@ export function consoleResponse(
 <body>
   <main>
     <nav aria-label="Runtime navigation">
-      <a class="brand" href="/" aria-label="${brand} home">${logo}</a>
+      <a class="brand" href="${homePath}" aria-label="${brand} home">${logo}</a>
       <span class="lane">${lane} lane</span>
     </nav>
     <section class="hero" aria-labelledby="storefront-heading">

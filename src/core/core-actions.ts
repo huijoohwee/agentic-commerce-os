@@ -2,11 +2,13 @@ import { readRoutingIntent, type RoutingIntent } from '../domain/exclusive-categ
 import {
   AGENT_REGISTRY_CLAIM,
   merchantThemeClaim,
-  vendorTransitionClaim,
   readClaimMutationRequest,
 } from '../domain/authoring-claim-policy.js'
 import { isHttpFailure, isRecord, readJsonObject } from '../shared/http.js'
 import {
+  COMMERCE_ADMISSION_OPERATOR_INSTRUCTION_REF,
+  projectCommerceAgentDefinitionForAcos,
+  readAcosDeploymentPin,
   requestAcosAdmission,
   type AcosAdmissionInputs,
 } from './acos-admission.js'
@@ -27,7 +29,7 @@ import {
   registryStub,
   revenueLedgerStub,
 } from './core-clients.js'
-import { reject, readProviderResponse, respond, resultOk } from './core-http-utils.js'
+import { reject, respond, resultOk } from './core-http-utils.js'
 import {
   configuredInvocationProof,
   configuredTokens,
@@ -38,23 +40,17 @@ import {
 import { normalizeDiscoveryReceipt, type DiscoveryOfferReceipt } from './discovery-receipt.js'
 import { projectMerchantCatalog, readListing, type MerchantListing } from './merchant-catalog.js'
 import { projectPublicCatalog } from './public-catalog.js'
-import { MARKETPLACE_PROVIDER_CONTRACT } from './provider-contract.js'
-import { admitOperatorMutation, reserveOperatorMutation } from './authoring-mutation.js'
 import {
-  authoringMutationHeaders,
-  responseMatchesAuthoringMutation,
-} from './authoring-mutation-headers.ts'
-import {
-  prepareMarketplaceProviderOperation,
-  responseMatchesOperationalEvidence,
-} from './provider-operation-gate.js'
+  admitOperatorMutation,
+  reserveOperatorMutation,
+} from './authoring-mutation.js'
+import { preserveRegistrationBoundary } from './registration-reconciliation.js'
 import { runRegistrationDryRun } from './sandbox-registration.js'
 import { activatePreparedTheme, currentTheme, prepareThemeDeployment } from './theme-deployment.js'
 import { themeActivationMutationIntent } from './theme-deployment-store.js'
 import { readUpstreamEvidencePin } from './upstream-evidence.js'
 
 const IDENTIFIER_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/u
-const DEPENDENCY_REQUEST_TIMEOUT_MS = 10_000
 
 export async function registerAgent(request: Request, env: CoreEnv, requestId: string): Promise<Response> {
   const body = await readJsonObject(request)
@@ -67,19 +63,26 @@ export async function registerAgent(request: Request, env: CoreEnv, requestId: s
     || !('agentDefinition' in body)
     || !('toolAllowlistEntry' in body)
     || !('invocationRegisterEntry' in body)
-    || typeof body.operatorInstructionRef !== 'string'
+    || body.operatorInstructionRef !== COMMERCE_ADMISSION_OPERATOR_INSTRUCTION_REF
     || !isRecord(body.commerceProjection)
     || (body.expectedPreviousContentHash !== null && typeof body.expectedPreviousContentHash !== 'string')) {
     return respond(reject('registration_malformed'), requestId, 400)
   }
+  const projectedAgentDefinition = projectCommerceAgentDefinitionForAcos(body.agentDefinition)
+  if (!projectedAgentDefinition) return respond(reject('registration_malformed'), requestId, 400)
   const mutationAdmission = await admitOperatorMutation(request, env, requestId, AGENT_REGISTRY_CLAIM)
   if (mutationAdmission) return mutationAdmission
   const admissionInputs: AcosAdmissionInputs = {
-    agentDefinition: body.agentDefinition,
+    agentDefinition: projectedAgentDefinition,
     toolAllowlistEntry: body.toolAllowlistEntry,
     invocationRegisterEntry: body.invocationRegisterEntry,
     operatorInstructionRef: body.operatorInstructionRef,
   }
+  const acosDeploymentPin = readAcosDeploymentPin(
+    env.ACOS_RUNTIME_SOURCE_REVISION,
+    env.ACOS_RUNTIME_CANDIDATE_DIGEST,
+  )
+  if (!acosDeploymentPin) return respond(reject('acos_deployment_pin_invalid'), requestId, 503)
   const dryRun = await runRegistrationDryRun(env, body.agentDefinition, body.toolAllowlistEntry)
   if (!dryRun.ok) {
     const status = dryRun.code === 'registration_dry_run_invalid'
@@ -101,12 +104,13 @@ export async function registerAgent(request: Request, env: CoreEnv, requestId: s
     expectedPreviousContentHash: body.expectedPreviousContentHash,
     sandboxDryRun: dryRun.record,
   })
+  const authoringMutationIntent = agentRegistrationMutationIntent(intent)
   const reserved = await reserveOperatorMutation(
     request,
     env,
     requestId,
     AGENT_REGISTRY_CLAIM,
-    agentRegistrationMutationIntent(intent),
+    authoringMutationIntent,
   )
   if (!reserved.ok) return reserved.response
   const registry = registryStub(env)
@@ -120,7 +124,10 @@ export async function registerAgent(request: Request, env: CoreEnv, requestId: s
   const admission = await requestAcosAdmission(
     env.ACOS_ADMISSION,
     admissionInputs,
+    authoringMutationIntent,
     reserved.reservation.permit,
+    acosDeploymentPin,
+    env.ACOS_ADMISSION_AUTH_SECRET,
   )
   if (!admission.ok) {
     if (admission.reservationSafeToComplete && !await reserved.reservation.finish()) {
@@ -128,18 +135,45 @@ export async function registerAgent(request: Request, env: CoreEnv, requestId: s
     }
     const status = admission.code === 'acos_admission_rejected'
       ? 409
-      : admission.code === 'acos_admission_provider_unavailable' ? 503 : 502
+      : admission.code === 'acos_admission_provider_unavailable'
+        || admission.code === 'acos_admission_authentication_unavailable' ? 503 : 502
     return respond(admission, requestId, status)
   }
   const input: AgentRegistrationInput = {
     ...intent,
     admissionReceipt: admission.receipt,
   }
-  const result = await registry.register(input, reserved.reservation.permit)
-  if (!await reserved.reservation.finish()) {
-    return respond(reject('authoring_mutation_completion_failed'), requestId, 503)
+  let result: unknown
+  try {
+    result = await registry.register(input, reserved.reservation.permit)
+  } catch {
+    return preserveRegistrationBoundary(
+      reserved.reservation,
+      admission.receipt,
+      Object.freeze({ ok: false, code: 'commerce_registry_unavailable' }),
+      'commerce-commit-unconfirmed',
+      requestId,
+    )
   }
-  return respond(result, requestId, resultOk(result) ? 200 : 409)
+  if (!resultOk(result)) {
+    return preserveRegistrationBoundary(
+      reserved.reservation,
+      admission.receipt,
+      result,
+      'commerce-commit-rejected',
+      requestId,
+    )
+  }
+  if (!await reserved.reservation.finish()) {
+    return preserveRegistrationBoundary(
+      reserved.reservation,
+      admission.receipt,
+      Object.freeze({ ok: true, code: 'commerce_registry_committed' }),
+      'reservation-completion-unconfirmed',
+      requestId,
+    )
+  }
+  return respond(result, requestId, 200)
 }
 
 export async function routeIntent(request: Request, env: CoreEnv, requestId: string): Promise<Response> {
@@ -385,96 +419,6 @@ export async function claimAction(
     return respond(reject('not_found'), requestId, 404)
   }
   return respond(result, requestId, resultOk(result) ? 200 : 409)
-}
-
-export async function proxyVendorTransition(
-  request: Request,
-  env: CoreEnv,
-  requestId: string,
-  vendorId: string,
-): Promise<Response> {
-  if (!IDENTIFIER_PATTERN.test(vendorId)) return respond(reject('vendor_id_malformed'), requestId, 400)
-  const mutationAdmission = await admitOperatorMutation(request, env, requestId, vendorTransitionClaim(vendorId))
-  if (mutationAdmission) return mutationAdmission
-  const body = await readJsonObject(request)
-  if (isHttpFailure(body)) return respond(body, requestId, 400)
-  if (typeof body.actorId !== 'string' || typeof body.state !== 'string') {
-    return respond(reject('vendor_transition_malformed'), requestId, 400)
-  }
-  const operation = await prepareMarketplaceProviderOperation(env, new Request(
-    `https://marketplace.internal/v1/vendors/${encodeURIComponent(vendorId)}/transition`, {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-commerce-contract': MARKETPLACE_PROVIDER_CONTRACT,
-        'x-operator-id': body.actorId,
-      },
-      body: JSON.stringify({ state: body.state }),
-      signal: AbortSignal.timeout(DEPENDENCY_REQUEST_TIMEOUT_MS),
-  }))
-  if (!operation.ok) return respond(reject(operation.code), requestId, 503)
-  const reserved = await reserveOperatorMutation(
-    request,
-    env,
-    requestId,
-    vendorTransitionClaim(vendorId),
-    { vendorId, actorId: body.actorId, state: body.state },
-  )
-  if (!reserved.ok) return reserved.response
-  const fencedHeaders = new Headers(operation.request.headers)
-  for (const [name, value] of Object.entries(authoringMutationHeaders(reserved.reservation.permit))) {
-    fencedHeaders.set(name, value)
-  }
-  const fencedRequest = new Request(operation.request, { headers: fencedHeaders })
-  let upstream: Response
-  try {
-    upstream = await env.MARKETPLACE_PROVIDER.fetch(fencedRequest)
-  } catch {
-    return respond(reject('marketplace_provider_unavailable'), requestId, 503)
-  }
-  if (!responseMatchesOperationalEvidence(upstream, operation.binding)) {
-    return respond(reject('marketplace_provider_evidence_binding_mismatch'), requestId, 502)
-  }
-  if (!responseMatchesAuthoringMutation(upstream, reserved.reservation.permit)) {
-    return respond(reject('marketplace_provider_fence_unconfirmed'), requestId, 502)
-  }
-  const payload = await readProviderResponse(upstream).catch(() => null)
-  if (!isRecord(payload) || payload.contract !== MARKETPLACE_PROVIDER_CONTRACT) {
-    return respond(reject('marketplace_provider_contract_mismatch'), requestId, 502)
-  }
-  if (!await reserved.reservation.finish()) {
-    return respond(reject('authoring_mutation_completion_failed'), requestId, 503)
-  }
-  return respond(payload, requestId, upstream.status)
-}
-
-export async function proxyMarketplaceSettlement(
-  env: CoreEnv,
-  requestId: string,
-  splitId: string,
-): Promise<Response> {
-  const operation = await prepareMarketplaceProviderOperation(env, new Request(
-    `https://marketplace.internal/v1/settlements/${encodeURIComponent(splitId)}`,
-    {
-      method: 'GET',
-      headers: { accept: 'application/json', 'x-commerce-contract': MARKETPLACE_PROVIDER_CONTRACT },
-      signal: AbortSignal.timeout(DEPENDENCY_REQUEST_TIMEOUT_MS),
-    },
-  ))
-  if (!operation.ok) return respond(reject(operation.code), requestId, 503)
-  let upstream: Response
-  try {
-    upstream = await env.MARKETPLACE_PROVIDER.fetch(operation.request)
-  } catch {
-    return respond(reject('marketplace_provider_unavailable'), requestId, 503)
-  }
-  if (!responseMatchesOperationalEvidence(upstream, operation.binding)) {
-    return respond(reject('marketplace_provider_evidence_binding_mismatch'), requestId, 502)
-  }
-  const payload = await readProviderResponse(upstream).catch(() => null)
-  return isRecord(payload) && payload.contract === MARKETPLACE_PROVIDER_CONTRACT
-    ? respond(payload, requestId, upstream.status)
-    : respond(reject('marketplace_provider_contract_mismatch'), requestId, 502)
 }
 
 function readLeaseEpochHeader(request: Request): number {

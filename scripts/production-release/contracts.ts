@@ -9,11 +9,15 @@ export const PRODUCTION_WORKER_DEPLOYMENT_SCHEMA = 'agentic-commerce-worker-depl
 export const PRODUCTION_TOPOLOGY_SCHEMA = 'agentic-commerce-production-topology/v1'
 export const PRODUCTION_ROUTE_PROOF_SCHEMA = 'agentic-commerce-production-route-proof/v1'
 export const PRODUCTION_STORAGE_TRANSITION_SCHEMA = 'agentic-commerce-storage-transition/v1'
-export const PRODUCTION_ROUTE_PATTERN = 'airvio.co/agentic-commerce-os'
-export const PRODUCTION_ROUTE_URL = `https://${PRODUCTION_ROUTE_PATTERN}`
+export const PRODUCTION_ROUTE_PATTERN = 'airvio.co/agentic-commerce-os*'
+export const PRODUCTION_ROUTE_URL = 'https://airvio.co/agentic-commerce-os/' as const
 export const PRODUCTION_ZONE_NAME = 'airvio.co'
 export const PRODUCTION_CORE_WORKER = 'agentic-commerce-core-production'
 export const PRODUCTION_EDGE_WORKER = 'agentic-commerce-edge-production'
+export const PRODUCTION_SANDBOX_WORKER = 'agentic-commerce-sandbox-production'
+export const PRODUCTION_SANDBOX_CONTAINER_APPLICATION =
+  'agentic-commerce-sandbox-production-sandbox' as const
+export const PRODUCTION_SANDBOX_TOPOLOGY_SCHEMA = 'agentic-commerce-production-sandbox-topology/v1'
 export const HUMAN_PRESENCE_ANCHOR_PLACEHOLDER = 'external-trust-anchor-required'
 
 export const PRODUCTION_DURABLE_OBJECT_BINDINGS = Object.freeze([
@@ -30,10 +34,17 @@ export const PRODUCTION_EDGE_SECRETS = Object.freeze([
   'OPERATOR_BEARER_TOKEN',
   'STOREFRONT_SESSION_SECRET',
 ])
+export const PRODUCTION_CORE_SECRETS = Object.freeze([
+  'DISCOVERY_PROVIDER_BEARER_TOKEN',
+  'ACOS_ADMISSION_AUTH_SECRET',
+  'CHECKOUT_PROVIDER_AUTH_SECRET',
+  'MARKETPLACE_PROVIDER_AUTH_SECRET',
+])
 
 const CORE_SERVICES = Object.freeze([
   Object.freeze({ binding: 'ACOS_ADMISSION', service: 'agentic-canvas-os' }),
   Object.freeze({ binding: 'CHECKOUT_PROVIDER', service: 'agenticgraph-travel-commerce-production' }),
+  Object.freeze({ binding: 'COMMERCE_SANDBOX', service: 'agentic-commerce-sandbox-production' }),
   Object.freeze({ binding: 'DOCS_MCP', service: 'agenticgraph-mcp' }),
   Object.freeze({ binding: 'MARKETPLACE_PROVIDER', service: 'agenticgraph-marketplace-production' }),
 ])
@@ -53,19 +64,33 @@ export type ProductionTopologyProof = Readonly<{
   edgeWorker: typeof PRODUCTION_EDGE_WORKER
   route: Readonly<{ pattern: typeof PRODUCTION_ROUTE_PATTERN; zoneName: typeof PRODUCTION_ZONE_NAME }>
   durableObjectBindings: typeof PRODUCTION_DURABLE_OBJECT_BINDINGS
+  coreRequiredSecrets: typeof PRODUCTION_CORE_SECRETS
   edgeRequiredSecrets: typeof PRODUCTION_EDGE_SECRETS
 }>
 
 export type WorkerDeploymentProof = Readonly<{
   schema: typeof PRODUCTION_WORKER_DEPLOYMENT_SCHEMA
-  worker: 'core' | 'edge'
+  worker: 'core' | 'edge' | 'sandbox'
   candidateSha: string
+  candidateDigest: string
   versionId: string
   percentage: 100
   bindingDigest: string
   remoteScriptDigest: string
   remoteRuntimeDigest: string
   migrationConfigDigest: string
+}>
+
+export type ProductionSandboxTopologyProof = Readonly<{
+  schema: typeof PRODUCTION_SANDBOX_TOPOLOGY_SCHEMA
+  sandboxWorker: typeof PRODUCTION_SANDBOX_WORKER
+  durableObjectBinding: Readonly<{ name: 'Sandbox'; className: 'Sandbox' }>
+  container: Readonly<{
+    applicationName: typeof PRODUCTION_SANDBOX_CONTAINER_APPLICATION
+    className: 'Sandbox'
+    instanceType: 'lite'
+    maxInstances: 1
+  }>
 }>
 
 export function validateProductionTopology(coreValue: unknown, edgeValue: unknown): ProductionTopologyProof {
@@ -98,6 +123,8 @@ export function validateProductionTopology(coreValue: unknown, edgeValue: unknow
 
   exactServices(coreProduction, CORE_SERVICES, 'core_services_invalid')
   exactServices(edgeProduction, EDGE_SERVICES, 'edge_services_invalid')
+  const coreSecrets = object(coreProduction.secrets, 'core_secrets_invalid')
+  exactStringSet(asArray(coreSecrets.required).map(text), PRODUCTION_CORE_SECRETS, 'core_secrets_invalid')
   const edgeSecrets = object(edgeProduction.secrets, 'edge_secrets_invalid')
   exactStringSet(asArray(edgeSecrets.required).map(text), PRODUCTION_EDGE_SECRETS, 'edge_secrets_invalid')
   for (const config of [core, coreProduction, edge, edgeProduction]) validateNoUnmanagedStorage(config)
@@ -117,7 +144,45 @@ export function validateProductionTopology(coreValue: unknown, edgeValue: unknow
     edgeWorker: PRODUCTION_EDGE_WORKER,
     route: Object.freeze({ pattern: PRODUCTION_ROUTE_PATTERN, zoneName: PRODUCTION_ZONE_NAME }),
     durableObjectBindings: PRODUCTION_DURABLE_OBJECT_BINDINGS,
+    coreRequiredSecrets: PRODUCTION_CORE_SECRETS,
     edgeRequiredSecrets: PRODUCTION_EDGE_SECRETS,
+  })
+}
+
+export function validateProductionSandboxTopology(value: unknown): ProductionSandboxTopologyProof {
+  const config = object(value, 'sandbox_config_invalid')
+  const production = productionLane(config)
+  exact(production.name === PRODUCTION_SANDBOX_WORKER, 'sandbox_worker_name_invalid')
+  validatePrivateLane(production, 'sandbox')
+  exact(asArray(production.routes).length === 0, 'sandbox_route_must_be_private')
+  exact(asArray(production.services).length === 0, 'sandbox_service_binding_forbidden')
+  exact(production.secrets === undefined, 'sandbox_secret_binding_forbidden')
+  validateNoUnmanagedStorage(config)
+  validateNoUnmanagedStorage(production)
+  const namespaces = asArray(object(production.durable_objects, 'sandbox_durable_objects_invalid').bindings)
+  exact(namespaces.length === 1, 'sandbox_durable_object_binding_invalid')
+  const namespace = object(namespaces[0], 'sandbox_durable_object_binding_invalid')
+  exactKeys(namespace, ['class_name', 'name'], 'sandbox_durable_object_binding_shape_invalid')
+  exact(namespace.name === 'Sandbox' && namespace.class_name === 'Sandbox',
+    'sandbox_durable_object_binding_invalid')
+  const containers = asArray(production.containers)
+  exact(containers.length === 1, 'sandbox_container_invalid')
+  const container = object(containers[0], 'sandbox_container_invalid')
+  exactKeys(container, ['class_name', 'image', 'instance_type', 'max_instances', 'name'],
+    'sandbox_container_shape_invalid')
+  exact(container.name === PRODUCTION_SANDBOX_CONTAINER_APPLICATION
+    && container.class_name === 'Sandbox' && container.image === './config/sandbox.Dockerfile'
+    && container.max_instances === 1 && container.instance_type === 'lite', 'sandbox_container_invalid')
+  return Object.freeze({
+    schema: PRODUCTION_SANDBOX_TOPOLOGY_SCHEMA,
+    sandboxWorker: PRODUCTION_SANDBOX_WORKER,
+    durableObjectBinding: Object.freeze({ name: 'Sandbox', className: 'Sandbox' }),
+    container: Object.freeze({
+      applicationName: PRODUCTION_SANDBOX_CONTAINER_APPLICATION,
+      className: 'Sandbox',
+      instanceType: 'lite',
+      maxInstances: 1,
+    }),
   })
 }
 
@@ -125,23 +190,35 @@ export function validateWorkerVersion(
   configValue: unknown,
   versionValue: unknown,
   expected: Readonly<{
-    kind: 'core' | 'edge'
+    kind: 'core' | 'edge' | 'sandbox'
     candidateSha: string
+    candidateDigest: string
     versionId: string
     expectedBindingDigest?: string
     humanPresenceTrustAnchorBinding?: string
+    acosSourceRevision?: string
+    acosCandidateDigest?: string
+    variableOverrides?: Readonly<Record<string, string>>
   }>,
 ): WorkerDeploymentProof {
   exact(SHA1_PATTERN.test(expected.candidateSha), 'candidate_sha_invalid')
+  exact(SHA256_PATTERN.test(expected.candidateDigest), 'candidate_digest_invalid')
   exact(VERSION_ID_PATTERN.test(expected.versionId), 'version_id_invalid')
   if (expected.expectedBindingDigest !== undefined) {
     exact(SHA256_PATTERN.test(expected.expectedBindingDigest), 'expected_binding_digest_invalid')
   }
   exact(expected.kind === 'edge' ? typeof expected.humanPresenceTrustAnchorBinding === 'string'
     : expected.humanPresenceTrustAnchorBinding === undefined, 'human_presence_anchor_binding_invalid')
+  exact(expected.kind === 'core'
+    ? SHA1_PATTERN.test(expected.acosSourceRevision ?? '')
+      && SHA256_PATTERN.test(expected.acosCandidateDigest ?? '')
+    : expected.acosSourceRevision === undefined && expected.acosCandidateDigest === undefined,
+  'acos_deployment_pin_invalid')
   const config = object(configValue, 'worker_config_invalid')
   const production = productionLane(config)
-  exact(production.name === (expected.kind === 'core' ? PRODUCTION_CORE_WORKER : PRODUCTION_EDGE_WORKER),
+  const expectedWorker = expected.kind === 'core' ? PRODUCTION_CORE_WORKER
+    : expected.kind === 'edge' ? PRODUCTION_EDGE_WORKER : PRODUCTION_SANDBOX_WORKER
+  exact(production.name === expectedWorker,
     'worker_kind_mismatch')
   const version = object(versionValue, 'worker_version_invalid')
   exact(version.id === expected.versionId, 'worker_version_id_mismatch')
@@ -175,6 +252,7 @@ export function validateWorkerVersion(
     schema: PRODUCTION_WORKER_DEPLOYMENT_SCHEMA,
     worker: expected.kind,
     candidateSha: expected.candidateSha,
+    candidateDigest: expected.candidateDigest,
     versionId: expected.versionId,
     percentage: 100,
     bindingDigest,
@@ -184,7 +262,33 @@ export function validateWorkerVersion(
   })
 }
 
-function validatePrivateLane(lane: JsonObject, kind: 'core' | 'edge'): void {
+export function revalidateWorkerVersionProof(
+  versionValue: unknown,
+  expected: WorkerDeploymentProof,
+): WorkerDeploymentProof {
+  const version = object(versionValue, 'worker_version_invalid')
+  exact(version.id === expected.versionId, 'worker_version_id_mismatch')
+  const annotations = object(version.annotations, 'worker_annotations_invalid')
+  exact(annotations['workers/tag'] === expected.candidateSha, 'worker_candidate_tag_mismatch')
+  const resources = object(version.resources, 'worker_resources_invalid')
+  const remoteScript = object(resources.script, 'worker_remote_script_invalid')
+  const remoteRuntime = object(resources.script_runtime, 'worker_remote_runtime_invalid')
+  const bindings = asArray(resources.bindings).map((entry) => object(entry, 'worker_binding_invalid'))
+  const safeBindings = bindings.map(sanitizeBinding).sort((left, right) => {
+    const leftKey = `${text(left.name)}:${text(left.type)}`
+    const rightKey = `${text(right.name)}:${text(right.type)}`
+    return leftKey.localeCompare(rightKey)
+  })
+  exact(sha256(canonicalJson(safeBindings)) === expected.bindingDigest,
+    'worker_prior_binding_digest_mismatch')
+  exact(sha256(canonicalJson(remoteScript)) === expected.remoteScriptDigest,
+    'worker_prior_script_digest_mismatch')
+  exact(sha256(canonicalJson(remoteRuntime)) === expected.remoteRuntimeDigest,
+    'worker_prior_runtime_digest_mismatch')
+  return expected
+}
+
+function validatePrivateLane(lane: JsonObject, kind: 'core' | 'edge' | 'sandbox'): void {
   exact(lane.workers_dev === false && lane.preview_urls === false, `${kind}_public_preview_enabled`)
   const variables = object(lane.vars, `${kind}_vars_invalid`)
   exact(variables.DEPLOY_LANE === 'Production', `${kind}_lane_invalid`)
@@ -215,9 +319,13 @@ function validateConfiguredBindings(
   production: JsonObject,
   actual: ReadonlyMap<string, JsonObject>,
   expected: Readonly<{
-    kind: 'core' | 'edge'
+    kind: 'core' | 'edge' | 'sandbox'
     candidateSha: string
+    candidateDigest: string
     humanPresenceTrustAnchorBinding?: string
+    acosSourceRevision?: string
+    acosCandidateDigest?: string
+    variableOverrides?: Readonly<Record<string, string>>
   }>,
 ): void {
   const expectedNames: string[] = []
@@ -226,9 +334,17 @@ function validateConfiguredBindings(
     const binding = requiredBinding(actual, name, 'plain_text')
     const expectedText = name === 'RELEASE_CANDIDATE_SHA'
       ? expected.candidateSha
-      : name === 'HUMAN_CONFIRMATION_TRUST_ANCHOR_JSON'
-        ? text(expected.humanPresenceTrustAnchorBinding)
-        : text(configured)
+      : name === 'RELEASE_CANDIDATE_DIGEST'
+        ? expected.candidateDigest
+        : name === 'ACOS_RUNTIME_SOURCE_REVISION'
+          ? text(expected.acosSourceRevision)
+          : name === 'ACOS_RUNTIME_CANDIDATE_DIGEST'
+            ? text(expected.acosCandidateDigest)
+            : name === 'HUMAN_CONFIRMATION_TRUST_ANCHOR_JSON'
+              ? text(expected.humanPresenceTrustAnchorBinding)
+              : name in (expected.variableOverrides ?? {})
+                ? text(expected.variableOverrides?.[name])
+                : text(configured)
     exact(binding.text === expectedText, 'worker_plain_text_binding_mismatch')
     expectedNames.push(name)
   }
@@ -253,7 +369,8 @@ function validateConfiguredBindings(
   const metadataName = text(object(production.version_metadata, 'configured_version_metadata_invalid').binding)
   requiredBinding(actual, metadataName, 'version_metadata')
   expectedNames.push(metadataName)
-  const secrets = expected.kind === 'edge' ? PRODUCTION_EDGE_SECRETS : []
+  const secrets = expected.kind === 'edge' ? PRODUCTION_EDGE_SECRETS
+    : expected.kind === 'core' ? PRODUCTION_CORE_SECRETS : []
   for (const name of secrets) {
     requiredBinding(actual, name, 'secret_text')
     expectedNames.push(name)
@@ -330,21 +447,28 @@ async function main(): Promise<void> {
   let output: unknown
   if (command === 'topology' && arguments_.length === 2) {
     output = validateProductionTopology(readBoundedJson(arguments_[0] as string), readBoundedJson(arguments_[1] as string))
+  } else if (command === 'sandbox-topology' && arguments_.length === 1) {
+    output = validateProductionSandboxTopology(readBoundedJson(arguments_[0] as string))
   } else if (command === 'version' && arguments_.length >= 5 && arguments_.length <= 7) {
     const [kind, configPath, versionPath, expectedVersionId, candidateSha, expectedDigest, anchorPath] = arguments_
-    exact(kind === 'core' || kind === 'edge', 'worker_kind_invalid')
+    exact(kind === 'core' || kind === 'edge' || kind === 'sandbox', 'worker_kind_invalid')
     const anchorProof = anchorPath === undefined || anchorPath === '-'
       ? undefined
       : parseHumanPresenceAnchorProof(readBoundedJson(anchorPath))
     output = validateWorkerVersion(readBoundedJson(configPath as string), readBoundedJson(versionPath as string), {
       kind,
       candidateSha: candidateSha as string,
+      candidateDigest: process.env.CANDIDATE_DIGEST ?? '',
       versionId: expectedVersionId as string,
       ...(expectedDigest === undefined || expectedDigest === '-' ? {} : { expectedBindingDigest: expectedDigest }),
       ...(anchorProof === undefined ? {} : { humanPresenceTrustAnchorBinding: anchorProof.bindingValue }),
+      ...(kind === 'core' ? {
+        acosSourceRevision: process.env.ACOS_RUNTIME_SOURCE_REVISION,
+        acosCandidateDigest: process.env.ACOS_RUNTIME_CANDIDATE_DIGEST,
+      } : {}),
     })
   } else {
-    throw new Error('usage: contracts.ts topology <core-config> <edge-config> | version <core|edge> <config> <version-json> <version-id> <candidate-sha> [binding-digest] [anchor-proof]')
+    throw new Error('usage: contracts.ts topology <core-config> <edge-config> | sandbox-topology <sandbox-config> | version <sandbox|core|edge> <config> <version-json> <version-id> <candidate-sha> [binding-digest] [anchor-proof]')
   }
   process.stdout.write(`${JSON.stringify(output)}\n`)
 }

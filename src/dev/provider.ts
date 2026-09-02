@@ -8,6 +8,7 @@ import {
   ACOS_ADMISSION_PATH,
   ACOS_ADMISSION_PROVIDER_CONTRACT,
   ACOS_ADMISSION_RECEIPT_SCHEMA,
+  ACOS_DEPLOYMENT_IDENTITY_SCHEMA,
 } from '../core/acos-admission.js'
 import {
   DOCS_INVOCATION_ENDPOINT,
@@ -33,7 +34,10 @@ import {
   operationalEvidenceResponseHeaders,
   type OperationalEvidenceBinding,
 } from '../core/provider-operation-gate.js'
-import { AGENT_REGISTRY_CLAIM, vendorTransitionClaim, type ClaimMutationPermit } from '../domain/authoring-claim-policy.js'
+import {
+  vendorTransitionClaim,
+  type ClaimMutationPermit,
+} from '../domain/authoring-claim-policy.js'
 import { admitDevAuthoringMutation, devAuthoringHeaders } from './authoring-fence.js'
 import {
   DEV_CHECKOUT_EVIDENCE_PIN,
@@ -43,7 +47,11 @@ import {
   devRuntimeEvidenceResponse,
   discoveryOperationBinding,
   marketplaceOperationBinding,
+  providerControlAuthenticated,
 } from './provider-evidence.js'
+import { devAcosAdmissionResponse } from './acos-admission-provider.js'
+import { DEV_ACOS_ADMISSION_AUTH_SECRET } from './acos-admission-provider.js'
+import { verifyAcosAdmissionRequestAuthentication } from '../shared/acos-admission-auth.js'
 
 const INVOCATION_PATH = new URL(DOCS_INVOCATION_ENDPOINT).pathname
 const DEMO_CONTRACT = 'commerce.dev-provider/v1'
@@ -81,11 +89,23 @@ const DEV_INVOCATION_METADATA = Object.freeze({
   routingDigest: 'e7e127092bf699af87abf7426071b6b0126ece232a7ec324d0289c8ba4b470a4',
   counts: Object.freeze({ command: 1, semantic: 1, binding: 1 }),
 })
+export const DEV_ACOS_DEPLOYMENT_IDENTITY = Object.freeze({
+  schema: ACOS_DEPLOYMENT_IDENTITY_SCHEMA,
+  sourceRevision: 'a'.repeat(40),
+  candidateDigest: 'f'.repeat(64),
+  versionId: '11111111-1111-4111-8111-111111111111',
+  versionTag: `acos-prod-${'f'.repeat(64)}`,
+  versionTimestamp: '2026-09-03T00:00:00.000Z',
+})
 
 export const DEV_PROVIDER_PINS = Object.freeze({
   ...DEV_INVOCATION_METADATA,
   requiredTokens: Object.freeze(CATALOG.map(({ token }) => token)),
   releaseCandidateSha: 'b'.repeat(40),
+  acosDeployment: Object.freeze({
+    sourceRevision: DEV_ACOS_DEPLOYMENT_IDENTITY.sourceRevision,
+    candidateDigest: DEV_ACOS_DEPLOYMENT_IDENTITY.candidateDigest,
+  }),
   discoveryEvidence: DEV_DISCOVERY_EVIDENCE_PIN,
   checkoutEvidence: DEV_CHECKOUT_EVIDENCE_PIN,
   marketplaceEvidence: DEV_MARKETPLACE_EVIDENCE_PIN,
@@ -106,23 +126,34 @@ export async function devProviderFetch(request: Request): Promise<Response> {
   const url = new URL(request.url)
   if (url.pathname === INVOCATION_PATH) return mcpResponse(request)
   if (request.method === 'GET' && url.pathname === `${ACOS_ADMISSION_PATH}/readyz`) {
+    if (!await verifyAcosAdmissionRequestAuthentication(
+      request, ACOS_ADMISSION_PROVIDER_CONTRACT, DEV_ACOS_ADMISSION_AUTH_SECRET,
+    )) return Response.json({ ok: false, code: 'acos_admission_authentication_invalid' }, { status: 401 })
     return Response.json({
       ok: true,
+      productionReady: true,
       contract: ACOS_ADMISSION_PROVIDER_CONTRACT,
       receiptSchema: ACOS_ADMISSION_RECEIPT_SCHEMA,
       operations: ['register-fenced'],
+      deploymentIdentity: DEV_ACOS_DEPLOYMENT_IDENTITY,
     })
   }
   if (request.method === 'POST' && url.pathname === ACOS_ADMISSION_PATH) {
-    return admissionResponse(request)
+    return devAcosAdmissionResponse(request, DEV_ACOS_DEPLOYMENT_IDENTITY, CATALOG.map(({ token }) => token))
   }
   if (request.method === 'GET' && url.pathname === '/readyz') {
     return Response.json({ ok: true, contract: DEMO_CONTRACT, demo: true })
   }
   if (request.method === 'GET' && url.pathname === '/v1/capabilities') {
+    if (!await providerControlAuthenticated(request)) {
+      return providerError(providerContract(url.hostname), 'provider_authentication_invalid', 401)
+    }
     return capabilityResponse(url.hostname)
   }
   if (request.method === 'GET' && url.pathname === '/v1/runtime-evidence') {
+    if (!await providerControlAuthenticated(request)) {
+      return providerError(providerContract(url.hostname), 'provider_authentication_invalid', 401)
+    }
     return devRuntimeEvidenceResponse(url.hostname)
   }
   if (request.method === 'POST' && url.pathname === '/internal/v1/checkouts/prepare') {
@@ -138,22 +169,32 @@ export async function devProviderFetch(request: Request): Promise<Response> {
     return offerObservationResponse(request)
   }
   if (request.method === 'GET' && url.pathname === '/v1/vendors') {
-    return Response.json({ ok: true, contract: MARKETPLACE_PROVIDER_CONTRACT, demo: true, vendors: [] })
-  }
-  if (request.method === 'GET' && /^\/v1\/settlements\/[^/]+$/u.test(url.pathname)) {
-    const binding = await marketplaceOperationBinding(request)
-    if (!binding) return providerError(MARKETPLACE_PROVIDER_CONTRACT, 'operational_evidence_binding_invalid', 409)
+    const operation = await marketplaceOperationBinding(request)
+    if (!operation) return providerError(MARKETPLACE_PROVIDER_CONTRACT, 'provider_authentication_invalid', 401)
     return providerJson({
       ok: true,
       contract: MARKETPLACE_PROVIDER_CONTRACT,
-      demo: true,
+      vendors: [],
+    }, 200, operation.binding)
+  }
+  if (request.method === 'GET' && /^\/v1\/settlements\/[^/]+$/u.test(url.pathname)) {
+    const operation = await marketplaceOperationBinding(request)
+    if (!operation) return providerError(MARKETPLACE_PROVIDER_CONTRACT, 'operational_evidence_binding_invalid', 409)
+    request = operation.request
+    return providerJson({
+      ok: true,
+      contract: MARKETPLACE_PROVIDER_CONTRACT,
       splitId: url.pathname.split('/').at(-1),
       state: 'settled',
-    }, 200, binding)
+      amountMinor: 0,
+      currency: 'USD',
+    }, 200, operation.binding)
   }
   if (request.method === 'POST' && /^\/v1\/vendors\/[^/]+\/transition$/u.test(url.pathname)) {
-    const binding = await marketplaceOperationBinding(request)
-    if (!binding) return providerError(MARKETPLACE_PROVIDER_CONTRACT, 'operational_evidence_binding_invalid', 409)
+    const operation = await marketplaceOperationBinding(request)
+    if (!operation) return providerError(MARKETPLACE_PROVIDER_CONTRACT, 'operational_evidence_binding_invalid', 409)
+    request = operation.request
+    const binding = operation.binding
     const body = await bodyRecord(request)
     const vendorId = decodeURIComponent(url.pathname.split('/')[3] ?? '')
     const fenced = admitDevAuthoringMutation(request, vendorTransitionClaim(vendorId))
@@ -166,78 +207,13 @@ export async function devProviderFetch(request: Request): Promise<Response> {
     return providerJson({
       ok: true,
       contract: MARKETPLACE_PROVIDER_CONTRACT,
-      demo: true,
       vendorId,
+      actorId: request.headers.get('x-operator-id'),
       state: body.state,
+      mutationId: fenced.permit.mutationId,
     }, 200, binding, fenced.permit)
   }
   return Response.json({ ok: false, contract: DEMO_CONTRACT, code: 'not_found' }, { status: 404 })
-}
-
-async function admissionResponse(request: Request): Promise<Response> {
-  const body = await bodyRecord(request)
-  const fenced = admitDevAuthoringMutation(request, AGENT_REGISTRY_CLAIM)
-  if (!fenced.ok) return admissionRejection(fenced.code, fenced.permit)
-  const fields = body ? Object.keys(body).sort() : []
-  if (!body || JSON.stringify(fields) !== JSON.stringify([
-    'agent_definition',
-    'invocation_register_entry',
-    'operator_instruction_ref',
-    'tool_allowlist_entry',
-  ])) return admissionRejection('registration_input_invalid', fenced.permit)
-
-  const definition = isRecord(body.agent_definition) ? body.agent_definition : null
-  const allowlist = isRecord(body.tool_allowlist_entry) ? body.tool_allowlist_entry : null
-  const invocation = isRecord(body.invocation_register_entry) ? body.invocation_register_entry : null
-  const reference = body.operator_instruction_ref
-  const invocationTokens = invocation
-    ? ['route', 'tag', 'binding', 'tool_identity'].map((field) => invocation[field])
-    : []
-  const declaredTokens = new Set([...CATALOG.map(({ token }) => token), 'acos.adapter.register'])
-  if (!definition
-    || typeof definition.id !== 'string'
-    || (definition.status !== undefined && definition.status !== 'active')
-    || !allowlist
-    || typeof allowlist.entry_id !== 'string'
-    || allowlist.agent_definition_id !== definition.id
-    || typeof allowlist.adapter_identity !== 'string'
-    || !Array.isArray(allowlist.tool_names)
-    || allowlist.tool_names.length === 0
-    || allowlist.tool_names.some((tool) => typeof tool !== 'string')
-    || !invocation
-    || invocationTokens.some((token) => typeof token !== 'string' || !declaredTokens.has(token))
-    || typeof reference !== 'string'
-    || reference.trim().length === 0) return admissionRejection('registration_input_rejected', fenced.permit)
-
-  return Response.json({
-    status: 'registered',
-    record: {
-      schema: ACOS_ADMISSION_RECEIPT_SCHEMA,
-      adapter_identity: allowlist.adapter_identity,
-      agent_definition_id: definition.id,
-      tool_allowlist_entry_id: allowlist.entry_id,
-      invocation_register_tokens: invocationTokens,
-      resulting_status: 'active',
-      operator_instruction_reference: reference,
-      registered_at_ms: 1_787_702_400_000,
-    },
-    finding: null,
-  }, { headers: devAuthoringHeaders(fenced.permit) })
-}
-
-function admissionRejection(reasonCode: string, permit: ClaimMutationPermit | null): Response {
-  return Response.json({
-    status: 'rejected',
-    record: null,
-    finding: {
-      schema: 'acos-adapter-registration-finding/v1',
-      type: 'unfederated-tool',
-      adapter_identity: null,
-      reason_code: reasonCode,
-      message: 'The demo-only ACOS admission fixture rejected the registration.',
-      details: {},
-    },
-  }, { status: 409, headers: devAuthoringHeaders(permit) })
 }
 
 function capabilityResponse(hostname: string): Response {
@@ -268,9 +244,17 @@ function capabilityResponse(hostname: string): Response {
   return Response.json({ ok: false, contract: DEMO_CONTRACT, code: 'provider_unknown' }, { status: 404 })
 }
 
+function providerContract(hostname: string): string {
+  if (hostname === 'checkout-provider.internal') return CHECKOUT_PROVIDER_CONTRACT
+  if (hostname === 'marketplace-provider.internal') return MARKETPLACE_PROVIDER_CONTRACT
+  return DISCOVERY_PROVIDER_CONTRACT
+}
+
 async function checkoutPrepareResponse(request: Request): Promise<Response> {
-  const binding = await checkoutOperationBinding(request)
-  if (!binding) return providerError(CHECKOUT_PROVIDER_CONTRACT, 'operational_evidence_binding_invalid', 409)
+  const operation = await checkoutOperationBinding(request)
+  if (!operation) return providerError(CHECKOUT_PROVIDER_CONTRACT, 'operational_evidence_binding_invalid', 409)
+  request = operation.request
+  const binding = operation.binding
   const body = await bodyRecord(request)
   if (!body
     || Object.keys(body).sort().join(',') !== 'agentId,amountMinor,budgetMinor,checkoutId,contract,currency,idempotencyKey,intentId,offerId,offerProviderRevision,offerReceiptDigest'
@@ -314,8 +298,10 @@ async function checkoutPrepareResponse(request: Request): Promise<Response> {
 }
 
 async function checkoutConfirmResponse(request: Request): Promise<Response> {
-  const binding = await checkoutOperationBinding(request)
-  if (!binding) return providerError(CHECKOUT_PROVIDER_CONTRACT, 'operational_evidence_binding_invalid', 409)
+  const operation = await checkoutOperationBinding(request)
+  if (!operation) return providerError(CHECKOUT_PROVIDER_CONTRACT, 'operational_evidence_binding_invalid', 409)
+  request = operation.request
+  const binding = operation.binding
   const body = await bodyRecord(request)
   if (!body
     || Object.keys(body).sort().join(',') !== 'amountMinor,checkoutId,contract,currency,guardrailReceipt,guardrailReceiptDigest,humanConfirmationDigest,idempotencyKey,offerId'
@@ -367,8 +353,10 @@ async function checkoutConfirmResponse(request: Request): Promise<Response> {
 }
 
 async function checkoutStatusResponse(request: Request): Promise<Response> {
-  const binding = await checkoutOperationBinding(request)
-  if (!binding) return providerError(CHECKOUT_PROVIDER_CONTRACT, 'operational_evidence_binding_invalid', 409)
+  const operation = await checkoutOperationBinding(request)
+  if (!operation) return providerError(CHECKOUT_PROVIDER_CONTRACT, 'operational_evidence_binding_invalid', 409)
+  request = operation.request
+  const binding = operation.binding
   const url = new URL(request.url)
   const idempotencyKey = url.searchParams.get('idempotencyKey')
   if (!idempotencyKey || [...url.searchParams.keys()].join(',') !== 'idempotencyKey') {
@@ -381,8 +369,10 @@ async function checkoutStatusResponse(request: Request): Promise<Response> {
 }
 
 async function offerObservationResponse(request: Request): Promise<Response> {
-  const binding = await checkoutOperationBinding(request)
-  if (!binding) return providerError(CHECKOUT_PROVIDER_CONTRACT, 'operational_evidence_binding_invalid', 409)
+  const operation = await checkoutOperationBinding(request)
+  if (!operation) return providerError(CHECKOUT_PROVIDER_CONTRACT, 'operational_evidence_binding_invalid', 409)
+  request = operation.request
+  const binding = operation.binding
   const url = new URL(request.url)
   const offerId = decodeURIComponent(url.pathname.split('/')[4] ?? '')
   const agentId = url.searchParams.get('agentId')
@@ -402,9 +392,14 @@ function settlementResponse(receipt: SettlementReceipt, binding: OperationalEvid
 
 async function mcpResponse(request: Request): Promise<Response> {
   if (request.method === 'DELETE') return new Response(null, { status: 204 })
-  const discoveryBinding = request.headers.get('x-commerce-contract') === DISCOVERY_PROVIDER_CONTRACT
+  const discoveryOperation = request.headers.get('x-commerce-contract') === DISCOVERY_PROVIDER_CONTRACT
     ? await discoveryOperationBinding(request)
     : null
+  if (request.headers.get('x-commerce-contract') === DISCOVERY_PROVIDER_CONTRACT && !discoveryOperation) {
+    return rpcError(null, -32_003, 'Discovery operational evidence binding invalid')
+  }
+  if (discoveryOperation) request = discoveryOperation.request
+  const discoveryBinding = discoveryOperation?.binding ?? null
   const rpc = await bodyRecord(request)
   if (!rpc) return rpcError(null, -32_700, 'Parse error')
   if (rpc.method === 'notifications/initialized') return new Response(null, { status: 204 })
@@ -498,8 +493,8 @@ function validSha256(value: unknown): value is string {
   return typeof value === 'string' && /^[0-9a-f]{64}$/u.test(value)
 }
 
-async function bodyRecord(request: Request): Promise<Record<string, unknown> | null> {
-  const body = await readJsonObject(request)
+async function bodyRecord(request: Request, maximumBytes?: number): Promise<Record<string, unknown> | null> {
+  const body = await readJsonObject(request, maximumBytes)
   return isHttpFailure(body) ? null : body
 }
 

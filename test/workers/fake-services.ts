@@ -1,10 +1,24 @@
 import { DEV_PROVIDER_PINS, devProviderFetch } from '../../src/dev/provider.ts'
+import { ACOS_ADMISSION_FINDING_SCHEMA, ACOS_ADMISSION_PATH } from '../../src/core/acos-admission.ts'
+import { DOCS_INVOCATION_ENDPOINT } from '../../src/invocation/index.ts'
 import { isRecord } from '../../src/shared/http.ts'
 import { parseSandboxRequest, runIsolated } from '../../src/sandbox/isolation.ts'
+import {
+  DEV_CHECKOUT_PROVIDER_AUTH_SECRET,
+  DEV_MARKETPLACE_PROVIDER_AUTH_SECRET,
+} from '../../src/dev/provider-evidence.ts'
+import { DEV_ACOS_ADMISSION_AUTH_SECRET } from '../../src/dev/acos-admission-provider.ts'
+import {
+  authoringMutationHeaders,
+  readAuthoringMutationHeaders,
+} from '../../src/core/authoring-mutation-headers.ts'
+
+export const CORE_DISCOVERY_PROVIDER_CREDENTIAL = 'commerce-discovery-provider-test-credential'
 
 export const CORE_TEST_BINDINGS = Object.freeze({
   DEPLOY_LANE: 'Test',
   RELEASE_CANDIDATE_SHA: DEV_PROVIDER_PINS.releaseCandidateSha,
+  RELEASE_CANDIDATE_DIGEST: 'e'.repeat(64),
   REGISTRY_ID: 'primary',
   AG_TAKE_RATE_BASIS_POINTS: '250',
   AG_SELECTION_POLICY_JSON: JSON.stringify({
@@ -18,18 +32,54 @@ export const CORE_TEST_BINDINGS = Object.freeze({
   ACOS_ROUTING_DIGEST: DEV_PROVIDER_PINS.routingDigest,
   ACOS_CATALOG_COUNTS_JSON: JSON.stringify(DEV_PROVIDER_PINS.counts),
   ACOS_REQUIRED_TOKENS_JSON: JSON.stringify(DEV_PROVIDER_PINS.requiredTokens),
+  ACOS_RUNTIME_SOURCE_REVISION: DEV_PROVIDER_PINS.acosDeployment.sourceRevision,
+  ACOS_RUNTIME_CANDIDATE_DIGEST: DEV_PROVIDER_PINS.acosDeployment.candidateDigest,
   DISCOVERY_PROVIDER_EVIDENCE_PIN_JSON: JSON.stringify(DEV_PROVIDER_PINS.discoveryEvidence),
   CHECKOUT_PROVIDER_EVIDENCE_PIN_JSON: JSON.stringify(DEV_PROVIDER_PINS.checkoutEvidence),
   MARKETPLACE_PROVIDER_EVIDENCE_PIN_JSON: JSON.stringify(DEV_PROVIDER_PINS.marketplaceEvidence),
+  DISCOVERY_PROVIDER_BEARER_TOKEN: CORE_DISCOVERY_PROVIDER_CREDENTIAL,
+  ACOS_ADMISSION_AUTH_SECRET: DEV_ACOS_ADMISSION_AUTH_SECRET,
+  CHECKOUT_PROVIDER_AUTH_SECRET: DEV_CHECKOUT_PROVIDER_AUTH_SECRET,
+  MARKETPLACE_PROVIDER_AUTH_SECRET: DEV_MARKETPLACE_PROVIDER_AUTH_SECRET,
 })
 
 export const CORE_TEST_SERVICE_BINDINGS = Object.freeze({
-  ACOS_ADMISSION: devProviderFetch,
-  DOCS_MCP: devProviderFetch,
+  ACOS_ADMISSION: failureAwareAcosAdmissionProvider,
+  DOCS_MCP: authenticatedDiscoveryProvider,
   CHECKOUT_PROVIDER: checkoutProviderFixture,
   MARKETPLACE_PROVIDER: devProviderFetch,
   COMMERCE_SANDBOX: fakeSandbox,
 })
+
+const ACOS_FAILURE_ATTEMPTS = new Map<string, number>()
+
+async function failureAwareAcosAdmissionProvider(request: Request): Promise<Response> {
+  if (request.method !== 'POST' || new URL(request.url).pathname !== ACOS_ADMISSION_PATH) {
+    return devProviderFetch(request)
+  }
+  const body = await request.clone().json<Record<string, unknown>>().catch(() => null)
+  const definition = isRecord(body?.agent_definition) ? body.agent_definition : null
+  const agentId = typeof definition?.id === 'string' ? definition.id : ''
+  if (!agentId.startsWith('test-acos-')) return devProviderFetch(request)
+  const attempt = (ACOS_FAILURE_ATTEMPTS.get(agentId) ?? 0) + 1
+  ACOS_FAILURE_ATTEMPTS.set(agentId, attempt)
+  const status = agentId.startsWith('test-acos-forged-500') && attempt === 1 ? 500 : 409
+  const reasonCode = agentId.startsWith('test-acos-unknown-409') && attempt === 1
+    ? 'transient_provider_rejection' : 'agent_revision_conflict'
+  const permit = readAuthoringMutationHeaders(request)
+  return Response.json({
+    status: 'rejected',
+    record: null,
+    finding: {
+      schema: ACOS_ADMISSION_FINDING_SCHEMA,
+      type: 'unfederated-tool',
+      adapter_identity: null,
+      reason_code: reasonCode,
+      message: 'Synthetic ACOS admission response for the reservation lifecycle test.',
+      details: {},
+    },
+  }, { status, headers: permit ? authoringMutationHeaders(permit) : {} })
+}
 
 const AMBIGUOUS_CONFIRMATIONS = new Set<string>()
 const CHECKOUT_PROVIDER_COUNTS = new Map<string, { confirmPosts: number; statusGets: number }>()
@@ -38,6 +88,14 @@ const PREPARED_EDGE_CHECKOUTS = new Map<string, Readonly<{
   offerId: string
   amountMinor: number
 }>>()
+
+export async function authenticatedDiscoveryProvider(request: Request): Promise<Response> {
+  if (new URL(request.url).pathname === new URL(DOCS_INVOCATION_ENDPOINT).pathname
+    && request.headers.get('authorization') !== `Bearer ${CORE_DISCOVERY_PROVIDER_CREDENTIAL}`) {
+    return Response.json({ ok: false, code: 'discovery_provider_unauthorized' }, { status: 401 })
+  }
+  return devProviderFetch(request)
+}
 
 async function checkoutProviderFixture(request: Request): Promise<Response> {
   const url = new URL(request.url)
@@ -106,6 +164,7 @@ export const EDGE_TEST_BINDINGS = Object.freeze({
   CF_VERSION_METADATA: EDGE_TEST_VERSION,
   DEPLOY_LANE: 'Production',
   RELEASE_CANDIDATE_SHA: DEV_PROVIDER_PINS.releaseCandidateSha,
+  RELEASE_CANDIDATE_DIGEST: 'e'.repeat(64),
   ALLOWED_ORIGINS_JSON: JSON.stringify(['https://airvio.co']),
   MCP_BEARER_TOKEN: EDGE_MCP_TOKEN,
   OPERATOR_BEARER_TOKEN: EDGE_OPERATOR_TOKEN,
@@ -148,6 +207,7 @@ async function fakeCore(request: Request): Promise<Response> {
       contract: 'commerce.core-live/v1',
       lane: 'Production',
       releaseCandidateSha: DEV_PROVIDER_PINS.releaseCandidateSha,
+      releaseCandidateDigest: CORE_TEST_BINDINGS.RELEASE_CANDIDATE_DIGEST,
       version,
     })
   }
@@ -157,6 +217,7 @@ async function fakeCore(request: Request): Promise<Response> {
       contract: 'commerce.core-readiness/v2',
       lane: 'Production',
       releaseCandidateSha: DEV_PROVIDER_PINS.releaseCandidateSha,
+      releaseCandidateDigest: CORE_TEST_BINDINGS.RELEASE_CANDIDATE_DIGEST,
       version,
       sourceReadiness: { ok: true, checks: [] },
       liveReleaseReadiness: {
@@ -220,6 +281,21 @@ async function fakeCore(request: Request): Promise<Response> {
 
 async function fakeSandbox(request: Request): Promise<Response> {
   const url = new URL(request.url)
+  if (request.method === 'GET' && url.pathname === '/readyz') {
+    return Response.json({
+      ok: true,
+      contract: 'agentic-commerce-registration-sandbox/v1',
+      lane: CORE_TEST_BINDINGS.DEPLOY_LANE,
+      releaseCandidateSha: CORE_TEST_BINDINGS.RELEASE_CANDIDATE_SHA,
+      releaseCandidateDigest: CORE_TEST_BINDINGS.RELEASE_CANDIDATE_DIGEST,
+      version: {
+        id: 'commerce-sandbox-worker-test-version',
+        tag: CORE_TEST_BINDINGS.RELEASE_CANDIDATE_SHA,
+        timestamp: '2026-09-03T00:00:00.000Z',
+      },
+      containerProbe: { ok: true, runtime: 'node', version: 'v22.22.3' },
+    })
+  }
   if (request.method !== 'POST' || url.pathname !== '/v1/run') {
     return Response.json({ ok: false, code: 'not_found' }, { status: 404 })
   }

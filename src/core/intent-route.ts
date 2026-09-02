@@ -181,7 +181,7 @@ export class IntentRoute extends DurableObject<CoreEnv> {
     try {
       const operationalEvidence = await discoveryOperationalEvidence(this.env)
       if (!operationalEvidence.ok) throw new Error(`discovery_${operationalEvidence.code}`)
-      const providerResult = await callMcpTool(this.env.DOCS_MCP, {
+      const providerResult = await callMcpTool(this.env.DOCS_MCP, this.env.DISCOVERY_PROVIDER_BEARER_TOKEN, {
         name: agent.discoveryTool,
         arguments: {
           ...intent.constraints,

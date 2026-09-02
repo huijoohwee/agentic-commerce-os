@@ -26,6 +26,7 @@ import {
   type JsonRecord,
   type ResolvedInvocation,
 } from "./catalog.js";
+import { readDiscoveryProviderAuthorization } from "../shared/discovery-provider-auth.js";
 
 export {
   INVOCATION_ROUTING_SCHEMA,
@@ -165,6 +166,8 @@ export const createInvocationClient = (
 ): InvocationClient => {
   const endpoint = normalizeEndpoint(options.endpoint);
   const fetchImpl = resolveFetch(options.fetcher);
+  const authorization = readDiscoveryProviderAuthorization(options.bearerToken)
+    ?? fail("invalid_input", "Discovery provider bearer token configuration is invalid");
   const maxResponseBytes = options.maxResponseBytes ?? DEFAULT_MAX_RESPONSE_BYTES;
   if (
     !Number.isInteger(maxResponseBytes)
@@ -199,6 +202,7 @@ export const createInvocationClient = (
         method: "POST",
         headers: {
           accept: "application/json, text/event-stream",
+          authorization,
           "content-type": "application/json",
           ...(includeSession ? { "mcp-session-id": sessionId } : {}),
         },
@@ -435,6 +439,7 @@ export const createInvocationClient = (
         method: "DELETE",
         headers: {
           accept: "application/json, text/event-stream",
+          authorization,
           "mcp-session-id": closingSession,
         },
         ...(requestOptions.signal ? { signal: requestOptions.signal } : {}),

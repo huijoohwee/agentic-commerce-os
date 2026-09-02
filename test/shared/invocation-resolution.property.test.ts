@@ -13,6 +13,7 @@ import {
 
 const SOURCE_REVISION = 'a'.repeat(40)
 const SESSION_ID = 'property-session'
+const DISCOVERY_CREDENTIAL = 'commerce-discovery-provider-test-credential'
 const COUNTS = Object.freeze({ command: 1, semantic: 1, binding: 1 })
 const CATALOG: readonly InvocationCatalogEntry[] = Object.freeze([
   entry('/tool.route', 'command'),
@@ -25,7 +26,11 @@ describe('invocation resolution properties', () => {
   // Feature: agentic-graph-commerce-platform, Property 10: Resolution totality
   it('returns one exact resolution or one typed refusal for every token string', async () => {
     const transport = await createTransport()
-    const client = createInvocationClient({ endpoint: 'https://catalog.test/mcp', fetcher: transport.fetch })
+    const client = createInvocationClient({
+      endpoint: 'https://catalog.test/mcp',
+      fetcher: transport.fetch,
+      bearerToken: DISCOVERY_CREDENTIAL,
+    })
     try {
       await fc.assert(fc.asyncProperty(
         fc.oneof(
@@ -64,7 +69,11 @@ describe('invocation resolution properties', () => {
   // Feature: agentic-graph-commerce-platform, Property 11: Resolution idempotence across revisions
   it('returns identical results before and after refreshing the same catalog revision', async () => {
     const transport = await createTransport()
-    const client = createInvocationClient({ endpoint: 'https://catalog.test/mcp', fetcher: transport.fetch })
+    const client = createInvocationClient({
+      endpoint: 'https://catalog.test/mcp',
+      fetcher: transport.fetch,
+      bearerToken: DISCOVERY_CREDENTIAL,
+    })
     try {
       await fc.assert(fc.asyncProperty(
         fc.constantFrom(...CATALOG.map(({ token }) => token)),
@@ -92,6 +101,7 @@ async function createTransport(): Promise<Readonly<{
     exactTokens,
     capabilityCalls: 0,
     fetch: async (_input, init) => {
+      expect(new Headers(init?.headers).get('authorization')).toBe(`Bearer ${DISCOVERY_CREDENTIAL}`)
       if (init?.method === 'DELETE') return new Response(null, { status: 204 })
       const message = JSON.parse(String(init?.body)) as Record<string, unknown>
       if (message.method === 'notifications/initialized') return new Response(null, { status: 202 })

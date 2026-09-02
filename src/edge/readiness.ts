@@ -1,7 +1,7 @@
 import { isRecord } from '../shared/http.ts'
 
 export const PRODUCTION_DELIVERY_HOST = 'airvio.co'
-export const PRODUCTION_DELIVERY_PATH = '/agentic-commerce-os'
+export const PRODUCTION_DELIVERY_PATH = '/agentic-commerce-os/'
 export const ROUTE_LIVE_READINESS_CONTRACT = 'commerce.edge-route-live-readiness/v1'
 
 export type RouteLiveReadinessReason =
@@ -19,6 +19,7 @@ export type RouteLiveReadiness = Readonly<{
   contract: typeof ROUTE_LIVE_READINESS_CONTRACT
   reason: RouteLiveReadinessReason | null
   servingCandidateSha: string | null
+  servingCandidateDigest: string | null
   edgeVersion: WorkerVersionMetadata | null
   coreVersion: WorkerVersionMetadata | null
 }>
@@ -26,6 +27,7 @@ export type RouteLiveReadiness = Readonly<{
 export type EdgeReleaseIdentity = Readonly<{
   lane: string
   releaseCandidateSha: string
+  releaseCandidateDigest: string
   version: unknown
   configurationOk: boolean
 }>
@@ -56,6 +58,7 @@ export async function observeProductionRouteReadiness(
   if (!edge.configurationOk) return refused('edge_configuration_invalid')
   const edgeVersion = readVersion(edge.version)
   if (!validCandidate(edge.releaseCandidateSha)
+    || !validCandidateDigest(edge.releaseCandidateDigest)
     || !edgeVersion
     || edgeVersion.tag !== edge.releaseCandidateSha) {
     return refused('edge_release_metadata_mismatch')
@@ -71,10 +74,10 @@ export async function observeProductionRouteReadiness(
   } catch {
     return refused('core_readiness_unavailable')
   }
-  const readiness = readCoreReadiness(coreReadiness, edge.releaseCandidateSha)
+  const readiness = readCoreReadiness(coreReadiness, edge.releaseCandidateSha, edge.releaseCandidateDigest)
   if (readiness.kind === 'source-failed') return refused('core_source_not_ready')
   if (readiness.kind !== 'accepted') return refused('core_release_metadata_mismatch')
-  const liveVersion = readCoreLive(coreLive, edge.releaseCandidateSha)
+  const liveVersion = readCoreLive(coreLive, edge.releaseCandidateSha, edge.releaseCandidateDigest)
   if (!liveVersion || !sameVersion(readiness.version, liveVersion)) {
     return refused('core_release_metadata_mismatch')
   }
@@ -83,6 +86,7 @@ export async function observeProductionRouteReadiness(
     contract: ROUTE_LIVE_READINESS_CONTRACT,
     reason: null,
     servingCandidateSha: edge.releaseCandidateSha,
+    servingCandidateDigest: edge.releaseCandidateDigest,
     edgeVersion,
     coreVersion: liveVersion,
   })
@@ -96,6 +100,9 @@ export function attachRouteReadinessHeaders(response: Response, readiness: Route
   if (readiness.servingCandidateSha) {
     response.headers.set('x-commerce-release-candidate', readiness.servingCandidateSha)
   }
+  if (readiness.servingCandidateDigest) {
+    response.headers.set('x-commerce-release-candidate-digest', readiness.servingCandidateDigest)
+  }
   if (readiness.edgeVersion) response.headers.set('x-commerce-edge-version-id', readiness.edgeVersion.id)
   if (readiness.coreVersion) response.headers.set('x-commerce-core-version-id', readiness.coreVersion.id)
   return response
@@ -107,7 +114,7 @@ export function isExactProductionDeliveryRequest(request: Request): boolean {
     && url.protocol === 'https:'
     && url.hostname === PRODUCTION_DELIVERY_HOST
     && url.port === ''
-    && url.pathname === PRODUCTION_DELIVERY_PATH
+    && (url.pathname === PRODUCTION_DELIVERY_PATH || url.pathname === PRODUCTION_DELIVERY_PATH.slice(0, -1))
     && url.search === ''
     && url.username === ''
     && url.password === ''
@@ -116,13 +123,15 @@ export function isExactProductionDeliveryRequest(request: Request): boolean {
 function readCoreReadiness(
   probe: CoreReadinessProbe,
   expectedCandidate: string,
+  expectedDigest: string,
 ): Readonly<{ kind: 'accepted'; version: WorkerVersionMetadata }>
   | Readonly<{ kind: 'source-failed' | 'invalid' }> {
   const value = probe.payload
   if (!isRecord(value)
     || value.contract !== 'commerce.core-readiness/v2'
     || value.lane !== 'Production'
-    || value.releaseCandidateSha !== expectedCandidate) return Object.freeze({ kind: 'invalid' })
+    || value.releaseCandidateSha !== expectedCandidate
+    || value.releaseCandidateDigest !== expectedDigest) return Object.freeze({ kind: 'invalid' })
   const version = readVersion(value.version)
   if (!version || version.tag !== expectedCandidate) return Object.freeze({ kind: 'invalid' })
   if (!isRecord(value.sourceReadiness) || value.sourceReadiness.ok !== true) {
@@ -144,14 +153,19 @@ function coreStatusReflectsOnlyRouteUnknown(status: number, value: Record<string
     && value.liveReleaseReadiness.servingCandidateSha === null
 }
 
-function readCoreLive(probe: CoreReadinessProbe, expectedCandidate: string): WorkerVersionMetadata | null {
+function readCoreLive(
+  probe: CoreReadinessProbe,
+  expectedCandidate: string,
+  expectedDigest: string,
+): WorkerVersionMetadata | null {
   const value = probe.payload
   if (probe.status !== 200
     || !isRecord(value)
     || value.ok !== true
     || value.contract !== 'commerce.core-live/v1'
     || value.lane !== 'Production'
-    || value.releaseCandidateSha !== expectedCandidate) return null
+    || value.releaseCandidateSha !== expectedCandidate
+    || value.releaseCandidateDigest !== expectedDigest) return null
   const version = readVersion(value.version)
   return version?.tag === expectedCandidate ? version : null
 }
@@ -176,12 +190,17 @@ function validCandidate(value: string): boolean {
   return /^[0-9a-f]{40}$/u.test(value)
 }
 
+function validCandidateDigest(value: string): boolean {
+  return /^[0-9a-f]{64}$/u.test(value)
+}
+
 function refused(reason: RouteLiveReadinessReason): RouteLiveReadiness {
   return Object.freeze({
     ok: false,
     contract: ROUTE_LIVE_READINESS_CONTRACT,
     reason,
     servingCandidateSha: null,
+    servingCandidateDigest: null,
     edgeVersion: null,
     coreVersion: null,
   })

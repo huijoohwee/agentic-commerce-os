@@ -1,4 +1,9 @@
-import { isAcosAdmissionReceiptBoundToInputs, type AcosAdmissionInputs, type AcosAdmissionReceipt } from './acos-admission.js'
+import {
+  COMMERCE_ADMISSION_OPERATOR_INSTRUCTION_REF,
+  isAcosAdmissionReceiptBoundToInputs,
+  type AcosAdmissionInputs,
+  type AcosAdmissionReceipt,
+} from './acos-admission.js'
 import { normalizeAgentCategory } from '../domain/exclusive-category-router.js'
 import type { DeclaredAttributes } from '../domain/selection-policy.js'
 import { CATALOG_LIMIT } from '../invocation/catalog.js'
@@ -130,8 +135,7 @@ export function validRegistrationEnvelope(input: AgentRegistrationInput): boolea
 
 export function validRegistrationIntent(input: AgentRegistrationIntent): boolean {
   return Boolean(input)
-    && typeof input.admissionInputs?.operatorInstructionRef === 'string'
-    && input.admissionInputs.operatorInstructionRef.trim().length > 0
+    && input.admissionInputs?.operatorInstructionRef === COMMERCE_ADMISSION_OPERATOR_INSTRUCTION_REF
     && isRegistrationDryRunRecord(input.sandboxDryRun)
     && validInvocationProof(input.invocationProof)
     && (input.expectedPreviousContentHash === null || SHA256_PATTERN.test(input.expectedPreviousContentHash))

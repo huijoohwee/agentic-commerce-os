@@ -1,7 +1,6 @@
 import { isHttpFailure, isRecord, jsonResponse, readJsonResponse } from '../shared/http.js'
 
 const MAXIMUM_PROVIDER_RESPONSE_BYTES = 1_000_000
-const DEPENDENCY_REQUEST_TIMEOUT_MS = 10_000
 
 export function respond(value: unknown, requestId: string, status = 200): Response {
   const response = jsonResponse({ requestId, ...asResponseRecord(value) }, status)
@@ -15,21 +14,6 @@ export function reject(code: string, detail: Readonly<Record<string, unknown>> =
 
 export function resultOk(value: unknown): boolean {
   return isRecord(value) && value.ok === true
-}
-
-export async function proxyJson(
-  binding: Fetcher,
-  path: string,
-  requestId: string,
-  expectedContract: string,
-): Promise<Response> {
-  const response = await binding.fetch(new Request(new URL(path, 'https://dependency.internal'), {
-    method: 'GET', signal: AbortSignal.timeout(DEPENDENCY_REQUEST_TIMEOUT_MS),
-  }))
-  const payload = await readProviderResponse(response)
-  return isRecord(payload) && payload.contract === expectedContract
-    ? respond(payload, requestId, response.status)
-    : respond(reject('provider_contract_mismatch'), requestId, 502)
 }
 
 export async function readProviderResponse(response: Response): Promise<unknown> {

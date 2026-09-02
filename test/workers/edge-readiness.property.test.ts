@@ -12,6 +12,7 @@ import {
 
 const CANDIDATE = 'a'.repeat(40)
 const OTHER_CANDIDATE = 'b'.repeat(40)
+const CANDIDATE_DIGEST = 'c'.repeat(64)
 const EDGE_VERSION = Object.freeze({
   id: 'edge-version-1',
   tag: CANDIDATE,
@@ -25,6 +26,7 @@ const CORE_VERSION = Object.freeze({
 const EDGE_IDENTITY: EdgeReleaseIdentity = Object.freeze({
   lane: 'Production',
   releaseCandidateSha: CANDIDATE,
+  releaseCandidateDigest: CANDIDATE_DIGEST,
   version: EDGE_VERSION,
   configurationOk: true,
 })
@@ -44,6 +46,7 @@ describe('Production delivery-route readiness projection', () => {
       contract: ROUTE_LIVE_READINESS_CONTRACT,
       reason: null,
       servingCandidateSha: CANDIDATE,
+      servingCandidateDigest: CANDIDATE_DIGEST,
       edgeVersion: EDGE_VERSION,
       coreVersion: CORE_VERSION,
     })
@@ -51,6 +54,7 @@ describe('Production delivery-route readiness projection', () => {
     expect(response.headers.get('cache-control')).toBe('no-store')
     expect(response.headers.get('x-commerce-live-readiness')).toBe('ready')
     expect(response.headers.get('x-commerce-release-candidate')).toBe(CANDIDATE)
+    expect(response.headers.get('x-commerce-release-candidate-digest')).toBe(CANDIDATE_DIGEST)
     expect(response.headers.get('x-commerce-edge-version-id')).toBe(EDGE_VERSION.id)
     expect(response.headers.get('x-commerce-core-version-id')).toBe(CORE_VERSION.id)
   })
@@ -58,7 +62,7 @@ describe('Production delivery-route readiness projection', () => {
   it('rejects every non-exact host, path, protocol, query, or method before probing core', async () => {
     await fc.assert(fc.asyncProperty(fc.constantFrom(
       new Request('https://edge.test/agentic-commerce-os'),
-      new Request('https://airvio.co/agentic-commerce-os/'),
+      new Request('https://airvio.co/agentic-commerce-os/nested'),
       new Request('http://airvio.co/agentic-commerce-os'),
       new Request('https://airvio.co/agentic-commerce-os?probe=1'),
       new Request('https://airvio.co/agentic-commerce-os', { method: 'POST' }),
@@ -128,12 +132,13 @@ describe('Production delivery-route readiness projection', () => {
 })
 
 function exactRequest(): Request {
-  return new Request('https://airvio.co/agentic-commerce-os')
+  return new Request('https://airvio.co/agentic-commerce-os/')
 }
 
 function coreReadiness(options: Readonly<{
   sourceOk?: boolean
   candidate?: string
+  digest?: string
   version?: WorkerVersionMetadata
 }> = {}): CoreReadinessProbe {
   const sourceOk = options.sourceOk ?? true
@@ -144,6 +149,7 @@ function coreReadiness(options: Readonly<{
       contract: 'commerce.core-readiness/v2',
       lane: 'Production',
       releaseCandidateSha: options.candidate ?? CANDIDATE,
+      releaseCandidateDigest: options.digest ?? CANDIDATE_DIGEST,
       version: options.version ?? CORE_VERSION,
       sourceReadiness: Object.freeze({ ok: sourceOk, checks: Object.freeze([]) }),
       liveReleaseReadiness: Object.freeze({
@@ -158,6 +164,7 @@ function coreReadiness(options: Readonly<{
 
 function coreLive(options: Readonly<{
   candidate?: string
+  digest?: string
   version?: WorkerVersionMetadata
 }> = {}): CoreReadinessProbe {
   return Object.freeze({
@@ -167,6 +174,7 @@ function coreLive(options: Readonly<{
       contract: 'commerce.core-live/v1',
       lane: 'Production',
       releaseCandidateSha: options.candidate ?? CANDIDATE,
+      releaseCandidateDigest: options.digest ?? CANDIDATE_DIGEST,
       version: options.version ?? CORE_VERSION,
     }),
   })

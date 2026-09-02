@@ -9,10 +9,11 @@ import {
 } from '../../src/core/offer-watch.ts'
 import { CHECKOUT_PROVIDER_CONTRACT } from '../../src/core/provider-contract.ts'
 import {
+  readAuthenticatedOperationalEvidenceBinding,
   operationalEvidenceResponseHeaders,
-  readOperationalEvidenceBinding,
 } from '../../src/core/provider-operation-gate.ts'
 import { CHECKOUT_EVIDENCE_CHECKS } from '../../src/core/upstream-evidence.ts'
+import { DEV_CHECKOUT_PROVIDER_AUTH_SECRET } from '../../src/dev/provider-evidence.ts'
 import { DEV_PROVIDER_PINS, devProviderFetch } from '../../src/dev/provider.ts'
 
 const EXACT_PROVIDER_CONTRACT = Symbol('exact-provider-contract')
@@ -129,10 +130,12 @@ function observationEnvironment(
     fetch: async (request: Request) => {
       if (new URL(request.url).pathname === '/v1/runtime-evidence') return devProviderFetch(request)
       onRequestContract(request.headers.get('x-commerce-contract'))
-      const binding = await readOperationalEvidenceBinding(
+      const operation = await readAuthenticatedOperationalEvidenceBinding(
         request,
+        CHECKOUT_PROVIDER_CONTRACT,
         DEV_PROVIDER_PINS.checkoutEvidence,
         CHECKOUT_EVIDENCE_CHECKS,
+        DEV_CHECKOUT_PROVIDER_AUTH_SECRET,
       )
       const observed = readObserved()
       const responseContract = providerContract === EXACT_PROVIDER_CONTRACT
@@ -142,7 +145,7 @@ function observationEnvironment(
         ok: true,
         ...(responseContract === undefined ? {} : { contract: responseContract }),
         observed: { priceMinor: observed.priceMinor, available: observed.available },
-      }, { headers: binding ? operationalEvidenceResponseHeaders(binding) : {} })
+      }, { headers: operation ? operationalEvidenceResponseHeaders(operation.binding) : {} })
     },
   })
   const registry = Object.freeze({
@@ -161,6 +164,7 @@ function observationEnvironment(
   })
   return Object.freeze({
     CHECKOUT_PROVIDER: checkoutProvider,
+    CHECKOUT_PROVIDER_AUTH_SECRET: DEV_CHECKOUT_PROVIDER_AUTH_SECRET,
     CHECKOUT_PROVIDER_EVIDENCE_PIN_JSON: JSON.stringify(DEV_PROVIDER_PINS.checkoutEvidence),
     AGENT_REGISTRY: registry,
     REGISTRY_ID: 'property-registry',

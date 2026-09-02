@@ -17,6 +17,7 @@ const HEADERS = Object.freeze({
   requiredWriteTarget: 'x-authoring-write-target',
   reservedAtMs: 'x-authoring-reserved-at-ms',
 })
+export const AUTHORING_MUTATION_HEADER_NAMES = Object.freeze(Object.values(HEADERS))
 
 export function authoringMutationHeaders(permit: ClaimMutationPermit): Readonly<Record<string, string>> {
   return Object.freeze({

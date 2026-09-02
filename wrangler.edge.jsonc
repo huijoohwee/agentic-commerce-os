@@ -17,6 +17,7 @@
   "vars": {
     "DEPLOY_LANE": "Local",
     "RELEASE_CANDIDATE_SHA": "local-unreleased",
+    "RELEASE_CANDIDATE_DIGEST": "local-unreleased-digest",
     "ALLOWED_ORIGINS_JSON": "[\"http://localhost:3000\",\"http://localhost:5173\",\"http://localhost:8787\",\"http://127.0.0.1:3000\",\"http://127.0.0.1:5173\",\"http://127.0.0.1:8787\"]"
   },
   "env": {
@@ -34,6 +35,7 @@
       "vars": {
         "DEPLOY_LANE": "Dev",
         "RELEASE_CANDIDATE_SHA": "dev-unreleased",
+        "RELEASE_CANDIDATE_DIGEST": "dev-unreleased-digest",
         "ALLOWED_ORIGINS_JSON": "[\"http://localhost:3000\",\"http://localhost:5173\",\"http://localhost:8787\",\"http://127.0.0.1:3000\",\"http://127.0.0.1:5173\",\"http://127.0.0.1:8787\",\"https://airvio.co\"]"
       }
     },
@@ -51,6 +53,7 @@
       "vars": {
         "DEPLOY_LANE": "Staging",
         "RELEASE_CANDIDATE_SHA": "staging-unreleased",
+        "RELEASE_CANDIDATE_DIGEST": "staging-unreleased-digest",
         "HUMAN_CONFIRMATION_TRUST_ANCHOR_JSON": "external-trust-anchor-required",
         "ALLOWED_ORIGINS_JSON": "[\"https://airvio.co\"]"
       }
@@ -64,7 +67,7 @@
         "required": ["MCP_BEARER_TOKEN", "OPERATOR_BEARER_TOKEN", "STOREFRONT_SESSION_SECRET"]
       },
       "routes": [
-        { "pattern": "airvio.co/agentic-commerce-os", "zone_name": "airvio.co" }
+        { "pattern": "airvio.co/agentic-commerce-os*", "zone_name": "airvio.co" }
       ],
       "services": [
         { "binding": "COMMERCE_CORE", "service": "agentic-commerce-core-production" }
@@ -72,6 +75,7 @@
       "vars": {
         "DEPLOY_LANE": "Production",
         "RELEASE_CANDIDATE_SHA": "production-release-required-edge",
+        "RELEASE_CANDIDATE_DIGEST": "production-digest-required-edge",
         "HUMAN_CONFIRMATION_TRUST_ANCHOR_JSON": "external-trust-anchor-required",
         "ALLOWED_ORIGINS_JSON": "[\"https://airvio.co\"]"
       }

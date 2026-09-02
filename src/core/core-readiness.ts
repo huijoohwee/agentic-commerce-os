@@ -14,6 +14,7 @@ import {
 import { CATALOG_LIMIT } from '../invocation/catalog.js'
 import { readSelectionPolicy, type SelectionPolicy } from '../domain/selection-policy.js'
 import { isRecord, readJsonResponse } from '../shared/http.js'
+import { authenticateCommerceProviderControlRequest } from '../shared/commerce-provider-auth.js'
 import { registryStub } from './core-clients.js'
 import { listMcpToolNames } from './mcp-provider.js'
 import {
@@ -21,9 +22,14 @@ import {
   DISCOVERY_PROVIDER_CONTRACT,
   MARKETPLACE_PROVIDER_CONTRACT,
 } from './provider-contract.js'
-import { probeAcosAdmission } from './acos-admission.js'
+import { probeAcosAdmission, readAcosDeploymentPin } from './acos-admission.js'
+import { probeRegistrationSandbox } from './sandbox-registration.js'
 import type { InvocationPinProof } from './agent-registry.js'
 import { takeRateConfigurationFailure } from './take-rate.js'
+import {
+  providerAuthenticationConfiguration,
+  releaseCandidateConfiguration,
+} from './core-readiness-configuration.js'
 import {
   CHECKOUT_EVIDENCE_CHECKS,
   COMMERCE_PRD_REVISION,
@@ -44,6 +50,7 @@ const CAPABILITY_MAP = readCapabilityMap(capabilityMapJson)
 
 type InvocationCatalogCache = Readonly<{
   binding: Fetcher
+  bearerToken: string
   client: InvocationClient
   snapshot: InvocationCatalogSnapshot
   priorSourceRevision: string | null
@@ -57,6 +64,7 @@ export type CoreReadinessReport = Readonly<{
   contract: 'commerce.core-readiness/v2'
   lane: string
   releaseCandidateSha: string
+  releaseCandidateDigest: string
   version: WorkerVersionMetadata
   sourceReadiness: Readonly<{ ok: boolean; checks: readonly CheckResult[] }>
   liveReleaseReadiness: Readonly<{
@@ -77,6 +85,10 @@ type CheckResult = Readonly<{ name: string; ok: boolean; detail?: unknown; code?
 
 export async function readiness(env: CoreEnv): Promise<CoreReadinessReport> {
   const requiredTokens = configuredTokens(env)
+  const acosDeploymentPin = readAcosDeploymentPin(
+    env.ACOS_RUNTIME_SOURCE_REVISION,
+    env.ACOS_RUNTIME_CANDIDATE_DIGEST,
+  )
   const invocationResolution = resolvePinnedInvocations(env, requiredTokens, { refresh: true })
   const liveReason = env.DEPLOY_LANE.toLowerCase() === 'dev'
     ? 'delivery_route_unauthorized_in_dev'
@@ -87,6 +99,7 @@ export async function readiness(env: CoreEnv): Promise<CoreReadinessReport> {
     CHECKOUT_PROVIDER_CONTRACT,
     env.CHECKOUT_PROVIDER_EVIDENCE_PIN_JSON,
     CHECKOUT_EVIDENCE_CHECKS,
+    env.CHECKOUT_PROVIDER_AUTH_SECRET,
     liveReason,
   )
   const discoveryConvergence = probeProviderConvergence(
@@ -94,7 +107,7 @@ export async function readiness(env: CoreEnv): Promise<CoreReadinessReport> {
     'discovery-provider.internal',
     DISCOVERY_PROVIDER_CONTRACT,
     env.DISCOVERY_PROVIDER_EVIDENCE_PIN_JSON,
-    DISCOVERY_EVIDENCE_CHECKS,
+    DISCOVERY_EVIDENCE_CHECKS, undefined,
     liveReason,
   )
   const marketplaceConvergence = probeProviderConvergence(
@@ -103,14 +116,28 @@ export async function readiness(env: CoreEnv): Promise<CoreReadinessReport> {
     MARKETPLACE_PROVIDER_CONTRACT,
     env.MARKETPLACE_PROVIDER_EVIDENCE_PIN_JSON,
     MARKETPLACE_EVIDENCE_CHECKS,
+    env.MARKETPLACE_PROVIDER_AUTH_SECRET,
     liveReason,
   )
   const checks = await Promise.all([
-    check('release_candidate', async () => releaseCandidateCheck(env.DEPLOY_LANE, env.RELEASE_CANDIDATE_SHA)),
+    check('release_candidate', async () => releaseCandidateConfiguration(
+      env.DEPLOY_LANE,
+      env.RELEASE_CANDIDATE_SHA,
+      env.RELEASE_CANDIDATE_DIGEST,
+    )),
     check('take_rate_configuration', async () => takeRateConfigurationFailure(env.AG_TAKE_RATE_BASIS_POINTS)
       ?? Object.freeze({ ok: true })),
     check('selection_policy', async () => Object.freeze({ ok: readSelectionPolicyFromEnv(env) !== null })),
-    check('acos_admission', async () => probeAcosAdmission(env.ACOS_ADMISSION)),
+    check('provider_auth_configuration', async () => providerAuthenticationConfiguration(env)),
+    check('acos_admission', async () => probeAcosAdmission(
+      env.ACOS_ADMISSION, acosDeploymentPin, env.ACOS_ADMISSION_AUTH_SECRET,
+    )),
+    check('registration_sandbox', async () => probeRegistrationSandbox(
+      env.COMMERCE_SANDBOX,
+      env.DEPLOY_LANE,
+      env.RELEASE_CANDIDATE_SHA,
+      env.RELEASE_CANDIDATE_DIGEST,
+    )),
     check('registry', async () => registryStub(env).health(invocationProofFromResolution(
       await invocationResolution,
       requiredTokens,
@@ -121,7 +148,7 @@ export async function readiness(env: CoreEnv): Promise<CoreReadinessReport> {
       const registered = (await registryStub(env).list()).agents
         .filter(({ registrationState, admissionVerified }) => registrationState === 'active' && admissionVerified)
         .map(({ discoveryTool }) => discoveryTool)
-      const names = await listMcpToolNames(env.DOCS_MCP)
+      const names = await listMcpToolNames(env.DOCS_MCP, env.DISCOVERY_PROVIDER_BEARER_TOKEN)
       const missing = [DOCS_INVOCATION_TOOL, ...registered].filter((name) => !names.includes(name))
       return Object.freeze({ ok: missing.length === 0, missing: Object.freeze(missing) })
     }),
@@ -138,6 +165,7 @@ export async function readiness(env: CoreEnv): Promise<CoreReadinessReport> {
       'checkout-provider.internal',
       CHECKOUT_PROVIDER_CONTRACT,
       ['prepare', 'confirm', 'status', 'offer-observe'],
+      env.CHECKOUT_PROVIDER_AUTH_SECRET,
     )),
     check('checkout_provider_evidence', async () => convergenceCheck(await checkoutConvergence)),
     check('marketplace_provider', async () => probe(env.MARKETPLACE_PROVIDER, '/readyz')),
@@ -146,6 +174,7 @@ export async function readiness(env: CoreEnv): Promise<CoreReadinessReport> {
       'marketplace-provider.internal',
       MARKETPLACE_PROVIDER_CONTRACT,
       ['vendor-list', 'vendor-transition-fenced', 'settlement-read'],
+      env.MARKETPLACE_PROVIDER_AUTH_SECRET,
     )),
     check('marketplace_provider_evidence', async () => convergenceCheck(await marketplaceConvergence)),
   ])
@@ -163,6 +192,7 @@ export async function readiness(env: CoreEnv): Promise<CoreReadinessReport> {
     contract: 'commerce.core-readiness/v2',
     lane: env.DEPLOY_LANE,
     releaseCandidateSha: env.RELEASE_CANDIDATE_SHA,
+    releaseCandidateDigest: env.RELEASE_CANDIDATE_DIGEST,
     version: env.CF_VERSION_METADATA,
     sourceReadiness: Object.freeze({ ok: sourceOk, checks: Object.freeze(checks) }),
     liveReleaseReadiness,
@@ -348,11 +378,18 @@ async function capabilityCoverage(env: CoreEnv): Promise<unknown> {
 }
 
 async function pinnedInvocationCatalog(env: CoreEnv, refresh: boolean): Promise<InvocationCatalogCache> {
-  const current = invocationCatalogCache?.binding === env.DOCS_MCP ? invocationCatalogCache : null
+  const current = invocationCatalogCache?.binding === env.DOCS_MCP
+    && invocationCatalogCache.bearerToken === env.DISCOVERY_PROVIDER_BEARER_TOKEN
+    ? invocationCatalogCache
+    : null
   if (current && !refresh) return current
   if (invocationCatalogHydration) return invocationCatalogHydration
   const client = current?.client
-    ?? createInvocationClient({ endpoint: DOCS_INVOCATION_ENDPOINT, fetcher: env.DOCS_MCP })
+    ?? createInvocationClient({
+      endpoint: DOCS_INVOCATION_ENDPOINT,
+      fetcher: env.DOCS_MCP,
+      bearerToken: env.DISCOVERY_PROVIDER_BEARER_TOKEN,
+    })
   invocationCatalogHydration = (async () => {
     const snapshot = current
       ? await client.refresh({ signal: AbortSignal.timeout(10_000) })
@@ -363,6 +400,7 @@ async function pinnedInvocationCatalog(env: CoreEnv, refresh: boolean): Promise<
       : current?.priorSourceRevision ?? null
     const next = Object.freeze({
       binding: env.DOCS_MCP,
+      bearerToken: env.DISCOVERY_PROVIDER_BEARER_TOKEN,
       client,
       snapshot,
       priorSourceRevision,
@@ -407,10 +445,16 @@ async function probeCapabilities(
   hostname: string,
   expectedContract: string,
   requiredOperations: readonly string[],
+  authenticationSecret?: string,
 ): Promise<unknown> {
-  const response = await binding.fetch(new Request(`https://${hostname}/v1/capabilities`, {
+  const unsigned = new Request(`https://${hostname}/v1/capabilities`, {
     method: 'GET', signal: AbortSignal.timeout(5_000),
-  }))
+  })
+  const request = authenticationSecret === undefined ? unsigned : await authenticateCommerceProviderControlRequest(
+    unsigned, expectedContract, authenticationSecret,
+  )
+  if (!request) return Object.freeze({ ok: false, missing: Object.freeze([...requiredOperations]) })
+  const response = await binding.fetch(request)
   const payload = await readProviderResponse(response)
   const operations = isRecord(payload) && payload.contract === expectedContract && Array.isArray(payload.operations)
     ? payload.operations
@@ -425,10 +469,16 @@ async function probeRuntimeEvidence(
   expectedContract: string,
   evidencePinJson: string,
   requiredChecks: readonly string[],
+  authenticationSecret?: string,
 ): Promise<unknown> {
-  const response = await binding.fetch(new Request(`https://${hostname}/v1/runtime-evidence`, {
+  const unsigned = new Request(`https://${hostname}/v1/runtime-evidence`, {
     method: 'GET', signal: AbortSignal.timeout(5_000),
-  }))
+  })
+  const request = authenticationSecret === undefined ? unsigned : await authenticateCommerceProviderControlRequest(
+    unsigned, expectedContract, authenticationSecret,
+  )
+  if (!request) return Object.freeze({ ok: false, code: 'provider_authentication_unavailable' })
+  const response = await binding.fetch(request)
   const payload = await readProviderResponse(response)
   const result = await verifyUpstreamRuntimeEvidence(
     payload,
@@ -445,6 +495,7 @@ async function probeProviderConvergence(
   expectedContract: string,
   evidencePinJson: string,
   requiredChecks: readonly string[],
+  authenticationSecret: string | undefined,
   liveReason: string,
 ): Promise<ProviderConvergence> {
   let source: ConvergenceVerdict
@@ -455,6 +506,7 @@ async function probeProviderConvergence(
       expectedContract,
       evidencePinJson,
       requiredChecks,
+      authenticationSecret,
     )
     const verdict = readVerdict(detail)
     source = verdict && resultOk(detail)
@@ -529,10 +581,6 @@ function providerResponseSucceeded(value: unknown): boolean {
 
 function resultOk(value: unknown): boolean {
   return isRecord(value) && value.ok === true
-}
-
-function releaseCandidateCheck(lane: string, releaseCandidateSha: string): Readonly<{ ok: boolean }> {
-  return Object.freeze({ ok: lane.toLowerCase() !== 'production' || /^[0-9a-f]{40}$/u.test(releaseCandidateSha) })
 }
 
 function classifyError(error: unknown): string {

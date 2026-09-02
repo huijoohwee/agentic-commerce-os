@@ -13,6 +13,7 @@ import {
 const SOURCE_REVISION = "a".repeat(40);
 const SESSION_ID = "fixture-session-1";
 const ENDPOINT = "https://commerce.test/agenticgraph/control-plane/mcp";
+const DISCOVERY_CREDENTIAL = "commerce-discovery-provider-test-credential";
 
 const CATALOG: readonly InvocationCatalogEntry[] = Object.freeze([
   Object.freeze({
@@ -62,14 +63,14 @@ const createFakeTransport = async (behavior: FakeBehavior = {}) => {
   const digests = await buildInvocationDigests(CATALOG);
   const requests: RequestRecord[] = [];
   const fetch: FetchFunction = async (_input, init) => {
+    const headers = new Headers(init?.headers);
+    assert.equal(headers.get("authorization"), `Bearer ${DISCOVERY_CREDENTIAL}`);
     if (init?.method === "DELETE") {
-      const headers = new Headers(init.headers);
       requests.push({ headers, message: { method: "session/close" } });
       assert.equal(headers.get("mcp-session-id"), SESSION_ID);
       return new Response(null, { status: 204 });
     }
     const message = JSON.parse(String(init?.body)) as Record<string, unknown>;
-    const headers = new Headers(init?.headers);
     requests.push({ headers, message });
     if (message.method === "initialize") {
       const params = message.params as Record<string, unknown>;
@@ -136,7 +137,11 @@ const rejectsWithCode = async (promise: Promise<unknown>, code: string): Promise
 test("hydrates all three source slices and resolves one exact token through a Fetcher binding", async () => {
   const transport = await createFakeTransport();
   const binding = { fetch: transport.fetch };
-  const client = createInvocationClient({ endpoint: ENDPOINT, fetcher: binding });
+  const client = createInvocationClient({
+    endpoint: ENDPOINT,
+    fetcher: binding,
+    bearerToken: DISCOVERY_CREDENTIAL,
+  });
 
   const snapshot = await client.hydrate();
   assert.deepEqual(snapshot.counts, counts);
@@ -171,7 +176,11 @@ test("hydrates all three source slices and resolves one exact token through a Fe
 
 test("accepts SSE JSON-RPC frames over a fetch-compatible function", async () => {
   const transport = await createFakeTransport({ sse: true });
-  const client = createInvocationClient({ endpoint: ENDPOINT, fetcher: transport.fetch });
+  const client = createInvocationClient({
+    endpoint: ENDPOINT,
+    fetcher: transport.fetch,
+    bearerToken: DISCOVERY_CREDENTIAL,
+  });
   const result = await client.resolve("@cart");
   assert.equal(result.invocation.kind, "binding");
 });
@@ -183,7 +192,11 @@ test("fails closed when catalog slices disagree on revision-bound metadata", asy
       if (args.query === "#") payload.routingDigest = "f".repeat(64);
     },
   });
-  const client = createInvocationClient({ endpoint: ENDPOINT, fetcher: transport.fetch });
+  const client = createInvocationClient({
+    endpoint: ENDPOINT,
+    fetcher: transport.fetch,
+    bearerToken: DISCOVERY_CREDENTIAL,
+  });
   await rejectsWithCode(client.hydrate(), "catalog_drift");
 });
 
@@ -193,7 +206,11 @@ test("recomputes both catalog and routing digests before accepting hydration", a
       payload.catalogDigest = "e".repeat(64);
     },
   });
-  const client = createInvocationClient({ endpoint: ENDPOINT, fetcher: transport.fetch });
+  const client = createInvocationClient({
+    endpoint: ENDPOINT,
+    fetcher: transport.fetch,
+    bearerToken: DISCOVERY_CREDENTIAL,
+  });
   await rejectsWithCode(client.hydrate(), "catalog_drift");
 });
 
@@ -204,7 +221,11 @@ test("rejects incomplete full counts and truncated sigil slices", async () => {
       if (args.query === "/") payload.truncated = true;
     },
   });
-  const client = createInvocationClient({ endpoint: ENDPOINT, fetcher: transport.fetch });
+  const client = createInvocationClient({
+    endpoint: ENDPOINT,
+    fetcher: transport.fetch,
+    bearerToken: DISCOVERY_CREDENTIAL,
+  });
   await rejectsWithCode(client.hydrate(), "invalid_catalog");
 });
 
@@ -217,22 +238,46 @@ test("compares an exact token result with its verified full-catalog entry", asyn
       }
     },
   });
-  const client = createInvocationClient({ endpoint: ENDPOINT, fetcher: transport.fetch });
+  const client = createInvocationClient({
+    endpoint: ENDPOINT,
+    fetcher: transport.fetch,
+    bearerToken: DISCOVERY_CREDENTIAL,
+  });
   await rejectsWithCode(client.resolve("/compose-cart"), "catalog_drift");
 });
 
 test("reports an exact unknown token only after verifying the current catalog proof", async () => {
   const transport = await createFakeTransport();
-  const client = createInvocationClient({ endpoint: ENDPOINT, fetcher: transport.fetch });
+  const client = createInvocationClient({
+    endpoint: ENDPOINT,
+    fetcher: transport.fetch,
+    bearerToken: DISCOVERY_CREDENTIAL,
+  });
   await rejectsWithCode(client.resolve("/not-registered"), "invocation_not_found");
   assert.equal(transport.requests.at(-1)?.message.method, "tools/call");
 });
 
 test("rejects aliases, whitespace, value-bearing bindings, and oversized tokens before I/O", async () => {
   const transport = await createFakeTransport();
-  const client = createInvocationClient({ endpoint: ENDPOINT, fetcher: transport.fetch });
+  const client = createInvocationClient({
+    endpoint: ENDPOINT,
+    fetcher: transport.fetch,
+    bearerToken: DISCOVERY_CREDENTIAL,
+  });
   for (const token of [" /compose-cart", "/Compose-cart", "compose-cart", "@url:https://example.com", `/${"a".repeat(128)}`]) {
     await rejectsWithCode(client.resolve(token), "invalid_input");
+  }
+  assert.equal(transport.requests.length, 0);
+});
+
+test("requires a strong discovery credential before provider I/O", async () => {
+  const transport = await createFakeTransport();
+  for (const bearerToken of [undefined, "", "too-short"]) {
+    expect(() => createInvocationClient({
+      endpoint: ENDPOINT,
+      fetcher: transport.fetch,
+      ...(bearerToken === undefined ? {} : { bearerToken }),
+    })).toThrowError(expect.objectContaining({ code: "invalid_input" }));
   }
   assert.equal(transport.requests.length, 0);
 });
@@ -244,7 +289,12 @@ test("bounds response bytes before parsing JSON-RPC", async () => {
       headers: { "mcp-session-id": SESSION_ID },
     });
   };
-  const client = createInvocationClient({ endpoint: ENDPOINT, fetcher: oversized, maxResponseBytes: 128 });
+  const client = createInvocationClient({
+    endpoint: ENDPOINT,
+    fetcher: oversized,
+    bearerToken: DISCOVERY_CREDENTIAL,
+    maxResponseBytes: 128,
+  });
   await rejectsWithCode(client.hydrate(), "response_too_large");
 });
 
@@ -259,6 +309,10 @@ test("rejects a session identifier that changes after initialization", async () 
       headers: { "content-type": "application/json", "mcp-session-id": "different-session" },
     });
   };
-  const client = createInvocationClient({ endpoint: ENDPOINT, fetcher: changedSession });
+  const client = createInvocationClient({
+    endpoint: ENDPOINT,
+    fetcher: changedSession,
+    bearerToken: DISCOVERY_CREDENTIAL,
+  });
   await rejectsWithCode(client.hydrate(), "invalid_mcp_response");
 });

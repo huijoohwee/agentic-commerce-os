@@ -2,7 +2,9 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
 import {
+  COMMERCE_ADMISSION_OPERATOR_INSTRUCTION_REF,
   ACOS_ADMISSION_RECEIPT_SCHEMA,
+  ACOS_DEPLOYMENT_IDENTITY_SCHEMA,
   isAcosAdmissionReceiptBoundToInputs,
   type AcosAdmissionInputs,
 } from '../../src/core/acos-admission.ts'
@@ -34,7 +36,7 @@ function admissionInputs(agentId = 'agent-flight'): AcosAdmissionInputs {
       binding: '@mcp-gateway',
       tool_identity: 'acos.adapter.register',
     },
-    operatorInstructionRef: 'operator-instruction/commerce/flight-v1',
+    operatorInstructionRef: COMMERCE_ADMISSION_OPERATOR_INSTRUCTION_REF,
   }
 }
 
@@ -50,6 +52,19 @@ function receipt(inputs: AcosAdmissionInputs) {
     resulting_status: 'active',
     operator_instruction_reference: inputs.operatorInstructionRef,
     registered_at_ms: 1_787_702_400_000,
+    deployment_identity: deploymentIdentity(),
+  }
+}
+
+function deploymentIdentity() {
+  const candidateDigest = 'f'.repeat(64)
+  return {
+    schema: ACOS_DEPLOYMENT_IDENTITY_SCHEMA,
+    sourceRevision: 'a'.repeat(40),
+    candidateDigest,
+    versionId: '11111111-1111-4111-8111-111111111111',
+    versionTag: `acos-prod-${candidateDigest}`,
+    versionTimestamp: '2026-09-03T00:00:00.000Z',
   }
 }
 

@@ -15,13 +15,16 @@ const MAXIMUM_JAVASCRIPT_CHUNK_BYTES = 500_000
 
 type JsonObject = Record<string, unknown>
 
-type CandidateIdentity = Readonly<{
+export type CandidateIdentity = Readonly<{
   candidateSha: string
   candidateTree: string
   packageLockDigest: string
   coreConfigDigest: string
   edgeConfigDigest: string
+  sandboxConfigDigest: string
+  sandboxContainerBuildInputDigest: string
   durableObjectStorageCompatibilityRevision: string
+  sandboxStorageCompatibilityRevision: string
   candidateDigest: string
 }>
 
@@ -43,6 +46,24 @@ export function selectUploadedVersion(beforeValue: unknown, afterValue: unknown,
     .filter((entry) => object(entry.annotations, 'version_annotations_invalid')['workers/tag'] === candidateSha)
   exact(matches.length === 1, 'uploaded_version_cardinality_invalid')
   return versionId(matches[0]?.id)
+}
+
+export function selectExistingCandidateVersion(
+  value: unknown,
+  candidateSha: string,
+  preferredVersionId?: string,
+): string | null {
+  sha1(candidateSha)
+  const matches = array(value, 'candidate_versions_invalid')
+    .map((entry) => object(entry, 'candidate_version_invalid'))
+    .filter((entry) => object(entry.annotations, 'version_annotations_invalid')['workers/tag'] === candidateSha)
+  if (preferredVersionId !== undefined) {
+    const preferred = matches.filter((entry) => versionId(entry.id) === preferredVersionId)
+    exact(preferred.length === 1, 'preferred_candidate_version_missing')
+    return preferredVersionId
+  }
+  exact(matches.length <= 1, 'candidate_version_cardinality_invalid')
+  return matches.length === 0 ? null : versionId(matches[0]?.id)
 }
 
 export function buildPrivateEdgeConfig(value: unknown): JsonObject {
@@ -162,7 +183,8 @@ export function parseBootstrapResumeReceipt(value: unknown, candidateSha: string
   })
 }
 
-function candidateIdentity(candidateSha: string): CandidateIdentity {
+export function buildCandidateIdentity(candidateSha: string): CandidateIdentity {
+  exact(git(['rev-parse', 'HEAD']) === candidateSha, 'candidate_head_mismatch')
   const candidateTree = git(['rev-parse', 'HEAD^{tree}'])
   const identity = Object.freeze({
     candidateSha: sha1(candidateSha),
@@ -170,7 +192,14 @@ function candidateIdentity(candidateSha: string): CandidateIdentity {
     packageLockDigest: fileDigest('package-lock.json'),
     coreConfigDigest: fileDigest('wrangler.core.jsonc'),
     edgeConfigDigest: fileDigest('wrangler.edge.jsonc'),
+    sandboxConfigDigest: fileDigest('wrangler.sandbox.jsonc'),
+    sandboxContainerBuildInputDigest: fileDigest('config/sandbox.Dockerfile'),
     durableObjectStorageCompatibilityRevision: digest(gitNodeStorageRevision()),
+    sandboxStorageCompatibilityRevision: sha256(canonicalJson([
+      fileDigest('src/sandbox/executor.ts'),
+      fileDigest('src/sandbox/isolation.ts'),
+      fileDigest('src/sandbox/preview.ts'),
+    ])),
   })
   return Object.freeze({ ...identity, candidateDigest: sha256(canonicalJson(identity)) })
 }
@@ -241,7 +270,7 @@ function exact(condition: boolean, code: string): asserts condition {
 async function main(): Promise<void> {
   const [command, ...arguments_] = process.argv.slice(2)
   if (command === 'identity' && arguments_.length === 2) {
-    writeJson(arguments_[1] as string, candidateIdentity(arguments_[0] as string))
+    writeJson(arguments_[1] as string, buildCandidateIdentity(arguments_[0] as string))
   } else if (command === 'private-edge-config' && arguments_.length === 2) {
     writeJson(arguments_[1] as string, buildPrivateEdgeConfig(readJson(arguments_[0] as string)))
   } else if (command === 'active-version' && arguments_.length === 1) {

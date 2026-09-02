@@ -1,13 +1,13 @@
-name: Production Release Safety Stop
+name: Authenticated Production Release
 
 on:
   workflow_dispatch:
     inputs:
       mode:
-        description: Candidate mode to evaluate without mutating Production
+        description: Bootstrap, replace an exact prior tuple, or recover an authenticated preserve artifact
         required: true
         type: choice
-        options: [bootstrap, steady-state]
+        options: [bootstrap, steady-state, recovery]
       candidate_sha:
         description: Exact current protected main commit
         required: true
@@ -36,9 +36,10 @@ jobs:
         run: |
           set -euo pipefail
           [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
-          [[ "$RELEASE_MODE" == bootstrap || "$RELEASE_MODE" == steady-state ]]
+          [[ "$RELEASE_MODE" == bootstrap || "$RELEASE_MODE" == steady-state || "$RELEASE_MODE" == recovery ]]
+          test "$GITHUB_RUN_ATTEMPT" = 1
 
-      - name: Checkout exact candidate
+      - name: Checkout exact protected candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
@@ -51,7 +52,7 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Run locked implementation checks
+      - name: Verify source, topology, checks, and all three dry bundles
         run: |
           set -euo pipefail
           test "$GITHUB_REF" = refs/heads/main
@@ -60,22 +61,31 @@ jobs:
           test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$CANDIDATE_SHA"
           timeout --foreground --kill-after=30s 8m npm ci --ignore-scripts
           timeout --foreground --kill-after=30s 20m npm run check:implementation
+          node scripts/production-release/contracts.ts topology wrangler.core.jsonc wrangler.edge.jsonc >/dev/null
+          node scripts/production-release/contracts.ts sandbox-topology wrangler.sandbox.jsonc >/dev/null
+          evidence="$RUNNER_TEMP/agentic-commerce-production-verify"
+          mkdir -p "$evidence"
+          node scripts/production-release/lifecycle.ts identity "$CANDIDATE_SHA" "$evidence/identity.json"
+          for kind in sandbox core edge; do
+            out="$RUNNER_TEMP/agentic-commerce-production-verify-$kind"
+            timeout --foreground --kill-after=30s 8m npx --no-install wrangler deploy \
+              -c "wrangler.$kind.jsonc" --env production --dry-run --minify --outdir "$out"
+            node scripts/production-release/lifecycle.ts bundle-size "$out" "$evidence/$kind-bundle-proof.json"
+          done
           test ! -e .wrangler/deploy/config.json
           test -z "$(git status --porcelain --untracked-files=all)"
-          node scripts/production-release/contracts.ts topology \
-            wrangler.core.jsonc wrangler.edge.jsonc > /dev/null
 
-  authorized_refusal:
-    name: Authorized Production Safety Stop
+  release:
+    name: Authorized Exact-Candidate Production Release
     needs: verify
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     environment: production
     env:
       CANDIDATE_SHA: ${{ inputs.candidate_sha }}
       RELEASE_MODE: ${{ inputs.mode }}
     steps:
-      - name: Checkout exact candidate
+      - name: Checkout exact protected candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
@@ -88,21 +98,18 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Build minified non-mutating candidate evidence
+      - name: Rebuild authenticated candidate evidence
         run: |
           set -euo pipefail
           timeout --foreground --kill-after=30s 8m npm ci --ignore-scripts
           evidence="$RUNNER_TEMP/agentic-commerce-production"
-          bundles="$RUNNER_TEMP/agentic-commerce-production-bundles"
-          mkdir -p "$evidence" "$bundles"
-          node scripts/production-release/lifecycle.ts identity \
-            "$CANDIDATE_SHA" "$evidence/identity.json"
-          for kind in core edge; do
+          mkdir -p "$evidence"
+          node scripts/production-release/lifecycle.ts identity "$CANDIDATE_SHA" "$evidence/identity.json"
+          for kind in sandbox core edge; do
+            out="$RUNNER_TEMP/agentic-commerce-production-$kind"
             timeout --foreground --kill-after=30s 8m npx --no-install wrangler deploy \
-              -c "wrangler.$kind.jsonc" --env production --dry-run --minify \
-              --outdir "$bundles/$kind"
-            node scripts/production-release/lifecycle.ts bundle-size "$bundles/$kind" \
-              "$evidence/$kind-bundle-proof.json"
+              -c "wrangler.$kind.jsonc" --env production --dry-run --minify --outdir "$out"
+            node scripts/production-release/lifecycle.ts bundle-size "$out" "$evidence/$kind-bundle-proof.json"
           done
 
       - name: Verify exact first-attempt Production approval
@@ -116,30 +123,81 @@ jobs:
             "$evidence/human-authorization.json"
           unset GH_TOKEN
 
-      - name: Recheck protected candidate after approval
+      - name: Materialize immutable predecessor artifact authority
+        env:
+          PRIOR_RELEASE_AUTHORITY_JSON: ${{ vars.PRODUCTION_PRIOR_RELEASE_AUTHORITY_JSON }}
+          RECOVERY_RELEASE_AUTHORITY_JSON: ${{ vars.PRODUCTION_RECOVERY_RELEASE_AUTHORITY_JSON }}
+        run: |
+          set -euo pipefail
+          evidence="$RUNNER_TEMP/agentic-commerce-production"
+          if [[ "$RELEASE_MODE" == steady-state ]]; then
+            test -n "$PRIOR_RELEASE_AUTHORITY_JSON"
+            RECEIPT="$PRIOR_RELEASE_AUTHORITY_JSON" node -e \
+              'const fs=require("node:fs"); const value=JSON.parse(process.env.RECEIPT); fs.writeFileSync(process.argv[1], JSON.stringify(value)+"\n", {flag:"wx",mode:384});' \
+              "$evidence/prior-release-authority.json"
+          elif [[ "$RELEASE_MODE" == recovery ]]; then
+            test -n "$RECOVERY_RELEASE_AUTHORITY_JSON"
+            RECEIPT="$RECOVERY_RELEASE_AUTHORITY_JSON" node -e \
+              'const fs=require("node:fs"); const value=JSON.parse(process.env.RECEIPT); fs.writeFileSync(process.argv[1], JSON.stringify(value)+"\n", {flag:"wx",mode:384});' \
+              "$evidence/recovery-release-authority.json"
+          fi
+          unset PRIOR_RELEASE_AUTHORITY_JSON RECOVERY_RELEASE_AUTHORITY_JSON
+
+      - name: Recheck protected candidate after human authorization
         run: |
           set -euo pipefail
           test "$GITHUB_RUN_ATTEMPT" = 1
+          test "$GITHUB_REF" = refs/heads/main
+          test "$GITHUB_SHA" = "$CANDIDATE_SHA"
           test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
           test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$CANDIDATE_SHA"
           test ! -e .wrangler/deploy/config.json
           test -z "$(git status --porcelain --untracked-files=all)"
 
-      - name: Refuse before any Production credential or mutation
+      - name: Upload inactive versions, CAS activate, and prove the live route
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          DISCOVERY_PROVIDER_BEARER_TOKEN: ${{ secrets.DISCOVERY_PROVIDER_BEARER_TOKEN }}
+          ACOS_ADMISSION_AUTH_SECRET: ${{ secrets.ACOS_ADMISSION_AUTH_SECRET }}
+          CHECKOUT_PROVIDER_AUTH_SECRET: ${{ secrets.CHECKOUT_PROVIDER_AUTH_SECRET }}
+          MARKETPLACE_PROVIDER_AUTH_SECRET: ${{ secrets.MARKETPLACE_PROVIDER_AUTH_SECRET }}
+          MCP_BEARER_TOKEN: ${{ secrets.MCP_BEARER_TOKEN }}
+          OPERATOR_BEARER_TOKEN: ${{ secrets.OPERATOR_BEARER_TOKEN }}
+          STOREFRONT_SESSION_SECRET: ${{ secrets.STOREFRONT_SESSION_SECRET }}
+          HUMAN_CONFIRMATION_TRUST_ANCHOR_JSON: ${{ secrets.HUMAN_CONFIRMATION_TRUST_ANCHOR_JSON }}
+          ACOS_RUNTIME_SOURCE_REVISION: ${{ vars.ACOS_RUNTIME_SOURCE_REVISION }}
+          ACOS_RUNTIME_CANDIDATE_DIGEST: ${{ vars.ACOS_RUNTIME_CANDIDATE_DIGEST }}
+          DISCOVERY_PROVIDER_EVIDENCE_PIN_JSON: ${{ vars.DISCOVERY_PROVIDER_EVIDENCE_PIN_JSON }}
+          CHECKOUT_PROVIDER_EVIDENCE_PIN_JSON: ${{ vars.CHECKOUT_PROVIDER_EVIDENCE_PIN_JSON }}
+          MARKETPLACE_PROVIDER_EVIDENCE_PIN_JSON: ${{ vars.MARKETPLACE_PROVIDER_EVIDENCE_PIN_JSON }}
+          PRODUCTION_ROUTE_AUTHORITY_JSON: ${{ vars.PRODUCTION_ROUTE_AUTHORITY_JSON }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           evidence="$RUNNER_TEMP/agentic-commerce-production"
-          node scripts/production-release/release-authority.ts "$RELEASE_MODE" \
+          prior=-
+          if [[ "$RELEASE_MODE" == steady-state ]]; then prior="$evidence/prior-release-authority.json"; fi
+          if [[ "$RELEASE_MODE" == recovery ]]; then prior="$evidence/recovery-release-authority.json"; fi
+          node scripts/production-release/run-production-release.ts execute "$RELEASE_MODE" \
             "$CANDIDATE_SHA" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" \
-            "$evidence/human-authorization.json" "$evidence/core-bundle-proof.json" \
-            "$evidence/edge-bundle-proof.json" "$evidence/release-authority-refusal.json"
+            "$evidence/human-authorization.json" "$evidence/release-receipt.json" "$prior"
 
-      - name: Upload typed safety-stop evidence
+      - name: Upload successful typed release evidence
+        if: ${{ success() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: production-release-${{ inputs.mode }}-${{ inputs.candidate_sha }}
+          path: ${{ runner.temp }}/agentic-commerce-production
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Preserve failed or forward-recovery evidence
         if: ${{ failure() }}
         continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: production-safety-stop-${{ inputs.mode }}-${{ inputs.candidate_sha }}
+          name: production-release-failed-${{ inputs.mode }}-${{ inputs.candidate_sha }}-${{ github.run_id }}
           path: ${{ runner.temp }}/agentic-commerce-production
-          if-no-files-found: warn
-          retention-days: 30
+          if-no-files-found: error
+          retention-days: 90

@@ -2,6 +2,8 @@ import { WEBMCP_CLIENT_RUNTIME } from './webmcp-runtime.js'
 
 export const STOREFRONT_CLIENT_MODULE = String.raw`
 const catalogPath = document.querySelector('meta[name="ag-catalog-path"]')?.content || '/v1/public/agents';
+const runtimeBasePath = document.querySelector('meta[name="ag-runtime-base-path"]')?.content || '';
+const runtimePath = path => runtimeBasePath + path;
 const searchForm = document.querySelector('#catalog-search');
 const searchInput = document.querySelector('#catalog-query');
 const resultsRegion = document.querySelector('#catalog-results');
@@ -13,7 +15,7 @@ const confirmationTotal = document.querySelector('#confirmation-total');
 const confirmationExpiry = document.querySelector('#confirmation-expiry');
 const confirmButton = document.querySelector('#confirm-checkout');
 const offlineIndicator = document.querySelector('#offline-indicator');
-const merchantMatch = catalogPath.match(/^\/v1\/public\/merchants\/([^/?]+)\/catalog(?:\?|$)/);
+const merchantMatch = catalogPath.match(/\/v1\/public\/merchants\/([^/?]+)\/catalog(?:\?|$)/);
 const merchantId = merchantMatch ? decodeURIComponent(merchantMatch[1]) : null;
 let catalog = [];
 let selectedOffer = null;
@@ -118,7 +120,7 @@ const replayPendingChanges = () => {
     if (!navigator.onLine || !await establishSession()) return;
     const changes = await readPendingChanges();
     for (const change of changes) {
-      const response = await fetch('/v1/sync/merge', {
+      const response = await fetch(runtimePath('/v1/sync/merge'), {
         method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           base: { fields: [], eventLog: [] },
@@ -194,7 +196,7 @@ const parseCatalog = payload => {
 };
 
 const establishSession = async () => {
-  const session = await fetch('/v1/session', {
+  const session = await fetch(runtimePath('/v1/session'), {
     method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ purpose: 'storefront-checkout-preparation' })
   });
@@ -212,7 +214,7 @@ const discoverOffers = async (scoped, query) => {
   const target = scoped[0];
   if (!target || !await establishSession()) return discoveredUnavailability(scoped, 'offer_discovery_unavailable');
   const intentId = 'intent-' + crypto.randomUUID();
-  const response = await fetch('/v1/intents/route', {
+  const response = await fetch(runtimePath('/v1/intents/route'), {
     method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
       intentId, category: target.category, constraints: { query },
@@ -298,7 +300,7 @@ const actions = Object.freeze({
     }
     if (!await establishSession()) return { ok: false, code: 'storefront_session_unavailable' };
     const checkoutId = 'checkout-' + crypto.randomUUID();
-    const response = await fetch('/v1/checkouts/' + encodeURIComponent(checkoutId) + '/prepare', {
+    const response = await fetch(runtimePath('/v1/checkouts/' + encodeURIComponent(checkoutId) + '/prepare'), {
       method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         checkoutId,
@@ -508,7 +510,7 @@ const confirmPreparedCheckout = async () => {
   if (proof.verificationMode !== 'development-visual-only' && !presenceReceipt) {
     return { ok: false, code: 'human_presence_adapter_unavailable' };
   }
-  const response = await fetch('/v1/human/checkouts/' + encodeURIComponent(proof.checkoutId) + '/confirm', {
+  const response = await fetch(runtimePath('/v1/human/checkouts/' + encodeURIComponent(proof.checkoutId) + '/confirm'), {
     method: 'POST',
     credentials: 'same-origin',
     headers: {

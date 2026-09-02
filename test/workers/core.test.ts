@@ -1,7 +1,7 @@
 import { env, runInDurableObject, SELF } from 'cloudflare:test'
 import { describe, expect, it } from 'vitest'
-
 import { CheckoutSession } from '../../src/core/checkout-session.ts'
+import { COMMERCE_ADMISSION_OPERATOR_INSTRUCTION_REF } from '../../src/core/acos-admission.ts'
 import { merchantThemeClaim, vendorTransitionClaim } from '../../src/domain/authoring-claim-policy.ts'
 import { sha256Hex } from '../../src/shared/digest.ts'
 
@@ -9,6 +9,7 @@ const CONTRACT_HEADERS = Object.freeze({
   'content-type': 'application/json',
   'x-commerce-contract': 'commerce.edge-core/v1',
   'x-commerce-release-candidate': 'b'.repeat(40),
+  'x-commerce-release-candidate-digest': 'e'.repeat(64),
 })
 const REGISTRY_CLAIM_HEADERS = claimHeaders('operator-registry', 'core-worker-test-claim', 'test-fence-v1')
 const MERCHANT_CLAIM = merchantThemeClaim('merchant-one')
@@ -23,7 +24,6 @@ const VENDOR_CLAIM_HEADERS = claimHeaders(
   'core-worker-vendor-claim',
   'test-vendor-fence-v1',
 )
-
 describe('commerce core Worker and Durable Objects', () => {
   it('exposes liveness but rejects unbound internal calls', async () => {
     const live = await SELF.fetch('https://core.test/internal/livez')
@@ -194,6 +194,9 @@ describe('commerce core Worker and Durable Objects', () => {
       code: 'mutation_out_of_write_set',
       holdingClaimId: VENDOR_CLAIM_HEADERS['x-authoring-claim-id'],
     })
+    const unownedInstruction = await registerAgent('unowned-instruction', 'flight', 'commerce.flight.discover', '0'.repeat(64), 'operator://unowned')
+    expect(unownedInstruction.status).toBe(400)
+    await expect(unownedInstruction.json()).resolves.toMatchObject({ ok: false, code: 'registration_malformed' })
     const flight = await registerAgent('flight-primary', 'flight', 'commerce.flight.discover', '1'.repeat(64))
     expect(flight.status).toBe(200)
     await expect(flight.json()).resolves.toMatchObject({ ok: true, idempotent: false })
@@ -519,11 +522,8 @@ describe('commerce core Worker and Durable Objects', () => {
   })
 })
 
-async function registerAgent(
-  agentId: string,
-  category: string,
-  discoveryTool: string,
-  contentHash: string,
+async function registerAgent(agentId: string, category: string, discoveryTool: string, contentHash: string,
+  operatorInstructionRef: string = COMMERCE_ADMISSION_OPERATOR_INSTRUCTION_REF,
 ): Promise<Response> {
   const executableSource = `export async function executeTool(toolId, input) { if (toolId !== ${JSON.stringify(discoveryTool)}) throw new Error('tool_not_declared'); return { toolId, input }; }`
   return coreJson('/internal/v1/agents', {
@@ -555,7 +555,7 @@ async function registerAgent(
       binding: '@mcp-gateway',
       tool_identity: 'acos.adapter.register',
     },
-    operatorInstructionRef: `operator-instruction/commerce/${agentId}-v1`,
+    operatorInstructionRef,
     commerceProjection: {
       category,
       discoveryTool,

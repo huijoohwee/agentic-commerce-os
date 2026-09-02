@@ -10,44 +10,51 @@ authoritative graph, payment, or settlement runtime from its owning repository.
 Production readiness requires the source, administration, dependency, consumer,
 deployment, live-probe, and externally authorized rollback evidence listed below.
 
-### Production release safety stop
+### Authenticated Production release controller
 
-The manual Production workflow is intentionally read-only after the protected
-environment gate. Both modes require a first-attempt-only, run-bound GitHub
-approval by a non-bot `User`; the `production` environment must expose a
-required-reviewer rule with `prevent_self_review: true`. The controller records
-its observation time as `observedAt`; it does not invent an approval timestamp
-that GitHub's workflow-run approvals API does not return. The candidate is
-rechecked against clean `origin/main` after approval at the final pre-mutation
+The manual Production workflow separates credentialless verification from the
+protected mutation job. Both jobs are bound to one exact protected-main
+candidate. The mutation job additionally requires a first-attempt-only,
+run-bound GitHub approval by one non-bot `User`; the `production` environment
+must expose a required-reviewer rule with `prevent_self_review: true`. The
+controller records the approval observation as `observedAt`; it does not invent
+an approval timestamp that GitHub's workflow-run approvals API does not return.
+It rechecks clean remote `main` after approval at the final pre-mutation
 boundary.
 
-The first job checks out the exact protected-main candidate, runs the locked
-implementation checks, validates the static Production topology, and requires a
-clean checkout. After the protected-environment approval, the gated job builds
-minified core and edge bundles with fixed Wrangler `--dry-run` arguments, proves
-every emitted JavaScript chunk is below 500,000 bytes, rechecks the exact remote
-`main`, and stops. It does not receive or inspect a Cloudflare account, zone,
-Worker version, route, bootstrap receipt, secret, or mutation credential. Its
-bundle proofs are local build evidence only.
+The verification job runs the locked implementation checks, validates the
+static Production topology, and builds minified sandbox, core, and edge bundles
+with fixed Wrangler `--dry-run` arguments. Every emitted JavaScript chunk must
+be below 500,000 bytes. That job receives no Cloudflare credential. Only the
+environment-protected release job receives the exact account, provider,
+admission, Worker-secret, provider-evidence, and route-authority inputs needed
+by the controller.
 
-No Cloudflare mutation is currently authorized. Cloudflare has no atomic CAS
-that covers the core and edge Worker transitions, and this repository has
-neither a controller-issued external `controller-issued-lease-fence-cas/v1`
-adapter nor a reviewed N/N-1 core/edge compatibility proof. Cloudflare's
-available readback also does not prove the exact remote Durable Object migration
-identity. When the preceding checks and approval succeed, the final step emits
-`agentic-commerce-production-release-authority-refusal/v2` and fails before
-upload, deploy, secret transport, route change, cleanup, or rollback. An earlier
-failure remains non-mutating but may occur before that refusal exists. Enabling
-mutation requires implementing and reviewing those external contracts; a CI
-controller must not claim rollback or release success in their absence.
+The controller supports `bootstrap`, `steady-state`, and authenticated
+`recovery`. Bootstrap requires all three Worker baselines and the sandbox
+container application to be absent. Steady state requires a separately
+authenticated prior deployment receipt whose exact versions and container are
+still active. Recovery requires a separately authenticated preserve-required
+receipt and accepts only its predecessor-or-candidate state. Core and edge are
+uploaded inactive and fully read back before activation. The sandbox Worker and
+container transition is immediate and non-transactional, so the controller
+records that boundary explicitly, rechecks the active three-Worker tuple before
+each later activation, and returns a typed preserve-required artifact for every
+ambiguous or partial transition. It never describes a forward-only recovery as
+rollback.
 
-Dev is an entirely local three-Worker topology: the edge, core, and
-`agentic-commerce-provider-dev` demo fixture run in one Wrangler session. The
-fixture supplies deterministic MCP, checkout, and marketplace contracts with a
-deliberately small `1/1/1` invocation catalogue. It is demo-only, requires no
-remote Cloudflare resource, and is not evidence that any Staging or Production
-provider is present or ready.
+Source support does not authorize a live release by itself. A run still needs
+protected GitHub authority, operator-owned secrets and provider evidence, an
+exact route-authority artifact, and a currently valid predecessor or recovery
+artifact when the selected mode requires one. Without them the controller
+fails before mutation; this repository does not manufacture those inputs.
+
+Dev is an entirely local four-Worker topology: the edge, core, bounded sandbox,
+and `agentic-commerce-provider-dev` demo fixture run in one Wrangler session.
+The fixture supplies deterministic MCP, checkout, and marketplace contracts
+with a deliberately small `1/1/1` invocation catalogue. It is demo-only,
+requires no remote Cloudflare resource, and is not evidence that any Staging or
+Production provider is present or ready.
 
 The implementation is bound to the committed PRD at source repository revision
 `1acbbcc3b06534f9712f5b05b781010f749fa842`. Uncommitted later edits and the
@@ -61,11 +68,11 @@ or downstream remapping for either product name.
 | Owner | Runtime responsibility |
 |---|---|
 | Agentic Canvas OS | Authoritative agent definition/admission receipts plus canonical invocation grammar, catalogue, and routing document revisions for `/`, `@`, and `#` tokens |
-| AgenticGraph | Projection of that invocation catalogue through MCP; authoritative graph, Guardrail Gate, human-confirmed issuance, vendor D1, bundle commit, money ledger, same-transaction vendor split, settlement verification, and payout dispatch |
+| `agentic-graph` | Projection of that invocation catalogue through MCP; authoritative graph, Guardrail Gate, human-confirmed issuance, vendor D1, bundle commit, money ledger, same-transaction vendor split, settlement verification, and payout dispatch |
 | Commerce core | Registration, deterministic selection and dispatch fences, invocation-pin verification, checkout/offer observation, derived markup, theme activation, and authoring claims |
 | Commerce edge | Public Storefront Console and catalog plus session-, agent-, and operator-authorized facades over the private core |
-| Release workflow | Protected candidate verifier and typed Production safety stop; it has no deploy, live-verification, release-receipt, or rollback authority |
-| Sandbox Executor | Separate Dev-only isolated build/dry-run Worker with zero Production route or release authority |
+| Release workflow | Protected exact-candidate verifier and authenticated bootstrap, steady-state, or forward-recovery controller; it emits typed deployment or preserve-required evidence |
+| Sandbox Executor | Private bounded container-backed Worker included in the three-Worker release tuple; it has no public route or independent release authority |
 
 The core runs six SQLite-backed Durable Object classes:
 
@@ -81,7 +88,7 @@ The core runs six SQLite-backed Durable Object classes:
   confirmation challenge, observes held-offer changes on an alarm, invalidates
   stale confirmation, and records an externally signed exact-fact
   human-presence receipt before asking the owning
-  AgenticGraph service to execute. It is not the issuer or money authority.
+  `agentic-graph` service to execute. It is not the issuer or money authority.
 - `RevenueLedger` idempotently records the integer, half-up markup derived after
   a settlement. Its v2 deferred outbox pins the validated applied rate before
   recovery, so later configuration changes cannot reprice a settled transaction.
@@ -100,32 +107,37 @@ The core runs six SQLite-backed Durable Object classes:
   `reconciliation_required` until exact terminal evidence is available.
 
 The deployed core proxies vendor and settlement runtime operations to
-AgenticGraph. This repository deliberately contains no authoritative vendor
+`agentic-graph`. This repository deliberately contains no authoritative vendor
 lifecycle store, payment mutation, split projection, payout path, second vendor
 database, or parallel money ledger.
 
 This repository declares no D1 database, KV namespace, R2 bucket, or Queue. Its
-core state is the six Durable Objects above. The separate Dev-only Sandbox
-Executor declares one bounded container-backed Sandbox class; it is not on the
-Production delivery path. AgenticGraph remains the sole owner of vendor D1,
+core state is the six Durable Objects above. The separate Sandbox Executor
+declares one bounded container-backed Sandbox class. In Production it is a
+private Service Binding and a separately proven member of the release tuple;
+it has no public route. `agentic-graph` remains the sole owner of vendor D1,
 authoritative bundle and money-ledger writes, same-transaction split persistence,
 and payout coordination.
 
 ## Private Cloudflare topology
 
-Production deploys two Workers in one Cloudflare account:
+Production deploys three Workers in one Cloudflare account:
 
-1. `agentic-commerce-core-production` has `workers.dev` and preview URLs
+1. `agentic-commerce-sandbox-production` has `workers.dev` and preview URLs
+   disabled. It owns one bounded container-backed Sandbox Durable Object and is
+   reachable only through the core Service Binding.
+2. `agentic-commerce-core-production` has `workers.dev` and preview URLs
    disabled. It is reachable only through Service Bindings and binds the six
    Durable Objects plus the authoritative ACOS admission, external MCP,
-   commerce, and marketplace services.
-2. `agentic-commerce-edge-production` also has `workers.dev`, preview URLs, and
-   binds the core by service name. Its configuration declares exactly one route,
-   `airvio.co/agentic-commerce-os`. Because it is not a wildcard, Production
-   exposes only closed-boundary HTML at that exact path; it does not route the
-   direct-Worker catalog, asset, MCP, `/v1/*`, `/livez`, `/readyz`, merchant, or
-   WebMCP paths. Serving that exact route is not yet live-verified, so the
-   Delivery boundary remains closed.
+   commerce, marketplace, and sandbox services.
+3. `agentic-commerce-edge-production` also has `workers.dev` and preview URLs
+   disabled and binds the core by service name. Its configuration declares
+   exactly one prefix route, `airvio.co/agentic-commerce-os*`. The edge strips
+   only that exact prefix before routing the Storefront Console, scoped assets,
+   catalog, session, checkout, MCP, WebMCP, liveness, and readiness paths. It
+   rejects lookalike prefixes and does not expose either private Worker directly.
+   Serving the prefix is not yet live-verified, so the Delivery boundary remains
+   closed.
 
 A Cloudflare Service Binding selects a service, not an immutable Worker version.
 Both direct readiness contracts therefore return their sanitized
@@ -133,21 +145,21 @@ Both direct readiness contracts therefore return their sanitized
 route-live state is unknown. The exact Production HTML request accepts only that
 typed condition, obtains a matching core liveness identity through the Service
 Binding, and emits no-store readiness/candidate/edge-version/core-version
-headers. A repaired release workflow must require those IDs and tags to equal
-the sole 100-percent Cloudflare deployments and exact candidate. These checks
+headers. The release controller requires those IDs and tags to equal the sole
+100-percent Cloudflare deployments and exact candidate. These checks
 detect drift or a misrouted consumer; Cloudflare account policy must still
 prevent deployment outside this controller.
 
 The Production config contains deliberately invalid release placeholders. The
 release workflow must inject the same lowercase 40-hex
-`RELEASE_CANDIDATE_SHA` into both Workers. A direct Production deploy that omits
-that override cannot pass readiness.
+`RELEASE_CANDIDATE_SHA` and candidate digest into all three Workers. A direct
+Production deploy that omits either override cannot pass readiness.
 
 ## Invocation reuse
 
 The runtime does not maintain a second Production invocation dictionary. In
 Staging and Production, the core hydrates the complete Agentic Canvas OS
-document projection from the current AgenticGraph MCP service, verifies the
+document projection from the current `agentic-graph` MCP service, verifies the
 configured source revision, catalogue digest, routing schema, routing digest,
 and full `142/142/136` command/semantic/binding counts, then resolves the
 required `/tool.route`, `#mcp`, and `@mcp-gateway` tokens. The local Dev provider
@@ -176,22 +188,21 @@ provider and the pinned consumer together, with a new receipt.
 
 ## Release controller
 
-Production mutation is disabled in source. Every `deploy:production:*` package
-entrypoint terminates in `scripts/release-controller.ts`; none contains a
-Wrangler deploy command. Non-dry controller calls return
-`release_external_authority_required`. The repository exposes no Cloudflare
-account/zone API helper or successful release-receipt constructor. The protected
-workflow receives no Cloudflare account identifier, zone identifier, API token,
-Worker secret, or mutation credential.
+Repository `deploy:production:*` package entrypoints remain credentialless local
+guards; they cannot bypass the protected workflow. Production mutation is owned
+by `scripts/production-release/run-production-release.ts`, invoked only from the
+environment-protected job after immutable source, bundle, human-authorization,
+operator-pin, prior-artifact, and route-authority checks.
 
-The manual workflow is a safety-stop evaluator, not a deployment controller. It
-binds `bootstrap` or `steady-state` mode to the exact protected-main candidate,
-runs locked implementation checks, builds minified dry-run bundles, requires a
-first-attempt approval by an exact configured Production user reviewer, and
-rechecks remote `main` after approval. It then emits a v2 typed refusal and
-fails before any Production credential or mutation. A preflight failure may
-occur before that typed receipt exists; every such path is still credentialless
-and non-mutating.
+The controller uploads core and edge as inactive versions, validates their exact
+configuration and secret-name surfaces, deploys and proves the immediate
+sandbox/container transition, then performs active-tuple compare-and-swap checks
+before activating core and edge in order. Bootstrap alone may create the exact
+prefix route; steady state requires the same route identity. A successful run
+must read back all three version proofs, the container rollout, the exact route,
+and the public prefix boundaries before it can construct a deployment receipt.
+Any failure after possible mutation constructs a bounded preserve-required
+receipt and leaves state for an explicitly authenticated forward recovery.
 
 `.github/workflows/ci.yml` installs the committed lockfile, checks the external
 evidence contract, and runs the bounded source-and-bundle checks for pull
@@ -202,32 +213,34 @@ checked in. The portable task snapshot now maps task-level evidence-contract
 and implementation closure to their non-recursive checks, closing the prior
 aggregate self-reference without skipping or synthesizing external evidence.
 
-The workflow has two inputs: `mode` and the exact lowercase 40-hex candidate at
-protected `main`. It does not accept a prior release, bootstrap-resume artifact,
-route, Worker version, credential, or secret as dispatch authority. Its bundle
-proofs are local dry-run evidence only; they do not assert a remote version or
-deployment.
+The workflow has two dispatch inputs: `mode` and the exact lowercase 40-hex
+candidate at protected `main`. Prior or recovery authority is read from protected
+environment variables, and mutation credentials are read only from protected
+environment secrets. Workflow inputs cannot carry either. Dry-run bundle proofs
+remain local evidence; the controller separately reads back remote versions,
+container state, and route behavior.
 
-`docs/do-storage-compatibility.json` still binds the Wrangler migration/class
+`docs/do-storage-compatibility.json` binds the Wrangler migration/class
 contract, complete Durable Object persistence sources, reviewed dependencies,
 and normalized DDL. That manifest is implementation evidence, not rollback
-authority. Until an external controller proves a lease/fence/CAS, exact remote
-migration identity, and N/N-1 pair compatibility, neither bootstrap nor
-steady-state may upload, deploy, publish a route, or roll back.
+authority. The controller binds the current manifest revision into its candidate
+identity and exact remote version proofs; a future incompatible storage change
+must still fail closed before release.
 
 The direct-Worker `/readyz` handler remains a non-mutating diagnostic for source
-and provider convergence. The exact public route is
-`https://airvio.co/agentic-commerce-os`; only a future authorized controller may
-use its typed HTML headers as post-deployment proof.
+and provider convergence. The public prefix is
+`https://airvio.co/agentic-commerce-os`; only an authenticated protected run may
+use its typed responses and headers as post-deployment proof.
 
 ## Rollback contract
 
 No rollback command exists in the active workflow or package entrypoints.
-Rollback cannot be enabled merely by retaining prior version IDs: Durable Object
-storage, external transactions, mixed core/edge intervals, and late concurrent
-writes require a reviewed compatibility proof and the same external fenced
-authority as forward deployment. Unknown or partial remote state remains
-fail-closed for operator reconciliation.
+Retaining prior version IDs is not rollback authority: Durable Object storage,
+external transactions, mixed core/edge intervals, container rollouts, and late
+concurrent writes make a blind reversal unsafe. Unknown or partial state emits a
+preserve-required artifact; the supported recovery path moves forward only after
+that artifact is independently authenticated and the observed state is still
+one of its exact predecessor-or-candidate tuples.
 
 ## Required external configuration
 
@@ -239,30 +252,37 @@ GitHub administrators must:
    `prevent_self_review: true` plus at least one direct configured `User`
    reviewer. The approving user ID must equal a configured reviewer ID; team-only
    authorization is unsupported until membership is independently proved; and
-3. keep Cloudflare credentials out of this workflow. A future release adapter
-   must hold its mutation credential outside candidate execution and expose only
-   a reviewed `controller-issued-lease-fence-cas/v1` transition interface.
+3. configure Cloudflare credentials, runtime secrets, provider pins, route
+   authority, and prior/recovery artifacts only on the protected environment.
+   They must remain unavailable to pull requests and the credentialless verify
+   job, and must never be accepted as workflow-dispatch inputs.
 
 Cloudflare operators must:
 
-1. provision the core and edge services in the intended account and authorize
-   the core deployment to apply the reviewed six-class Durable Object migration
-   chain, keeping the core private and binding the edge to it;
+1. provision the sandbox, core, and edge services in the intended account,
+   authorize the reviewed Sandbox and six-class core Durable Object migration
+   chains, keep sandbox and core private, and bind them only through the declared
+   Service Bindings;
 2. configure distinct, non-placeholder `MCP_BEARER_TOKEN`,
    `OPERATOR_BEARER_TOKEN`, and `STOREFRONT_SESSION_SECRET` secrets on the edge
    Worker. Generate each with a cryptographically secure secret generator; do
    not record a value in repository files or workflow inputs;
-3. provision and restrict the ACOS admission, external MCP, commerce, and
-   marketplace service bindings expected by the core, and replace both invalid
-   Production evidence placeholders with reviewed immutable provider receipt
-   pins; install the reviewed human-presence trust anchor only in the edge
-   runtime, not in release-evaluator inputs;
-4. reserve the declared exact `https://airvio.co/agentic-commerce-os` route for
-   the future fenced controller and its typed post-deployment proof; and
-5. prohibit out-of-controller changes to either commerce Worker during a
-   release and retain both rollback versions.
+3. configure distinct `DISCOVERY_PROVIDER_BEARER_TOKEN`,
+   `ACOS_ADMISSION_AUTH_SECRET`, `CHECKOUT_PROVIDER_AUTH_SECRET`, and
+   `MARKETPLACE_PROVIDER_AUTH_SECRET` values on the core Worker. The discovery
+   token must match the `agentic-graph` MCP runtime's corresponding bearer;
+   none may enter repository files, workflow inputs, operational evidence
+   digests, or receipts;
+4. provision and restrict the ACOS admission, external MCP, commerce, and
+   marketplace service bindings expected by the core, replace all invalid
+   Production evidence placeholders with reviewed immutable ACOS/provider pins,
+   and install the reviewed human-presence trust anchor only in the edge runtime;
+5. reserve the declared `https://airvio.co/agentic-commerce-os*` prefix for the
+   protected controller and its typed post-deployment proof; and
+6. prohibit out-of-controller changes to all three commerce Workers and the
+   route, and retain authenticated predecessor and preserve artifacts.
 
-AgenticGraph operators must provide the live provider contracts the core calls:
+`agentic-graph` operators must provide the live provider contracts the core calls:
 
 - the Agentic Canvas OS document-projection MCP and invocation tool;
 - readiness for the commerce and marketplace services;
@@ -284,8 +304,6 @@ receipt for the four authoritative registration inputs.
 
 The current lane cannot truthfully claim Production delivery because:
 
-- the checked-in protected workflow intentionally refuses before all Production
-  credentials and mutations because no external lease/fence/CAS adapter exists;
 - the terminal evidence gate still lacks all 100 independently issued verdicts,
   so source integration does not imply runtime or Production readiness;
 - no external evaluator currently supplies the pinned dispatch trust anchor,
@@ -301,23 +319,27 @@ The current lane cannot truthfully claim Production delivery because:
 - no current committed receipt proves that the commerce Production Workers,
   configured providers, or declared delivery path exist and match this exact
   candidate;
-- no compatible deployed core/edge pair, exact remote migration identity,
-  N/N-1 compatibility proof, or first-bootstrap controller receipt exists;
-- the three edge Worker secrets, Production Durable Object migration chain, and
-  exact HTTPS route/header proof are not applied or verified;
+- no authenticated bootstrap receipt proves an active sandbox/core/edge tuple,
+  container rollout, exact remote migration identity, or prefix route;
+- the three edge Worker secrets, four core authentication secrets, reviewed ACOS
+  and provider pins, Production Durable Object migrations, and exact HTTPS
+  prefix proof are not applied or verified;
+- the operator-owned x402 payee and the owning `agentic-graph` money-path
+  deployment evidence are not observed;
 - a new registry is empty, while readiness requires at least one verified active
   `flight` agent and one verified active `shopping` agent with live MCP discovery
   tools;
-- the owning ACOS runtime does not yet expose the private admission contract,
-  while AgenticGraph does not yet expose and prove every checkout, status, vendor,
-  and settlement evidence contract consumed here; reviewed immutable provider
-  evidence pins and matching VCC receipts are also absent; and
+- the `agentic-canvas-os` and `agentic-graph` source candidates expose the private
+  admission, checkout, status, vendor, and settlement evidence contracts, but
+  reviewed immutable provider revisions, deployed evidence pins, and matching
+  delivery VCC receipts remain absent; and
 - no authorized external transition has sealed the exact candidate, remote
   Worker identities, storage compatibility, live versions, and route response.
 
-Until all conditions close, Dev evidence may support further integration, but
-the correct Production status is **blocked / fail-closed**, not deployed or
-production-runtime-ready. The public surface exists in source and configuration;
-serving it on the declared Cloudflare route remains unproved. The delivered rung
-remains undocumented until the owning AgenticGraph money path and this control
-plane both have separate protected deployment and live-readback receipts.
+Until all conditions close, the source candidate can be production-release
+capable while the correct Delivery status remains **blocked / fail-closed**, not
+deployed. The public surface and authenticated controller exist in source and
+configuration; serving them on the declared Cloudflare prefix remains unproved.
+The delivered rung remains undocumented until the owning `agentic-graph` money
+path and this control plane both have separate protected deployment and
+live-readback receipts.

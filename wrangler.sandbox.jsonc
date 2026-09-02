@@ -6,6 +6,12 @@
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": false,
   "preview_urls": false,
+  "version_metadata": { "binding": "CF_VERSION_METADATA" },
+  "vars": {
+    "DEPLOY_LANE": "Local",
+    "RELEASE_CANDIDATE_SHA": "local-unreleased",
+    "RELEASE_CANDIDATE_DIGEST": "local-unreleased-digest"
+  },
   "observability": {
     "enabled": true,
     "logs": { "enabled": true, "head_sampling_rate": 1 }
@@ -23,7 +29,6 @@
       "class_name": "Sandbox",
       "image": "./config/sandbox.Dockerfile",
       "max_instances": 1,
-      // Wrangler 4.127.1 defines lite as 256 MiB; isolation.ts uses the same ceiling.
       "instance_type": "lite"
     }
   ],
@@ -59,6 +64,12 @@
       "name": "agentic-commerce-sandbox-dev",
       "workers_dev": false,
       "preview_urls": false,
+      "version_metadata": { "binding": "CF_VERSION_METADATA" },
+      "vars": {
+        "DEPLOY_LANE": "Dev",
+        "RELEASE_CANDIDATE_SHA": "dev-unreleased",
+        "RELEASE_CANDIDATE_DIGEST": "dev-unreleased-digest"
+      },
       "durable_objects": {
         "bindings": [
           { "name": "Sandbox", "class_name": "Sandbox" }
@@ -69,6 +80,61 @@
       ],
       "containers": [
         {
+          "class_name": "Sandbox",
+          "image": "./config/sandbox.Dockerfile",
+          "max_instances": 1,
+          "instance_type": "lite"
+        }
+      ]
+    },
+    "staging": {
+      "name": "agentic-commerce-sandbox-staging",
+      "workers_dev": false,
+      "preview_urls": false,
+      "version_metadata": { "binding": "CF_VERSION_METADATA" },
+      "vars": {
+        "DEPLOY_LANE": "Staging",
+        "RELEASE_CANDIDATE_SHA": "staging-release-required-sandbox",
+        "RELEASE_CANDIDATE_DIGEST": "staging-digest-required-sandbox"
+      },
+      "durable_objects": {
+        "bindings": [
+          { "name": "Sandbox", "class_name": "Sandbox" }
+        ]
+      },
+      "migrations": [
+        { "tag": "v1", "new_sqlite_classes": ["Sandbox"] }
+      ],
+      "containers": [
+        {
+          "class_name": "Sandbox",
+          "image": "./config/sandbox.Dockerfile",
+          "max_instances": 1,
+          "instance_type": "lite"
+        }
+      ]
+    },
+    "production": {
+      "name": "agentic-commerce-sandbox-production",
+      "workers_dev": false,
+      "preview_urls": false,
+      "version_metadata": { "binding": "CF_VERSION_METADATA" },
+      "vars": {
+        "DEPLOY_LANE": "Production",
+        "RELEASE_CANDIDATE_SHA": "production-release-required-sandbox",
+        "RELEASE_CANDIDATE_DIGEST": "production-digest-required-sandbox"
+      },
+      "durable_objects": {
+        "bindings": [
+          { "name": "Sandbox", "class_name": "Sandbox" }
+        ]
+      },
+      "migrations": [
+        { "tag": "v1", "new_sqlite_classes": ["Sandbox"] }
+      ],
+      "containers": [
+        {
+          "name": "agentic-commerce-sandbox-production-sandbox",
           "class_name": "Sandbox",
           "image": "./config/sandbox.Dockerfile",
           "max_instances": 1,

@@ -12,9 +12,14 @@ import {
   type UpstreamEvidencePin,
 } from '../core/upstream-evidence.ts'
 import {
+  readAuthenticatedOperationalEvidenceBinding,
   readOperationalEvidenceBinding,
-  type OperationalEvidenceBinding,
+  type BoundOperationalEvidenceRequest,
 } from '../core/provider-operation-gate.ts'
+import { verifyCommerceProviderControlRequest } from '../shared/commerce-provider-auth.ts'
+
+export const DEV_CHECKOUT_PROVIDER_AUTH_SECRET = 'checkout-provider-dev-secret-rotate-before-production'
+export const DEV_MARKETPLACE_PROVIDER_AUTH_SECRET = 'marketplace-provider-dev-secret-rotate-before-production'
 
 export const DEV_DISCOVERY_EVIDENCE_PIN: UpstreamEvidencePin = Object.freeze({
   sourceRevision: 'd'.repeat(40),
@@ -50,16 +55,43 @@ export function devRuntimeEvidenceResponse(hostname: string): Response {
   return Response.json({ ok: false, code: 'provider_unknown' }, { status: 404 })
 }
 
-export function discoveryOperationBinding(request: Request): Promise<OperationalEvidenceBinding | null> {
+export function discoveryOperationBinding(request: Request): Promise<BoundOperationalEvidenceRequest | null> {
   return readOperationalEvidenceBinding(request, DEV_DISCOVERY_EVIDENCE_PIN, DISCOVERY_EVIDENCE_CHECKS)
 }
 
-export function checkoutOperationBinding(request: Request): Promise<OperationalEvidenceBinding | null> {
-  return readOperationalEvidenceBinding(request, DEV_CHECKOUT_EVIDENCE_PIN, CHECKOUT_EVIDENCE_CHECKS)
+export function checkoutOperationBinding(request: Request): Promise<BoundOperationalEvidenceRequest | null> {
+  return readAuthenticatedOperationalEvidenceBinding(
+    request,
+    CHECKOUT_PROVIDER_CONTRACT,
+    DEV_CHECKOUT_EVIDENCE_PIN,
+    CHECKOUT_EVIDENCE_CHECKS,
+    DEV_CHECKOUT_PROVIDER_AUTH_SECRET,
+  )
 }
 
-export function marketplaceOperationBinding(request: Request): Promise<OperationalEvidenceBinding | null> {
-  return readOperationalEvidenceBinding(request, DEV_MARKETPLACE_EVIDENCE_PIN, MARKETPLACE_EVIDENCE_CHECKS)
+export function marketplaceOperationBinding(request: Request): Promise<BoundOperationalEvidenceRequest | null> {
+  return readAuthenticatedOperationalEvidenceBinding(
+    request,
+    MARKETPLACE_PROVIDER_CONTRACT,
+    DEV_MARKETPLACE_EVIDENCE_PIN,
+    MARKETPLACE_EVIDENCE_CHECKS,
+    DEV_MARKETPLACE_PROVIDER_AUTH_SECRET,
+  )
+}
+
+export function providerControlAuthenticated(request: Request): Promise<boolean> {
+  const hostname = new URL(request.url).hostname
+  if (hostname === 'checkout-provider.internal') {
+    return verifyCommerceProviderControlRequest(
+      request, CHECKOUT_PROVIDER_CONTRACT, DEV_CHECKOUT_PROVIDER_AUTH_SECRET,
+    )
+  }
+  if (hostname === 'marketplace-provider.internal') {
+    return verifyCommerceProviderControlRequest(
+      request, MARKETPLACE_PROVIDER_CONTRACT, DEV_MARKETPLACE_PROVIDER_AUTH_SECRET,
+    )
+  }
+  return Promise.resolve(hostname === 'discovery-provider.internal')
 }
 
 function evidenceResponse(contract: string, pin: UpstreamEvidencePin, checks: readonly string[]): Response {
