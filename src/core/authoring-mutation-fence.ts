@@ -51,18 +51,16 @@ export function runAuthoringFencedMutation<T>(
   const permitJson = canonicalJson(permit)
   let outcome: FencedMutationResult<T> | null = null
   storage.transactionSync(() => {
-    const prior = readFence(sql, permit.semanticScope)
     const priorOutcome = readOutcome(sql, permit.mutationId)
     if (priorOutcome) {
       if (priorOutcome.permit_json !== permitJson || priorOutcome.request_digest !== actualRequestDigest) {
         outcome = refusal('mutation_request_mismatch', permit)
-      } else if (prior && isSuperseded(permit, prior)) {
-        outcome = refusal('fence_stale', prior)
       } else {
         outcome = Object.freeze({ ok: true, value: JSON.parse(priorOutcome.outcome_json) as T })
       }
       return
     }
+    const prior = readFence(sql, permit.semanticScope)
     if (!Number.isSafeInteger(nowMs) || permit.leaseExpiresAtMs <= nowMs) {
       outcome = refusal('lease_expired', permit)
       return
@@ -136,11 +134,6 @@ function isStale(permit: ClaimMutationPermit, prior: StoredFence): boolean {
       || permit.leaseExpiresAtMs !== prior.lease_expires_at_ms
       || permit.mutationSequence <= prior.mutation_sequence
     ))
-}
-
-function isSuperseded(permit: ClaimMutationPermit, prior: StoredFence): boolean {
-  return permit.leaseEpoch < prior.lease_epoch
-    || (permit.leaseEpoch === prior.lease_epoch && permit.mutationSequence < prior.mutation_sequence)
 }
 
 function refusal(

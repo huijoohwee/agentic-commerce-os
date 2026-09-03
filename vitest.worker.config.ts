@@ -4,11 +4,12 @@ import { defineConfig, defineProject } from 'vitest/config'
 import {
   CORE_TEST_BINDINGS,
   CORE_TEST_SERVICE_BINDINGS,
+  CORE_DISCOVERY_PROVIDER_CREDENTIAL,
   EDGE_INVALID_TEST_BINDINGS,
   EDGE_TEST_BINDINGS,
   EDGE_TEST_SERVICE_BINDINGS,
+  authenticatedDiscoveryProvider,
 } from './test/workers/fake-services.ts'
-import { devProviderFetch } from './src/dev/provider.ts'
 import { operationalEvidenceResponseHeaders } from './src/core/provider-operation-gate.ts'
 import { discoveryOperationBinding } from './src/dev/provider-evidence.ts'
 
@@ -71,19 +72,23 @@ export default defineConfig({
 })
 
 async function propertyAwareDocsMcp(request: Request): Promise<Response> {
+  if (new URL(request.url).pathname === '/agenticgraph/control-plane/mcp'
+    && request.headers.get('authorization') !== `Bearer ${CORE_DISCOVERY_PROVIDER_CREDENTIAL}`) {
+    return authenticatedDiscoveryProvider(request)
+  }
   if (request.method === 'POST') {
     const body = await request.clone().json<Record<string, unknown>>().catch(() => null)
     const params = isRecord(body?.params) ? body.params : null
     if (body?.method === 'tools/call' && params?.name === 'commerce.test.timeout') {
-      const binding = await discoveryOperationBinding(request)
+      const operation = await discoveryOperationBinding(request)
       return Response.json({
         jsonrpc: '2.0',
         id: body.id,
         error: { code: -32_000, message: 'simulated dispatch timeout' },
-      }, { headers: binding ? operationalEvidenceResponseHeaders(binding) : {} })
+      }, { headers: operation ? operationalEvidenceResponseHeaders(operation.binding) : {} })
     }
   }
-  return devProviderFetch(request)
+  return authenticatedDiscoveryProvider(request)
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

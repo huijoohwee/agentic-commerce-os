@@ -29,18 +29,18 @@ describe('commerce edge Worker', () => {
     expect(html).not.toContain(EDGE_OPERATOR_TOKEN)
   })
 
-  it('serves the exact production route as an explicitly closed delivery boundary', async () => {
-    const mismatch = await SELF.fetch('https://edge.test/agentic-commerce-os')
+  it('serves the full storefront and protected runtime through the production prefix', async () => {
+    const mismatch = await SELF.fetch('https://edge.test/agentic-commerce-os/')
     expect(mismatch.status).toBe(200)
     expect(mismatch.headers.get('x-commerce-live-readiness')).toBe('not-ready')
     expect(mismatch.headers.get('x-commerce-live-readiness-reason')).toBe('delivery_route_request_mismatch')
 
-    const localMetadata = await SELF.fetch('https://airvio.co/agentic-commerce-os')
+    const localMetadata = await SELF.fetch('https://airvio.co/agentic-commerce-os/')
     expect(localMetadata.headers.get('x-commerce-live-readiness')).toBe('not-ready')
     expect(localMetadata.headers.get('x-commerce-live-readiness-reason')).toBe('edge_release_metadata_mismatch')
 
     const response = await edgeWorker.fetch(
-      new Request('https://airvio.co/agentic-commerce-os'),
+      new Request('https://airvio.co/agentic-commerce-os/'),
       Object.freeze({
         ...EDGE_TEST_BINDINGS,
         COMMERCE_CORE: Object.freeze({ fetch: EDGE_TEST_SERVICE_BINDINGS.COMMERCE_CORE }),
@@ -48,7 +48,7 @@ describe('commerce edge Worker', () => {
       createExecutionContext(),
     )
     expect(response.status).toBe(200)
-    expect(response.headers.get('content-security-policy')).toContain("script-src 'none'")
+    expect(response.headers.get('content-security-policy')).toContain("script-src 'nonce-")
     expect(response.headers.get('cache-control')).toBe('no-store')
     expect(response.headers.get('x-commerce-live-readiness-contract')).toBe('commerce.edge-route-live-readiness/v1')
     expect(response.headers.get('x-commerce-live-readiness-reason')).toBe('none')
@@ -57,9 +57,23 @@ describe('commerce edge Worker', () => {
     expect(response.headers.get('x-commerce-edge-version-id')).toBe(EDGE_TEST_VERSION.id)
     expect(response.headers.get('x-commerce-core-version-id')).toBe('commerce-core-worker-test-version')
     const html = await response.text()
-    expect(html).toContain('Delivery boundary closed.')
-    expect(html).not.toContain('id="catalog-search"')
-    expect(html).not.toContain('type="module"')
+    expect(html).toContain('id="catalog-search"')
+    expect(html).toContain('src="/agentic-commerce-os/assets/storefront.js"')
+    expect(html).toContain('name="ag-runtime-base-path" content="/agentic-commerce-os"')
+
+    const asset = await SELF.fetch('https://airvio.co/agentic-commerce-os/assets/storefront.js')
+    expect(asset.status).toBe(200)
+    await expect(asset.text()).resolves.toContain("runtimePath('/v1/session')")
+    const session = await SELF.fetch('https://airvio.co/agentic-commerce-os/v1/session', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ purpose: 'storefront-checkout-preparation' }),
+    })
+    expect(session.status).toBe(403)
+    await expect(session.json()).resolves.toEqual({ ok: false, code: 'storefront_session_refused' })
+    const mcp = await SELF.fetch('https://airvio.co/agentic-commerce-os/mcp', { method: 'POST' })
+    expect(mcp.status).toBe(401)
+    await expect(mcp.json()).resolves.toMatchObject({ jsonrpc: '2.0', error: { code: -32_001 } })
   })
 
   it('keeps the unrouted diagnostic readiness route-live unknown', async () => {

@@ -11,6 +11,7 @@ import {
 } from './deploy-lane'
 import { handleMcpRequest, type CorePayload } from './mcp'
 import { attachRouteReadinessHeaders, observeProductionRouteReadiness } from './readiness'
+import { prefixedPath, projectEdgeRoute } from './production-prefix'
 import { readAuthoringClaimHeaders } from './authoring-headers'
 import { confirmHumanCheckout } from './checkout-confirmation-handler'
 import { issueHumanConfirmation } from './human-confirmation'
@@ -33,9 +34,10 @@ type EdgeRuntimeEnv = EdgeEnv & Readonly<{
 export default {
   async fetch(request: Request, env: EdgeRuntimeEnv, context: ExecutionContext): Promise<Response> {
     const requestId = request.headers.get('x-request-id') ?? crypto.randomUUID()
-    const url = new URL(request.url)
+    const route = projectEdgeRoute(new URL(request.url))
+    const url = route.url
     try {
-      const publicResponse = await routePublic(request, url, env, requestId)
+      const publicResponse = await routePublic(request, url, env, requestId, route.basePath)
       if (publicResponse) return finalizeResponse(publicResponse, requestId, request, env)
 
       if (!originAllowed(request, env.ALLOWED_ORIGINS_JSON)) {
@@ -149,7 +151,11 @@ export default {
         return finalizeResponse(jsonResponse({ ok: false, code: 'human_confirmation_required' }, 409), requestId, request, env)
       }
       if (target.checkoutAction === 'prepare' && authorized.mode === 'agent') {
-        return finalizeResponse(jsonResponse({ ok: false, code: 'visual_handoff_required', storefrontPath: '/' }, 409), requestId, request, env)
+        return finalizeResponse(jsonResponse({
+          ok: false,
+          code: 'visual_handoff_required',
+          storefrontPath: prefixedPath(route.basePath, '/'),
+        }, 409), requestId, request, env)
       }
       const core = await coreCall(env, `${target.path}${target.copySearch ? url.search : ''}`, {
         method: request.method,
@@ -204,6 +210,7 @@ async function routePublic(
   url: URL,
   env: EdgeRuntimeEnv,
   requestId: string,
+  basePath: string,
 ): Promise<Response | null> {
   if (request.method === 'GET' && url.pathname === '/livez') {
     return jsonResponse({
@@ -211,24 +218,24 @@ async function routePublic(
       contract: 'commerce.edge-live/v1',
       lane: env.DEPLOY_LANE,
       releaseCandidateSha: env.RELEASE_CANDIDATE_SHA,
+      releaseCandidateDigest: env.RELEASE_CANDIDATE_DIGEST,
       version: env.CF_VERSION_METADATA,
     })
   }
-  if (request.method === 'GET' && url.pathname === '/') return dashboardResponse(metadata(env))
-  if (request.method === 'GET' && url.pathname === '/agentic-commerce-os') {
+  if (request.method === 'GET' && url.pathname === '/') {
+    const dashboard = dashboardResponse(metadata(env), { basePath })
+    if (!basePath) return dashboard
     const routeReadiness = await observeProductionRouteReadiness(request, {
       lane: env.DEPLOY_LANE,
       releaseCandidateSha: env.RELEASE_CANDIDATE_SHA,
+      releaseCandidateDigest: env.RELEASE_CANDIDATE_DIGEST,
       version: env.CF_VERSION_METADATA,
       configurationOk: operationalConfiguration(env).ok,
     }, async (path) => {
       const core = await coreCall(env, path, { method: 'GET' }, requestId)
       return Object.freeze({ status: core.response.status, payload: core.payload })
     })
-    return attachRouteReadinessHeaders(
-      dashboardResponse(metadata(env), { deliveryBoundary: 'closed' }),
-      routeReadiness,
-    )
+    return attachRouteReadinessHeaders(dashboard, routeReadiness)
   }
   if (request.method === 'GET' && url.pathname === '/assets/storefront.js') {
     return new Response(STOREFRONT_CLIENT_MODULE, {
@@ -255,7 +262,7 @@ async function routePublic(
   }
   const storefront = url.pathname.match(/^\/s\/([^/]+)$/u)
   if (request.method === 'GET' && storefront?.[1]) {
-    return merchantStorefront(env, decodeURIComponent(storefront[1]), requestId)
+    return merchantStorefront(env, decodeURIComponent(storefront[1]), requestId, basePath)
   }
   return null
 }
@@ -284,6 +291,7 @@ async function readinessResponse(env: EdgeRuntimeEnv, requestId: string): Promis
     contract: 'commerce.edge-readiness/v2',
     lane: env.DEPLOY_LANE,
     releaseCandidateSha: env.RELEASE_CANDIDATE_SHA,
+    releaseCandidateDigest: env.RELEASE_CANDIDATE_DIGEST,
     version: env.CF_VERSION_METADATA,
     coreVersion: isRecord(coreLive.payload) ? coreLive.payload.version ?? null : null,
     sourceReadiness,
@@ -302,6 +310,7 @@ async function merchantStorefront(
   env: EdgeRuntimeEnv,
   merchantId: string,
   requestId: string,
+  basePath: string,
 ): Promise<Response> {
   if (!validIdentifier(merchantId)) return jsonResponse({ ok: false, code: 'merchant_not_found' }, 404)
   const path = `/internal/v1/merchants/${encodeURIComponent(merchantId)}/catalog`
@@ -318,7 +327,8 @@ async function merchantStorefront(
     return jsonResponse({ ok: false, code: 'merchant_theme_unavailable' }, 502)
   }
   return consoleResponse(metadata(env), verdict.manifest, {
-    catalogPath: `/v1/public/merchants/${encodeURIComponent(merchantId)}/catalog`,
+    basePath,
+    catalogPath: `${basePath}/v1/public/merchants/${encodeURIComponent(merchantId)}/catalog`,
   })
 }
 
@@ -479,6 +489,7 @@ async function coreCall(
       'content-type': 'application/json',
       'x-commerce-contract': EDGE_CORE_CONTRACT,
       'x-commerce-release-candidate': env.RELEASE_CANDIDATE_SHA,
+      'x-commerce-release-candidate-digest': env.RELEASE_CANDIDATE_DIGEST,
       'x-request-id': requestId,
       ...init.forwardedHeaders,
     },
@@ -536,7 +547,8 @@ function operationalConfiguration(env: EdgeRuntimeEnv): Readonly<{ ok: boolean }
       && validateStorefrontSessionSecret(env.STOREFRONT_SESSION_SECRET)
       && (!edgeExternalHumanPresenceRequired(lane)
         || readHumanPresenceTrustAnchor(env.HUMAN_CONFIRMATION_TRUST_ANCHOR_JSON) !== null)
-      && (lane !== 'Production' || /^[0-9a-f]{40}$/u.test(env.RELEASE_CANDIDATE_SHA)),
+      && (lane !== 'Production' || (/^[0-9a-f]{40}$/u.test(env.RELEASE_CANDIDATE_SHA)
+        && /^[0-9a-f]{64}$/u.test(env.RELEASE_CANDIDATE_DIGEST))),
   })
 }
 

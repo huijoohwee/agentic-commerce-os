@@ -3,8 +3,8 @@
 ## Boundaries and authorities
 
 The edge Worker is the only client-facing runtime in this repository. Production
-declares the single route `airvio.co/agentic-commerce-os`; the core Worker has no
-public route and accepts application calls only through the
+declares the single prefix route `airvio.co/agentic-commerce-os*`; the core and
+sandbox Workers have no public routes, and core accepts application calls only through the
 `commerce.edge-core/v1` Service Binding contract and the exact serving candidate
 header.
 
@@ -18,12 +18,21 @@ Four authorities remain distinct:
 - `OPERATOR_BEARER_TOKEN` authorizes the separate operator MCP and operator HTTP
   surface. Mutations additionally carry the current authoring claim and fence.
 
-The bearer secrets must be distinct and at least 32 characters in Production.
-`STOREFRONT_SESSION_SECRET` must also be at least 32 characters and signs only
-the first-party session and its short-lived checkout challenge. Generate all three with a cryptographically
-secure password generator and install them as Worker secrets; never commit or
-log their values. Allowed browser origins are an exact scheme, host, and port
-list.
+Core has a separate outbound service credential:
+`DISCOVERY_PROVIDER_BEARER_TOKEN` authenticates only the private `DOCS_MCP`
+binding. It is required before any initialize, initialized notification,
+tools/list, tools/call, or session DELETE request and is never accepted as edge,
+shopper, agent, operator, receipt, or mutation authority.
+
+All three bearer secrets must be mutually distinct and at least 32 characters
+in Production. `STOREFRONT_SESSION_SECRET` must also be at least 32 characters
+and signs only the first-party session and its short-lived checkout challenge.
+Core separately requires `ACOS_ADMISSION_AUTH_SECRET`,
+`CHECKOUT_PROVIDER_AUTH_SECRET`, and `MARKETPLACE_PROVIDER_AUTH_SECRET` for the
+three HMAC-bound private-provider contracts. Generate distinct values with a
+cryptographically secure secret generator and install them as Worker secrets;
+never commit or log their values. Allowed browser origins are an exact scheme,
+host, and port list.
 
 Staging and Production also require the public
 `HUMAN_CONFIRMATION_TRUST_ANCHOR_JSON` variable. It names one issuer and one
@@ -54,11 +63,14 @@ resumes only that exact operation; a different operation receives
 an unresolved reservation. Its status RPC reports `reconciliation_required`
 until the exact terminal result is completed. Durable Object targets persist
 the sequence high-water mark and a terminal outcome journal in the same
-transaction as the business write. The latest exact retry receives its cached
-outcome, while an A/B/A same-lease replay is stale. Fenced provider requests
-must echo every permit field. Unknown or unconfirmed provider outcomes remain
-held for explicit reconciliation because those providers expose no atomic
-terminal journal or cancellation proof.
+transaction as the business write. Any exact permit-and-digest retry receives
+its immutable cached terminal outcome, including an A/B/A replay after B has
+advanced the high-water mark. Requests without an exact stored outcome remain
+subject to high-water staleness, and a reused mutation identifier with different
+permit or digest bytes is rejected. Fenced provider requests must echo every
+permit field. Unknown or unconfirmed provider outcomes remain held for explicit
+reconciliation because those providers expose no atomic terminal journal or
+cancellation proof.
 
 Every tool first resolves the existing `/tool.route` command through the pinned
 upstream Invocation Catalog. `config/capability-token-map.json` is a projection,
@@ -104,10 +116,13 @@ confirmation.
 
 ## HTTP edge
 
+The table uses paths after edge prefix normalization. In Production every path
+is reached under `/agentic-commerce-os`; direct Worker and Dev requests use the
+same paths without that prefix.
+
 | Method and path | Authority | Effect |
 |---|---|---|
-| `GET /` | public | Default mobile-first Storefront Console in a direct Worker/Dev request |
-| `GET /agentic-commerce-os` | public | Exact Production route: closed-boundary HTML plus no-store typed route-readiness headers |
+| `GET /` | public | Default mobile-first Storefront Console |
 | `GET /s/{merchantId}` | public | The same console with an activated merchant theme |
 | `GET /assets/storefront.js` | public | First-party client module |
 | `GET /livez` | public | Lane, candidate, and version metadata |
@@ -138,22 +153,24 @@ search, offer selection, and checkout initiation. Browsers without a
 model-context registration API retain the complete visual surface without a
 shopper-facing registration error.
 
-The configured Production route is exactly
-`https://airvio.co/agentic-commerce-os`, without a wildcard. That request does
-not expose the nested API, asset, merchant-storefront, MCP, WebMCP, or Sandbox
-surfaces listed above. It renders closed-boundary HTML and derives live evidence
-only for that same request, returning
-`x-commerce-live-readiness-contract`, `x-commerce-live-readiness`,
-`x-commerce-live-readiness-reason`, and—only when verified—the candidate and
-edge/core version identifiers. `GET /readyz` remains a fail-closed source/live
-diagnostic when the Worker is reached directly; its result is never reused as
-proof for the exact Production route.
+The configured Production route is exactly the
+`https://airvio.co/agentic-commerce-os*` prefix. Prefix normalization accepts
+the base path or a slash-delimited child and rejects lookalikes such as
+`/agentic-commerce-os-extra`. The authenticated controller proves the base
+Storefront Console plus representative asset, catalog, session, checkout, and
+MCP boundaries through that public route. Successful proof binds the candidate
+and active edge/core version identifiers and requires no-store responses.
+`GET /readyz` remains a fail-closed source/live diagnostic; its result alone is
+never reused as proof for the complete Production prefix.
 
 ## Registration, routing, and public projection
 
 Registration forwards the authoritative `agentDefinition`,
 `toolAllowlistEntry`, `invocationRegisterEntry`, and `operatorInstructionRef` to
-`ACOS_ADMISSION`. The local projection adds declared category, discovery tool,
+`ACOS_ADMISSION`. The reference must equal
+`operator://agentic-graph/commerce-adapter-admission/2026-09-03`; caller and
+agent provenance remains in the complete digest-bound registration intent. The
+local projection adds declared category, discovery tool,
 selection attributes, and optional fallback. Stored rows bind the exact
 admission receipt, content hash, and pinned invocation proof. Multiple active
 agents may share a category; readiness requires at least one verified active
@@ -215,16 +232,16 @@ writer per semantic scope and rejects stale leases and fences. A point-in-time
 admission is not mutation authority: every stateful target receives a reserved
 permit and atomically advances its local epoch high-water mark with the write.
 
-The Sandbox Executor is a separate Dev-only Worker using the exact-pinned
+The Sandbox Executor is a separate private Worker using the exact-pinned
 Cloudflare Sandbox SDK. It accepts only `theme-build`, `registration-dry-run`, or
 `unshipped-surface-build` purposes, applies an explicit request wall-clock bound
 and the configured 256 MiB container ceiling, records attempted calls, refuses
 calls outside the declared allowlist, and terminates the instance. The
 repository-owned unshipped-surface harness byte-binds the exact shipped WebMCP
-runtime and strictly validates its drift-refusal result. This is not evidence
-that the task 12.7 browser lane ran inside a provisioned container; that
-evidence gap keeps the WebMCP and Sandbox delivery boundaries closed. The
-Sandbox Worker has no Production route or release authority.
+runtime and strictly validates its drift-refusal result. Production includes its
+Worker version and container application/version in the authenticated release
+tuple, but the Sandbox Worker still has no public route or independent release
+authority.
 
 ## Upstream convergence and ownership
 
@@ -243,7 +260,9 @@ checkout, and marketplace responses must echo that complete binding; absence
 or drift fails closed before the response can mutate local state. Discovery
 uses its own `DISCOVERY_PROVIDER_EVIDENCE_PIN_JSON` and
 `commerce.discovery-provider/v1` contract on the actual `DOCS_MCP` binding;
-checkout evidence cannot authorize that different service.
+checkout evidence cannot authorize that different service. The discovery
+credential is attached to every MCP lifecycle request but deliberately excluded
+from the operational request digest, response binding, logs, and receipts.
 
 `CHECKOUT_PROVIDER` remains the authoritative guardrail, issuance, settlement,
 and reconciliation owner. `MARKETPLACE_PROVIDER` remains the authoritative

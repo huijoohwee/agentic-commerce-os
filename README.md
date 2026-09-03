@@ -9,8 +9,8 @@ guards concurrent authoring. Existing upstream services remain the sole owners
 of discovery execution, graph state, guardrails, issuance, authoritative money
 and vendor ledgers, settlement, and payout dispatch.
 
-This repository implements the committed `v0.3.0` requirements in
-`knowgrph-agentic-commerce-platform-prd-tad-adr.md` at Knowgrph commit
+This repository implements the committed `v0.3.0` requirements in the
+`agentic-graph` commerce-platform PRD/TAD/ADR at source commit
 `1acbbcc3b06534f9712f5b05b781010f749fa842`. Uncommitted revisions of that
 document were deliberately excluded from the implementation baseline.
 
@@ -33,16 +33,20 @@ commerce core Worker
   +--> checkout/guardrail provider
   +--> marketplace/settlement provider
 
-separate Dev-only Sandbox Executor Worker
+private Sandbox Executor Worker
   +--> one bounded Cloudflare Sandbox container instance
+  +--> release-tuple evidence; no public route
 ```
 
 The logical bindings are `ACOS_ADMISSION`, `DOCS_MCP`, `CHECKOUT_PROVIDER`, and
-`MARKETPLACE_PROVIDER`. Their Cloudflare targets use the canonical AgenticGraph
+`MARKETPLACE_PROVIDER`. Their Cloudflare targets use canonical `agentic-graph`
 service identities; bootstrap fails closed until every upstream Production
-service and its pinned contract are independently present and ready.
+service and its pinned contract are independently present and ready. Core also
+requires `DISCOVERY_PROVIDER_BEARER_TOKEN` and sends it on every `DOCS_MCP`
+session lifecycle request; an absent or weak credential blocks discovery before
+provider I/O.
 
-All new platform terminology is AgenticGraph. The legacy names in the baseline
+All new platform terminology is `agentic-graph`. The legacy names in the baseline
 sentence above and in externally owned service targets are retained only where
 `config/terminology-register.json` records provenance or upstream ownership.
 
@@ -56,11 +60,11 @@ cp .dev.vars.example .dev.vars
 npm run dev
 ```
 
-Before starting, add a locally generated `STOREFRONT_SESSION_SECRET` to
-`.dev.vars`. Generate it with a cryptographically secure password manager or
-secret generator; use at least 32 characters and never commit the value. The
-tracked example is intentionally unchanged because it belongs to a separate
-admitted owner.
+Before starting, add locally generated `STOREFRONT_SESSION_SECRET` and
+`DISCOVERY_PROVIDER_BEARER_TOKEN` values to `.dev.vars`. Generate each with a
+cryptographically secure password manager or secret generator, use at least 32
+characters, keep the discovery credential distinct from both edge bearer
+tokens, and never commit either value.
 
 `npm run dev` runs edge, core, and one explicitly demo-only provider Worker
 locally, including a minimal three-token invocation fixture. It performs no
@@ -122,14 +126,19 @@ the Commerce runtime contracts below.
 `GET /readyz` is a fail-closed source/live diagnostic and requires all of the
 following:
 
-- distinct, sufficiently strong Production bearer secrets plus the storefront
-  session signing secret;
+- distinct, sufficiently strong Production edge bearer secrets, the core
+  discovery-provider bearer secret, and the storefront session signing secret;
 - a reviewed Ed25519 human-presence trust anchor and a same-origin browser
   adapter that obtains fresh signed receipts from the selected shopper identity
   or payment provider; settlement remains closed when either is absent;
 - an exact release-candidate SHA shared by edge and core;
-- a healthy private ACOS admission provider advertising the exact
-  `acos-adapter-registration/v1` receipt schema;
+- a healthy private ACOS admission provider advertising
+  `commerce.acos-admission-provider/v2` and the exact
+  `acos-adapter-registration/v1` receipt schema; every registration must carry
+  the complete stable `authoring_mutation_intent`, whose digest matches the
+  12-header permit and whose four admission inputs exactly match the wire body;
+  the operator instruction reference is exactly
+  `operator://agentic-graph/commerce-adapter-admission/2026-09-03`;
 - at least one verified active `flight` and one verified active `shopping`
   admission, with every active row bound to the current invocation proof;
 - the pinned full `/`, `#`, and `@` invocation catalog and exact token rows;
@@ -145,30 +154,34 @@ Cloudflare resources, upstream contract convergence, agent registration,
 consumer binding, a human-approved Production deployment, live probes, and a
 reviewed external rollback authorization and proof are separate evidence.
 
-Production declares only the exact non-wildcard route
-`https://airvio.co/agentic-commerce-os`. That closed-boundary HTML response
-derives live readiness for the same request and exposes only typed, no-store
-candidate and edge/core version headers when verified. Nested `/readyz`, API,
-asset, MCP, and WebMCP paths are not covered by that route, and direct diagnostic
-readiness is never reused as exact-route proof.
+Production declares only the exact prefix route
+`https://airvio.co/agentic-commerce-os*`. The edge strips that prefix and serves
+the Storefront Console plus its scoped readiness, catalog, session, checkout,
+asset, MCP, and WebMCP paths; lookalike prefixes are rejected. Live proof binds
+the exact candidate and active edge/core versions across representative public
+boundaries. Direct private-Worker diagnostics are never reused as route proof.
 
 See [runtime API](docs/runtime-api.md) and
 [Production runtime contract](docs/production-runtime.md).
 
 ## Protected release boundary
 
-Production mutation is disabled. The manual GitHub Actions workflow binds its
-mode and candidate to protected `main`, runs locked implementation and dry-bundle
-checks, requires an exact configured Production user reviewer, rechecks the
-candidate, and then emits a typed refusal. It receives no Cloudflare credential
-and contains no upload, deploy, route mutation, rollback, or secret transport.
+The manual GitHub Actions workflow binds its mode and candidate to protected
+`main`, runs locked implementation and all three dry-bundle checks, requires an
+exact configured Production user reviewer, and rechecks the candidate before
+exposing credentials to the release job. Its controller supports exact-baseline
+bootstrap, authenticated steady state, and authenticated forward recovery. It
+uploads core and edge inactive, proves the immediate sandbox/container rollout,
+compare-and-swaps the active three-Worker tuple before each activation, and
+requires exact route readback before emitting a deployment receipt. Ambiguous or
+partial transitions emit a preserve-required artifact; no path claims rollback.
 
-Every repository `deploy:production:*` entrypoint also terminates in the local
-controller; none chains to Wrangler deploy. Production remains blocked until an
-external controller supplies an enforceable lease/fence/CAS, exact remote
-migration identity, N/N-1 compatibility proof, and live-readback receipts. The
-generated mirror at `GitHub/huijoohwee/content/agentic-commerce-os` has zero
-authored edit targets in this repository.
+Repository `deploy:production:*` entrypoints remain credentialless local guards
+and cannot bypass that protected workflow. A live release remains blocked until
+the operator supplies current provider/admission pins, distinct secrets, route
+authority, and any mode-required prior artifact. The generated mirror at
+`GitHub/huijoohwee/content/agentic-commerce-os` has zero authored edit targets
+in this repository.
 
 The protected `Integration Gate` runs the evidence contract and the bounded
 source-and-bundle gate. Terminal `npm run check` remains a separate readiness

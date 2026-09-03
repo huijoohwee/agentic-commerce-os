@@ -30,6 +30,61 @@ export type RegistrationDryRunResult =
       reason: string
     }>
 
+export type RegistrationSandboxReadiness = Readonly<{
+  ok: boolean
+  status: number
+  contract: 'agentic-commerce-registration-sandbox/v1' | null
+  versionId: string | null
+}>
+
+export async function probeRegistrationSandbox(
+  binding: Fetcher,
+  lane: string,
+  candidateSha: string,
+  candidateDigest: string,
+): Promise<RegistrationSandboxReadiness> {
+  let response: Response
+  try {
+    response = await binding.fetch(new Request('https://sandbox.internal/readyz', {
+      method: 'GET',
+      signal: AbortSignal.timeout(3_000),
+    }))
+  } catch {
+    return Object.freeze({ ok: false, status: 503, contract: null, versionId: null })
+  }
+  const payload = await readJsonResponse(response, MAXIMUM_RESPONSE_BYTES)
+  const version = isRecord(payload) && isRecord(payload.version) ? payload.version : null
+  const containerProbe = isRecord(payload) && isRecord(payload.containerProbe) ? payload.containerProbe : null
+  const valid = response.status === 200
+    && isRecord(payload)
+    && exactKeys(payload, [
+      'containerProbe', 'ok', 'contract', 'lane', 'releaseCandidateDigest', 'releaseCandidateSha', 'version',
+    ])
+    && payload.ok === true
+    && payload.contract === 'agentic-commerce-registration-sandbox/v1'
+    && payload.lane === lane
+    && payload.releaseCandidateSha === candidateSha
+    && payload.releaseCandidateDigest === candidateDigest
+    && version !== null
+    && exactKeys(version, ['id', 'tag', 'timestamp'])
+    && typeof version.id === 'string'
+    && version.id.length > 0
+    && version.tag === candidateSha
+    && typeof version.timestamp === 'string'
+    && Number.isFinite(Date.parse(version.timestamp))
+    && containerProbe !== null
+    && exactKeys(containerProbe, ['ok', 'runtime', 'version'])
+    && containerProbe.ok === true
+    && containerProbe.runtime === 'node'
+    && containerProbe.version === 'v22.22.3'
+  return Object.freeze({
+    ok: valid,
+    status: response.status,
+    contract: valid ? 'agentic-commerce-registration-sandbox/v1' : null,
+    versionId: valid ? version?.id as string : null,
+  })
+}
+
 export async function runRegistrationDryRun(
   env: CoreEnv,
   agentDefinition: unknown,
@@ -154,6 +209,12 @@ function readBlockedReason(payload: unknown): string {
   return isRecord(payload) && payload.code === 'sandbox_blocked' && typeof payload.reason === 'string'
     ? payload.reason
     : 'sandbox_execution_failed'
+}
+
+function exactKeys(value: Record<string, unknown>, expected: readonly string[]): boolean {
+  const actual = Object.keys(value).sort()
+  const sortedExpected = [...expected].sort()
+  return actual.length === sortedExpected.length && actual.every((key, index) => key === sortedExpected[index])
 }
 
 function rejected(

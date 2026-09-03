@@ -12,12 +12,13 @@ const REPOSITORY_PATTERN = /^[A-Za-z0-9_.-]{1,100}\/[A-Za-z0-9_.-]{1,100}$/u
 const MAXIMUM_JSON_BYTES = 1_048_576
 
 type JsonObject = Record<string, unknown>
+type ReleaseMode = 'bootstrap' | 'steady-state' | 'recovery'
 
 export type ProductionHumanAuthorization = Readonly<{
   schema: typeof PRODUCTION_HUMAN_AUTHORIZATION_SCHEMA
   decision: 'approved'
   environment: 'production'
-  releaseMode: 'bootstrap' | 'steady-state'
+  releaseMode: ReleaseMode
   candidateSha: string
   runId: number
   runAttempt: number
@@ -30,7 +31,7 @@ export function parseHumanAuthorizationReceipt(
   value: unknown,
   expected: Readonly<{
     candidateSha: string
-    releaseMode?: 'bootstrap' | 'steady-state'
+    releaseMode?: ReleaseMode
     runId?: number
     runAttempt?: number
   }>,
@@ -43,7 +44,7 @@ export function parseHumanAuthorizationReceipt(
   exact(receipt.schema === PRODUCTION_HUMAN_AUTHORIZATION_SCHEMA && receipt.decision === 'approved'
     && receipt.environment === 'production' && receipt.source === 'github-actions-run-approval-history',
   'receipt_contract_invalid')
-  exact(receipt.releaseMode === 'bootstrap' || receipt.releaseMode === 'steady-state', 'receipt_mode_invalid')
+  exact(['bootstrap', 'steady-state', 'recovery'].includes(String(receipt.releaseMode)), 'receipt_mode_invalid')
   exact(receipt.releaseMode === (expected.releaseMode ?? receipt.releaseMode), 'receipt_mode_mismatch')
   exact(receipt.candidateSha === expected.candidateSha && SHA1_PATTERN.test(expected.candidateSha),
     'receipt_candidate_mismatch')
@@ -66,7 +67,7 @@ export function parseHumanAuthorizationReceipt(
     schema: PRODUCTION_HUMAN_AUTHORIZATION_SCHEMA,
     decision: 'approved',
     environment: 'production',
-    releaseMode: receipt.releaseMode,
+    releaseMode: receipt.releaseMode as ReleaseMode,
     candidateSha: receipt.candidateSha,
     runId,
     runAttempt,
@@ -80,7 +81,7 @@ export function validateHumanAuthorization(
   reviewsValue: unknown,
   environmentValue: unknown,
   input: Readonly<{
-    releaseMode: 'bootstrap' | 'steady-state'
+    releaseMode: ReleaseMode
     candidateSha: string
     runId: number
     runAttempt: number
@@ -223,7 +224,7 @@ async function main(): Promise<void> {
     ...extra] = process.argv.slice(2)
   if (command === 'fetch') {
     const [releaseMode, fetchCandidate, fetchRunId, fetchRunAttempt, fetchOutput, ...fetchExtra] = process.argv.slice(3)
-    exact(fetchExtra.length === 0 && (releaseMode === 'bootstrap' || releaseMode === 'steady-state')
+    exact(fetchExtra.length === 0 && ['bootstrap', 'steady-state', 'recovery'].includes(String(releaseMode))
       && Boolean(fetchCandidate && fetchRunId && fetchRunAttempt && fetchOutput), 'fetch_arguments_invalid')
     const repository = process.env.GITHUB_REPOSITORY ?? ''
     const apiOrigin = process.env.GITHUB_API_URL ?? 'https://api.github.com'
@@ -234,7 +235,7 @@ async function main(): Promise<void> {
       fetchGitHubJson(`${apiOrigin}/repos/${repository}/environments/production`, token),
     ])
     writeReceipt(fetchOutput as string, validateHumanAuthorization(reviews, environment, {
-      releaseMode,
+      releaseMode: releaseMode as ReleaseMode,
       candidateSha: fetchCandidate as string,
       runId: Number(fetchRunId),
       runAttempt: Number(fetchRunAttempt),
@@ -254,11 +255,12 @@ async function main(): Promise<void> {
     return
   }
   if (command !== 'verify' || extra.length > 0 || !reviewPath || !environmentPath || !candidateSha
-    || !runId || !runAttempt || !outputPath || (mode !== 'bootstrap' && mode !== 'steady-state')) {
+    || !runId || !runAttempt || !outputPath
+    || !['bootstrap', 'steady-state', 'recovery'].includes(String(mode))) {
     throw new Error('usage: human-authorization.ts verify <reviews> <environment> <mode> <candidate> <run-id> <attempt> <output>')
   }
   const receipt = validateHumanAuthorization(readJson(reviewPath), readJson(environmentPath), {
-    releaseMode: mode,
+    releaseMode: mode as ReleaseMode,
     candidateSha,
     runId: Number(runId),
     runAttempt: Number(runAttempt),

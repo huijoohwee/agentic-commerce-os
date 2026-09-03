@@ -25,7 +25,7 @@ const assertions: Assertion[] = [
   { condition: boundaries.boundaries.every(({ state }) => state === 'closed' || state === 'pending-protected-integration'), detail: 'all delivery boundaries remain closed' },
   { condition: refusal.ok === false && refusal.code === 'release_authorization_incomplete', detail: 'missing authorization refuses' },
   { condition: !/node:child_process|wrangler\s+deploy|git\s+push/u.test(controller), detail: 'controller adapter has zero deployment or canonical-write mechanism' },
-  fileContains('wrangler.edge.jsonc', /"routes"\s*:\s*\[\s*\{\s*"pattern"\s*:\s*"airvio\.co\/agentic-commerce-os"/u),
+  fileContains('wrangler.edge.jsonc', /"routes"\s*:\s*\[\s*\{\s*"pattern"\s*:\s*"airvio\.co\/agentic-commerce-os\*"/u),
   fileContains('docs/demo.md', 'liveReleaseReadiness: not-ready'),
 ]
 

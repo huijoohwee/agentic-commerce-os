@@ -36,7 +36,7 @@ describe('authoring mutation target fences', () => {
     expect(evidence.persisted.record).toEqual(currentRecord)
   })
 
-  it('caches the latest exact retry and rejects an A/B/A same-lease replay without replacing B', async () => {
+  it('caches every exact outcome across an A/B/A same-lease replay without replacing B', async () => {
     const stub = env.THEME_DEPLOYMENT.get(env.THEME_DEPLOYMENT.newUniqueId())
     const merchantId = 'merchant-same-lease'
     const now = Date.now()
@@ -57,7 +57,7 @@ describe('authoring mutation target fences', () => {
     expect(evidence.exactA).toEqual(evidence.firstA)
     expect(evidence.mismatchedA).toMatchObject({ ok: false, code: 'mutation_request_mismatch' })
     expect(evidence.appliedB).toMatchObject({ ok: true, idempotent: false, record: recordB })
-    expect(evidence.replayA).toMatchObject({ ok: false, code: 'fence_stale', holdingLeaseEpoch: 7 })
+    expect(evidence.replayA).toEqual(evidence.firstA)
     expect(evidence.persisted.record).toEqual(recordB)
   })
 })

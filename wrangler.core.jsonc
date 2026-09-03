@@ -31,9 +31,18 @@
     { "tag": "v5", "new_sqlite_classes": ["AuthoringClaim"] }
   ],
   "version_metadata": { "binding": "CF_VERSION_METADATA" },
+  "secrets": {
+    "required": [
+      "DISCOVERY_PROVIDER_BEARER_TOKEN",
+      "ACOS_ADMISSION_AUTH_SECRET",
+      "CHECKOUT_PROVIDER_AUTH_SECRET",
+      "MARKETPLACE_PROVIDER_AUTH_SECRET"
+    ]
+  },
   "vars": {
     "DEPLOY_LANE": "Local",
     "RELEASE_CANDIDATE_SHA": "local-unreleased",
+    "RELEASE_CANDIDATE_DIGEST": "local-unreleased-digest",
     "REGISTRY_ID": "primary",
     "AG_TAKE_RATE_BASIS_POINTS": "250",
     "AG_SELECTION_POLICY_JSON": "{\"schema\":\"agentic-graph-selection-policy/v1\",\"weights\":{\"price\":1,\"quality\":1,\"latency\":1},\"normalization\":\"min-max\"}",
@@ -43,6 +52,8 @@
     "ACOS_ROUTING_DIGEST": "cba48df57e4e825b2111fee720d81382714baec8e45e0e270f6e496e61a703b3",
     "ACOS_CATALOG_COUNTS_JSON": "{\"command\":142,\"semantic\":142,\"binding\":136}",
     "ACOS_REQUIRED_TOKENS_JSON": "[\"/tool.route\",\"#mcp\",\"@mcp-gateway\"]",
+    "ACOS_RUNTIME_SOURCE_REVISION": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "ACOS_RUNTIME_CANDIDATE_DIGEST": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
     "DISCOVERY_PROVIDER_EVIDENCE_PIN_JSON": "{\"sourceRevision\":\"source-required\",\"receiptDigest\":\"receipt-required\",\"storageCompatibilityRevision\":\"storage-required\",\"providerVersionId\":\"provider-required\"}",
     "CHECKOUT_PROVIDER_EVIDENCE_PIN_JSON": "{\"sourceRevision\":\"source-required\",\"receiptDigest\":\"receipt-required\",\"storageCompatibilityRevision\":\"storage-required\",\"providerVersionId\":\"provider-required\"}",
     "MARKETPLACE_PROVIDER_EVIDENCE_PIN_JSON": "{\"sourceRevision\":\"source-required\",\"receiptDigest\":\"receipt-required\",\"storageCompatibilityRevision\":\"storage-required\",\"providerVersionId\":\"provider-required\"}"
@@ -70,9 +81,18 @@
         { "binding": "MARKETPLACE_PROVIDER", "service": "agentic-commerce-provider-dev" },
         { "binding": "COMMERCE_SANDBOX", "service": "agentic-commerce-sandbox-dev" }
       ],
+      "secrets": {
+        "required": [
+          "DISCOVERY_PROVIDER_BEARER_TOKEN",
+          "ACOS_ADMISSION_AUTH_SECRET",
+          "CHECKOUT_PROVIDER_AUTH_SECRET",
+          "MARKETPLACE_PROVIDER_AUTH_SECRET"
+        ]
+      },
       "vars": {
         "DEPLOY_LANE": "Dev",
         "RELEASE_CANDIDATE_SHA": "dev-unreleased",
+        "RELEASE_CANDIDATE_DIGEST": "dev-unreleased-digest",
         "REGISTRY_ID": "primary",
         "AG_TAKE_RATE_BASIS_POINTS": "250",
         "AG_SELECTION_POLICY_JSON": "{\"schema\":\"agentic-graph-selection-policy/v1\",\"weights\":{\"price\":1,\"quality\":1,\"latency\":1},\"normalization\":\"min-max\"}",
@@ -82,6 +102,8 @@
         "ACOS_ROUTING_DIGEST": "e7e127092bf699af87abf7426071b6b0126ece232a7ec324d0289c8ba4b470a4",
         "ACOS_CATALOG_COUNTS_JSON": "{\"command\":1,\"semantic\":1,\"binding\":1}",
         "ACOS_REQUIRED_TOKENS_JSON": "[\"/tool.route\",\"#mcp\",\"@mcp-gateway\"]",
+        "ACOS_RUNTIME_SOURCE_REVISION": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "ACOS_RUNTIME_CANDIDATE_DIGEST": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
         "DISCOVERY_PROVIDER_EVIDENCE_PIN_JSON": "{\"sourceRevision\":\"dddddddddddddddddddddddddddddddddddddddd\",\"receiptDigest\":\"51c0bfa6357374a5f621d4b165d531eab0655291ef79f02aeb764cde2849f890\",\"storageCompatibilityRevision\":\"discovery-demo/v1\",\"providerVersionId\":\"discovery-dev-fixture-v1\"}",
         "CHECKOUT_PROVIDER_EVIDENCE_PIN_JSON": "{\"sourceRevision\":\"cccccccccccccccccccccccccccccccccccccccc\",\"receiptDigest\":\"03562b1a8a5b16299466ceee22cf2bd1d61af42e564f7f23e1975d232762952d\",\"storageCompatibilityRevision\":\"checkout-demo/v1\",\"providerVersionId\":\"checkout-dev-fixture-v1\"}",
         "MARKETPLACE_PROVIDER_EVIDENCE_PIN_JSON": "{\"sourceRevision\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"receiptDigest\":\"d427d9ab32998d58b14cdb8075f6a06e170999da39f2fa8c382d6b29dfd3534a\",\"storageCompatibilityRevision\":\"marketplace-demo/v1\",\"providerVersionId\":\"marketplace-dev-fixture-v1\"}"
@@ -104,13 +126,23 @@
       },
       "services": [
         { "binding": "ACOS_ADMISSION", "service": "agentic-canvas-os-staging" },
+        { "binding": "COMMERCE_SANDBOX", "service": "agentic-commerce-sandbox-staging" },
         { "binding": "DOCS_MCP", "service": "agenticgraph-mcp-staging" },
         { "binding": "CHECKOUT_PROVIDER", "service": "agenticgraph-travel-commerce-staging" },
         { "binding": "MARKETPLACE_PROVIDER", "service": "agenticgraph-marketplace-staging" }
       ],
+      "secrets": {
+        "required": [
+          "DISCOVERY_PROVIDER_BEARER_TOKEN",
+          "ACOS_ADMISSION_AUTH_SECRET",
+          "CHECKOUT_PROVIDER_AUTH_SECRET",
+          "MARKETPLACE_PROVIDER_AUTH_SECRET"
+        ]
+      },
       "vars": {
         "DEPLOY_LANE": "Staging",
         "RELEASE_CANDIDATE_SHA": "staging-unreleased",
+        "RELEASE_CANDIDATE_DIGEST": "staging-unreleased-digest",
         "REGISTRY_ID": "primary",
         "AG_TAKE_RATE_BASIS_POINTS": "250",
         "AG_SELECTION_POLICY_JSON": "{\"schema\":\"agentic-graph-selection-policy/v1\",\"weights\":{\"price\":1,\"quality\":1,\"latency\":1},\"normalization\":\"min-max\"}",
@@ -120,6 +152,8 @@
         "ACOS_ROUTING_DIGEST": "cba48df57e4e825b2111fee720d81382714baec8e45e0e270f6e496e61a703b3",
         "ACOS_CATALOG_COUNTS_JSON": "{\"command\":142,\"semantic\":142,\"binding\":136}",
         "ACOS_REQUIRED_TOKENS_JSON": "[\"/tool.route\",\"#mcp\",\"@mcp-gateway\"]",
+        "ACOS_RUNTIME_SOURCE_REVISION": "staging-acos-source-required",
+        "ACOS_RUNTIME_CANDIDATE_DIGEST": "staging-acos-candidate-digest-required",
         "DISCOVERY_PROVIDER_EVIDENCE_PIN_JSON": "{\"sourceRevision\":\"staging-source-required\",\"receiptDigest\":\"staging-receipt-required\",\"storageCompatibilityRevision\":\"staging-storage-required\",\"providerVersionId\":\"staging-provider-required\"}",
         "CHECKOUT_PROVIDER_EVIDENCE_PIN_JSON": "{\"sourceRevision\":\"staging-source-required\",\"receiptDigest\":\"staging-receipt-required\",\"storageCompatibilityRevision\":\"staging-storage-required\",\"providerVersionId\":\"staging-provider-required\"}",
         "MARKETPLACE_PROVIDER_EVIDENCE_PIN_JSON": "{\"sourceRevision\":\"staging-source-required\",\"receiptDigest\":\"staging-receipt-required\",\"storageCompatibilityRevision\":\"staging-storage-required\",\"providerVersionId\":\"staging-provider-required\"}"
@@ -142,13 +176,23 @@
       },
       "services": [
         { "binding": "ACOS_ADMISSION", "service": "agentic-canvas-os" },
+        { "binding": "COMMERCE_SANDBOX", "service": "agentic-commerce-sandbox-production" },
         { "binding": "DOCS_MCP", "service": "agenticgraph-mcp" },
         { "binding": "CHECKOUT_PROVIDER", "service": "agenticgraph-travel-commerce-production" },
         { "binding": "MARKETPLACE_PROVIDER", "service": "agenticgraph-marketplace-production" }
       ],
+      "secrets": {
+        "required": [
+          "DISCOVERY_PROVIDER_BEARER_TOKEN",
+          "ACOS_ADMISSION_AUTH_SECRET",
+          "CHECKOUT_PROVIDER_AUTH_SECRET",
+          "MARKETPLACE_PROVIDER_AUTH_SECRET"
+        ]
+      },
       "vars": {
         "DEPLOY_LANE": "Production",
         "RELEASE_CANDIDATE_SHA": "production-release-required-core",
+        "RELEASE_CANDIDATE_DIGEST": "production-digest-required-core",
         "REGISTRY_ID": "primary",
         "AG_TAKE_RATE_BASIS_POINTS": "250",
         "AG_SELECTION_POLICY_JSON": "{\"schema\":\"agentic-graph-selection-policy/v1\",\"weights\":{\"price\":1,\"quality\":1,\"latency\":1},\"normalization\":\"min-max\"}",
@@ -158,6 +202,8 @@
         "ACOS_ROUTING_DIGEST": "cba48df57e4e825b2111fee720d81382714baec8e45e0e270f6e496e61a703b3",
         "ACOS_CATALOG_COUNTS_JSON": "{\"command\":142,\"semantic\":142,\"binding\":136}",
         "ACOS_REQUIRED_TOKENS_JSON": "[\"/tool.route\",\"#mcp\",\"@mcp-gateway\"]",
+        "ACOS_RUNTIME_SOURCE_REVISION": "production-acos-source-required",
+        "ACOS_RUNTIME_CANDIDATE_DIGEST": "production-acos-candidate-digest-required",
         "DISCOVERY_PROVIDER_EVIDENCE_PIN_JSON": "{\"sourceRevision\":\"production-source-required\",\"receiptDigest\":\"production-receipt-required\",\"storageCompatibilityRevision\":\"production-storage-required\",\"providerVersionId\":\"production-provider-required\"}",
         "CHECKOUT_PROVIDER_EVIDENCE_PIN_JSON": "{\"sourceRevision\":\"production-source-required\",\"receiptDigest\":\"production-receipt-required\",\"storageCompatibilityRevision\":\"production-storage-required\",\"providerVersionId\":\"production-provider-required\"}",
         "MARKETPLACE_PROVIDER_EVIDENCE_PIN_JSON": "{\"sourceRevision\":\"production-source-required\",\"receiptDigest\":\"production-receipt-required\",\"storageCompatibilityRevision\":\"production-storage-required\",\"providerVersionId\":\"production-provider-required\"}"

@@ -8,16 +8,27 @@ import { buildReleaseAuthorityRefusal } from '../../scripts/production-release/r
 const CANDIDATE = 'c'.repeat(40)
 const ROOT = fileURLToPath(new URL('../..', import.meta.url))
 
-test('Workflow has a tested pre-mutation stop and exposes no Production mutation credential', () => {
+test('Workflow isolates dry verification from authenticated Production mutation', () => {
   const workflow = fs.readFileSync(`${ROOT}/.github/workflows/production-release.yml`, 'utf8')
+  const verifyStart = workflow.indexOf('  verify:')
+  const releaseStart = workflow.indexOf('  release:')
+  const verifyJob = workflow.slice(verifyStart, releaseStart)
+  const releaseJob = workflow.slice(releaseStart)
   assert.ok(workflow.split('\n').length < 600)
+  assert.ok(verifyStart >= 0 && releaseStart > verifyStart)
   assert.doesNotMatch(workflow,
     /wrangler (?:versions upload|versions deploy|rollback|triggers deploy)|--secrets-file/u)
-  assert.doesNotMatch(workflow, /MCP_BEARER_TOKEN|OPERATOR_BEARER_TOKEN|STOREFRONT_SESSION_SECRET/u)
-  assert.doesNotMatch(workflow, /CLOUDFLARE_(?:API_TOKEN|ACCOUNT_ID|ZONE_ID)|secrets\./u)
-  assert.equal(workflow.match(/release-authority\.ts/g)?.length, 1)
-  assert.equal(workflow.match(/--dry-run --minify/g)?.length, 1)
-  assert.match(workflow, /environment: production/u)
+  assert.doesNotMatch(verifyJob,
+    /DISCOVERY_PROVIDER_BEARER_TOKEN|MCP_BEARER_TOKEN|OPERATOR_BEARER_TOKEN|STOREFRONT_SESSION_SECRET/u)
+  assert.doesNotMatch(verifyJob, /CLOUDFLARE_(?:API_TOKEN|ACCOUNT_ID|ZONE_ID)|secrets\./u)
+  assert.equal(workflow.match(/--dry-run --minify/g)?.length, 2)
+  assert.match(releaseJob, /environment: production/u)
+  assert.match(releaseJob, /test "\$GITHUB_RUN_ATTEMPT" = 1/u)
+  assert.match(releaseJob, /git ls-remote origin refs\/heads\/main/u)
+  assert.match(releaseJob, /CLOUDFLARE_API_TOKEN: \$\{\{ secrets\.CLOUDFLARE_API_TOKEN \}\}/u)
+  assert.equal(releaseJob.match(/run-production-release\.ts execute/g)?.length, 1)
+  assert.ok(releaseJob.indexOf('Recheck protected candidate after human authorization')
+    < releaseJob.indexOf('run-production-release.ts execute'))
 })
 
 test('Repository Production entrypoints cannot chain into Wrangler deploy', () => {

@@ -76,17 +76,17 @@
     {
       "sourceFile": "src/core/acos-admission.ts",
       "purpose": "ACOS admission receipt codec persisted by AgentRegistry.",
-      "sourceSha256": "3e41124be2b3b93b1e6f8c08c02de8779697d5ae4562c8b35e6a2bf7a1486594"
+      "sourceSha256": "6a2ca19af63cbef85b7659e4f44f2bf7ef061c1b31ed14efc3d1b7bf298385ed"
     },
     {
       "sourceFile": "src/core/agent-registry-record.ts",
       "purpose": "AgentRegistry persisted record decoding and verification.",
-      "sourceSha256": "e4ad5e8fa2691ddcfd8f8b0fce503e724c0fa18488f297a635d7f95954c3df5a"
+      "sourceSha256": "cb5867e8c357ac32c5898d71700c2e2b6bdd845e6f3f0ff8e46ae52458064e51"
     },
     {
       "sourceFile": "src/core/authoring-mutation-fence.ts",
       "purpose": "Transactional mutation high-water and terminal outcome journal codec.",
-      "sourceSha256": "af281628486d08c6d7d09b9e1d404d19d07cd1880b206f9ec512673db8c6cfba"
+      "sourceSha256": "b9266a0fc776547cef9115e1504a0a867c9369b7ecb3f6d10f4725fc9137bd30"
     },
     {
       "sourceFile": "src/core/checkout-receipts.ts",
@@ -151,7 +151,7 @@
     {
       "sourceFile": "src/core/core-actions.ts",
       "purpose": "Boundary normalization for records passed to Durable Objects.",
-      "sourceSha256": "aa395eda822b40a25f9776f80fe35d8f054252425374e2260da698cc9f0d07f0"
+      "sourceSha256": "b162b843469e874692fd7c3caa2d1809322bce4c4b7ce46342889a751af55c93"
     },
     {
       "sourceFile": "src/core/checkout-input.ts",
@@ -221,7 +221,7 @@
     {
       "className": "IntentRoute",
       "sourceFile": "src/core/intent-route.ts",
-      "sourceSha256": "46f774bc2ec79518e03eac664260852b31f3337987c501e9b5b589e75bbd2d78",
+      "sourceSha256": "29156f647d96045f2d9c0cd25eaf8ae4e4674a18535bc5a19751109a856f26be",
       "startMarker": "    state.blockConcurrencyWhile(async () => {",
       "endMarker": "\n  async dispatch(",
       "regionSha256": "62009cebf93cf2c7d5dad89a58e9a529c3d7d60f48b497d3784a8ca6fabaf7b5",
@@ -333,10 +333,10 @@
     {
       "className": "AuthoringClaim",
       "sourceFile": "src/core/authoring-claim.ts",
-      "sourceSha256": "2b46ec8b0391b24f283814adebfb31d95a74368affc35dc68fc3929fb4fd471a",
+      "sourceSha256": "a0b2164619ee53a04574ea00f06f5081b3da016b674af7672e017f424443bd99",
       "startMarker": "    state.blockConcurrencyWhile(async () => {",
       "endMarker": "\n  async acquire(",
-      "regionSha256": "df0e0aa46c0b5befe5535668adb5c8f6384f6e3fe199b6f9846bdbacc19657f6",
+      "regionSha256": "ea907246595a582735d33d066dc3ce8923c3f5d53da935357df24b6ec625288b",
       "ddl": [
         {
           "object": "table:authoring_claim",
@@ -357,9 +357,13 @@
         {
           "object": "table:authoring_mutation_completion",
           "sha256": "8dce2f3ef61ee7ffc0dcd9a6993d07452dfe6ce0e0b30f1ea6022f138372789f"
+        },
+        {
+          "object": "table:authoring_mutation_reconciliation",
+          "sha256": "54a629a28a81cbb37346101a09a519c9dc7df9862c93dcbe36d3d780a08db6ed"
         }
       ]
     }
   ],
-  "revision": "c32521bc319f80305f560c6eb51dce304cb4b39710ffa088307e45d0971044d2"
+  "revision": "83bbc34e89be42a2ac930de61e205347f2155bf46192f7d0f71c7c9f5e3f45d3"
 }

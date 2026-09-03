@@ -1,6 +1,6 @@
 import { DurableObject } from 'cloudflare:workers'
 
-import { canonicalJson } from '../shared/digest.js'
+import { canonicalJson, sha256Hex } from '../shared/digest.js'
 import {
   claimAccepted,
   claimMutationPermit,
@@ -65,6 +65,14 @@ export class AuthoringClaim extends DurableObject<CoreEnv> {
         permit_json TEXT NOT NULL,
         completed_at_ms INTEGER NOT NULL,
         PRIMARY KEY (semantic_scope, claim_id, lease_epoch, operation_id)
+      )`)
+      this.#sql.exec(`CREATE TABLE IF NOT EXISTS authoring_mutation_reconciliation (
+        mutation_id TEXT PRIMARY KEY,
+        semantic_scope TEXT NOT NULL,
+        permit_json TEXT NOT NULL,
+        evidence_json TEXT NOT NULL,
+        evidence_digest TEXT NOT NULL,
+        recorded_at TEXT NOT NULL
       )`)
     })
   }
@@ -238,8 +246,50 @@ export class AuthoringClaim extends DurableObject<CoreEnv> {
         permitJson,
       )
       completed = deleted.rowsWritten === 1
+      if (completed) {
+        this.#sql.exec('DELETE FROM authoring_mutation_reconciliation WHERE mutation_id = ?', permit.mutationId)
+      }
     })
     return Object.freeze({ ok: completed })
+  }
+
+  async preserveMutationReconciliation(
+    value: ClaimMutationPermit,
+    evidence: unknown,
+  ): Promise<Readonly<Record<string, unknown>>> {
+    const permit = readClaimMutationPermit(value)
+    if (!permit || !validReconciliationEvidence(evidence)) {
+      return Object.freeze({ ok: false, code: 'mutation_reconciliation_evidence_invalid' })
+    }
+    const permitJson = canonicalJson(permit)
+    const evidenceJson = canonicalJson(evidence)
+    if (evidenceJson.length > 65_536) {
+      return Object.freeze({ ok: false, code: 'mutation_reconciliation_evidence_invalid' })
+    }
+    const evidenceDigest = await sha256Hex(evidenceJson)
+    const existingPermit = this.#readReservation(permit.semanticScope)
+    if (!existingPermit || canonicalJson(existingPermit) !== permitJson) {
+      return Object.freeze({ ok: false, code: 'mutation_reconciliation_reservation_mismatch' })
+    }
+    const prior = this.#readReconciliation(permit.mutationId)
+    if (prior) {
+      return prior.permit_json === permitJson && prior.evidence_digest === evidenceDigest
+        ? reconciliationReceipt(permit, prior.evidence_digest, prior.recorded_at)
+        : Object.freeze({ ok: false, code: 'mutation_reconciliation_evidence_mismatch' })
+    }
+    const recordedAt = new Date().toISOString()
+    this.#sql.exec(
+      `INSERT INTO authoring_mutation_reconciliation (
+        mutation_id, semantic_scope, permit_json, evidence_json, evidence_digest, recorded_at
+      ) VALUES (?, ?, ?, ?, ?, ?)`,
+      permit.mutationId,
+      permit.semanticScope,
+      permitJson,
+      evidenceJson,
+      evidenceDigest,
+      recordedAt,
+    )
+    return reconciliationReceipt(permit, evidenceDigest, recordedAt)
   }
 
   async mutationStatus(scope: string): Promise<Readonly<Record<string, unknown>>> {
@@ -247,6 +297,7 @@ export class AuthoringClaim extends DurableObject<CoreEnv> {
       return Object.freeze({ ok: false, code: 'claim_malformed' })
     }
     const permit = this.#readReservation(scope)
+    const reconciliation = permit ? this.#readReconciliation(permit.mutationId) : null
     return permit
       ? Object.freeze({
           ok: true,
@@ -259,6 +310,12 @@ export class AuthoringClaim extends DurableObject<CoreEnv> {
           leaseEpoch: permit.leaseEpoch,
           fenceRevision: permit.fenceRevision,
           leaseExpiresAtMs: permit.leaseExpiresAtMs,
+          reconciliation: reconciliation ? Object.freeze({
+            schema: 'agentic-commerce-mutation-reconciliation-status/v1',
+            evidenceDigest: reconciliation.evidence_digest,
+            recordedAt: reconciliation.recorded_at,
+            evidence: JSON.parse(reconciliation.evidence_json) as unknown,
+          }) : null,
         })
       : this.#hasReservation(scope)
         ? Object.freeze({ ok: true, status: 'reconciliation_required', code: 'reservation_unreadable' })
@@ -280,18 +337,19 @@ export class AuthoringClaim extends DurableObject<CoreEnv> {
       return Object.freeze({ ok: false })
     }
     if (this.#hasReservation(scope)) return Object.freeze({ ok: false })
-    const update = this.#sql.exec(
+    const released = this.#sql.exec<{ released_at_ms: number }>(
       `UPDATE authoring_claim SET released_at_ms = ?
        WHERE semantic_scope = ? AND claim_id = ? AND lease_epoch = ?
-         AND fence_revision = ? AND lease_expires_at_ms > ? AND released_at_ms IS NULL`,
+         AND fence_revision = ? AND lease_expires_at_ms > ? AND released_at_ms IS NULL
+       RETURNING released_at_ms`,
       nowMs,
       scope,
       claimId,
       leaseEpoch,
       fenceRevision,
       nowMs,
-    )
-    return Object.freeze({ ok: update.rowsWritten === 1 })
+    ).toArray()
+    return Object.freeze({ ok: released.length === 1 && released[0]?.released_at_ms === nowMs })
   }
 
   async current(nowMs = Date.now()): Promise<Readonly<{ ok: true; claims: readonly Claim[] }>> {
@@ -334,6 +392,14 @@ export class AuthoringClaim extends DurableObject<CoreEnv> {
     ).toArray().length === 1
   }
 
+  #readReconciliation(mutationId: string): StoredReconciliation | null {
+    return this.#sql.exec<StoredReconciliation>(
+      `SELECT permit_json, evidence_json, evidence_digest, recorded_at
+       FROM authoring_mutation_reconciliation WHERE mutation_id = ?`,
+      mutationId,
+    ).toArray()[0] ?? null
+  }
+
   #readCompletion(request: ClaimMutationRequest, operationId: string): ClaimMutationPermit | null {
     const row = this.#sql.exec<{ permit_json: string }>(
       `SELECT permit_json FROM authoring_mutation_completion
@@ -358,4 +424,41 @@ export class AuthoringClaim extends DurableObject<CoreEnv> {
       return claim ? [claim] : []
     })
   }
+}
+
+type StoredReconciliation = Readonly<{
+  permit_json: string
+  evidence_json: string
+  evidence_digest: string
+  recorded_at: string
+}>
+
+function validReconciliationEvidence(value: unknown): value is Readonly<Record<string, unknown>> {
+  return value !== null
+    && typeof value === 'object'
+    && !Array.isArray(value)
+    && Object.keys(value).sort().join(',') === 'admissionReceipt,boundary,disposition,localOutcome,phase,schema'
+    && (value as Record<string, unknown>).schema === 'agentic-commerce-acos-registration-reconciliation/v1'
+    && (value as Record<string, unknown>).boundary === 'acos-to-commerce-registry'
+    && (value as Record<string, unknown>).disposition === 'preserve-required'
+    && ['commerce-commit-rejected', 'commerce-commit-unconfirmed', 'reservation-completion-unconfirmed']
+      .includes(String((value as Record<string, unknown>).phase))
+    && typeof (value as Record<string, unknown>).admissionReceipt === 'object'
+    && typeof (value as Record<string, unknown>).localOutcome === 'object'
+}
+
+function reconciliationReceipt(
+  permit: ClaimMutationPermit,
+  evidenceDigest: string,
+  recordedAt: string,
+): Readonly<Record<string, unknown>> {
+  return Object.freeze({
+    ok: true,
+    schema: 'agentic-commerce-mutation-reconciliation-receipt/v1',
+    disposition: 'preserve-required',
+    mutationId: permit.mutationId,
+    operationId: permit.operationId,
+    evidenceDigest,
+    recordedAt,
+  })
 }

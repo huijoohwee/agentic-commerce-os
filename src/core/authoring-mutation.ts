@@ -13,6 +13,7 @@ import { reject, respond, resultOk } from './core-http-utils.js'
 export type ReservedOperatorMutation = Readonly<{
   permit: ClaimMutationPermit
   finish: () => Promise<boolean>
+  preserve: (evidence: unknown) => Promise<Readonly<Record<string, unknown>>>
 }>
 
 export type OperatorMutationReservation =
@@ -73,6 +74,13 @@ export async function reserveOperatorMutation(
           finished = false
         }
         return finished
+      },
+      async preserve(evidence: unknown) {
+        try {
+          return await coordinator.preserveMutationReconciliation(permit, evidence)
+        } catch {
+          return Object.freeze({ ok: false, code: 'mutation_reconciliation_persistence_unavailable' })
+        }
       },
     }),
   })

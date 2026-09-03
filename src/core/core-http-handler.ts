@@ -6,8 +6,6 @@ import {
   claimAction,
   deployMerchantTheme,
   merchantCatalog,
-  proxyMarketplaceSettlement,
-  proxyVendorTransition,
   publicAgents,
   registerAgent,
   revenuePeriod,
@@ -15,13 +13,17 @@ import {
 } from './core-actions.js'
 import { admitOperatorMutation, reserveOperatorMutation } from './authoring-mutation.js'
 import { registryStub, revenueLedgerStub } from './core-clients.js'
-import { proxyJson, reject, respond, resultOk } from './core-http-utils.js'
+import { reject, respond, resultOk } from './core-http-utils.js'
 import {
   authorizeCapabilityAction,
   readiness,
   resolvePresentedInvocations,
 } from './core-readiness.js'
-import { MARKETPLACE_PROVIDER_CONTRACT } from './provider-contract.js'
+import {
+  proxyMarketplaceSettlement,
+  proxyMarketplaceVendors,
+  proxyVendorTransition,
+} from './marketplace-provider-client.js'
 import { agentDeregistrationMutationIntent } from './agent-registry.js'
 import { releaseBoundaryProjection } from './release-boundary-projection.js'
 import { takeRateConfigurationFailure } from './take-rate.js'
@@ -37,6 +39,7 @@ export async function handleCoreRequest(request: Request, env: CoreEnv, requestI
       contract: 'commerce.core-live/v1',
       lane: env.DEPLOY_LANE,
       releaseCandidateSha: env.RELEASE_CANDIDATE_SHA,
+      releaseCandidateDigest: env.RELEASE_CANDIDATE_DIGEST,
       version: env.CF_VERSION_METADATA,
     }, requestId)
   }
@@ -49,6 +52,9 @@ export async function handleCoreRequest(request: Request, env: CoreEnv, requestI
   }
   if (request.headers.get('x-commerce-release-candidate') !== env.RELEASE_CANDIDATE_SHA) {
     return respond(reject('release_candidate_mismatch'), requestId, 409)
+  }
+  if (request.headers.get('x-commerce-release-candidate-digest') !== env.RELEASE_CANDIDATE_DIGEST) {
+    return respond(reject('release_candidate_digest_mismatch'), requestId, 409)
   }
   const takeRateFailure = takeRateConfigurationFailure(env.AG_TAKE_RATE_BASIS_POINTS)
   if (takeRateFailure) return respond(takeRateFailure, requestId, 503)
@@ -160,7 +166,7 @@ export async function handleCoreRequest(request: Request, env: CoreEnv, requestI
     return proxyVendorTransition(request, env, requestId, decodeURIComponent(vendorMatch[1] ?? ''))
   }
   if (request.method === 'GET' && url.pathname === '/internal/v1/vendors') {
-    return proxyJson(env.MARKETPLACE_PROVIDER, '/v1/vendors', requestId, MARKETPLACE_PROVIDER_CONTRACT)
+    return proxyMarketplaceVendors(env, requestId)
   }
   const settlementMatch = url.pathname.match(/^\/internal\/v1\/settlements\/([^/]+)$/u)
   if (request.method === 'GET' && settlementMatch) {

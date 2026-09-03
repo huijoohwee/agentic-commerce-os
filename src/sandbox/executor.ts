@@ -40,6 +40,10 @@ export type {
 
 type SandboxWorkerEnv = Readonly<{
   Sandbox: DurableObjectNamespace<Sandbox>
+  CF_VERSION_METADATA?: WorkerVersionMetadata
+  DEPLOY_LANE?: string
+  RELEASE_CANDIDATE_SHA?: string
+  RELEASE_CANDIDATE_DIGEST?: string
   SANDBOX_PROOF_BEARER_TOKEN?: string
   SANDBOX_PUBLIC_PROOF_ONLY?: string
 }>
@@ -53,6 +57,7 @@ type SandboxFetchOptions = Readonly<{
   proof?: SandboxProofOptions
 }>
 const PREVIEW_STORAGE_KEY = 'agentic-graph-preview'
+let releaseContainerProbe: Readonly<{ key: string; expiresAt: number; result: Promise<boolean> }> | null = null
 
 export class Sandbox extends CloudflareSandbox {
   async savePreviewIdentity(value: unknown): Promise<void> {
@@ -90,6 +95,38 @@ export async function handleSandboxFetch(
       deliveryBoundary: 'closed',
     })
   }
+  if (request.method === 'GET' && url.pathname === '/readyz') {
+    const version = env.CF_VERSION_METADATA
+    const candidateSha = env.RELEASE_CANDIDATE_SHA
+    const candidateDigest = env.RELEASE_CANDIDATE_DIGEST
+    const identityConfigured = typeof env.DEPLOY_LANE === 'string'
+      && typeof candidateSha === 'string'
+      && candidateSha.length > 0
+      && typeof candidateDigest === 'string'
+      && /^[0-9a-f]{64}$/u.test(candidateDigest)
+      && typeof version?.id === 'string'
+      && version.id.length > 0
+      && version.tag === candidateSha
+      && typeof version.timestamp === 'string'
+      && Number.isFinite(Date.parse(version.timestamp))
+    const containerReady = identityConfigured
+      ? await probeReleaseContainer(env, candidateDigest as string, options)
+      : false
+    const configured = identityConfigured && containerReady
+    return jsonResponse(configured ? {
+      ok: true,
+      contract: 'agentic-commerce-registration-sandbox/v1',
+      lane: env.DEPLOY_LANE,
+      releaseCandidateSha: candidateSha,
+      releaseCandidateDigest: candidateDigest,
+      version,
+      containerProbe: Object.freeze({ ok: true, runtime: 'node', version: 'v22.22.3' }),
+    } : {
+      ok: false,
+      contract: 'agentic-commerce-registration-sandbox/v1',
+      code: 'sandbox_release_identity_invalid',
+    }, configured ? 200 : 503)
+  }
   if (isSandboxProofRequest(request)) {
     return await handleSandboxProofRequest(request, env as unknown as SandboxProofWorkerEnv, {
       ...options.proof,
@@ -122,6 +159,34 @@ export async function handleSandboxFetch(
       ? 409
       : result.code === 'sandbox_build_failed' ? 422 : 503,
   )
+}
+
+async function probeReleaseContainer(
+  env: SandboxWorkerEnv,
+  candidateDigest: string,
+  options: SandboxFetchOptions,
+): Promise<boolean> {
+  const now = Date.now()
+  if (releaseContainerProbe?.key === candidateDigest && releaseContainerProbe.expiresAt > now) {
+    return releaseContainerProbe.result
+  }
+  const result = (async () => {
+    const sandbox = (options.createSandbox ?? createCloudflareSandbox)(
+      env.Sandbox,
+      `release-readiness-${candidateDigest.slice(0, 32)}`,
+      'registration-dry-run',
+    )
+    try {
+      const executed = await sandbox.exec('node --version', { timeout: 10_000 })
+      return executed.success && executed.stdout.trim() === 'v22.22.3'
+    } catch {
+      return false
+    } finally {
+      try { await sandbox.destroy() } catch { /* Readiness remains fail-closed. */ }
+    }
+  })()
+  releaseContainerProbe = Object.freeze({ key: candidateDigest, expiresAt: now + 300_000, result })
+  return result
 }
 
 function createCloudflareSandbox(

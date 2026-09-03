@@ -59,6 +59,7 @@ describe('operational evidence at provider call sites', () => {
       headers: {
         'x-commerce-contract': 'commerce.edge-core/v1',
         'x-commerce-release-candidate': DEV_PROVIDER_PINS.releaseCandidateSha,
+        'x-commerce-release-candidate-digest': 'e'.repeat(64),
       },
     })
     expect(response.status).toBe(200)
@@ -138,5 +139,6 @@ function coreHeaders(): Readonly<Record<string, string>> {
     'content-type': 'application/json',
     'x-commerce-contract': 'commerce.edge-core/v1',
     'x-commerce-release-candidate': DEV_PROVIDER_PINS.releaseCandidateSha,
+    'x-commerce-release-candidate-digest': 'e'.repeat(64),
   })
 }

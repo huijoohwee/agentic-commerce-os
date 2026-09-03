@@ -67,6 +67,7 @@ export type FetcherBinding = Readonly<{ fetch: FetchFunction }>;
 export type InvocationClientOptions = Readonly<{
   endpoint?: string;
   fetcher?: FetchFunction | FetcherBinding;
+  bearerToken?: string;
   maxResponseBytes?: number;
   clientName?: string;
   clientVersion?: string;

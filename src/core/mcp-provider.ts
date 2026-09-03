@@ -1,5 +1,6 @@
 import { isRecord } from '../shared/http'
 import { canonicalJson } from '../shared/digest'
+import { readDiscoveryProviderAuthorization } from '../shared/discovery-provider-auth'
 import { DOCS_INVOCATION_ENDPOINT, MCP_PROTOCOL_VERSION } from '../invocation'
 import { DISCOVERY_PROVIDER_CONTRACT } from './provider-contract'
 import {
@@ -25,12 +26,14 @@ export type McpToolCallOptions = Readonly<{
 
 export async function callMcpTool(
   binding: Fetcher,
+  bearerToken: string,
   call: McpToolCall,
   options: McpToolCallOptions = {},
 ): Promise<unknown> {
-  const session = await initialize(binding, options.signal)
+  const authorization = requiredAuthorization(bearerToken)
+  const session = await initialize(binding, authorization, options.signal)
   try {
-    const rpc = await postRpc(binding, session.endpoint, session.sessionId, {
+    const rpc = await postRpc(binding, authorization, session.endpoint, session.sessionId, {
       jsonrpc: '2.0',
       id: 2,
       method: 'tools/call',
@@ -42,14 +45,15 @@ export async function callMcpTool(
     }
     return extractToolPayload(rpc.result)
   } finally {
-    await close(binding, session.endpoint, session.sessionId, options.signal)
+    await close(binding, authorization, session.endpoint, session.sessionId, options.signal)
   }
 }
 
-export async function listMcpToolNames(binding: Fetcher): Promise<readonly string[]> {
-  const session = await initialize(binding)
+export async function listMcpToolNames(binding: Fetcher, bearerToken: string): Promise<readonly string[]> {
+  const authorization = requiredAuthorization(bearerToken)
+  const session = await initialize(binding, authorization)
   try {
-    const rpc = await postRpc(binding, session.endpoint, session.sessionId, {
+    const rpc = await postRpc(binding, authorization, session.endpoint, session.sessionId, {
       jsonrpc: '2.0', id: 2, method: 'tools/list', params: {},
     })
     if (isRecord(rpc.error)) throw new Error(readError(rpc.error))
@@ -64,18 +68,19 @@ export async function listMcpToolNames(binding: Fetcher): Promise<readonly strin
     }
     return Object.freeze([...new Set(names)].sort())
   } finally {
-    await close(binding, session.endpoint, session.sessionId)
+    await close(binding, authorization, session.endpoint, session.sessionId)
   }
 }
 
 async function initialize(
   binding: Fetcher,
+  authorization: string,
   parentSignal?: AbortSignal,
 ): Promise<Readonly<{ endpoint: string; sessionId: string }>> {
   const endpoint = DOCS_INVOCATION_ENDPOINT
   const response = await binding.fetch(endpoint, {
     method: 'POST',
-    headers: mcpHeaders(),
+    headers: mcpHeaders(authorization),
     signal: requestSignal(parentSignal),
     body: JSON.stringify({
       jsonrpc: '2.0',
@@ -103,7 +108,7 @@ async function initialize(
   }
   const notification = await binding.fetch(endpoint, {
     method: 'POST',
-    headers: mcpHeaders(sessionId),
+    headers: mcpHeaders(authorization, sessionId),
     signal: requestSignal(parentSignal),
     body: JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }),
   })
@@ -114,6 +119,7 @@ async function initialize(
 
 async function postRpc(
   binding: Fetcher,
+  authorization: string,
   endpoint: string,
   sessionId: string,
   body: JsonRpc,
@@ -122,7 +128,7 @@ async function postRpc(
 ): Promise<JsonRpc> {
   const request = new Request(endpoint, {
     method: 'POST',
-    headers: mcpHeaders(sessionId, operationalEvidencePermit !== undefined),
+    headers: mcpHeaders(authorization, sessionId, operationalEvidencePermit !== undefined),
     signal: requestSignal(parentSignal),
     body: JSON.stringify(body),
   })
@@ -146,9 +152,10 @@ async function postRpc(
   return rpc
 }
 
-function mcpHeaders(sessionId = '', operational = false): Headers {
+function mcpHeaders(authorization: string, sessionId = '', operational = false): Headers {
   const headers = new Headers({
     accept: 'application/json, text/event-stream',
+    authorization,
     'content-type': 'application/json',
   })
   if (operational) headers.set('x-commerce-contract', DISCOVERY_PROVIDER_CONTRACT)
@@ -241,6 +248,7 @@ function readError(error: Record<string, unknown>): string {
 
 async function close(
   binding: Fetcher,
+  authorization: string,
   endpoint: string,
   sessionId: string,
   parentSignal?: AbortSignal,
@@ -248,7 +256,7 @@ async function close(
   try {
     const response = await binding.fetch(endpoint, {
       method: 'DELETE',
-      headers: mcpHeaders(sessionId),
+      headers: mcpHeaders(authorization, sessionId),
       signal: requestSignal(parentSignal),
     })
     await response.body?.cancel()
@@ -260,4 +268,10 @@ async function close(
 function requestSignal(parentSignal?: AbortSignal): AbortSignal {
   const requestTimeout = AbortSignal.timeout(MCP_REQUEST_TIMEOUT_MS)
   return parentSignal ? AbortSignal.any([parentSignal, requestTimeout]) : requestTimeout
+}
+
+function requiredAuthorization(bearerToken: string): string {
+  const authorization = readDiscoveryProviderAuthorization(bearerToken)
+  if (!authorization) throw new Error('Discovery provider bearer token configuration is invalid.')
+  return authorization
 }
