@@ -103,6 +103,7 @@ function input(
       candidateTree: 'e'.repeat(40),
       packageLockDigest: '1'.repeat(64),
       coreConfigDigest: '2'.repeat(64),
+      coreServicesManifestDigest: '7'.repeat(64),
       edgeConfigDigest: '3'.repeat(64),
       sandboxConfigDigest: '4'.repeat(64),
       sandboxContainerBuildInputDigest: BUILD_INPUT,

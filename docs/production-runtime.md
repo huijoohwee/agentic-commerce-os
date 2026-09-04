@@ -282,6 +282,13 @@ Cloudflare operators must:
 6. prohibit out-of-controller changes to all three commerce Workers and the
    route, and retain authenticated predecessor and preserve artifacts.
 
+`config/production-core-services.json` is the repository-owned SSOT for the five
+Production core Service Binding targets. It is bounded, exact-key, canonical
+JSON; the release contract consumes it directly and `CandidateIdentity` includes
+its byte digest. `wrangler.core.jsonc` must match it exactly. Duplicate keys or
+bindings, extra keys, noncanonical bytes, and sequence or manifest/config drift fail
+closed before release mutation.
+
 `agentic-graph` operators must provide the live provider contracts the core calls:
 
 - the Agentic Canvas OS document-projection MCP and invocation tool;

@@ -10,6 +10,7 @@ import {
   validateProductionTopology,
   validateWorkerVersion,
 } from '../../scripts/production-release/contracts.ts'
+import { PRODUCTION_CORE_SERVICES } from '../../scripts/production-release/core-services-manifest.ts'
 import { buildHumanPresenceAnchorProof } from '../../scripts/production-release/human-presence-anchor.ts'
 
 const ROOT = fileURLToPath(new URL('../..', import.meta.url))
@@ -57,13 +58,9 @@ test('Core service bindings use the exact Graph-declared staging and production 
     { binding: 'CHECKOUT_PROVIDER', service: 'agentic-travel-commerce-staging' },
     { binding: 'MARKETPLACE_PROVIDER', service: 'agentic-marketplace-staging' },
   ])
-  assert.deepEqual(core.env.production.services, [
-    { binding: 'ACOS_ADMISSION', service: 'agentic-canvas-os' },
-    { binding: 'COMMERCE_SANDBOX', service: 'agentic-commerce-sandbox-production' },
-    { binding: 'DOCS_MCP', service: 'agentic-mcp' },
-    { binding: 'CHECKOUT_PROVIDER', service: 'agentic-travel-commerce-production' },
-    { binding: 'MARKETPLACE_PROVIDER', service: 'agentic-marketplace-production' },
-  ])
+  assert.deepEqual([...core.env.production.services].sort((left, right) => (
+    left.binding.localeCompare(right.binding)
+  )), PRODUCTION_CORE_SERVICES)
 
   const staleLegacyIdentity = config('core') as any
   staleLegacyIdentity.env.production.services[2].service = 'agenticgraph-mcp'

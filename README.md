@@ -171,7 +171,9 @@ The manual GitHub Actions workflow binds its mode and candidate to protected
 exact configured Production user reviewer, and rechecks the candidate before
 exposing credentials to the release job. Its controller supports exact-baseline
 bootstrap, authenticated steady state, and authenticated forward recovery. It
-uploads core and edge inactive, proves the immediate sandbox/container rollout,
+binds the canonical `config/production-core-services.json` Service Binding
+manifest digest into the immutable candidate identity, then uploads core and
+edge inactive, proves the immediate sandbox/container rollout,
 compare-and-swaps the active three-Worker tuple before each activation, and
 requires exact route readback before emitting a deployment receipt. Ambiguous or
 partial transitions emit a preserve-required artifact; no path claims rollback.
