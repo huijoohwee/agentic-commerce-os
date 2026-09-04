@@ -127,7 +127,7 @@ export async function registerAgent(request: Request, env: CoreEnv, requestId: s
     authoringMutationIntent,
     reserved.reservation.permit,
     acosDeploymentPin,
-    env.ACOS_ADMISSION_AUTH_SECRET,
+    env.AGENTIC_OS_ADMISSION_AUTH_SECRET,
   )
   if (!admission.ok) {
     if (admission.reservationSafeToComplete && !await reserved.reservation.finish()) {

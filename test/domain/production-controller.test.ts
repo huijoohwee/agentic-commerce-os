@@ -103,6 +103,7 @@ function input(
       candidateTree: 'e'.repeat(40),
       packageLockDigest: '1'.repeat(64),
       coreConfigDigest: '2'.repeat(64),
+      coreServicesManifestDigest: '7'.repeat(64),
       edgeConfigDigest: '3'.repeat(64),
       sandboxConfigDigest: '4'.repeat(64),
       sandboxContainerBuildInputDigest: BUILD_INPUT,
@@ -126,7 +127,7 @@ function input(
     operatorPins: PINS,
     routeAuthority: routeAuthority(),
     secrets: Object.freeze(Object.fromEntries([
-      'DISCOVERY_PROVIDER_BEARER_TOKEN', 'ACOS_ADMISSION_AUTH_SECRET',
+      'DISCOVERY_PROVIDER_BEARER_TOKEN', 'AGENTIC_OS_ADMISSION_AUTH_SECRET',
       'CHECKOUT_PROVIDER_AUTH_SECRET', 'MARKETPLACE_PROVIDER_AUTH_SECRET',
       'MCP_BEARER_TOKEN', 'OPERATOR_BEARER_TOKEN', 'STOREFRONT_SESSION_SECRET',
     ].map((name) => [name, `${name}-secret-value-longer-than-thirty-two`]))),

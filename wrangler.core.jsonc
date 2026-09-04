@@ -34,7 +34,7 @@
   "secrets": {
     "required": [
       "DISCOVERY_PROVIDER_BEARER_TOKEN",
-      "ACOS_ADMISSION_AUTH_SECRET",
+      "AGENTIC_OS_ADMISSION_AUTH_SECRET",
       "CHECKOUT_PROVIDER_AUTH_SECRET",
       "MARKETPLACE_PROVIDER_AUTH_SECRET"
     ]
@@ -84,7 +84,7 @@
       "secrets": {
         "required": [
           "DISCOVERY_PROVIDER_BEARER_TOKEN",
-          "ACOS_ADMISSION_AUTH_SECRET",
+          "AGENTIC_OS_ADMISSION_AUTH_SECRET",
           "CHECKOUT_PROVIDER_AUTH_SECRET",
           "MARKETPLACE_PROVIDER_AUTH_SECRET"
         ]
@@ -127,14 +127,14 @@
       "services": [
         { "binding": "ACOS_ADMISSION", "service": "agentic-canvas-os-staging" },
         { "binding": "COMMERCE_SANDBOX", "service": "agentic-commerce-sandbox-staging" },
-        { "binding": "DOCS_MCP", "service": "agenticgraph-mcp-staging" },
-        { "binding": "CHECKOUT_PROVIDER", "service": "agenticgraph-travel-commerce-staging" },
-        { "binding": "MARKETPLACE_PROVIDER", "service": "agenticgraph-marketplace-staging" }
+        { "binding": "DOCS_MCP", "service": "agentic-mcp-staging" },
+        { "binding": "CHECKOUT_PROVIDER", "service": "agentic-travel-commerce-staging" },
+        { "binding": "MARKETPLACE_PROVIDER", "service": "agentic-marketplace-staging" }
       ],
       "secrets": {
         "required": [
           "DISCOVERY_PROVIDER_BEARER_TOKEN",
-          "ACOS_ADMISSION_AUTH_SECRET",
+          "AGENTIC_OS_ADMISSION_AUTH_SECRET",
           "CHECKOUT_PROVIDER_AUTH_SECRET",
           "MARKETPLACE_PROVIDER_AUTH_SECRET"
         ]
@@ -177,14 +177,14 @@
       "services": [
         { "binding": "ACOS_ADMISSION", "service": "agentic-canvas-os" },
         { "binding": "COMMERCE_SANDBOX", "service": "agentic-commerce-sandbox-production" },
-        { "binding": "DOCS_MCP", "service": "agenticgraph-mcp" },
-        { "binding": "CHECKOUT_PROVIDER", "service": "agenticgraph-travel-commerce-production" },
-        { "binding": "MARKETPLACE_PROVIDER", "service": "agenticgraph-marketplace-production" }
+        { "binding": "DOCS_MCP", "service": "agentic-mcp" },
+        { "binding": "CHECKOUT_PROVIDER", "service": "agentic-travel-commerce-production" },
+        { "binding": "MARKETPLACE_PROVIDER", "service": "agentic-marketplace-production" }
       ],
       "secrets": {
         "required": [
           "DISCOVERY_PROVIDER_BEARER_TOKEN",
-          "ACOS_ADMISSION_AUTH_SECRET",
+          "AGENTIC_OS_ADMISSION_AUTH_SECRET",
           "CHECKOUT_PROVIDER_AUTH_SECRET",
           "MARKETPLACE_PROVIDER_AUTH_SECRET"
         ]

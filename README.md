@@ -133,8 +133,8 @@ following:
   or payment provider; settlement remains closed when either is absent;
 - an exact release-candidate SHA shared by edge and core;
 - a healthy private ACOS admission provider advertising
-  `commerce.acos-admission-provider/v2` and the exact
-  `acos-adapter-registration/v1` receipt schema; every registration must carry
+  `commerce.agentic-os-admission-provider/v3` and the exact
+  `agentic-os-adapter-registration/v2` receipt schema; every registration must carry
   the complete stable `authoring_mutation_intent`, whose digest matches the
   12-header permit and whose four admission inputs exactly match the wire body;
   the operator instruction reference is exactly
@@ -171,7 +171,9 @@ The manual GitHub Actions workflow binds its mode and candidate to protected
 exact configured Production user reviewer, and rechecks the candidate before
 exposing credentials to the release job. Its controller supports exact-baseline
 bootstrap, authenticated steady state, and authenticated forward recovery. It
-uploads core and edge inactive, proves the immediate sandbox/container rollout,
+binds the canonical `config/production-core-services.json` Service Binding
+manifest digest into the immutable candidate identity, then uploads core and
+edge inactive, proves the immediate sandbox/container rollout,
 compare-and-swaps the active three-Worker tuple before each activation, and
 requires exact route readback before emitting a deployment receipt. Ambiguous or
 partial transitions emit a preserve-required artifact; no path claims rollback.

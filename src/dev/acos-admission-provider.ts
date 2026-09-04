@@ -1,18 +1,19 @@
 import {
   ACOS_ADMISSION_RECEIPT_SCHEMA,
   COMMERCE_ADMISSION_OPERATOR_INSTRUCTION_REF,
-  type AcosDeploymentIdentity,
+  agenticOsAdmissionHeaders,
+  agenticOsAdmissionServingIdentityHeaders,
+  agenticOsAdmissionRequestDigest,
+  readAgenticOsAdmissionPermit,
+  type AgenticGraphAdmissionAuthority,
+  type AgenticOsAdmissionPermit,
 } from '../core/acos-admission.js'
-import {
-  AGENT_REGISTRY_CLAIM,
-  authoringMutationRequestDigest,
-  type ClaimMutationPermit,
-} from '../domain/authoring-claim-policy.js'
-import { canonicalJson } from '../shared/digest.js'
+import type { AcosDeploymentIdentity } from '../core/acos-deployment-identity.js'
+import { AGENT_REGISTRY_CLAIM } from '../domain/authoring-claim-policy.js'
+import { canonicalJson, sha256Hex } from '../shared/digest.js'
 import { isHttpFailure, isRecord, readJsonObject } from '../shared/http.js'
-import { readAuthoringMutationHeaders } from '../core/authoring-mutation-headers.ts'
 import { verifyAcosAdmissionRequestAuthentication } from '../shared/acos-admission-auth.ts'
-import { admitDevAuthoringMutation, devAuthoringHeaders } from './authoring-fence.js'
+import { admitDevAuthoringMutation } from './authoring-fence.js'
 
 const MAXIMUM_REQUEST_BYTES = 262_144
 const BODY_FIELDS = Object.freeze([
@@ -25,34 +26,53 @@ const INTENT_FIELDS = Object.freeze([
 const INPUT_FIELDS = Object.freeze([
   'agentDefinition', 'invocationRegisterEntry', 'operatorInstructionRef', 'toolAllowlistEntry',
 ])
-export const DEV_ACOS_ADMISSION_AUTH_SECRET = 'acos-admission-dev-secret-rotate-before-production'
+export const DEV_AGENTIC_OS_ADMISSION_AUTH_SECRET =
+  'agentic-os-admission-dev-secret-rotate-before-production'
+export const DEV_AGENTIC_GRAPH_ADMISSION_AUTHORITY = Object.freeze({
+  schema: 'agentic-graph-commerce-admission-authority-projection/v1',
+  admission_inputs_digest: '1'.repeat(64),
+  admission_request_digest: '2'.repeat(64),
+  authority_ref: 'authority://agentic-graph/commerce-admission/dev-readiness',
+  evidence_digest: '3'.repeat(64),
+  issuer_repository: 'huijoohwee/agentic-graph',
+  issuer_revision: '4'.repeat(40),
+  permit_digest: '5'.repeat(64),
+  expires_at_ms: 4_102_444_800_000,
+}) satisfies AgenticGraphAdmissionAuthority
+export const DEV_ACOS_DEPLOYMENT_IDENTITY = Object.freeze({
+  schema: 'acos-cloudflare-deployment-identity/v1',
+  sourceRevision: 'a'.repeat(40),
+  candidateDigest: 'f'.repeat(64),
+  versionId: '11111111-1111-4111-8111-111111111111',
+  versionTag: `acos-prod-${'f'.repeat(64)}`,
+  versionTimestamp: '2026-09-03T00:00:00.000Z',
+}) satisfies AcosDeploymentIdentity
 
 export async function devAcosAdmissionResponse(
   request: Request,
-  deploymentIdentity: AcosDeploymentIdentity,
   catalogTokens: readonly string[],
-  authenticationSecret = DEV_ACOS_ADMISSION_AUTH_SECRET,
+  authenticationSecret = DEV_AGENTIC_OS_ADMISSION_AUTH_SECRET,
 ): Promise<Response> {
-  const authenticationPermit = readAuthoringMutationHeaders(request)
+  const authenticationPermit = readAgenticOsAdmissionPermit(request)
   if (!authenticationPermit
     || !await verifyAcosAdmissionRequestAuthentication(
-      request, 'commerce.acos-admission-provider/v3', authenticationSecret,
+      request, 'commerce.agentic-os-admission-provider/v3', authenticationSecret,
     )) {
     return Response.json({ ok: false, code: 'acos_admission_authentication_invalid' }, { status: 401 })
   }
-  const fenced = admitDevAuthoringMutation(request, AGENT_REGISTRY_CLAIM)
-  if (!fenced.ok) return rejection(devFenceReason(fenced.code), fenced.permit)
+  const fenced = admitDevAuthoringMutation(graphFenceRequest(request), AGENT_REGISTRY_CLAIM)
+  if (!fenced.ok) return rejection(devFenceReason(fenced.code), authenticationPermit)
   const body = await bodyRecord(request)
   if (!body || !hasExactFields(body, BODY_FIELDS)) {
-    return rejection('registration_input_invalid', fenced.permit)
+    return rejection('registration_input_invalid', authenticationPermit)
   }
   const intent = isRecord(body.authoring_mutation_intent)
     && hasExactFields(body.authoring_mutation_intent, INTENT_FIELDS)
     && isRecord(body.authoring_mutation_intent.admissionInputs)
     && hasExactFields(body.authoring_mutation_intent.admissionInputs, INPUT_FIELDS)
     ? body.authoring_mutation_intent : null
-  if (!intent || await authoringMutationRequestDigest(AGENT_REGISTRY_CLAIM, intent)
-    !== fenced.permit.requestDigest) return rejection('mutation_request_mismatch', fenced.permit)
+  if (!intent || await agenticOsAdmissionRequestDigest(intent)
+    !== authenticationPermit.requestDigest) return rejection('mutation_request_mismatch', authenticationPermit)
   const wireInputs = {
     agentDefinition: body.agent_definition,
     toolAllowlistEntry: body.tool_allowlist_entry,
@@ -60,14 +80,14 @@ export async function devAcosAdmissionResponse(
     operatorInstructionRef: body.operator_instruction_ref,
   }
   if (canonicalJson(intent.admissionInputs) !== canonicalJson(wireInputs)) {
-    return rejection('mutation_request_mismatch', fenced.permit)
+    return rejection('mutation_request_mismatch', authenticationPermit)
   }
   const definition = isRecord(body.agent_definition) ? body.agent_definition : null
   const allowlist = isRecord(body.tool_allowlist_entry) ? body.tool_allowlist_entry : null
   const invocation = isRecord(body.invocation_register_entry) ? body.invocation_register_entry : null
   const invocationTokens = invocation
     ? ['route', 'tag', 'binding', 'tool_identity'].map((field) => invocation[field]) : []
-  const declaredTokens = new Set([...catalogTokens, 'acos.adapter.register'])
+  const declaredTokens = new Set([...catalogTokens, 'agentic-os.adapter.register'])
   if (!definition || typeof definition.id !== 'string'
     || (definition.status !== undefined && definition.status !== 'active')
     || !allowlist || typeof allowlist.entry_id !== 'string'
@@ -78,8 +98,9 @@ export async function devAcosAdmissionResponse(
     || !invocation
     || invocationTokens.some((token) => typeof token !== 'string' || !declaredTokens.has(token))
     || body.operator_instruction_ref !== COMMERCE_ADMISSION_OPERATOR_INSTRUCTION_REF) {
-    return rejection('agent_definition_invalid', fenced.permit)
+    return rejection('agent_definition_invalid', authenticationPermit)
   }
+  const authority = await devAuthorityProjection(intent.admissionInputs, authenticationPermit)
   return Response.json({
     status: 'registered',
     record: {
@@ -91,25 +112,57 @@ export async function devAcosAdmissionResponse(
       resulting_status: 'active',
       operator_instruction_reference: body.operator_instruction_ref,
       registered_at_ms: 1_787_702_400_000,
-      deployment_identity: deploymentIdentity,
+      agentic_graph_authority: authority,
+      deployment_identity: DEV_ACOS_DEPLOYMENT_IDENTITY,
     },
     finding: null,
-  }, { headers: devAuthoringHeaders(fenced.permit) })
+  }, {
+    headers: {
+      ...agenticOsAdmissionHeaders(authenticationPermit),
+      ...agenticOsAdmissionServingIdentityHeaders(DEV_ACOS_DEPLOYMENT_IDENTITY),
+    },
+  })
 }
 
-function rejection(reasonCode: string, permit: ClaimMutationPermit | null): Response {
+function rejection(reasonCode: string, permit: AgenticOsAdmissionPermit | null): Response {
   return Response.json({
     status: 'rejected',
     record: null,
     finding: {
-      schema: 'acos-adapter-registration-finding/v1',
+      schema: 'agentic-os-adapter-registration-finding/v1',
       type: 'unfederated-tool',
       adapter_identity: null,
       reason_code: reasonCode,
       message: 'The demo-only ACOS admission fixture rejected the registration.',
       details: {},
     },
-  }, { status: 409, headers: devAuthoringHeaders(permit) })
+  }, { status: 409, headers: permit ? agenticOsAdmissionHeaders(permit) : {} })
+}
+
+async function devAuthorityProjection(
+  admissionInputs: unknown,
+  permit: AgenticOsAdmissionPermit,
+): Promise<AgenticGraphAdmissionAuthority> {
+  const projection = {
+    schema: 'agentic-graph-commerce-admission-authority-projection/v1' as const,
+    admission_inputs_digest: await sha256Hex(canonicalJson(admissionInputs)),
+    admission_request_digest: permit.requestDigest,
+    authority_ref: `authority://agentic-graph/commerce-admission/dev-${permit.requestDigest.slice(0, 32)}`,
+    issuer_repository: 'huijoohwee/agentic-graph' as const,
+    issuer_revision: '4'.repeat(40),
+    permit_digest: await sha256Hex(canonicalJson(permit)),
+    expires_at_ms: 4_102_444_800_000,
+  }
+  return Object.freeze({
+    ...projection,
+    evidence_digest: await sha256Hex(canonicalJson({ ...projection, fixture: 'dev-only' })),
+  })
+}
+
+function graphFenceRequest(request: Request): Request {
+  const headers = new Headers(request.headers)
+  headers.set('x-authoring-mutation-contract', 'agentic-graph-authoring-mutation-permit/v2')
+  return new Request(request.url, { method: request.method, headers })
 }
 
 async function bodyRecord(request: Request): Promise<Record<string, unknown> | null> {

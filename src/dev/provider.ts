@@ -8,7 +8,6 @@ import {
   ACOS_ADMISSION_PATH,
   ACOS_ADMISSION_PROVIDER_CONTRACT,
   ACOS_ADMISSION_RECEIPT_SCHEMA,
-  ACOS_DEPLOYMENT_IDENTITY_SCHEMA,
 } from '../core/acos-admission.js'
 import {
   DOCS_INVOCATION_ENDPOINT,
@@ -49,8 +48,12 @@ import {
   marketplaceOperationBinding,
   providerControlAuthenticated,
 } from './provider-evidence.js'
-import { devAcosAdmissionResponse } from './acos-admission-provider.js'
-import { DEV_ACOS_ADMISSION_AUTH_SECRET } from './acos-admission-provider.js'
+import {
+  DEV_AGENTIC_OS_ADMISSION_AUTH_SECRET,
+  DEV_ACOS_DEPLOYMENT_IDENTITY,
+  DEV_AGENTIC_GRAPH_ADMISSION_AUTHORITY,
+  devAcosAdmissionResponse,
+} from './acos-admission-provider.js'
 import { verifyAcosAdmissionRequestAuthentication } from '../shared/acos-admission-auth.js'
 
 const INVOCATION_PATH = new URL(DOCS_INVOCATION_ENDPOINT).pathname
@@ -89,23 +92,16 @@ const DEV_INVOCATION_METADATA = Object.freeze({
   routingDigest: 'e7e127092bf699af87abf7426071b6b0126ece232a7ec324d0289c8ba4b470a4',
   counts: Object.freeze({ command: 1, semantic: 1, binding: 1 }),
 })
-export const DEV_ACOS_DEPLOYMENT_IDENTITY = Object.freeze({
-  schema: ACOS_DEPLOYMENT_IDENTITY_SCHEMA,
+export const DEV_ACOS_DEPLOYMENT_PIN = Object.freeze({
   sourceRevision: 'a'.repeat(40),
   candidateDigest: 'f'.repeat(64),
-  versionId: '11111111-1111-4111-8111-111111111111',
-  versionTag: `acos-prod-${'f'.repeat(64)}`,
-  versionTimestamp: '2026-09-03T00:00:00.000Z',
 })
 
 export const DEV_PROVIDER_PINS = Object.freeze({
   ...DEV_INVOCATION_METADATA,
   requiredTokens: Object.freeze(CATALOG.map(({ token }) => token)),
   releaseCandidateSha: 'b'.repeat(40),
-  acosDeployment: Object.freeze({
-    sourceRevision: DEV_ACOS_DEPLOYMENT_IDENTITY.sourceRevision,
-    candidateDigest: DEV_ACOS_DEPLOYMENT_IDENTITY.candidateDigest,
-  }),
+  acosDeployment: DEV_ACOS_DEPLOYMENT_PIN,
   discoveryEvidence: DEV_DISCOVERY_EVIDENCE_PIN,
   checkoutEvidence: DEV_CHECKOUT_EVIDENCE_PIN,
   marketplaceEvidence: DEV_MARKETPLACE_EVIDENCE_PIN,
@@ -127,19 +123,20 @@ export async function devProviderFetch(request: Request): Promise<Response> {
   if (url.pathname === INVOCATION_PATH) return mcpResponse(request)
   if (request.method === 'GET' && url.pathname === `${ACOS_ADMISSION_PATH}/readyz`) {
     if (!await verifyAcosAdmissionRequestAuthentication(
-      request, ACOS_ADMISSION_PROVIDER_CONTRACT, DEV_ACOS_ADMISSION_AUTH_SECRET,
+      request, ACOS_ADMISSION_PROVIDER_CONTRACT, DEV_AGENTIC_OS_ADMISSION_AUTH_SECRET,
     )) return Response.json({ ok: false, code: 'acos_admission_authentication_invalid' }, { status: 401 })
     return Response.json({
       ok: true,
-      productionReady: true,
       contract: ACOS_ADMISSION_PROVIDER_CONTRACT,
       receiptSchema: ACOS_ADMISSION_RECEIPT_SCHEMA,
       operations: ['register-fenced'],
+      productionReady: true,
       deploymentIdentity: DEV_ACOS_DEPLOYMENT_IDENTITY,
+      authority: DEV_AGENTIC_GRAPH_ADMISSION_AUTHORITY,
     })
   }
   if (request.method === 'POST' && url.pathname === ACOS_ADMISSION_PATH) {
-    return devAcosAdmissionResponse(request, DEV_ACOS_DEPLOYMENT_IDENTITY, CATALOG.map(({ token }) => token))
+    return devAcosAdmissionResponse(request, CATALOG.map(({ token }) => token))
   }
   if (request.method === 'GET' && url.pathname === '/readyz') {
     return Response.json({ ok: true, contract: DEMO_CONTRACT, demo: true })

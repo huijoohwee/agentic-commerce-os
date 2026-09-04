@@ -97,7 +97,11 @@ test('DROP, rename/delete lifecycle changes, old DDL changes, and codec drift al
 
   const codec = structuredClone(prior)
   codec.revision = '8'.repeat(64)
-  codec.persistenceDependencies[0].sourceSha256 = '9'.repeat(64)
+  const identityCodec = codec.persistenceDependencies.find(
+    ({ sourceFile }: any) => sourceFile === 'src/core/acos-deployment-identity.ts',
+  )
+  assert.ok(identityCodec)
+  identityCodec.sourceSha256 = '9'.repeat(64)
   const codecResult = classifyStorageTransition(prior, codec)
   assert.equal(codecResult.status, 'blocked')
   if (codecResult.status === 'blocked') assert.ok(codecResult.reasons.includes('codec_drift'))

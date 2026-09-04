@@ -3,6 +3,10 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { canonicalJson, sha256 } from '../evidence-integrity.ts'
+import {
+  assertProductionCoreServicesManifestCurrent,
+  PRODUCTION_CORE_SERVICES_SNAPSHOT,
+} from './core-services-manifest.ts'
 import { parseHumanPresenceAnchorProof } from './human-presence-anchor.ts'
 
 export const PRODUCTION_WORKER_DEPLOYMENT_SCHEMA = 'agentic-commerce-worker-deployment/v3'
@@ -36,18 +40,11 @@ export const PRODUCTION_EDGE_SECRETS = Object.freeze([
 ])
 export const PRODUCTION_CORE_SECRETS = Object.freeze([
   'DISCOVERY_PROVIDER_BEARER_TOKEN',
-  'ACOS_ADMISSION_AUTH_SECRET',
+  'AGENTIC_OS_ADMISSION_AUTH_SECRET',
   'CHECKOUT_PROVIDER_AUTH_SECRET',
   'MARKETPLACE_PROVIDER_AUTH_SECRET',
 ])
 
-const CORE_SERVICES = Object.freeze([
-  Object.freeze({ binding: 'ACOS_ADMISSION', service: 'agentic-canvas-os' }),
-  Object.freeze({ binding: 'CHECKOUT_PROVIDER', service: 'agenticgraph-travel-commerce-production' }),
-  Object.freeze({ binding: 'COMMERCE_SANDBOX', service: 'agentic-commerce-sandbox-production' }),
-  Object.freeze({ binding: 'DOCS_MCP', service: 'agenticgraph-mcp' }),
-  Object.freeze({ binding: 'MARKETPLACE_PROVIDER', service: 'agenticgraph-marketplace-production' }),
-])
 const EDGE_SERVICES = Object.freeze([
   Object.freeze({ binding: 'COMMERCE_CORE', service: PRODUCTION_CORE_WORKER }),
 ])
@@ -94,6 +91,7 @@ export type ProductionSandboxTopologyProof = Readonly<{
 }>
 
 export function validateProductionTopology(coreValue: unknown, edgeValue: unknown): ProductionTopologyProof {
+  assertProductionCoreServicesManifestCurrent()
   const core = object(coreValue, 'core_config_invalid')
   const edge = object(edgeValue, 'edge_config_invalid')
   const coreProduction = productionLane(core)
@@ -121,7 +119,7 @@ export function validateProductionTopology(coreValue: unknown, edgeValue: unknow
   exact(canonicalJson(durableBindings) === canonicalJson(PRODUCTION_DURABLE_OBJECT_BINDINGS),
     'core_durable_object_bindings_invalid')
 
-  exactServices(coreProduction, CORE_SERVICES, 'core_services_invalid')
+  exactServices(coreProduction, PRODUCTION_CORE_SERVICES_SNAPSHOT.manifest.services, 'core_services_invalid')
   exactServices(edgeProduction, EDGE_SERVICES, 'edge_services_invalid')
   const coreSecrets = object(coreProduction.secrets, 'core_secrets_invalid')
   exactStringSet(asArray(coreSecrets.required).map(text), PRODUCTION_CORE_SECRETS, 'core_secrets_invalid')
@@ -138,7 +136,7 @@ export function validateProductionTopology(coreValue: unknown, edgeValue: unknow
   exact(edgeVars.HUMAN_CONFIRMATION_TRUST_ANCHOR_JSON === HUMAN_PRESENCE_ANCHOR_PLACEHOLDER,
     'production_human_presence_anchor_placeholder_invalid')
 
-  return Object.freeze({
+  const proof: ProductionTopologyProof = Object.freeze({
     schema: PRODUCTION_TOPOLOGY_SCHEMA,
     coreWorker: PRODUCTION_CORE_WORKER,
     edgeWorker: PRODUCTION_EDGE_WORKER,
@@ -147,6 +145,8 @@ export function validateProductionTopology(coreValue: unknown, edgeValue: unknow
     coreRequiredSecrets: PRODUCTION_CORE_SECRETS,
     edgeRequiredSecrets: PRODUCTION_EDGE_SECRETS,
   })
+  assertProductionCoreServicesManifestCurrent()
+  return proof
 }
 
 export function validateProductionSandboxTopology(value: unknown): ProductionSandboxTopologyProof {

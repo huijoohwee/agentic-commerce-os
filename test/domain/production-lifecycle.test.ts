@@ -10,6 +10,7 @@ import {
   parseBootstrapResumeReceipt,
   parseActiveVersion,
   proveBundleSize,
+  sealCandidateIdentity,
   selectUploadedVersion,
 } from '../../scripts/production-release/lifecycle.ts'
 import {
@@ -59,6 +60,32 @@ test('Bundle proof enforces the exclusive 500 kB JavaScript chunk ceiling', () =
   } finally {
     fs.rmSync(directory, { recursive: true })
   }
+})
+
+test('candidate digest binds the canonical Production core-service manifest digest', () => {
+  const identity = {
+    candidateSha: CANDIDATE,
+    candidateTree: PRIOR,
+    packageLockDigest: '1'.repeat(64),
+    coreConfigDigest: '2'.repeat(64),
+    coreServicesManifestDigest: '3'.repeat(64),
+    edgeConfigDigest: '4'.repeat(64),
+    sandboxConfigDigest: '5'.repeat(64),
+    sandboxContainerBuildInputDigest: '6'.repeat(64),
+    durableObjectStorageCompatibilityRevision: '7'.repeat(64),
+    sandboxStorageCompatibilityRevision: '8'.repeat(64),
+  }
+  const sealed = sealCandidateIdentity(identity)
+  const changed = sealCandidateIdentity({
+    ...identity,
+    coreServicesManifestDigest: '9'.repeat(64),
+  })
+  assert.equal(sealed.coreServicesManifestDigest, identity.coreServicesManifestDigest)
+  assert.notEqual(changed.candidateDigest, sealed.candidateDigest)
+  assert.throws(() => sealCandidateIdentity({
+    ...identity,
+    coreServicesManifestDigest: 'not-a-digest',
+  }), /sha256_required/u)
 })
 
 test('Bootstrap failure is forward-only and cannot claim rollback', () => {

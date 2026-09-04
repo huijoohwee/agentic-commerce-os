@@ -474,7 +474,7 @@ function requiredSecrets(values: Readonly<Record<string, string>>, kind: 'core' 
   const names = kind === 'core'
     ? [
         'DISCOVERY_PROVIDER_BEARER_TOKEN',
-        'ACOS_ADMISSION_AUTH_SECRET',
+        'AGENTIC_OS_ADMISSION_AUTH_SECRET',
         'CHECKOUT_PROVIDER_AUTH_SECRET',
         'MARKETPLACE_PROVIDER_AUTH_SECRET',
       ]

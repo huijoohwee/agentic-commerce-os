@@ -10,6 +10,7 @@ import {
   validateProductionTopology,
   validateWorkerVersion,
 } from '../../scripts/production-release/contracts.ts'
+import { PRODUCTION_CORE_SERVICES } from '../../scripts/production-release/core-services-manifest.ts'
 import { buildHumanPresenceAnchorProof } from '../../scripts/production-release/human-presence-anchor.ts'
 
 const ROOT = fileURLToPath(new URL('../..', import.meta.url))
@@ -36,7 +37,7 @@ test('Production topology fixes one exact route, six Durable Objects, and the ex
   assert.equal(proof.durableObjectBindings.length, 6)
   assert.deepEqual(proof.coreRequiredSecrets, [
     'DISCOVERY_PROVIDER_BEARER_TOKEN',
-    'ACOS_ADMISSION_AUTH_SECRET',
+    'AGENTIC_OS_ADMISSION_AUTH_SECRET',
     'CHECKOUT_PROVIDER_AUTH_SECRET',
     'MARKETPLACE_PROVIDER_AUTH_SECRET',
   ])
@@ -46,6 +47,27 @@ test('Production topology fixes one exact route, six Durable Objects, and the ex
     'STOREFRONT_SESSION_SECRET',
   ])
   assert.throws(() => buildHumanPresenceAnchorProof('external-trust-anchor-required'), /binding_json_invalid/u)
+})
+
+test('Core service bindings use the exact Graph-declared staging and production Worker identities', () => {
+  const core = config('core') as any
+  assert.deepEqual(core.env.staging.services, [
+    { binding: 'ACOS_ADMISSION', service: 'agentic-canvas-os-staging' },
+    { binding: 'COMMERCE_SANDBOX', service: 'agentic-commerce-sandbox-staging' },
+    { binding: 'DOCS_MCP', service: 'agentic-mcp-staging' },
+    { binding: 'CHECKOUT_PROVIDER', service: 'agentic-travel-commerce-staging' },
+    { binding: 'MARKETPLACE_PROVIDER', service: 'agentic-marketplace-staging' },
+  ])
+  assert.deepEqual([...core.env.production.services].sort((left, right) => (
+    left.binding.localeCompare(right.binding)
+  )), PRODUCTION_CORE_SERVICES)
+
+  const staleLegacyIdentity = config('core') as any
+  staleLegacyIdentity.env.production.services[2].service = 'agenticgraph-mcp'
+  assert.throws(
+    () => validateProductionTopology(staleLegacyIdentity, config('edge')),
+    /core_services_invalid/u,
+  )
 })
 
 test('Production sandbox is a private exact service with one bounded container-backed Durable Object', () => {
@@ -171,7 +193,7 @@ test('Core Worker version requires the authenticated discovery-provider secret w
 
   for (const missingSecret of [
     'DISCOVERY_PROVIDER_BEARER_TOKEN',
-    'ACOS_ADMISSION_AUTH_SECRET',
+    'AGENTIC_OS_ADMISSION_AUTH_SECRET',
     'CHECKOUT_PROVIDER_AUTH_SECRET',
     'MARKETPLACE_PROVIDER_AUTH_SECRET',
   ]) {

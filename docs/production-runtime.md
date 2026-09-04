@@ -268,7 +268,7 @@ Cloudflare operators must:
    Worker. Generate each with a cryptographically secure secret generator; do
    not record a value in repository files or workflow inputs;
 3. configure distinct `DISCOVERY_PROVIDER_BEARER_TOKEN`,
-   `ACOS_ADMISSION_AUTH_SECRET`, `CHECKOUT_PROVIDER_AUTH_SECRET`, and
+   `AGENTIC_OS_ADMISSION_AUTH_SECRET`, `CHECKOUT_PROVIDER_AUTH_SECRET`, and
    `MARKETPLACE_PROVIDER_AUTH_SECRET` values on the core Worker. The discovery
    token must match the `agentic-graph` MCP runtime's corresponding bearer;
    none may enter repository files, workflow inputs, operational evidence
@@ -281,6 +281,13 @@ Cloudflare operators must:
    protected controller and its typed post-deployment proof; and
 6. prohibit out-of-controller changes to all three commerce Workers and the
    route, and retain authenticated predecessor and preserve artifacts.
+
+`config/production-core-services.json` is the repository-owned SSOT for the five
+Production core Service Binding targets. It is bounded, exact-key, canonical
+JSON; the release contract consumes it directly and `CandidateIdentity` includes
+its byte digest. `wrangler.core.jsonc` must match it exactly. Duplicate keys or
+bindings, extra keys, noncanonical bytes, and sequence or manifest/config drift fail
+closed before release mutation.
 
 `agentic-graph` operators must provide the live provider contracts the core calls:
 
@@ -297,7 +304,7 @@ Cloudflare operators must:
   named passing checks may be present.
 
 Agentic Canvas OS operators must expose the private admission endpoint used by
-`ACOS_ADMISSION`, returning an exact active `acos-adapter-registration/v1`
+`ACOS_ADMISSION`, returning an exact active `agentic-os-adapter-registration/v2`
 receipt for the four authoritative registration inputs.
 
 ## Exact remaining blockers

@@ -76,7 +76,12 @@
     {
       "sourceFile": "src/core/acos-admission.ts",
       "purpose": "ACOS admission receipt codec persisted by AgentRegistry.",
-      "sourceSha256": "6a2ca19af63cbef85b7659e4f44f2bf7ef061c1b31ed14efc3d1b7bf298385ed"
+      "sourceSha256": "c8fb93488e4b0983b71901729886869c1aee46ed375c8b9478ddec6069306ae0"
+    },
+    {
+      "sourceFile": "src/core/acos-deployment-identity.ts",
+      "purpose": "ACOS deployment identity and configured-pin codec persisted by AgentRegistry.",
+      "sourceSha256": "9c9650443a354dc3c4654a53a2da19928d7a27ab7ac7a02fef426ffba6254e4b"
     },
     {
       "sourceFile": "src/core/agent-registry-record.ts",
@@ -151,7 +156,7 @@
     {
       "sourceFile": "src/core/core-actions.ts",
       "purpose": "Boundary normalization for records passed to Durable Objects.",
-      "sourceSha256": "b162b843469e874692fd7c3caa2d1809322bce4c4b7ce46342889a751af55c93"
+      "sourceSha256": "02b4fe664b0e15697ee0ebc1e7036257623da4f60cf834af5caace8af829afd6"
     },
     {
       "sourceFile": "src/core/checkout-input.ts",
@@ -365,5 +370,5 @@
       ]
     }
   ],
-  "revision": "83bbc34e89be42a2ac930de61e205347f2155bf46192f7d0f71c7c9f5e3f45d3"
+  "revision": "951afd045ec21ba61838efc71b371f904237a14237c16f94cbc82aedaf54ea51"
 }

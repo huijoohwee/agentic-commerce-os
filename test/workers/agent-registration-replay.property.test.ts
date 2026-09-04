@@ -4,8 +4,10 @@ import { describe, expect, it } from 'vitest'
 import {
   ACOS_ADMISSION_PATH,
   ACOS_ADMISSION_RECEIPT_SCHEMA,
-  ACOS_DEPLOYMENT_IDENTITY_SCHEMA,
   COMMERCE_ADMISSION_OPERATOR_INSTRUCTION_REF,
+  agenticOsAdmissionHeaders,
+  agenticOsAdmissionServingIdentityHeaders,
+  readAgenticOsAdmissionPermit,
   requestAcosAdmission,
   type AcosAdmissionInputs,
   type AcosAdmissionReceipt,
@@ -16,8 +18,8 @@ import {
   type AgentRegistrationInput,
   type AgentRegistrationIntent,
 } from '../../src/core/agent-registry.ts'
-import { authoringMutationHeaders } from '../../src/core/authoring-mutation-headers.ts'
-import { DEV_ACOS_ADMISSION_AUTH_SECRET } from '../../src/dev/acos-admission-provider.ts'
+import { DEV_AGENTIC_OS_ADMISSION_AUTH_SECRET } from '../../src/dev/acos-admission-provider.ts'
+import { canonicalJson, sha256Hex } from '../../src/shared/digest.ts'
 import {
   AGENT_REGISTRY_CLAIM,
   authoringMutationOperationId,
@@ -133,12 +135,12 @@ async function admittedRegistration(
 ): Promise<AgentRegistrationInput> {
   const authoringIntent = agentRegistrationMutationIntent(intent)
   const result = await requestAcosAdmission(
-    admissionProvider(intent.admissionInputs, authoringIntent, permit),
+    admissionProvider(intent.admissionInputs, authoringIntent),
     intent.admissionInputs,
     authoringIntent,
     permit,
     Object.freeze({ sourceRevision: 'a'.repeat(40), candidateDigest: 'f'.repeat(64) }),
-    DEV_ACOS_ADMISSION_AUTH_SECRET,
+    DEV_AGENTIC_OS_ADMISSION_AUTH_SECRET,
   )
   expect(result).toMatchObject({ ok: true })
   if (!result.ok) throw new Error(`ACOS v2 admission failed: ${result.code}`)
@@ -148,7 +150,6 @@ async function admittedRegistration(
 function admissionProvider(
   input: AcosAdmissionInputs,
   authoringIntent: unknown,
-  permit: ClaimMutationPermit,
 ): Fetcher {
   return Object.freeze({
     async fetch(request: Request): Promise<Response> {
@@ -160,14 +161,27 @@ function admissionProvider(
         invocation_register_entry: input.invocationRegisterEntry,
         operator_instruction_ref: input.operatorInstructionRef,
       })
-      return Response.json({ status: 'registered', record: receipt(input), finding: null }, {
-        headers: authoringMutationHeaders(permit),
+      const admissionPermit = readAgenticOsAdmissionPermit(request)
+      if (!admissionPermit) throw new Error('Agentic OS admission permit was malformed')
+      const registrationReceipt = await receipt(input, admissionPermit)
+      return Response.json({
+        status: 'registered',
+        record: registrationReceipt,
+        finding: null,
+      }, {
+        headers: {
+          ...agenticOsAdmissionHeaders(admissionPermit),
+          ...agenticOsAdmissionServingIdentityHeaders(registrationReceipt.deployment_identity),
+        },
       })
     },
   }) as unknown as Fetcher
 }
 
-function receipt(input: AcosAdmissionInputs): AcosAdmissionReceipt {
+async function receipt(
+  input: AcosAdmissionInputs,
+  permit: NonNullable<ReturnType<typeof readAgenticOsAdmissionPermit>>,
+): Promise<AcosAdmissionReceipt> {
   const definition = input.agentDefinition as { id: string }
   const allowlist = input.toolAllowlistEntry as { entry_id: string; adapter_identity: string }
   return Object.freeze({
@@ -175,23 +189,31 @@ function receipt(input: AcosAdmissionInputs): AcosAdmissionReceipt {
     adapter_identity: allowlist.adapter_identity,
     agent_definition_id: definition.id,
     tool_allowlist_entry_id: allowlist.entry_id,
-    invocation_register_tokens: Object.freeze(['/tool.route', '#mcp', '@mcp-gateway', 'acos.adapter.register']),
+    invocation_register_tokens: Object.freeze([
+      '/tool.route', '#mcp', '@mcp-gateway', 'agentic-os.adapter.register',
+    ]),
     resulting_status: 'active',
     operator_instruction_reference: input.operatorInstructionRef,
     registered_at_ms: 1_788_396_300_000,
-    deployment_identity: deploymentIdentity(),
-  })
-}
-
-function deploymentIdentity() {
-  const candidateDigest = 'f'.repeat(64)
-  return Object.freeze({
-    schema: ACOS_DEPLOYMENT_IDENTITY_SCHEMA,
-    sourceRevision: 'a'.repeat(40),
-    candidateDigest,
-    versionId: '11111111-1111-4111-8111-111111111111',
-    versionTag: `acos-prod-${candidateDigest}`,
-    versionTimestamp: '2026-09-03T00:00:00.000Z',
+    agentic_graph_authority: Object.freeze({
+      schema: 'agentic-graph-commerce-admission-authority-projection/v1',
+      admission_inputs_digest: await sha256Hex(canonicalJson(input)),
+      admission_request_digest: permit.requestDigest,
+      authority_ref: `authority://agentic-graph/commerce-admission/replay-${permit.requestDigest.slice(0, 32)}`,
+      evidence_digest: 'e'.repeat(64),
+      issuer_repository: 'huijoohwee/agentic-graph',
+      issuer_revision: 'd'.repeat(40),
+      permit_digest: await sha256Hex(canonicalJson(permit)),
+      expires_at_ms: 4_102_444_800_000,
+    }),
+    deployment_identity: Object.freeze({
+      schema: 'acos-cloudflare-deployment-identity/v1',
+      sourceRevision: 'a'.repeat(40),
+      candidateDigest: 'f'.repeat(64),
+      versionId: '11111111-1111-4111-8111-111111111111',
+      versionTag: `acos-prod-${'f'.repeat(64)}`,
+      versionTimestamp: '2026-09-03T00:00:00.000Z',
+    }),
   })
 }
 
@@ -228,7 +250,7 @@ function registrationIntent(
         route: '/tool.route',
         tag: '#mcp',
         binding: '@mcp-gateway',
-        tool_identity: 'acos.adapter.register',
+        tool_identity: 'agentic-os.adapter.register',
       }),
       operatorInstructionRef: COMMERCE_ADMISSION_OPERATOR_INSTRUCTION_REF,
     }),

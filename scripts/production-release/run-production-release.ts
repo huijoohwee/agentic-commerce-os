@@ -143,7 +143,7 @@ function validateCloudflareAuthority(): void {
 function readWorkerSecrets(): Readonly<Record<string, string>> {
   return Object.freeze(Object.fromEntries([
     'DISCOVERY_PROVIDER_BEARER_TOKEN',
-    'ACOS_ADMISSION_AUTH_SECRET',
+    'AGENTIC_OS_ADMISSION_AUTH_SECRET',
     'CHECKOUT_PROVIDER_AUTH_SECRET',
     'MARKETPLACE_PROVIDER_AUTH_SECRET',
     'MCP_BEARER_TOKEN',
@@ -154,7 +154,7 @@ function readWorkerSecrets(): Readonly<Record<string, string>> {
 
 function credential(name: string): string {
   const value = environment(name)
-  const maximum = name === 'ACOS_ADMISSION_AUTH_SECRET' ? 256 : 4096
+  const maximum = name === 'AGENTIC_OS_ADMISSION_AUTH_SECRET' ? 256 : 4096
   requireRelease(value.length >= 32 && value.length <= maximum && !PLACEHOLDER_PATTERN.test(value),
     `${name.toLowerCase()}_invalid`)
   return value

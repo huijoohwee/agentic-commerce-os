@@ -1,5 +1,5 @@
 {
-  "$schema": "commerce.acos-admission-v2-request-fixture/v1",
+  "$schema": "commerce.agentic-os-admission-v2-request-fixture/v1",
   "commerceAgentDefinition": {
     "id": "agent-acceptance-fixture",
     "revision": "agent-acceptance-fixture-v1",
@@ -26,22 +26,22 @@
     }
   },
   "request": {
-    "url": "https://acos-admission.internal/internal/v2/adapter-registrations",
+    "url": "https://agentic-os-admission.internal/agentic-os/internal/v2/adapter-registrations",
     "method": "POST",
     "headers": {
       "content-type": "application/json",
-      "x-acos-admission-auth-schema": "commerce-acos-admission-auth/v1",
-      "x-acos-admission-auth-signature": "f77dbb18bff6d6387211eeb07aed7d76046d4a576fd46f90c3df8ef5616b62ff",
-      "x-authoring-mutation-contract": "agentic-graph-authoring-mutation-permit/v2",
-      "x-authoring-mutation-id": "mutation:41:7:7aa02c58765d6e16787fbe0b1320ed37",
-      "x-authoring-operation-id": "operation:7aa02c58765d6e16787fbe0b1320ed37d7f0ef610f9ba55a1ab2f56e69d583ee",
-      "x-authoring-request-digest": "7aa02c58765d6e16787fbe0b1320ed37d7f0ef610f9ba55a1ab2f56e69d583ee",
+      "x-agentic-os-admission-auth-schema": "commerce-agentic-os-admission-auth/v1",
+      "x-agentic-os-admission-auth-signature": "b151e4ac0202b4e5eb412080d72ce55e02bfcc55657ce3529394e57c94b9dcc3",
+      "x-authoring-mutation-contract": "agentic-os-authoring-mutation-permit/v2",
+      "x-authoring-mutation-id": "mutation:41:7:fec4d3f616fbda388e6392be63e9b5fb",
+      "x-authoring-operation-id": "operation:fec4d3f616fbda388e6392be63e9b5fb5bbe8f899901aacb3407ad7fb60de7f2",
+      "x-authoring-request-digest": "fec4d3f616fbda388e6392be63e9b5fb5bbe8f899901aacb3407ad7fb60de7f2",
       "x-authoring-mutation-sequence": "7",
       "x-authoring-semantic-scope": "operator-registry",
-      "x-authoring-claim-id": "claim-acos-v2-fixture",
+      "x-authoring-claim-id": "claim-agentic-os-v2-fixture",
       "x-authoring-lease-epoch": "41",
       "x-authoring-lease-expires-at-ms": "4102444800000",
-      "x-authoring-fence-revision": "fence-acos-v2-fixture",
+      "x-authoring-fence-revision": "fence-agentic-os-v2-fixture",
       "x-authoring-write-target": "registry",
       "x-authoring-reserved-at-ms": "1788396300000"
     },
@@ -99,7 +99,7 @@
             "route": "/tool.route",
             "tag": "#mcp",
             "binding": "@mcp-gateway",
-            "tool_identity": "acos.adapter.register"
+            "tool_identity": "agentic-os.adapter.register"
           },
           "operatorInstructionRef": "operator://agentic-graph/commerce-adapter-admission/2026-09-03"
         },
@@ -158,13 +158,13 @@
         "route": "/tool.route",
         "tag": "#mcp",
         "binding": "@mcp-gateway",
-        "tool_identity": "acos.adapter.register"
+        "tool_identity": "agentic-os.adapter.register"
       },
       "operator_instruction_ref": "operator://agentic-graph/commerce-adapter-admission/2026-09-03"
     }
   },
   "expectedReceiptIdentity": {
-    "schema": "acos-adapter-registration/v2",
+    "schema": "agentic-os-adapter-registration/v2",
     "adapter_identity": "commerce-discovery",
     "agent_definition_id": "agent-acceptance-fixture",
     "tool_allowlist_entry_id": "allowlist-agent-acceptance-fixture",
@@ -172,17 +172,28 @@
       "/tool.route",
       "#mcp",
       "@mcp-gateway",
-      "acos.adapter.register"
+      "agentic-os.adapter.register"
     ],
     "resulting_status": "active",
     "operator_instruction_reference": "operator://agentic-graph/commerce-adapter-admission/2026-09-03",
-    "deployment_identity": {
-      "schema": "acos-cloudflare-deployment-identity/v1",
-      "sourceRevision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-      "candidateDigest": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-      "versionId": "11111111-1111-4111-8111-111111111111",
-      "versionTag": "acos-prod-ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-      "versionTimestamp": "2026-09-03T00:00:00.000Z"
-    }
+      "agentic_graph_authority": {
+      "schema": "agentic-graph-commerce-admission-authority-projection/v1",
+      "admission_inputs_digest": "19d3e17d32872ef4d7acd218bf3eb591ed7db097c638c2ab9a90f6d94ab391eb",
+      "admission_request_digest": "fec4d3f616fbda388e6392be63e9b5fb5bbe8f899901aacb3407ad7fb60de7f2",
+      "authority_ref": "authority://agentic-graph/commerce-admission/fixture-20260903",
+      "evidence_digest": "9c9b05a417290037f36b06b859010d1c065e7d72fd01e5da2fbbc1c59baad319",
+      "issuer_repository": "huijoohwee/agentic-graph",
+      "issuer_revision": "dddddddddddddddddddddddddddddddddddddddd",
+        "permit_digest": "97596dbeb489c81faabdf78e492fd6e0028810731cd2b55e7aee742cf0df2f8f",
+        "expires_at_ms": 1788396460000
+      },
+      "deployment_identity": {
+        "schema": "acos-cloudflare-deployment-identity/v1",
+        "sourceRevision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "candidateDigest": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "versionId": "11111111-1111-4111-8111-111111111111",
+        "versionTag": "acos-prod-ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "versionTimestamp": "2026-09-03T00:00:00.000Z"
+      }
   }
 }

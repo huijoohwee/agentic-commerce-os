@@ -4,6 +4,10 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { canonicalJson, sha256 } from '../evidence-integrity.ts'
+import {
+  assertProductionCoreServicesManifestCurrent,
+  PRODUCTION_CORE_SERVICES_SNAPSHOT,
+} from './core-services-manifest.ts'
 
 export const PRODUCTION_BOOTSTRAP_FAILURE_SCHEMA = 'agentic-commerce-production-bootstrap-failure/v2'
 
@@ -20,6 +24,7 @@ export type CandidateIdentity = Readonly<{
   candidateTree: string
   packageLockDigest: string
   coreConfigDigest: string
+  coreServicesManifestDigest: string
   edgeConfigDigest: string
   sandboxConfigDigest: string
   sandboxContainerBuildInputDigest: string
@@ -27,6 +32,7 @@ export type CandidateIdentity = Readonly<{
   sandboxStorageCompatibilityRevision: string
   candidateDigest: string
 }>
+export type CandidateIdentityInput = Readonly<Omit<CandidateIdentity, 'candidateDigest'>>
 
 export function parseActiveVersion(value: unknown): string {
   const deployment = object(value, 'deployment_status_invalid')
@@ -184,13 +190,15 @@ export function parseBootstrapResumeReceipt(value: unknown, candidateSha: string
 }
 
 export function buildCandidateIdentity(candidateSha: string): CandidateIdentity {
+  assertProductionCoreServicesManifestCurrent()
   exact(git(['rev-parse', 'HEAD']) === candidateSha, 'candidate_head_mismatch')
   const candidateTree = git(['rev-parse', 'HEAD^{tree}'])
-  const identity = Object.freeze({
+  const identity = sealCandidateIdentity({
     candidateSha: sha1(candidateSha),
     candidateTree: sha1(candidateTree),
     packageLockDigest: fileDigest('package-lock.json'),
     coreConfigDigest: fileDigest('wrangler.core.jsonc'),
+    coreServicesManifestDigest: PRODUCTION_CORE_SERVICES_SNAPSHOT.digest,
     edgeConfigDigest: fileDigest('wrangler.edge.jsonc'),
     sandboxConfigDigest: fileDigest('wrangler.sandbox.jsonc'),
     sandboxContainerBuildInputDigest: fileDigest('config/sandbox.Dockerfile'),
@@ -200,6 +208,23 @@ export function buildCandidateIdentity(candidateSha: string): CandidateIdentity 
       fileDigest('src/sandbox/isolation.ts'),
       fileDigest('src/sandbox/preview.ts'),
     ])),
+  })
+  assertProductionCoreServicesManifestCurrent()
+  return identity
+}
+
+export function sealCandidateIdentity(input: CandidateIdentityInput): CandidateIdentity {
+  const identity = Object.freeze({
+    candidateSha: sha1(input.candidateSha),
+    candidateTree: sha1(input.candidateTree),
+    packageLockDigest: digest(input.packageLockDigest),
+    coreConfigDigest: digest(input.coreConfigDigest),
+    coreServicesManifestDigest: digest(input.coreServicesManifestDigest),
+    edgeConfigDigest: digest(input.edgeConfigDigest),
+    sandboxConfigDigest: digest(input.sandboxConfigDigest),
+    sandboxContainerBuildInputDigest: digest(input.sandboxContainerBuildInputDigest),
+    durableObjectStorageCompatibilityRevision: digest(input.durableObjectStorageCompatibilityRevision),
+    sandboxStorageCompatibilityRevision: digest(input.sandboxStorageCompatibilityRevision),
   })
   return Object.freeze({ ...identity, candidateDigest: sha256(canonicalJson(identity)) })
 }

@@ -2,6 +2,6 @@
 MCP_BEARER_TOKEN=replace-with-at-least-32-random-characters
 OPERATOR_BEARER_TOKEN=replace-with-a-distinct-32-character-secret
 DISCOVERY_PROVIDER_BEARER_TOKEN=replace-with-another-distinct-32-character-secret
-ACOS_ADMISSION_AUTH_SECRET=replace-with-a-distinct-acos-admission-secret
+AGENTIC_OS_ADMISSION_AUTH_SECRET=replace-with-a-distinct-agentic-os-admission-secret
 CHECKOUT_PROVIDER_AUTH_SECRET=replace-with-a-distinct-checkout-provider-secret
 MARKETPLACE_PROVIDER_AUTH_SECRET=replace-with-a-distinct-marketplace-provider-secret
