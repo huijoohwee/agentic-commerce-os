@@ -1,5 +1,10 @@
 import { DEV_PROVIDER_PINS, devProviderFetch } from '../../src/dev/provider.ts'
-import { ACOS_ADMISSION_FINDING_SCHEMA, ACOS_ADMISSION_PATH } from '../../src/core/acos-admission.ts'
+import {
+  ACOS_ADMISSION_FINDING_SCHEMA,
+  ACOS_ADMISSION_PATH,
+  agenticOsAdmissionHeaders,
+  readAgenticOsAdmissionPermit,
+} from '../../src/core/acos-admission.ts'
 import { DOCS_INVOCATION_ENDPOINT } from '../../src/invocation/index.ts'
 import { isRecord } from '../../src/shared/http.ts'
 import { parseSandboxRequest, runIsolated } from '../../src/sandbox/isolation.ts'
@@ -8,10 +13,6 @@ import {
   DEV_MARKETPLACE_PROVIDER_AUTH_SECRET,
 } from '../../src/dev/provider-evidence.ts'
 import { DEV_ACOS_ADMISSION_AUTH_SECRET } from '../../src/dev/acos-admission-provider.ts'
-import {
-  authoringMutationHeaders,
-  readAuthoringMutationHeaders,
-} from '../../src/core/authoring-mutation-headers.ts'
 
 export const CORE_DISCOVERY_PROVIDER_CREDENTIAL = 'commerce-discovery-provider-test-credential'
 
@@ -66,7 +67,7 @@ async function failureAwareAcosAdmissionProvider(request: Request): Promise<Resp
   const status = agentId.startsWith('test-acos-forged-500') && attempt === 1 ? 500 : 409
   const reasonCode = agentId.startsWith('test-acos-unknown-409') && attempt === 1
     ? 'transient_provider_rejection' : 'agent_revision_conflict'
-  const permit = readAuthoringMutationHeaders(request)
+  const permit = readAgenticOsAdmissionPermit(request)
   return Response.json({
     status: 'rejected',
     record: null,
@@ -78,7 +79,7 @@ async function failureAwareAcosAdmissionProvider(request: Request): Promise<Resp
       message: 'Synthetic ACOS admission response for the reservation lifecycle test.',
       details: {},
     },
-  }, { status, headers: permit ? authoringMutationHeaders(permit) : {} })
+  }, { status, headers: permit ? agenticOsAdmissionHeaders(permit) : {} })
 }
 
 const AMBIGUOUS_CONFIRMATIONS = new Set<string>()

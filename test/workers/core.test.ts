@@ -553,7 +553,7 @@ async function registerAgent(agentId: string, category: string, discoveryTool: s
       route: '/tool.route',
       tag: '#mcp',
       binding: '@mcp-gateway',
-      tool_identity: 'acos.adapter.register',
+      tool_identity: 'agentic-os.adapter.register',
     },
     operatorInstructionRef,
     commerceProjection: {

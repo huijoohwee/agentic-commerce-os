@@ -76,7 +76,7 @@
     {
       "sourceFile": "src/core/acos-admission.ts",
       "purpose": "ACOS admission receipt codec persisted by AgentRegistry.",
-      "sourceSha256": "6a2ca19af63cbef85b7659e4f44f2bf7ef061c1b31ed14efc3d1b7bf298385ed"
+      "sourceSha256": "00c580b6daece825ae931b8699f897aa4af0da47a6f5b4377b5cf1caa6d22eb7"
     },
     {
       "sourceFile": "src/core/agent-registry-record.ts",
@@ -365,5 +365,5 @@
       ]
     }
   ],
-  "revision": "83bbc34e89be42a2ac930de61e205347f2155bf46192f7d0f71c7c9f5e3f45d3"
+  "revision": "9945935f92b06a6d7e1380c78cfb149e2d8ff791ad45b57ab4b4c0b311ab549a"
 }

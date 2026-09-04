@@ -4,7 +4,6 @@ import { test } from 'node:test'
 import {
   COMMERCE_ADMISSION_OPERATOR_INSTRUCTION_REF,
   ACOS_ADMISSION_RECEIPT_SCHEMA,
-  ACOS_DEPLOYMENT_IDENTITY_SCHEMA,
   isAcosAdmissionReceiptBoundToInputs,
   type AcosAdmissionInputs,
 } from '../../src/core/acos-admission.ts'
@@ -34,7 +33,7 @@ function admissionInputs(agentId = 'agent-flight'): AcosAdmissionInputs {
       route: '/tool.route',
       tag: '#mcp',
       binding: '@mcp-gateway',
-      tool_identity: 'acos.adapter.register',
+      tool_identity: 'agentic-os.adapter.register',
     },
     operatorInstructionRef: COMMERCE_ADMISSION_OPERATOR_INSTRUCTION_REF,
   }
@@ -48,23 +47,25 @@ function receipt(inputs: AcosAdmissionInputs) {
     adapter_identity: allowlist.adapter_identity,
     agent_definition_id: definition.id,
     tool_allowlist_entry_id: allowlist.entry_id,
-    invocation_register_tokens: ['/tool.route', '#mcp', '@mcp-gateway', 'acos.adapter.register'],
+    invocation_register_tokens: ['/tool.route', '#mcp', '@mcp-gateway', 'agentic-os.adapter.register'],
     resulting_status: 'active',
     operator_instruction_reference: inputs.operatorInstructionRef,
     registered_at_ms: 1_787_702_400_000,
-    deployment_identity: deploymentIdentity(),
+    agentic_graph_authority: authorityProjection(),
   }
 }
 
-function deploymentIdentity() {
-  const candidateDigest = 'f'.repeat(64)
+function authorityProjection() {
   return {
-    schema: ACOS_DEPLOYMENT_IDENTITY_SCHEMA,
-    sourceRevision: 'a'.repeat(40),
-    candidateDigest,
-    versionId: '11111111-1111-4111-8111-111111111111',
-    versionTag: `acos-prod-${candidateDigest}`,
-    versionTimestamp: '2026-09-03T00:00:00.000Z',
+    schema: 'agentic-graph-commerce-admission-authority-projection/v1',
+    admission_inputs_digest: '1'.repeat(64),
+    admission_request_digest: '2'.repeat(64),
+    authority_ref: 'authority://agentic-graph/commerce-admission/domain-test',
+    evidence_digest: '3'.repeat(64),
+    issuer_repository: 'huijoohwee/agentic-graph',
+    issuer_revision: '4'.repeat(40),
+    permit_digest: '5'.repeat(64),
+    expires_at_ms: 4_102_444_800_000,
   }
 }
 
@@ -75,7 +76,7 @@ test('ACOS admission accepts only an exact active receipt bound to all four auth
   assert.equal(isAcosAdmissionReceiptBoundToInputs({ ...exact, extra: true }, inputs), false)
   assert.equal(isAcosAdmissionReceiptBoundToInputs({
     ...exact,
-    invocation_register_tokens: ['/tool.route', '#mcp', '@wrong', 'acos.adapter.register'],
+    invocation_register_tokens: ['/tool.route', '#mcp', '@wrong', 'agentic-os.adapter.register'],
   }, inputs), false)
   assert.equal(isAcosAdmissionReceiptBoundToInputs({ ...exact, resulting_status: 'proposed' }, inputs), false)
 })

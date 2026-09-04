@@ -43,10 +43,10 @@ export const PRODUCTION_CORE_SECRETS = Object.freeze([
 
 const CORE_SERVICES = Object.freeze([
   Object.freeze({ binding: 'ACOS_ADMISSION', service: 'agentic-canvas-os' }),
-  Object.freeze({ binding: 'CHECKOUT_PROVIDER', service: 'agenticgraph-travel-commerce-production' }),
+  Object.freeze({ binding: 'CHECKOUT_PROVIDER', service: 'agentic-travel-commerce-production' }),
   Object.freeze({ binding: 'COMMERCE_SANDBOX', service: 'agentic-commerce-sandbox-production' }),
-  Object.freeze({ binding: 'DOCS_MCP', service: 'agenticgraph-mcp' }),
-  Object.freeze({ binding: 'MARKETPLACE_PROVIDER', service: 'agenticgraph-marketplace-production' }),
+  Object.freeze({ binding: 'DOCS_MCP', service: 'agentic-mcp' }),
+  Object.freeze({ binding: 'MARKETPLACE_PROVIDER', service: 'agentic-marketplace-production' }),
 ])
 const EDGE_SERVICES = Object.freeze([
   Object.freeze({ binding: 'COMMERCE_CORE', service: PRODUCTION_CORE_WORKER }),

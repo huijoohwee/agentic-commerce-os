@@ -113,7 +113,7 @@ async function register(
       review_required: true,
     },
     invocationRegisterEntry: {
-      route: '/tool.route', tag: '#mcp', binding: '@mcp-gateway', tool_identity: 'acos.adapter.register',
+      route: '/tool.route', tag: '#mcp', binding: '@mcp-gateway', tool_identity: 'agentic-os.adapter.register',
     },
     operatorInstructionRef: COMMERCE_ADMISSION_OPERATOR_INSTRUCTION_REF,
     commerceProjection: {

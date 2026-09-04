@@ -48,6 +48,31 @@ test('Production topology fixes one exact route, six Durable Objects, and the ex
   assert.throws(() => buildHumanPresenceAnchorProof('external-trust-anchor-required'), /binding_json_invalid/u)
 })
 
+test('Core service bindings use the exact Graph-declared staging and production Worker identities', () => {
+  const core = config('core') as any
+  assert.deepEqual(core.env.staging.services, [
+    { binding: 'ACOS_ADMISSION', service: 'agentic-canvas-os-staging' },
+    { binding: 'COMMERCE_SANDBOX', service: 'agentic-commerce-sandbox-staging' },
+    { binding: 'DOCS_MCP', service: 'agentic-mcp-staging' },
+    { binding: 'CHECKOUT_PROVIDER', service: 'agentic-travel-commerce-staging' },
+    { binding: 'MARKETPLACE_PROVIDER', service: 'agentic-marketplace-staging' },
+  ])
+  assert.deepEqual(core.env.production.services, [
+    { binding: 'ACOS_ADMISSION', service: 'agentic-canvas-os' },
+    { binding: 'COMMERCE_SANDBOX', service: 'agentic-commerce-sandbox-production' },
+    { binding: 'DOCS_MCP', service: 'agentic-mcp' },
+    { binding: 'CHECKOUT_PROVIDER', service: 'agentic-travel-commerce-production' },
+    { binding: 'MARKETPLACE_PROVIDER', service: 'agentic-marketplace-production' },
+  ])
+
+  const staleLegacyIdentity = config('core') as any
+  staleLegacyIdentity.env.production.services[2].service = 'agenticgraph-mcp'
+  assert.throws(
+    () => validateProductionTopology(staleLegacyIdentity, config('edge')),
+    /core_services_invalid/u,
+  )
+})
+
 test('Production sandbox is a private exact service with one bounded container-backed Durable Object', () => {
   const proof = validateProductionSandboxTopology(config('sandbox'))
   assert.equal(proof.sandboxWorker, 'agentic-commerce-sandbox-production')

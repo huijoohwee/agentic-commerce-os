@@ -1,20 +1,43 @@
 import { isHttpFailure, isRecord, readJsonResponse } from '../shared/http.ts'
-import type { ClaimMutationPermit } from '../domain/authoring-claim-policy.js'
-import { authenticateAcosAdmissionRequest } from '../shared/acos-admission-auth.ts'
 import {
-  authoringMutationHeaders,
-  responseMatchesAuthoringMutation,
-} from './authoring-mutation-headers.ts'
+  AGENT_REGISTRY_CLAIM,
+  authoringMutationRequestDigest,
+  type ClaimMutationPermit,
+} from '../domain/authoring-claim-policy.ts'
+import { authenticateAcosAdmissionRequest } from '../shared/acos-admission-auth.ts'
+import { canonicalJson, sha256Hex } from '../shared/digest.ts'
 
-export const ACOS_ADMISSION_RECEIPT_SCHEMA = 'acos-adapter-registration/v2' as const
-export const ACOS_ADMISSION_FINDING_SCHEMA = 'acos-adapter-registration-finding/v1' as const
-export const ACOS_ADMISSION_PROVIDER_CONTRACT = 'commerce.acos-admission-provider/v3' as const
-export const ACOS_DEPLOYMENT_IDENTITY_SCHEMA = 'acos-cloudflare-deployment-identity/v1' as const
-export const ACOS_ADMISSION_PATH = '/internal/v2/adapter-registrations' as const
+export const ACOS_ADMISSION_RECEIPT_SCHEMA = 'agentic-os-adapter-registration/v2' as const
+export const ACOS_ADMISSION_FINDING_SCHEMA = 'agentic-os-adapter-registration-finding/v1' as const
+export const ACOS_ADMISSION_PROVIDER_CONTRACT = 'commerce.agentic-os-admission-provider/v3' as const
+export const ACOS_ADMISSION_PATH = '/agentic-os/internal/v2/adapter-registrations' as const
 export const COMMERCE_ADMISSION_OPERATOR_INSTRUCTION_REF =
   'operator://agentic-graph/commerce-adapter-admission/2026-09-03' as const
 
 const MAXIMUM_ADMISSION_RESPONSE_BYTES = 262_144
+const ACOS_ADMISSION_ORIGIN = 'https://agentic-os-admission.internal'
+const COMMERCE_MUTATION_PERMIT_SCHEMA = 'agentic-graph-authoring-mutation-permit/v2' as const
+const AGENTIC_OS_MUTATION_PERMIT_SCHEMA = 'agentic-os-authoring-mutation-permit/v2' as const
+const AGENTIC_OS_OPERATION_SCHEMA = 'agentic-os-authoring-operation/v1' as const
+const AGENTIC_GRAPH_AUTHORITY_SCHEMA = 'agentic-graph-commerce-admission-authority-projection/v1' as const
+const AGENTIC_GRAPH_AUTHORITY_REF_PREFIX = 'authority://agentic-graph/commerce-admission/'
+const AGENTIC_GRAPH_ISSUER_REPOSITORY = 'huijoohwee/agentic-graph'
+const ADMISSION_SCOPE = 'operator-registry'
+const ADMISSION_WRITE_TARGET = 'registry'
+const AUTHORING_HEADER_FIELDS = Object.freeze([
+  ['x-authoring-mutation-contract', 'schema'],
+  ['x-authoring-mutation-id', 'mutationId'],
+  ['x-authoring-operation-id', 'operationId'],
+  ['x-authoring-request-digest', 'requestDigest'],
+  ['x-authoring-mutation-sequence', 'mutationSequence'],
+  ['x-authoring-semantic-scope', 'semanticScope'],
+  ['x-authoring-claim-id', 'claimId'],
+  ['x-authoring-lease-epoch', 'leaseEpoch'],
+  ['x-authoring-lease-expires-at-ms', 'leaseExpiresAtMs'],
+  ['x-authoring-fence-revision', 'fenceRevision'],
+  ['x-authoring-write-target', 'requiredWriteTarget'],
+  ['x-authoring-reserved-at-ms', 'reservedAtMs'],
+] as const)
 const ACOS_AGENT_DEFINITION_FIELDS = Object.freeze([
   'id', 'revision', 'name', 'source', 'model', 'instructions', 'tools', 'guardrails',
   'mcpServers', 'handoffs', 'output', 'status',
@@ -28,10 +51,18 @@ const RECEIPT_KEYS = Object.freeze([
   'resulting_status',
   'operator_instruction_reference',
   'registered_at_ms',
-  'deployment_identity',
+  'agentic_graph_authority',
 ])
-const DEPLOYMENT_IDENTITY_KEYS = Object.freeze([
-  'schema', 'sourceRevision', 'candidateDigest', 'versionId', 'versionTag', 'versionTimestamp',
+const AUTHORITY_KEYS = Object.freeze([
+  'schema',
+  'admission_inputs_digest',
+  'admission_request_digest',
+  'authority_ref',
+  'evidence_digest',
+  'issuer_repository',
+  'issuer_revision',
+  'permit_digest',
+  'expires_at_ms',
 ])
 const REJECTION_KEYS = Object.freeze(['status', 'record', 'finding'])
 const FINDING_KEYS = Object.freeze([
@@ -63,8 +94,8 @@ const UNFEDERATED_TERMINAL_REJECTION_CODES = new Set([
 const UNCATALOGUED_TERMINAL_REJECTION_CODES = new Set(['invocation_register_entry_invalid'])
 const SHA1_PATTERN = /^[0-9a-f]{40}$/u
 const SHA256_PATTERN = /^[0-9a-f]{64}$/u
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u
-const UTC_TIMESTAMP_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?Z$/u
+const IDENTIFIER_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$/u
+const AUTHORITY_SUFFIX_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/u
 
 export type AcosAdmissionInputs = Readonly<{
   agentDefinition: unknown
@@ -82,7 +113,7 @@ export type AcosAdmissionReceipt = Readonly<{
   resulting_status: 'active'
   operator_instruction_reference: string
   registered_at_ms: number
-  deployment_identity: AcosDeploymentIdentity
+  agentic_graph_authority: AgenticGraphAdmissionAuthority
 }>
 
 export type AcosDeploymentPin = Readonly<{
@@ -90,14 +121,99 @@ export type AcosDeploymentPin = Readonly<{
   candidateDigest: string
 }>
 
-export type AcosDeploymentIdentity = Readonly<{
-  schema: typeof ACOS_DEPLOYMENT_IDENTITY_SCHEMA
-  sourceRevision: string
-  candidateDigest: string
-  versionId: string
-  versionTag: string
-  versionTimestamp: string
+export type AgenticGraphAdmissionAuthority = Readonly<{
+  schema: typeof AGENTIC_GRAPH_AUTHORITY_SCHEMA
+  admission_inputs_digest: string
+  admission_request_digest: string
+  authority_ref: string
+  evidence_digest: string
+  issuer_repository: typeof AGENTIC_GRAPH_ISSUER_REPOSITORY
+  issuer_revision: string
+  permit_digest: string
+  expires_at_ms: number
 }>
+
+export type AgenticOsAdmissionPermit = Readonly<{
+  schema: typeof AGENTIC_OS_MUTATION_PERMIT_SCHEMA
+  mutationId: string
+  operationId: string
+  requestDigest: string
+  mutationSequence: number
+  semanticScope: string
+  claimId: string
+  leaseEpoch: number
+  leaseExpiresAtMs: number
+  fenceRevision: string
+  requiredWriteTarget: string
+  reservedAtMs: number
+}>
+
+export async function createAgenticOsAdmissionPermit(
+  authoringMutationIntent: unknown,
+  permit: ClaimMutationPermit,
+): Promise<AgenticOsAdmissionPermit | null> {
+  if (permit.schema !== COMMERCE_MUTATION_PERMIT_SCHEMA
+    || permit.semanticScope !== ADMISSION_SCOPE
+    || permit.requiredWriteTarget !== ADMISSION_WRITE_TARGET
+    || !validPermitFields({ ...permit })) return null
+  const internalRequestDigest = await authoringMutationRequestDigest(
+    AGENT_REGISTRY_CLAIM,
+    authoringMutationIntent,
+  )
+  if (permit.requestDigest !== internalRequestDigest) return null
+  const requestDigest = await agenticOsAdmissionRequestDigest(authoringMutationIntent)
+  return Object.freeze({
+    ...permit,
+    schema: AGENTIC_OS_MUTATION_PERMIT_SCHEMA,
+    mutationId: `mutation:${permit.leaseEpoch}:${permit.mutationSequence}:${requestDigest.slice(0, 32)}`,
+    operationId: `operation:${requestDigest}`,
+    requestDigest,
+  })
+}
+
+export function agenticOsAdmissionRequestDigest(authoringMutationIntent: unknown): Promise<string> {
+  return sha256Hex(canonicalJson({
+    schema: AGENTIC_OS_OPERATION_SCHEMA,
+    semanticScope: ADMISSION_SCOPE,
+    writeTarget: ADMISSION_WRITE_TARGET,
+    payload: authoringMutationIntent,
+  }))
+}
+
+export function agenticOsAdmissionHeaders(
+  permit: AgenticOsAdmissionPermit,
+): Readonly<Record<string, string>> {
+  return Object.freeze(Object.fromEntries(AUTHORING_HEADER_FIELDS.map(([header, field]) => (
+    [header, String(permit[field])]
+  ))))
+}
+
+export function readAgenticOsAdmissionPermit(request: Request): AgenticOsAdmissionPermit | null {
+  const values = Object.fromEntries(AUTHORING_HEADER_FIELDS.map(([header, field]) => (
+    [field, request.headers.get(header)]
+  ))) as Record<string, string | null>
+  const permit = {
+    schema: values.schema,
+    mutationId: values.mutationId,
+    operationId: values.operationId,
+    requestDigest: values.requestDigest,
+    mutationSequence: positiveInteger(values.mutationSequence),
+    semanticScope: values.semanticScope,
+    claimId: values.claimId,
+    leaseEpoch: positiveInteger(values.leaseEpoch),
+    leaseExpiresAtMs: positiveInteger(values.leaseExpiresAtMs),
+    fenceRevision: values.fenceRevision,
+    requiredWriteTarget: values.requiredWriteTarget,
+    reservedAtMs: nonnegativeInteger(values.reservedAtMs),
+  }
+  return permit.schema === AGENTIC_OS_MUTATION_PERMIT_SCHEMA && validPermitFields(permit)
+    ? Object.freeze(permit as AgenticOsAdmissionPermit) : null
+}
+
+function responseMatchesAgenticOsAdmission(response: Response, permit: AgenticOsAdmissionPermit): boolean {
+  return Object.entries(agenticOsAdmissionHeaders(permit))
+    .every(([name, value]) => response.headers.get(name) === value)
+}
 
 export function projectCommerceAgentDefinitionForAcos(
   value: unknown,
@@ -142,6 +258,11 @@ export async function requestAcosAdmission(
   if (input.operatorInstructionRef !== COMMERCE_ADMISSION_OPERATOR_INSTRUCTION_REF) {
     return rejected('acos_admission_operator_instruction_reference_invalid', 0, null, false)
   }
+  if (!validAcosDeploymentPin(deploymentPin)) {
+    return rejected('acos_deployment_pin_invalid', 0, null, false)
+  }
+  const admissionPermit = await createAgenticOsAdmissionPermit(authoringMutationIntent, permit)
+  if (!admissionPermit) return rejected('acos_admission_permit_invalid', 0, null, false)
   let response: Response
   try {
     const body = JSON.stringify({
@@ -151,9 +272,9 @@ export async function requestAcosAdmission(
       invocation_register_entry: input.invocationRegisterEntry,
       operator_instruction_ref: input.operatorInstructionRef,
     })
-    const unsigned = new Request(`https://acos-admission.internal${ACOS_ADMISSION_PATH}`, {
+    const unsigned = new Request(`${ACOS_ADMISSION_ORIGIN}${ACOS_ADMISSION_PATH}`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json', ...authoringMutationHeaders(permit) },
+      headers: { 'content-type': 'application/json', ...agenticOsAdmissionHeaders(admissionPermit) },
       body,
       signal: AbortSignal.timeout(3_000),
     })
@@ -166,7 +287,7 @@ export async function requestAcosAdmission(
     return rejected('acos_admission_provider_unavailable', 503, null, false)
   }
 
-  if (!responseMatchesAuthoringMutation(response, permit)) {
+  if (!responseMatchesAgenticOsAdmission(response, admissionPermit)) {
     try {
       await response.body?.cancel('acos_admission_fence_unconfirmed')
     } catch {
@@ -188,7 +309,11 @@ export async function requestAcosAdmission(
     || !hasExactKeys(payload, ['status', 'record', 'finding'])
     || payload.status !== 'registered'
     || payload.finding !== null
-    || !isAcosAdmissionReceiptBoundToInputs(payload.record, input, deploymentPin)) {
+    || !isAcosAdmissionReceiptBoundToInputs(payload.record, input, {
+      admissionInputsDigest: await sha256Hex(canonicalJson(input)),
+      admissionRequestDigest: admissionPermit.requestDigest,
+      permitDigest: await sha256Hex(canonicalJson(admissionPermit)),
+    })) {
     return rejected('acos_admission_receipt_invalid', response.status, null, false)
   }
   return Object.freeze({ ok: true, receipt: payload.record })
@@ -199,10 +324,12 @@ export async function probeAcosAdmission(
   deploymentPin: AcosDeploymentPin | null,
   authenticationSecret: string,
 ): Promise<unknown> {
-  if (!deploymentPin) return Object.freeze({ ok: false, code: 'acos_deployment_pin_invalid' })
+  if (!deploymentPin || !validAcosDeploymentPin(deploymentPin)) {
+    return Object.freeze({ ok: false, code: 'acos_deployment_pin_invalid' })
+  }
   let response: Response
   try {
-    const unsigned = new Request(`https://acos-admission.internal${ACOS_ADMISSION_PATH}/readyz`, {
+    const unsigned = new Request(`${ACOS_ADMISSION_ORIGIN}${ACOS_ADMISSION_PATH}/readyz`, {
       method: 'GET',
       signal: AbortSignal.timeout(3_000),
     })
@@ -215,26 +342,26 @@ export async function probeAcosAdmission(
     return Object.freeze({ ok: false, code: 'acos_admission_provider_unavailable' })
   }
   const payload = await readJsonResponse(response, MAXIMUM_ADMISSION_RESPONSE_BYTES)
-  const identity = isRecord(payload) ? readDeploymentIdentity(payload.deploymentIdentity, deploymentPin) : null
+  const authority = isRecord(payload) ? readGraphAuthority(payload.authority) : null
   const valid = response.status === 200
     && isRecord(payload)
     && hasExactKeys(payload, [
-      'ok', 'contract', 'receiptSchema', 'operations', 'deploymentIdentity', 'productionReady',
+      'ok', 'contract', 'receiptSchema', 'operations', 'authority',
     ])
     && payload.ok === true
-    && payload.productionReady === true
     && payload.contract === ACOS_ADMISSION_PROVIDER_CONTRACT
     && payload.receiptSchema === ACOS_ADMISSION_RECEIPT_SCHEMA
     && Array.isArray(payload.operations)
     && payload.operations.length === 1
     && payload.operations[0] === 'register-fenced'
-    && identity !== null
+    && authority !== null
   return Object.freeze({
     ok: response.ok && valid,
     status: response.status,
     contract: valid ? payload.contract : null,
     receiptSchema: valid ? payload.receiptSchema : null,
-    deploymentIdentity: valid ? identity : null,
+    configuredDeploymentPin: valid ? deploymentPin : null,
+    authority: valid ? authority : null,
   })
 }
 
@@ -250,7 +377,11 @@ export function readAcosDeploymentPin(sourceRevision: unknown, candidateDigest: 
 export function isAcosAdmissionReceiptBoundToInputs(
   value: unknown,
   input: AcosAdmissionInputs,
-  deploymentPin?: AcosDeploymentPin,
+  expectedAuthority?: Readonly<{
+    admissionInputsDigest: string
+    admissionRequestDigest: string
+    permitDigest: string
+  }>,
 ): value is AcosAdmissionReceipt {
   if (!isRecord(value) || !hasExactKeys(value, RECEIPT_KEYS)) return false
   if (value.schema !== ACOS_ADMISSION_RECEIPT_SCHEMA
@@ -262,7 +393,7 @@ export function isAcosAdmissionReceiptBoundToInputs(
     || value.operator_instruction_reference !== input.operatorInstructionRef
     || !Number.isSafeInteger(value.registered_at_ms)
     || Number(value.registered_at_ms) < 0
-    || readDeploymentIdentity(value.deployment_identity, deploymentPin) === null) return false
+    || readGraphAuthority(value.agentic_graph_authority, expectedAuthority) === null) return false
 
   const definition = isRecord(input.agentDefinition) ? input.agentDefinition : null
   const allowlist = isRecord(input.toolAllowlistEntry) ? input.toolAllowlistEntry : null
@@ -281,32 +412,94 @@ export function isAcosAdmissionReceiptBoundToInputs(
     && expectedTokens.every((token, index) => receiptTokens[index] === token)
 }
 
-function readDeploymentIdentity(
+function readGraphAuthority(
   value: unknown,
-  expected?: AcosDeploymentPin,
-): AcosDeploymentIdentity | null {
-  if (!isRecord(value) || !hasExactKeys(value, DEPLOYMENT_IDENTITY_KEYS)) return null
-  if (value.schema !== ACOS_DEPLOYMENT_IDENTITY_SCHEMA
-    || typeof value.sourceRevision !== 'string'
-    || !SHA1_PATTERN.test(value.sourceRevision)
-    || typeof value.candidateDigest !== 'string'
-    || !SHA256_PATTERN.test(value.candidateDigest)
-    || typeof value.versionId !== 'string'
-    || !UUID_PATTERN.test(value.versionId)
-    || value.versionTag !== `acos-prod-${value.candidateDigest}`
-    || typeof value.versionTimestamp !== 'string'
-    || !UTC_TIMESTAMP_PATTERN.test(value.versionTimestamp)
-    || !Number.isFinite(Date.parse(value.versionTimestamp))
-    || (expected !== undefined && (value.sourceRevision !== expected.sourceRevision
-      || value.candidateDigest !== expected.candidateDigest))) return null
+  expected?: Readonly<{
+    admissionInputsDigest: string
+    admissionRequestDigest: string
+    permitDigest: string
+  }>,
+): AgenticGraphAdmissionAuthority | null {
+  if (!isRecord(value) || !hasExactKeys(value, AUTHORITY_KEYS)) return null
+  if (value.schema !== AGENTIC_GRAPH_AUTHORITY_SCHEMA
+    || typeof value.admission_inputs_digest !== 'string'
+    || !SHA256_PATTERN.test(value.admission_inputs_digest)
+    || typeof value.admission_request_digest !== 'string'
+    || !SHA256_PATTERN.test(value.admission_request_digest)
+    || typeof value.authority_ref !== 'string'
+    || !value.authority_ref.startsWith(AGENTIC_GRAPH_AUTHORITY_REF_PREFIX)
+    || !AUTHORITY_SUFFIX_PATTERN.test(value.authority_ref.slice(AGENTIC_GRAPH_AUTHORITY_REF_PREFIX.length))
+    || typeof value.evidence_digest !== 'string'
+    || !SHA256_PATTERN.test(value.evidence_digest)
+    || value.issuer_repository !== AGENTIC_GRAPH_ISSUER_REPOSITORY
+    || typeof value.issuer_revision !== 'string'
+    || !SHA1_PATTERN.test(value.issuer_revision)
+    || typeof value.permit_digest !== 'string'
+    || !SHA256_PATTERN.test(value.permit_digest)
+    || !Number.isSafeInteger(value.expires_at_ms)
+    || Number(value.expires_at_ms) < 0
+    || (expected !== undefined && (
+      value.admission_inputs_digest !== expected.admissionInputsDigest
+      || value.admission_request_digest !== expected.admissionRequestDigest
+      || value.permit_digest !== expected.permitDigest
+    ))) return null
   return Object.freeze({
-    schema: ACOS_DEPLOYMENT_IDENTITY_SCHEMA,
-    sourceRevision: value.sourceRevision,
-    candidateDigest: value.candidateDigest,
-    versionId: value.versionId,
-    versionTag: value.versionTag,
-    versionTimestamp: value.versionTimestamp,
+    schema: AGENTIC_GRAPH_AUTHORITY_SCHEMA,
+    admission_inputs_digest: value.admission_inputs_digest,
+    admission_request_digest: value.admission_request_digest,
+    authority_ref: value.authority_ref,
+    evidence_digest: value.evidence_digest,
+    issuer_repository: AGENTIC_GRAPH_ISSUER_REPOSITORY,
+    issuer_revision: value.issuer_revision,
+    permit_digest: value.permit_digest,
+    expires_at_ms: Number(value.expires_at_ms),
   })
+}
+
+function validAcosDeploymentPin(value: AcosDeploymentPin): boolean {
+  return SHA1_PATTERN.test(value.sourceRevision) && SHA256_PATTERN.test(value.candidateDigest)
+}
+
+function validPermitFields(value: Record<string, unknown>): boolean {
+  return typeof value.mutationId === 'string'
+    && IDENTIFIER_PATTERN.test(value.mutationId)
+    && typeof value.operationId === 'string'
+    && IDENTIFIER_PATTERN.test(value.operationId)
+    && typeof value.requestDigest === 'string'
+    && SHA256_PATTERN.test(value.requestDigest)
+    && Number.isSafeInteger(value.mutationSequence)
+    && Number(value.mutationSequence) >= 1
+    && typeof value.semanticScope === 'string'
+    && IDENTIFIER_PATTERN.test(value.semanticScope)
+    && typeof value.claimId === 'string'
+    && IDENTIFIER_PATTERN.test(value.claimId)
+    && Number.isSafeInteger(value.leaseEpoch)
+    && Number(value.leaseEpoch) >= 1
+    && Number.isSafeInteger(value.leaseExpiresAtMs)
+    && Number(value.leaseExpiresAtMs) >= 1
+    && typeof value.fenceRevision === 'string'
+    && IDENTIFIER_PATTERN.test(value.fenceRevision)
+    && typeof value.requiredWriteTarget === 'string'
+    && value.requiredWriteTarget.length >= 1
+    && value.requiredWriteTarget.length <= 512
+    && Number.isSafeInteger(value.reservedAtMs)
+    && Number(value.reservedAtMs) >= 0
+    && Number(value.reservedAtMs) < Number(value.leaseExpiresAtMs)
+    && value.operationId === `operation:${value.requestDigest}`
+    && value.mutationId
+      === `mutation:${value.leaseEpoch}:${value.mutationSequence}:${value.requestDigest.slice(0, 32)}`
+}
+
+function positiveInteger(value: unknown): number | null {
+  if (typeof value !== 'string' || !/^[1-9]\d*$/u.test(value)) return null
+  const parsed = Number(value)
+  return Number.isSafeInteger(parsed) ? parsed : null
+}
+
+function nonnegativeInteger(value: unknown): number | null {
+  if (typeof value !== 'string' || !/^\d+$/u.test(value)) return null
+  const parsed = Number(value)
+  return Number.isSafeInteger(parsed) ? parsed : null
 }
 
 function isNonemptyString(value: unknown): value is string {

@@ -1,9 +1,9 @@
 import { canonicalJson, sha256Hex } from './digest.ts'
 
-export const ACOS_ADMISSION_AUTH_SCHEMA = 'commerce-acos-admission-auth/v1'
+export const ACOS_ADMISSION_AUTH_SCHEMA = 'commerce-agentic-os-admission-auth/v1'
 export const ACOS_ADMISSION_AUTH_HEADERS = Object.freeze({
-  schema: 'x-acos-admission-auth-schema',
-  signature: 'x-acos-admission-auth-signature',
+  schema: 'x-agentic-os-admission-auth-schema',
+  signature: 'x-agentic-os-admission-auth-signature',
 })
 export const ACOS_ADMISSION_PERMIT_HEADER_NAMES = Object.freeze([
   'x-authoring-mutation-contract',
