@@ -6,6 +6,7 @@ import {
   ACOS_ADMISSION_RECEIPT_SCHEMA,
   COMMERCE_ADMISSION_OPERATOR_INSTRUCTION_REF,
   agenticOsAdmissionHeaders,
+  agenticOsAdmissionServingIdentityHeaders,
   readAgenticOsAdmissionPermit,
   requestAcosAdmission,
   type AcosAdmissionInputs,
@@ -17,7 +18,7 @@ import {
   type AgentRegistrationInput,
   type AgentRegistrationIntent,
 } from '../../src/core/agent-registry.ts'
-import { DEV_ACOS_ADMISSION_AUTH_SECRET } from '../../src/dev/acos-admission-provider.ts'
+import { DEV_AGENTIC_OS_ADMISSION_AUTH_SECRET } from '../../src/dev/acos-admission-provider.ts'
 import { canonicalJson, sha256Hex } from '../../src/shared/digest.ts'
 import {
   AGENT_REGISTRY_CLAIM,
@@ -139,7 +140,7 @@ async function admittedRegistration(
     authoringIntent,
     permit,
     Object.freeze({ sourceRevision: 'a'.repeat(40), candidateDigest: 'f'.repeat(64) }),
-    DEV_ACOS_ADMISSION_AUTH_SECRET,
+    DEV_AGENTIC_OS_ADMISSION_AUTH_SECRET,
   )
   expect(result).toMatchObject({ ok: true })
   if (!result.ok) throw new Error(`ACOS v2 admission failed: ${result.code}`)
@@ -162,12 +163,16 @@ function admissionProvider(
       })
       const admissionPermit = readAgenticOsAdmissionPermit(request)
       if (!admissionPermit) throw new Error('Agentic OS admission permit was malformed')
+      const registrationReceipt = await receipt(input, admissionPermit)
       return Response.json({
         status: 'registered',
-        record: await receipt(input, admissionPermit),
+        record: registrationReceipt,
         finding: null,
       }, {
-        headers: agenticOsAdmissionHeaders(admissionPermit),
+        headers: {
+          ...agenticOsAdmissionHeaders(admissionPermit),
+          ...agenticOsAdmissionServingIdentityHeaders(registrationReceipt.deployment_identity),
+        },
       })
     },
   }) as unknown as Fetcher
@@ -200,6 +205,14 @@ async function receipt(
       issuer_revision: 'd'.repeat(40),
       permit_digest: await sha256Hex(canonicalJson(permit)),
       expires_at_ms: 4_102_444_800_000,
+    }),
+    deployment_identity: Object.freeze({
+      schema: 'acos-cloudflare-deployment-identity/v1',
+      sourceRevision: 'a'.repeat(40),
+      candidateDigest: 'f'.repeat(64),
+      versionId: '11111111-1111-4111-8111-111111111111',
+      versionTag: `acos-prod-${'f'.repeat(64)}`,
+      versionTimestamp: '2026-09-03T00:00:00.000Z',
     }),
   })
 }

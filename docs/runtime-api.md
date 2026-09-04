@@ -27,7 +27,7 @@ shopper, agent, operator, receipt, or mutation authority.
 All three bearer secrets must be mutually distinct and at least 32 characters
 in Production. `STOREFRONT_SESSION_SECRET` must also be at least 32 characters
 and signs only the first-party session and its short-lived checkout challenge.
-Core separately requires `ACOS_ADMISSION_AUTH_SECRET`,
+Core separately requires `AGENTIC_OS_ADMISSION_AUTH_SECRET`,
 `CHECKOUT_PROVIDER_AUTH_SECRET`, and `MARKETPLACE_PROVIDER_AUTH_SECRET` for the
 three HMAC-bound private-provider contracts. Generate distinct values with a
 cryptographically secure secret generator and install them as Worker secrets;

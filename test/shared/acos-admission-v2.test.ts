@@ -11,6 +11,7 @@ import {
   ACOS_ADMISSION_RECEIPT_SCHEMA,
   agenticOsAdmissionHeaders,
   agenticOsAdmissionRequestDigest,
+  agenticOsAdmissionServingIdentityHeaders,
   createAgenticOsAdmissionPermit,
   projectCommerceAgentDefinitionForAcos,
   readAgenticOsAdmissionPermit,
@@ -25,7 +26,10 @@ import {
   type ClaimMutationPermit,
 } from '../../src/domain/authoring-claim-policy.ts'
 import { devProviderFetch } from '../../src/dev/provider.ts'
-import { DEV_ACOS_ADMISSION_AUTH_SECRET } from '../../src/dev/acos-admission-provider.ts'
+import {
+  DEV_ACOS_DEPLOYMENT_IDENTITY,
+  DEV_AGENTIC_OS_ADMISSION_AUTH_SECRET as ADMISSION_AUTH_SECRET,
+} from '../../src/dev/acos-admission-provider.ts'
 import { authenticateAcosAdmissionRequest } from '../../src/shared/acos-admission-auth.ts'
 import { canonicalJson, sha256Hex } from '../../src/shared/digest.ts'
 
@@ -34,7 +38,7 @@ const ACOS_DEPLOYMENT_PIN = Object.freeze({
   candidateDigest: 'f'.repeat(64),
 })
 
-describe('Commerce Agentic OS admission provider v2 contract', () => {
+describe('Commerce Agentic OS admission provider v3 contract', () => {
   it('pins the exact acceptance vector bytes with an owner-copyable SHA-256 manifest', () => {
     const fixtureBytes = readFileSync(new URL('../contracts/acos-admission-v2.fixture.json', import.meta.url))
     const manifest = readFileSync(
@@ -88,11 +92,16 @@ describe('Commerce Agentic OS admission provider v2 contract', () => {
         status: 'registered',
         record: { ...fixture.expectedReceiptIdentity, registered_at_ms: 1_788_396_300_000 },
         finding: null,
-      }, { headers: agenticOsAdmissionHeaders(responsePermit) })
+      }, {
+        headers: {
+          ...agenticOsAdmissionHeaders(responsePermit),
+          ...agenticOsAdmissionServingIdentityHeaders(fixture.expectedReceiptIdentity.deployment_identity),
+        },
+      })
     })
 
     const result = await requestAcosAdmission(
-      binding, input, authoringIntent, permit, ACOS_DEPLOYMENT_PIN, DEV_ACOS_ADMISSION_AUTH_SECRET,
+      binding, input, authoringIntent, permit, ACOS_DEPLOYMENT_PIN, ADMISSION_AUTH_SECRET,
     )
     expect(emitted).toEqual({
       url: fixture.request.url,
@@ -104,6 +113,11 @@ describe('Commerce Agentic OS admission provider v2 contract', () => {
       ok: true,
       receipt: { ...fixture.expectedReceiptIdentity, registered_at_ms: 1_788_396_300_000 },
     })
+    await expect(requestAcosAdmission(binding, input, authoringIntent, permit, {
+      sourceRevision: 'b'.repeat(40), candidateDigest: 'e'.repeat(64),
+    }, ADMISSION_AUTH_SECRET)).resolves.toMatchObject({
+      ok: false, code: 'acos_admission_serving_identity_invalid',
+    })
   })
 
   it('sends the exact five-key body and complete stable authoring mutation intent', async () => {
@@ -114,12 +128,12 @@ describe('Commerce Agentic OS admission provider v2 contract', () => {
     const binding = fetcher(async (request) => {
       wireBody = await request.json()
       return Response.json({ status: 'registered', record: await receipt(inputs, intent, permit), finding: null }, {
-        headers: await admissionHeaders(intent, permit),
+        headers: await successfulAdmissionHeaders(intent, permit),
       })
     })
 
     await expect(requestAcosAdmission(
-      binding, inputs, intent, permit, ACOS_DEPLOYMENT_PIN, DEV_ACOS_ADMISSION_AUTH_SECRET,
+      binding, inputs, intent, permit, ACOS_DEPLOYMENT_PIN, ADMISSION_AUTH_SECRET,
     ))
       .resolves.toMatchObject({ ok: true })
     expect(ACOS_ADMISSION_PROVIDER_CONTRACT).toBe('commerce.agentic-os-admission-provider/v3')
@@ -153,7 +167,7 @@ describe('Commerce Agentic OS admission provider v2 contract', () => {
     })
 
     const rejected = await requestAcosAdmission(
-      binding, inputs, intent, mismatchedPermit, ACOS_DEPLOYMENT_PIN, DEV_ACOS_ADMISSION_AUTH_SECRET,
+      binding, inputs, intent, mismatchedPermit, ACOS_DEPLOYMENT_PIN, ADMISSION_AUTH_SECRET,
     )
     expect(rejected).toMatchObject({
       ok: false,
@@ -166,7 +180,7 @@ describe('Commerce Agentic OS admission provider v2 contract', () => {
 
     const nextPermit = await permitFor(intent, currentLease, 2)
     await expect(requestAcosAdmission(
-      binding, inputs, intent, nextPermit, ACOS_DEPLOYMENT_PIN, DEV_ACOS_ADMISSION_AUTH_SECRET,
+      binding, inputs, intent, nextPermit, ACOS_DEPLOYMENT_PIN, ADMISSION_AUTH_SECRET,
     )).resolves.toMatchObject({
       ok: true,
       receipt: { agent_definition_id: 'agent-digest' },
@@ -198,7 +212,7 @@ describe('Commerce Agentic OS admission provider v2 contract', () => {
       unsigned,
       await unsigned.clone().text(),
       ACOS_ADMISSION_PROVIDER_CONTRACT,
-      DEV_ACOS_ADMISSION_AUTH_SECRET,
+      ADMISSION_AUTH_SECRET,
     )
     if (!signed) throw new Error('ACOS test request authentication failed')
     const response = await devProviderFetch(signed)
@@ -225,8 +239,8 @@ describe('Commerce Agentic OS admission provider v2 contract', () => {
       headers: {
         'content-type': 'application/json',
         ...agenticOsAdmissionHeaders(admissionPermit),
-        'x-acos-admission-auth-schema': 'commerce-acos-admission-auth/v1',
-        'x-acos-admission-auth-signature': '0'.repeat(64),
+        'x-retired-admission-auth-schema': 'retired-admission-auth/v0',
+        'x-retired-admission-auth-signature': '0'.repeat(64),
       },
       body: '{not-json',
     })
@@ -253,7 +267,7 @@ describe('Commerce Agentic OS admission provider v2 contract', () => {
     })
 
     await expect(requestAcosAdmission(
-      binding, inputs, intent, permit, ACOS_DEPLOYMENT_PIN, DEV_ACOS_ADMISSION_AUTH_SECRET,
+      binding, inputs, intent, permit, ACOS_DEPLOYMENT_PIN, ADMISSION_AUTH_SECRET,
     )).resolves.toEqual({
       ok: false,
       code: 'acos_admission_operator_instruction_reference_invalid',
@@ -295,7 +309,7 @@ describe('Commerce Agentic OS admission provider v2 contract', () => {
     }))
 
     await expect(requestAcosAdmission(
-      binding, inputs, intent, permit, ACOS_DEPLOYMENT_PIN, DEV_ACOS_ADMISSION_AUTH_SECRET,
+      binding, inputs, intent, permit, ACOS_DEPLOYMENT_PIN, ADMISSION_AUTH_SECRET,
     )).resolves.toEqual({
       ok: false,
       code: 'acos_admission_rejection_invalid',
@@ -313,10 +327,10 @@ describe('Commerce Agentic OS admission provider v2 contract', () => {
       status: 'registered',
       record: await receipt(inputs, intent, permit),
       finding: null,
-    }, { status: 201, headers: await admissionHeaders(intent, permit) }))
+    }, { status: 201, headers: await successfulAdmissionHeaders(intent, permit) }))
 
     await expect(requestAcosAdmission(
-      binding, inputs, intent, permit, ACOS_DEPLOYMENT_PIN, DEV_ACOS_ADMISSION_AUTH_SECRET,
+      binding, inputs, intent, permit, ACOS_DEPLOYMENT_PIN, ADMISSION_AUTH_SECRET,
     )).resolves.toEqual({
       ok: false,
       code: 'acos_admission_receipt_invalid',
@@ -338,7 +352,7 @@ describe('Commerce Agentic OS admission provider v2 contract', () => {
       }))
 
       await expect(requestAcosAdmission(
-        binding, inputs, intent, permit, ACOS_DEPLOYMENT_PIN, DEV_ACOS_ADMISSION_AUTH_SECRET,
+        binding, inputs, intent, permit, ACOS_DEPLOYMENT_PIN, ADMISSION_AUTH_SECRET,
       ))
         .resolves.toMatchObject({
           ok: false,
@@ -366,7 +380,7 @@ describe('Commerce Agentic OS admission provider v2 contract', () => {
     const binding = fetcher(async () => new Response(body, { status: 200 }))
 
     await expect(requestAcosAdmission(
-      binding, inputs, intent, permit, ACOS_DEPLOYMENT_PIN, DEV_ACOS_ADMISSION_AUTH_SECRET,
+      binding, inputs, intent, permit, ACOS_DEPLOYMENT_PIN, ADMISSION_AUTH_SECRET,
     ))
       .resolves.toMatchObject({ ok: false, code: 'acos_admission_fence_unconfirmed' })
     expect(cancelled).toBe(true)
@@ -467,6 +481,7 @@ async function receipt(
     operator_instruction_reference: inputs.operatorInstructionRef,
     registered_at_ms: 1_787_702_400_000,
     agentic_graph_authority: await authorityProjection(inputs, intent, permit),
+    deployment_identity: DEV_ACOS_DEPLOYMENT_IDENTITY,
   })
 }
 
@@ -497,6 +512,16 @@ async function admissionHeaders(
   const admissionPermit = await createAgenticOsAdmissionPermit(intent, permit)
   if (!admissionPermit) throw new Error('Agentic OS admission permit translation failed')
   return agenticOsAdmissionHeaders(admissionPermit)
+}
+
+async function successfulAdmissionHeaders(
+  intent: unknown,
+  permit: ClaimMutationPermit,
+): Promise<Readonly<Record<string, string>>> {
+  return {
+    ...await admissionHeaders(intent, permit),
+    ...agenticOsAdmissionServingIdentityHeaders(DEV_ACOS_DEPLOYMENT_IDENTITY),
+  }
 }
 
 async function digest(value: unknown): Promise<string> {

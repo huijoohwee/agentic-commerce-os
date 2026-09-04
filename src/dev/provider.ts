@@ -49,7 +49,8 @@ import {
   providerControlAuthenticated,
 } from './provider-evidence.js'
 import {
-  DEV_ACOS_ADMISSION_AUTH_SECRET,
+  DEV_AGENTIC_OS_ADMISSION_AUTH_SECRET,
+  DEV_ACOS_DEPLOYMENT_IDENTITY,
   DEV_AGENTIC_GRAPH_ADMISSION_AUTHORITY,
   devAcosAdmissionResponse,
 } from './acos-admission-provider.js'
@@ -122,13 +123,15 @@ export async function devProviderFetch(request: Request): Promise<Response> {
   if (url.pathname === INVOCATION_PATH) return mcpResponse(request)
   if (request.method === 'GET' && url.pathname === `${ACOS_ADMISSION_PATH}/readyz`) {
     if (!await verifyAcosAdmissionRequestAuthentication(
-      request, ACOS_ADMISSION_PROVIDER_CONTRACT, DEV_ACOS_ADMISSION_AUTH_SECRET,
+      request, ACOS_ADMISSION_PROVIDER_CONTRACT, DEV_AGENTIC_OS_ADMISSION_AUTH_SECRET,
     )) return Response.json({ ok: false, code: 'acos_admission_authentication_invalid' }, { status: 401 })
     return Response.json({
       ok: true,
       contract: ACOS_ADMISSION_PROVIDER_CONTRACT,
       receiptSchema: ACOS_ADMISSION_RECEIPT_SCHEMA,
       operations: ['register-fenced'],
+      productionReady: true,
+      deploymentIdentity: DEV_ACOS_DEPLOYMENT_IDENTITY,
       authority: DEV_AGENTIC_GRAPH_ADMISSION_AUTHORITY,
     })
   }

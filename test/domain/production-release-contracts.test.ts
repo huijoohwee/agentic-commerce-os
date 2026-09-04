@@ -36,7 +36,7 @@ test('Production topology fixes one exact route, six Durable Objects, and the ex
   assert.equal(proof.durableObjectBindings.length, 6)
   assert.deepEqual(proof.coreRequiredSecrets, [
     'DISCOVERY_PROVIDER_BEARER_TOKEN',
-    'ACOS_ADMISSION_AUTH_SECRET',
+    'AGENTIC_OS_ADMISSION_AUTH_SECRET',
     'CHECKOUT_PROVIDER_AUTH_SECRET',
     'MARKETPLACE_PROVIDER_AUTH_SECRET',
   ])
@@ -196,7 +196,7 @@ test('Core Worker version requires the authenticated discovery-provider secret w
 
   for (const missingSecret of [
     'DISCOVERY_PROVIDER_BEARER_TOKEN',
-    'ACOS_ADMISSION_AUTH_SECRET',
+    'AGENTIC_OS_ADMISSION_AUTH_SECRET',
     'CHECKOUT_PROVIDER_AUTH_SECRET',
     'MARKETPLACE_PROVIDER_AUTH_SECRET',
   ]) {

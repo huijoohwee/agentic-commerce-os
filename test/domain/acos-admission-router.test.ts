@@ -52,6 +52,18 @@ function receipt(inputs: AcosAdmissionInputs) {
     operator_instruction_reference: inputs.operatorInstructionRef,
     registered_at_ms: 1_787_702_400_000,
     agentic_graph_authority: authorityProjection(),
+    deployment_identity: deploymentIdentity(),
+  }
+}
+
+function deploymentIdentity() {
+  return {
+    schema: 'acos-cloudflare-deployment-identity/v1',
+    sourceRevision: 'a'.repeat(40),
+    candidateDigest: 'f'.repeat(64),
+    versionId: '11111111-1111-4111-8111-111111111111',
+    versionTag: `acos-prod-${'f'.repeat(64)}`,
+    versionTimestamp: '2026-09-03T00:00:00.000Z',
   }
 }
 

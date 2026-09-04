@@ -130,7 +130,7 @@ export async function readiness(env: CoreEnv): Promise<CoreReadinessReport> {
     check('selection_policy', async () => Object.freeze({ ok: readSelectionPolicyFromEnv(env) !== null })),
     check('provider_auth_configuration', async () => providerAuthenticationConfiguration(env)),
     check('acos_admission', async () => probeAcosAdmission(
-      env.ACOS_ADMISSION, acosDeploymentPin, env.ACOS_ADMISSION_AUTH_SECRET,
+      env.ACOS_ADMISSION, acosDeploymentPin, env.AGENTIC_OS_ADMISSION_AUTH_SECRET,
     )),
     check('registration_sandbox', async () => probeRegistrationSandbox(
       env.COMMERCE_SANDBOX,

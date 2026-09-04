@@ -2,11 +2,13 @@ import {
   ACOS_ADMISSION_RECEIPT_SCHEMA,
   COMMERCE_ADMISSION_OPERATOR_INSTRUCTION_REF,
   agenticOsAdmissionHeaders,
+  agenticOsAdmissionServingIdentityHeaders,
   agenticOsAdmissionRequestDigest,
   readAgenticOsAdmissionPermit,
   type AgenticGraphAdmissionAuthority,
   type AgenticOsAdmissionPermit,
 } from '../core/acos-admission.js'
+import type { AcosDeploymentIdentity } from '../core/acos-deployment-identity.js'
 import { AGENT_REGISTRY_CLAIM } from '../domain/authoring-claim-policy.js'
 import { canonicalJson, sha256Hex } from '../shared/digest.js'
 import { isHttpFailure, isRecord, readJsonObject } from '../shared/http.js'
@@ -24,7 +26,8 @@ const INTENT_FIELDS = Object.freeze([
 const INPUT_FIELDS = Object.freeze([
   'agentDefinition', 'invocationRegisterEntry', 'operatorInstructionRef', 'toolAllowlistEntry',
 ])
-export const DEV_ACOS_ADMISSION_AUTH_SECRET = 'agentic-os-admission-dev-secret-rotate-before-production'
+export const DEV_AGENTIC_OS_ADMISSION_AUTH_SECRET =
+  'agentic-os-admission-dev-secret-rotate-before-production'
 export const DEV_AGENTIC_GRAPH_ADMISSION_AUTHORITY = Object.freeze({
   schema: 'agentic-graph-commerce-admission-authority-projection/v1',
   admission_inputs_digest: '1'.repeat(64),
@@ -36,11 +39,19 @@ export const DEV_AGENTIC_GRAPH_ADMISSION_AUTHORITY = Object.freeze({
   permit_digest: '5'.repeat(64),
   expires_at_ms: 4_102_444_800_000,
 }) satisfies AgenticGraphAdmissionAuthority
+export const DEV_ACOS_DEPLOYMENT_IDENTITY = Object.freeze({
+  schema: 'acos-cloudflare-deployment-identity/v1',
+  sourceRevision: 'a'.repeat(40),
+  candidateDigest: 'f'.repeat(64),
+  versionId: '11111111-1111-4111-8111-111111111111',
+  versionTag: `acos-prod-${'f'.repeat(64)}`,
+  versionTimestamp: '2026-09-03T00:00:00.000Z',
+}) satisfies AcosDeploymentIdentity
 
 export async function devAcosAdmissionResponse(
   request: Request,
   catalogTokens: readonly string[],
-  authenticationSecret = DEV_ACOS_ADMISSION_AUTH_SECRET,
+  authenticationSecret = DEV_AGENTIC_OS_ADMISSION_AUTH_SECRET,
 ): Promise<Response> {
   const authenticationPermit = readAgenticOsAdmissionPermit(request)
   if (!authenticationPermit
@@ -102,9 +113,15 @@ export async function devAcosAdmissionResponse(
       operator_instruction_reference: body.operator_instruction_ref,
       registered_at_ms: 1_787_702_400_000,
       agentic_graph_authority: authority,
+      deployment_identity: DEV_ACOS_DEPLOYMENT_IDENTITY,
     },
     finding: null,
-  }, { headers: agenticOsAdmissionHeaders(authenticationPermit) })
+  }, {
+    headers: {
+      ...agenticOsAdmissionHeaders(authenticationPermit),
+      ...agenticOsAdmissionServingIdentityHeaders(DEV_ACOS_DEPLOYMENT_IDENTITY),
+    },
+  })
 }
 
 function rejection(reasonCode: string, permit: AgenticOsAdmissionPermit | null): Response {

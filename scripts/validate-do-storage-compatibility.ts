@@ -10,6 +10,7 @@ const SHA256_PATTERN = /^[0-9a-f]{64}$/u
 const REQUIRED_PERSISTENCE_DEPENDENCIES = Object.freeze([
   'src/shared/digest.ts',
   'src/core/acos-admission.ts',
+  'src/core/acos-deployment-identity.ts',
   'src/core/agent-registry-record.ts',
   'src/core/authoring-mutation-fence.ts',
   'src/core/checkout-receipts.ts',

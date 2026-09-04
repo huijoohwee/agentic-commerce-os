@@ -30,6 +30,7 @@ const FIXTURE_FILES = Object.freeze([
   'src/shared/digest.ts',
   'src/shared/theme-manifest.ts',
   'src/core/acos-admission.ts',
+  'src/core/acos-deployment-identity.ts',
   'src/core/agent-registry-record.ts',
   'src/core/authoring-mutation-fence.ts',
   'src/core/checkout-receipts.ts',
@@ -132,6 +133,35 @@ test('an imported persistence codec change blocks the old revision', (context) =
   )
   const changedDependency = changed.persistenceDependencies.find(
     ({ sourceFile }) => sourceFile === 'src/shared/digest.ts',
+  )
+  assert.notEqual(changedDependency?.sourceSha256, originalDependency?.sourceSha256)
+  assert.notEqual(changed.revision, original.revision)
+})
+
+test('an ACOS deployment-identity codec change blocks the old revision', (context) => {
+  const fixtureRoot = createFixture(context, 'commerce-do-deployment-identity-')
+  const original = validateStorageCompatibility(fixtureRoot)
+  const identityPath = path.join(fixtureRoot, 'src/core/acos-deployment-identity.ts')
+  const identitySource = readFileSync(identityPath, 'utf8')
+  const changedSource = identitySource.replace(
+    'value.versionTag !== `acos-prod-${value.candidateDigest}`',
+    'value.versionTag !== `acos-release-${value.candidateDigest}`',
+  )
+  assert.notEqual(changedSource, identitySource)
+  writeFileSync(identityPath, changedSource)
+  assert.throws(
+    () => validateStorageCompatibility(fixtureRoot),
+    /storage manifest does not match executable schema/iu,
+  )
+  const manifestPath = path.join(fixtureRoot, 'docs/do-storage-compatibility.json')
+  const template = JSON.parse(readFileSync(manifestPath, 'utf8'))
+  const changed = materializeStorageManifest(fixtureRoot, template)
+  assert.deepEqual(changed.schemaRegions, original.schemaRegions)
+  const originalDependency = original.persistenceDependencies.find(
+    ({ sourceFile }) => sourceFile === 'src/core/acos-deployment-identity.ts',
+  )
+  const changedDependency = changed.persistenceDependencies.find(
+    ({ sourceFile }) => sourceFile === 'src/core/acos-deployment-identity.ts',
   )
   assert.notEqual(changedDependency?.sourceSha256, originalDependency?.sourceSha256)
   assert.notEqual(changed.revision, original.revision)

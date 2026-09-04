@@ -16,6 +16,6 @@ export function providerAuthenticationConfiguration(env: CoreEnv): Readonly<{ ok
   return Object.freeze({
     ok: validCommerceProviderSecret(env.CHECKOUT_PROVIDER_AUTH_SECRET)
       && validCommerceProviderSecret(env.MARKETPLACE_PROVIDER_AUTH_SECRET)
-      && validAcosAdmissionAuthSecret(env.ACOS_ADMISSION_AUTH_SECRET),
+      && validAcosAdmissionAuthSecret(env.AGENTIC_OS_ADMISSION_AUTH_SECRET),
   })
 }
