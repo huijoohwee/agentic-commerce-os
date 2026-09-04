@@ -15,7 +15,7 @@ describe('terminology identity guard', () => {
       fc.stringMatching(/^[a-z][a-z0-9]{0,20}$/u),
       (legacyRoot, suffix) => {
         const legacy = `${legacyRoot}-${suffix}`
-        const superseding = `agentic-graph-${suffix}`
+        const superseding = `agent-graph-${suffix}`
         const occurrences: readonly RegisterOccurrence[] = Object.freeze([
           Object.freeze({
             path: 'src/renamed.ts',

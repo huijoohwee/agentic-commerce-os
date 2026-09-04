@@ -33,7 +33,7 @@
       "path": "test/shared/terminology-guard.property.test.ts",
       "line": 14,
       "legacyIdentifier": "knowgrph', 'knowledgegraph', 'knowledge-graph', 'knowledge_graph', 'knowledge.graph', 'kgc', 'KG_",
-      "supersedingIdentifier": "agenticgraph legacy-identity generator set",
+      "supersedingIdentifier": "agent-graph legacy-identity generator set",
       "disposition": "historical-record",
       "preservingArtifact": "negative property-test inputs proving every superseded identity is rejected",
       "readOnly": true
