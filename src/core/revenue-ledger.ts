@@ -2,6 +2,7 @@ import { DurableObject } from 'cloudflare:workers'
 
 const IDENTIFIER_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$/u
 const CURRENCY_PATTERN = /^[A-Z]{3}$/u
+export const MAXIMUM_REVENUE_PERIOD_LINES = 500
 
 export type RevenueLine = Readonly<{
   settlementId: string
@@ -69,12 +70,21 @@ export class RevenueLedger extends DurableObject<CoreEnv> {
       || !Number.isSafeInteger(endExclusiveMs)
       || startInclusiveMs < 0
       || endExclusiveMs <= startInclusiveMs) return rejected('revenue_period_malformed')
-    const lines = this.#sql.exec<StoredRevenueLine>(
+    const rows = this.#sql.exec<StoredRevenueLine>(
       `SELECT * FROM revenue_line WHERE recorded_at_ms >= ? AND recorded_at_ms < ?
-       ORDER BY recorded_at_ms ASC, settlement_id ASC`,
+       ORDER BY recorded_at_ms ASC, settlement_id ASC LIMIT ?`,
       startInclusiveMs,
       endExclusiveMs,
-    ).toArray().map(readRevenueLine)
+      MAXIMUM_REVENUE_PERIOD_LINES + 1,
+    ).toArray()
+    if (rows.length > MAXIMUM_REVENUE_PERIOD_LINES) {
+      return Object.freeze({
+        ok: false,
+        code: 'revenue_period_capacity_exceeded',
+        maximumLines: MAXIMUM_REVENUE_PERIOD_LINES,
+      })
+    }
+    const lines = rows.map(readRevenueLine)
     const summedMarkupMinor = lines.reduce((total, line) => total + line.markupMinor, 0)
     if (!Number.isSafeInteger(summedMarkupMinor)) return rejected('revenue_period_sum_out_of_range')
     return Object.freeze({

@@ -290,7 +290,7 @@
     {
       "className": "RevenueLedger",
       "sourceFile": "src/core/revenue-ledger.ts",
-      "sourceSha256": "0afed9725f593a174bfbb2098ccbea70bb27c3959bb2b86a73c61fdb2c7879eb",
+      "sourceSha256": "3783e1201ca9fab89268e6375e0e486c0b028ef97c6770ae7413737d20a0d348",
       "startMarker": "    state.blockConcurrencyWhile(async () => {",
       "endMarker": "\n  async appendLine(",
       "regionSha256": "ef9fa390e978cd272145932c4d1263b61cfdc9d905d6b44c5b17d4caae630e75",
@@ -370,5 +370,5 @@
       ]
     }
   ],
-  "revision": "951afd045ec21ba61838efc71b371f904237a14237c16f94cbc82aedaf54ea51"
+  "revision": "e826c7462ae3e7c5e759670c80bc8fd1d12a6f239f0ff4361f24ea1f3d030608"
 }
