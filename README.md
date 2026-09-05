@@ -185,7 +185,8 @@ authority, and any mode-required prior artifact. The generated mirror at
 `GitHub/huijoohwee/content/agentic-commerce-os` has zero authored edit targets
 in this repository.
 
-The protected `Integration Gate` runs the evidence contract and the bounded
+The protected `Integration Gate` first runs the pinned upstream ADLC evaluations
+through `npm run check:adlc`, then the evidence contract and the bounded
 source-and-bundle gate. Terminal `npm run check` remains a separate readiness
 decision because the repository has no 100-task verdict set. The portable task
 snapshot assigns evidence-contract tasks to `check:evidence-contract` and
