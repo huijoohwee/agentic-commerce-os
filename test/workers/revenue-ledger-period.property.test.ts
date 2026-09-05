@@ -2,7 +2,7 @@ import { env, runInDurableObject } from 'cloudflare:test'
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 
-import { RevenueLedger, type RevenueLine } from '../../src/core/revenue-ledger.ts'
+import { MAXIMUM_REVENUE_PERIOD_LINES, RevenueLedger, type RevenueLine } from '../../src/core/revenue-ledger.ts'
 
 const BASE_INSTANT_MS = 1_800_000_000_000
 const COMPLETE_LINE_FIELDS = Object.freeze([
@@ -57,6 +57,46 @@ const periodBoundsArbitrary = fc.tuple(
 }))
 
 describe('RevenueLedger period property evidence', () => {
+  it('returns all 500 lines, rejects a dense oversized period, and preserves every stored line', async () => {
+    const stub = env.REVENUE_LEDGER.get(env.REVENUE_LEDGER.newUniqueId())
+    const result = await runInDurableObject(stub, async (instance, state) => {
+      const ledger = instance as RevenueLedger
+      const line = { amountMinor: 100, markupMinor: 5, rateBasisPoints: 500, instantOffsetMs: 0, agentIndex: 0 }
+      for (let index = 0; index < MAXIMUM_REVENUE_PERIOD_LINES; index += 1) {
+        const appended = await ledger.appendLine(toRevenueLine(line, index))
+        if (!isSuccessfulResult(appended)) throw new Error('ledger rejected a valid line')
+      }
+      const atCapacity = await ledger.readPeriod(BASE_INSTANT_MS, BASE_INSTANT_MS + 1)
+      await ledger.appendLine(toRevenueLine(line, MAXIMUM_REVENUE_PERIOD_LINES))
+      const exceeded = await ledger.readPeriod(BASE_INSTANT_MS, BASE_INSTANT_MS + 1)
+      const stored = state.storage.sql.exec<{ count: number }>('SELECT COUNT(*) AS count FROM revenue_line').one()
+      return { atCapacity, exceeded, stored, empty: await ledger.readPeriod(BASE_INSTANT_MS + 1, BASE_INSTANT_MS + 2) }
+    })
+
+    expect(result.atCapacity).toMatchObject({ ok: true, lineCount: 500, summedMarkupMinor: 2500 })
+    expect(result.exceeded).toEqual({ ok: false, code: 'revenue_period_capacity_exceeded', maximumLines: 500 })
+    expect(result.stored.count).toBe(501)
+    expect(result.empty).toMatchObject({ ok: true, lineCount: 0, summedMarkupMinor: 0, lines: [] })
+  })
+
+  it('rejects oversized periods while permitting narrower reads of a larger ledger', async () => {
+    const stub = env.REVENUE_LEDGER.get(env.REVENUE_LEDGER.newUniqueId())
+    const result = await runInDurableObject(stub, async (instance) => {
+      const ledger = instance as RevenueLedger
+      const line = { amountMinor: 100, markupMinor: 5, rateBasisPoints: 500, instantOffsetMs: 0, agentIndex: 0 }
+      for (let index = 0; index < 1200; index += 1) {
+        await ledger.appendLine(toRevenueLine({ ...line, instantOffsetMs: index }, index))
+      }
+      return {
+        oversized: await ledger.readPeriod(BASE_INSTANT_MS, BASE_INSTANT_MS + 1200),
+        selected: await ledger.readPeriod(BASE_INSTANT_MS + 900, BASE_INSTANT_MS + 1000),
+      }
+    })
+
+    expect(result.oversized).toEqual({ ok: false, code: 'revenue_period_capacity_exceeded', maximumLines: 500 })
+    expect(result.selected).toMatchObject({ ok: true, lineCount: 100, summedMarkupMinor: 500 })
+  })
+
   it('Feature: agentic-graph-commerce-platform, Property 7: CP-7 — Period read-back and aggregation', { timeout: 30_000 }, async () => {
     await fc.assert(fc.asyncProperty(
       lineSetArbitrary,

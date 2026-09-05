@@ -216,6 +216,14 @@ ledger append and never resubmits the provider charge. Legacy deferred records
 without a pinned rate fail closed. This is capability evidence, not proof of
 external paying demand.
 
+Revenue period reads return at most 500 complete lines and their recomputed
+total. The indexed SQL query reads at most 501 matching rows; an additional row
+returns `revenue_period_capacity_exceeded` with `maximumLines: 500`, without
+returning partial lines or a partial total. Stored settlements remain unchanged.
+Callers may request a narrower period. More than 500 settlements sharing one
+millisecond cannot be separated by this API's time bounds; that dense interval
+requires a future cursor-based history API and remains explicitly unavailable.
+
 ## Theme, local-first, and isolation boundaries
 
 Theme validation bounds the manifest to 64 KiB, its catalog scope to 500 agent
