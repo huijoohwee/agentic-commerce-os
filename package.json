@@ -53,7 +53,8 @@
     "check:browser": "node scripts/checks/browser.ts",
     "check:named": "npm run check:terminology && npm run check:convergence && npm run check:take-rate && npm run check:template-pack && npm run check:deploy-boundary && npm run check:invocation-surface && npm run check:webmcp && npm run check:routing && npm run check:local-first && npm run check:offer-watch && npm run check:sandbox:source && npm run check:merge-agent && npm run check:authored-limits && npm run check:task-bounds -- --tasks=.kiro/specs/agentic-graph-commerce-platform/tasks.md --snapshot=config/task-bounds.snapshot.json && npm run check:browser",
     "check:implementation": "npm run types:check && npm run typecheck && npm run test && npm run test:workers && npm run check:named && npm run deploy:dev:dry && npm run deploy:production:dry",
-    "check:integration": "npm run check:evidence-contract && npm run check:implementation",
+    "check:adlc": "npm --prefix node_modules/agentic-os run evals",
+    "check:integration": "npm run check:adlc && npm run check:evidence-contract && npm run check:implementation",
     "check": "npm run check:integration && npm run check:evidence"
   },
   "dependencies": {
@@ -66,7 +67,7 @@
     "@cloudflare/workers-types": "5.20260829.1",
     "@playwright/test": "1.62.1",
     "@types/node": "26.3.0",
-    "agentic-os": "https://codeload.github.com/huijoohwee/agentic-os/tar.gz/89256623e4a09a4b8e337c9d3572593c0d188700",
+    "agentic-os": "https://codeload.github.com/huijoohwee/agentic-os/tar.gz/8c2650cefac8ba37435832adfa2314846725f21a",
     "fast-check": "4.9.0",
     "typescript": "5.9.3",
     "vitest": "4.1.11",
