@@ -1,8 +1,8 @@
 import { canonicalJson, sha256Hex } from '../shared/digest.js'
 import { isRecord, readJsonResponse } from '../shared/http.js'
+import { REGISTRATION_DRY_RUN_WALL_CLOCK_SECONDS, REGISTRATION_SANDBOX_TIMEOUT_MS } from '../shared/registration-budget.js'
 
 const MAXIMUM_RESPONSE_BYTES = 262_144
-const SANDBOX_TIMEOUT_MS = 65_000
 const TOOL_PATTERN = /^[a-z0-9][a-z0-9._-]{0,127}$/u
 
 export type RegistrationDryRunAttempt = Readonly<{
@@ -100,7 +100,7 @@ export async function runRegistrationDryRun(
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(request),
-      signal: AbortSignal.timeout(SANDBOX_TIMEOUT_MS),
+      signal: AbortSignal.timeout(REGISTRATION_SANDBOX_TIMEOUT_MS),
     }))
   } catch {
     return rejected('sandbox_blocked', 'sandbox_request_failed')
@@ -135,7 +135,7 @@ async function buildRegistrationDryRunRequest(agentDefinition: unknown, toolAllo
   return Object.freeze({
     instanceId: `registration-${digest.slice(0, 32)}`,
     purpose: 'registration-dry-run' as const,
-    limits: Object.freeze({ wallClockSeconds: 60, memoryMegabytes: 256 }),
+    limits: Object.freeze({ wallClockSeconds: REGISTRATION_DRY_RUN_WALL_CLOCK_SECONDS, memoryMegabytes: 256 }),
     payload: Object.freeze({
       registration: agentDefinition,
       toolCalls: Object.freeze(toolNames.map((toolId) => Object.freeze({ toolId, input: Object.freeze({}) }))),

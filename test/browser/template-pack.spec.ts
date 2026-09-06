@@ -5,10 +5,11 @@ import { THEME_MANIFEST_DEFAULTS } from '../../src/shared/theme-manifest.ts'
 
 const NETWORK_BYTES_PER_SECOND = 1_600_000 / 8
 
-test('mobile storefront paints within the declared network budget', async ({ browser }) => {
+test('mobile storefront paints within the declared network budget', async ({ browser, baseURL }) => {
+  if (!baseURL) throw new Error('browser_base_url_required')
   const paints: number[] = []
   for (let index = 0; index < 5; index += 1) {
-    paints.push(await coldFirstContentfulPaint(browser))
+    paints.push(await coldFirstContentfulPaint(browser, baseURL))
   }
   paints.sort((left, right) => left - right)
   expect(paints[2]).toBeLessThan(2_000)
@@ -160,7 +161,7 @@ test('visual checkout requires explicit human confirmation and never persists it
           sessionNonceDigest: 'b'.repeat(64),
           blockerDigest: 'c'.repeat(64),
           audience: 'agentic-graph-commerce-checkout',
-          relyingPartyOrigin: 'http://127.0.0.1:5187',
+          relyingPartyOrigin: new URL(route.request().url()).origin,
           blockers: [],
           verificationMode: 'development-visual-only',
         },
@@ -233,7 +234,7 @@ test('checkout totals render ISO minor-unit exponents without floating-point dri
         sessionNonceDigest: 'b'.repeat(64),
         blockerDigest: 'c'.repeat(64),
         audience: 'agentic-graph-commerce-checkout',
-        relyingPartyOrigin: 'http://127.0.0.1:5187',
+        relyingPartyOrigin: new URL(route.request().url()).origin,
         blockers: [],
         verificationMode: 'development-visual-only',
       },
@@ -286,7 +287,7 @@ test('reconfirmation renders and binds the exact changed-offer blocker set', asy
         sessionNonceDigest: 'b'.repeat(64),
         blockerDigest: 'c'.repeat(64),
         audience: 'agentic-graph-commerce-checkout',
-        relyingPartyOrigin: 'http://127.0.0.1:5187',
+        relyingPartyOrigin: new URL(route.request().url()).origin,
         blockers: [],
         verificationMode: 'development-visual-only',
       },
@@ -310,7 +311,7 @@ test('reconfirmation renders and binds the exact changed-offer blocker set', asy
             sessionNonceDigest: 'b'.repeat(64),
             blockerDigest: 'e'.repeat(64),
             audience: 'agentic-graph-commerce-checkout',
-            relyingPartyOrigin: 'http://127.0.0.1:5187',
+            relyingPartyOrigin: new URL(route.request().url()).origin,
             blockers: [{
               sequence: 7,
               eventType: 'offer_changed',
@@ -341,8 +342,8 @@ test('reconfirmation renders and binds the exact changed-offer blocker set', asy
   await expect(page.locator('#checkout-confirmation-summary')).toHaveText('Checkout confirmed.')
 })
 
-async function coldFirstContentfulPaint(browser: Browser): Promise<number> {
-  const context = await browser.newContext({ viewport: { width: 360, height: 800 } })
+async function coldFirstContentfulPaint(browser: Browser, baseURL: string): Promise<number> {
+  const context = await browser.newContext({ baseURL, viewport: { width: 360, height: 800 } })
   const page = await context.newPage()
   await applyNetworkProfile(page)
   await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 15_000 })
