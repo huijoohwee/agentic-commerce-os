@@ -1,4 +1,5 @@
 import { bearerAuthorized, originAllowed, validateSecretConfiguration } from '../shared/auth'
+import { coreRequestTimeoutMs } from '../shared/registration-budget'
 import { isHttpFailure, isRecord, jsonResponse, readJsonObject, readJsonResponse } from '../shared/http'
 import { rejectLegacyIdentity, type LegacyIdentity } from '../shared/terminology-guard'
 import { validateThemeManifest } from '../shared/theme-manifest'
@@ -24,7 +25,6 @@ import {
 } from './session'
 
 const EDGE_CORE_CONTRACT = 'commerce.edge-core/v1'
-const CORE_REQUEST_TIMEOUT_MS = 10_000
 const RUNTIME_LEGACY_IDENTITIES: readonly LegacyIdentity[] = Object.freeze([])
 type EdgeRuntimeEnv = EdgeEnv & Readonly<{
   STOREFRONT_SESSION_SECRET?: string
@@ -494,7 +494,7 @@ async function coreCall(
       ...init.forwardedHeaders,
     },
     ...(init.body ? { body: init.body } : {}),
-    signal: AbortSignal.timeout(CORE_REQUEST_TIMEOUT_MS),
+    signal: AbortSignal.timeout(coreRequestTimeoutMs(path, init.method)),
   }))
   const payload = await readJsonResponse(response, 1_000_000)
   return Object.freeze({ response, payload })

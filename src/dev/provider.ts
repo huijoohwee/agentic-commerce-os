@@ -1,4 +1,6 @@
 import { isHttpFailure, isRecord, readJsonObject } from '../shared/http.js'
+import capabilityMapJson from '../../config/capability-token-map.json' with { type: 'json' }
+import { readCapabilityMap } from '../invocation/capability-map.js'
 import {
   CHECKOUT_PROVIDER_CONTRACT,
   DISCOVERY_PROVIDER_CONTRACT,
@@ -60,6 +62,8 @@ const INVOCATION_PATH = new URL(DOCS_INVOCATION_ENDPOINT).pathname
 const DEMO_CONTRACT = 'commerce.dev-provider/v1'
 
 const DEV_SETTLEMENTS = new Map<string, SettlementReceipt>()
+const DEV_CAPABILITY_MAP = readCapabilityMap(capabilityMapJson)
+if (!DEV_CAPABILITY_MAP) throw new Error('dev_capability_map_invalid')
 
 const CATALOG = Object.freeze([
   Object.freeze({
@@ -68,6 +72,9 @@ const CATALOG = Object.freeze([
     label: 'Route tool',
     summary: 'Route one canonical tool invocation.',
     sourcePath: 'docs/commands/tool-route.md',
+    semantics: Object.freeze(['#mcp']),
+    bindings: Object.freeze(['@mcp-gateway']),
+    mcpTools: Object.freeze(DEV_CAPABILITY_MAP.map(({ mcpTool }) => mcpTool)),
   }),
   Object.freeze({
     token: '#mcp',
@@ -89,7 +96,7 @@ const DEV_INVOCATION_METADATA = Object.freeze({
   sourceRevision: 'a'.repeat(40),
   catalogDigest: '7402c37fc46de9914a6fd9ccff48ccfaae2e975ec66bb6e81530c8c599e376d1',
   routingSchema: 'agentic-canvas-os-docs-routing/v1',
-  routingDigest: 'e7e127092bf699af87abf7426071b6b0126ece232a7ec324d0289c8ba4b470a4',
+  routingDigest: '0795134d7d3380096c6cb4a3014255b63bcc843b3399a33bd287a10f159bad9d',
   counts: Object.freeze({ command: 1, semantic: 1, binding: 1 }),
 })
 export const DEV_ACOS_DEPLOYMENT_PIN = Object.freeze({

@@ -288,17 +288,17 @@ describe('commerce core Worker and Durable Objects', () => {
     expect(readiness).toMatchObject({
       ok: false,
       contract: 'commerce.core-readiness/v2',
-      sourceReadiness: { ok: false },
+      sourceReadiness: { ok: true },
       liveReleaseReadiness: { ok: false },
     })
-    const unboundCapability = await coreJson('/internal/v1/invocations/authorize', {
+    const capability = await coreJson('/internal/v1/invocations/authorize', {
       capabilityAction: 'checkout.prepare',
     })
-    expect(unboundCapability.status).toBe(503)
-    await expect(unboundCapability.json()).resolves.toMatchObject({
-      ok: false,
-      code: 'invocation_capability_upstream_coverage_missing',
-      capabilityAction: 'checkout.prepare',
+    expect(capability.status).toBe(200)
+    await expect(capability.json()).resolves.toMatchObject({
+      ok: true, capabilityAction: 'checkout.prepare',
+      commandToken: '/tool.route', semanticTokens: ['#mcp'],
+      bindingTokens: ['@mcp-gateway'], mcpTool: 'commerce.checkout.prepare',
     })
 
     const intent = {

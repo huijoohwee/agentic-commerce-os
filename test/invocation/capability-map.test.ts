@@ -1,4 +1,8 @@
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import capabilityMapJson from '../../config/capability-token-map.json' with { type: 'json' }
+import { devProviderFetch } from '../../src/dev/provider.ts'
+import { createInvocationClient } from '../../src/invocation/index.ts'
 
 import {
   coverageFindings,
@@ -8,6 +12,29 @@ import {
 import type { InvocationCatalogSnapshot } from '../../src/invocation/catalog'
 
 describe('capability token map', () => {
+  it('hydrates the real Dev provider with complete routing coverage and the committed Dev pins', async () => {
+    const map = readCapabilityMap(capabilityMapJson)
+    if (!map) throw new Error('capability_map_invalid')
+    const client = createInvocationClient({
+      bearerToken: crypto.randomUUID(),
+      fetcher: (input, init) => devProviderFetch(new Request(input, init)),
+    })
+    try {
+      // Hydration recomputes both digests before accepting the provider's entries.
+      const catalog = await client.hydrate()
+      expect(coverageFindings(map, catalog)).toEqual([])
+      const config = JSON.parse(readFileSync(new URL('../../wrangler.core.jsonc', import.meta.url), 'utf8'))
+      expect(catalog).toMatchObject({
+        sourceRevision: config.env.dev.vars.ACOS_SOURCE_REVISION,
+        catalogDigest: config.env.dev.vars.ACOS_CATALOG_DIGEST,
+        routingSchema: config.env.dev.vars.ACOS_ROUTING_SCHEMA,
+        routingDigest: config.env.dev.vars.ACOS_ROUTING_DIGEST,
+        counts: JSON.parse(config.env.dev.vars.ACOS_CATALOG_COUNTS_JSON),
+      })
+      expect(catalog.entries).toHaveLength(3)
+    } finally { await client.close() }
+  })
+
   it('keeps upstream token resolution separate from local MCP reachability', () => {
     const map = readCapabilityMap([{
       capabilityAction: 'catalog.public.read',

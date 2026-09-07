@@ -92,7 +92,7 @@ test('incapable Chromium keeps the complete visual preparation flow silent and o
           sessionNonceDigest: 'b'.repeat(64),
           blockerDigest: 'c'.repeat(64),
           audience: 'agentic-graph-commerce-checkout',
-          relyingPartyOrigin: 'http://127.0.0.1:5187',
+          relyingPartyOrigin: new URL(route.request().url()).origin,
           blockers: [],
           verificationMode: 'development-visual-only',
         },
@@ -112,21 +112,22 @@ test('incapable Chromium keeps the complete visual preparation flow silent and o
   await expect(page.locator('#confirmation-offer')).toHaveText('offer-incapable-engine')
 })
 
-test('two incapable tabs atomically preserve the shared 500-change ceiling', async ({ browser }) => {
-  const context = await browser.newContext({ viewport: { width: 360, height: 800 } })
+test('two incapable tabs atomically preserve the shared 500-change ceiling', async ({ browser, baseURL }) => {
+  if (!baseURL) throw new Error('browser_base_url_required')
+  const context = await browser.newContext({ baseURL, viewport: { width: 360, height: 800 } })
   await context.route('**/v1/session', async (route) => route.fulfill({
     status: 503, contentType: 'application/json', body: '{"ok":false}',
   }))
   const setup = await context.newPage()
-  await setup.goto('http://127.0.0.1:5187/', { waitUntil: 'load' })
+  await setup.goto('/', { waitUntil: 'load' })
   await seedPendingChanges(setup, 499)
   await setup.close()
 
   const left = await context.newPage()
   const right = await context.newPage()
   await Promise.all([
-    left.goto('http://127.0.0.1:5187/', { waitUntil: 'load' }),
-    right.goto('http://127.0.0.1:5187/', { waitUntil: 'load' }),
+    left.goto('/', { waitUntil: 'load' }),
+    right.goto('/', { waitUntil: 'load' }),
   ])
   await expect.poll(() => pendingEventTypes(left)).toContain('webmcp_surface_unavailable')
   await expect.poll(() => pendingChangeCount(left)).toBe(500)

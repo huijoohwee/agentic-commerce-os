@@ -56,6 +56,25 @@ with a deliberately small `1/1/1` invocation catalogue. It is demo-only,
 requires no remote Cloudflare resource, and is not evidence that any Staging or
 Production provider is present or ready.
 
+`npm run test:e2e:dev` exercises this topology with an empty, isolated registry
+and the existing demo provider. It requires a running local Docker engine and
+the pinned sandbox image. The browser prepares and visually confirms a checkout
+through the actual edge/core bindings; acceptance checks the resulting settlement
+receipt and one derived markup record. It does not intercept checkout responses
+or establish real-payment, trusted Production human-presence, or deployment proof.
+The same test runs after the browser surface checks in `npm run test:browser`
+and the source Integration Gate. Both suites reuse one real four-Worker runtime,
+with separate deadlines and trace directories. The paid-loop test checks the
+initial empty registry and revenue to detect any earlier fixture pollution.
+
+The pinned Wrangler removes sibling native image tags for identical images.
+Full native browser runs and Dev-only runs therefore serialize per daemon and
+user, including native shutdown and exact owned-container cleanup. Waiting uses
+the existing 600-second startup budget and responds to interruption. The direct
+standalone component configuration remains separate. The runner reuses the pinned native
+identity-bound lock and retains its lock and private ownership receipt if cleanup
+is uncertain. It never steals an existing lock or prunes another run's resources.
+
 The implementation is bound to the committed PRD at source repository revision
 `1acbbcc3b06534f9712f5b05b781010f749fa842`. Uncommitted later edits and the
 in-flight product rename are not release inputs. New repository-owned contracts
@@ -320,9 +339,8 @@ The current lane cannot truthfully claim Production delivery because:
 - the production Merge Agent is fail-closed with all subprocess observation,
   candidate check execution, and automatic mutation disabled until an external
   default-deny runner can protect operator authority and host files;
-- this implementation is not yet integrated into protected `main`, and no
-  current repository receipt proves the required ruleset or Production
-  environment reviewer configuration;
+- protected-main source integration does not establish the separate Production
+  environment reviewer configuration or candidate-bound release approval;
 - no current committed receipt proves that the commerce Production Workers,
   configured providers, or declared delivery path exist and match this exact
   candidate;

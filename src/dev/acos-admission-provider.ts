@@ -14,6 +14,9 @@ import { canonicalJson, sha256Hex } from '../shared/digest.js'
 import { isHttpFailure, isRecord, readJsonObject } from '../shared/http.js'
 import { verifyAcosAdmissionRequestAuthentication } from '../shared/acos-admission-auth.ts'
 import { admitDevAuthoringMutation } from './authoring-fence.js'
+import { DEV_AGENTIC_OS_ADMISSION_AUTH_SECRET } from './provider-credentials.ts'
+
+export { DEV_AGENTIC_OS_ADMISSION_AUTH_SECRET } from './provider-credentials.ts'
 
 const MAXIMUM_REQUEST_BYTES = 262_144
 const BODY_FIELDS = Object.freeze([
@@ -26,8 +29,6 @@ const INTENT_FIELDS = Object.freeze([
 const INPUT_FIELDS = Object.freeze([
   'agentDefinition', 'invocationRegisterEntry', 'operatorInstructionRef', 'toolAllowlistEntry',
 ])
-export const DEV_AGENTIC_OS_ADMISSION_AUTH_SECRET =
-  'agentic-os-admission-dev-secret-rotate-before-production'
 export const DEV_AGENTIC_GRAPH_ADMISSION_AUTHORITY = Object.freeze({
   schema: 'agentic-graph-commerce-admission-authority-projection/v1',
   admission_inputs_digest: '1'.repeat(64),

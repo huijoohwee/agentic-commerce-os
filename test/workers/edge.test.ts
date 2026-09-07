@@ -1,5 +1,5 @@
 import { createExecutionContext, SELF } from 'cloudflare:test'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import edgeWorker from '../../src/edge/index.ts'
 import { HUMAN_PRESENCE_AUDIENCE, HUMAN_PRESENCE_RECEIPT_SCHEMA } from '../../src/edge/human-presence.ts'
@@ -15,6 +15,86 @@ import {
 } from './fake-services'
 
 describe('commerce edge Worker', () => {
+  it.each([
+    { method: 'POST', afterMs: 12_000, completionMs: 12_000, status: 200 },
+    { method: 'GET', afterMs: 10_000, completionMs: 12_000, status: 500 },
+    { method: 'POST', afterMs: 85_000, completionMs: 90_000, status: 500 },
+  ])('keeps registration deadlines bounded: $method completes/expires at $afterMs ms', async (sample) => {
+    vi.useFakeTimers()
+    // Native AbortSignal clocks are not controlled by Vitest's timer clock.
+    vi.spyOn(AbortSignal, 'timeout').mockImplementation((milliseconds) => {
+      const controller = new AbortController()
+      setTimeout(() => controller.abort(new DOMException('Deadline exceeded', 'TimeoutError')), milliseconds)
+      return controller.signal
+    })
+    vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const entered = Promise.withResolvers<Request>()
+    const calls: string[] = []
+    const binding = {
+      async fetch(request: Request): Promise<Response> {
+        const pathname = new URL(request.url).pathname
+        calls.push(pathname)
+        if (pathname === '/internal/v1/invocations/authorize') {
+          return EDGE_TEST_SERVICE_BINDINGS.COMMERCE_CORE(request)
+        }
+        entered.resolve(request)
+        return new Promise((resolve, reject) => {
+          const timer = setTimeout(() => resolve(Response.json({ ok: true, completed: true })), sample.completionMs)
+          request.signal.addEventListener('abort', () => {
+            clearTimeout(timer)
+            reject(request.signal.reason)
+          }, { once: true })
+        })
+      },
+    }
+    try {
+      const result = edgeWorker.fetch(registrationDeadlineRequest(sample.method),
+        { ...EDGE_TEST_BINDINGS, COMMERCE_CORE: binding } as unknown as EdgeEnv, createExecutionContext())
+      const forwarded = await Promise.race([
+        entered.promise,
+        result.then(() => { throw new Error('registration_not_forwarded') }),
+      ])
+      expect(calls).toEqual(['/internal/v1/invocations/authorize', '/internal/v1/agents'])
+      if (sample.method === 'POST') expect(forwarded.headers.get('x-authoring-claim-id')).toBe('deadline-claim')
+      let completed = false
+      void result.then(() => { completed = true })
+      await vi.advanceTimersByTimeAsync(sample.afterMs - 1)
+      expect(completed).toBe(false)
+      expect(forwarded.signal.aborted).toBe(false)
+      await vi.advanceTimersByTimeAsync(1)
+      const response = await result
+      expect(response.status).toBe(sample.status)
+      expect(forwarded.signal.aborted).toBe(sample.status === 500)
+      expect(await response.json()).toEqual(sample.status === 200
+        ? { ok: true, completed: true } : { ok: false, code: 'internal_error' })
+    } finally {
+      vi.clearAllTimers()
+      vi.restoreAllMocks()
+      vi.useRealTimers()
+    }
+  })
+
+  it('refuses registration before dispatch when operator authority, claim, or capability is absent', async () => {
+    const calls: string[] = []
+    const binding = { async fetch(request: Request) {
+      calls.push(new URL(request.url).pathname)
+      return Response.json({ ok: false, code: 'invocation_capability_unavailable' }, { status: 503 })
+    } }
+    const run = (request: Request) => edgeWorker.fetch(request,
+      { ...EDGE_TEST_BINDINGS, COMMERCE_CORE: binding } as unknown as EdgeEnv, createExecutionContext())
+    const unauthorized = registrationDeadlineRequest('POST')
+    unauthorized.headers.set('authorization', `Bearer ${EDGE_MCP_TOKEN}`)
+    expect((await run(unauthorized)).status).toBe(401)
+    const unclaimed = registrationDeadlineRequest('POST')
+    unclaimed.headers.delete('x-authoring-claim-id')
+    expect((await run(unclaimed)).status).toBe(409)
+    expect(calls).toEqual([])
+    const refused = await run(registrationDeadlineRequest('POST'))
+    expect(refused.status).toBe(503)
+    expect(await refused.json()).toEqual({ ok: false, code: 'invocation_capability_unavailable' })
+    expect(calls).toEqual(['/internal/v1/invocations/authorize'])
+  })
+
   it('serves a mobile-first browser console without exposing operational authority', async () => {
     const dashboard = await SELF.fetch('https://edge.test/')
     expect(dashboard.status).toBe(200)
@@ -320,6 +400,18 @@ function operatorTransition(token: string, includeClaim = false): Promise<Respon
       } : {}),
     },
     body: JSON.stringify({ actorId: 'operator-1', state: 'active' }),
+  })
+}
+
+function registrationDeadlineRequest(method: string): Request {
+  return new Request('https://edge.test/v1/operator/agents', {
+    method,
+    headers: {
+      authorization: `Bearer ${EDGE_OPERATOR_TOKEN}`, 'content-type': 'application/json',
+      'x-authoring-semantic-scope': 'operator-registry', 'x-authoring-claim-id': 'deadline-claim',
+      'x-authoring-lease-epoch': '1', 'x-authoring-fence-revision': 'deadline-fence',
+    },
+    ...(method === 'POST' ? { body: '{}' } : {}),
   })
 }
 

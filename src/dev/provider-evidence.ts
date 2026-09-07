@@ -17,9 +17,9 @@ import {
   type BoundOperationalEvidenceRequest,
 } from '../core/provider-operation-gate.ts'
 import { verifyCommerceProviderControlRequest } from '../shared/commerce-provider-auth.ts'
+import { DEV_CHECKOUT_PROVIDER_AUTH_SECRET, DEV_MARKETPLACE_PROVIDER_AUTH_SECRET } from './provider-credentials.ts'
 
-export const DEV_CHECKOUT_PROVIDER_AUTH_SECRET = 'checkout-provider-dev-secret-rotate-before-production'
-export const DEV_MARKETPLACE_PROVIDER_AUTH_SECRET = 'marketplace-provider-dev-secret-rotate-before-production'
+export { DEV_CHECKOUT_PROVIDER_AUTH_SECRET, DEV_MARKETPLACE_PROVIDER_AUTH_SECRET } from './provider-credentials.ts'
 
 export const DEV_DISCOVERY_EVIDENCE_PIN: UpstreamEvidencePin = Object.freeze({
   sourceRevision: 'd'.repeat(40),
