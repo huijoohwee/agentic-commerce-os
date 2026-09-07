@@ -1,7 +1,9 @@
 import crypto from 'node:crypto'
+import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   EVIDENCE_ARTIFACT_SINK_AUTHORITY_SCHEMA,
@@ -11,6 +13,7 @@ import { canonicalJson, sha256 } from '../../scripts/evidence-integrity.ts'
 import {
   EVIDENCE_RUNTIME_INPUTS,
   ISOLATED_CHECK_EXECUTOR_MODULE_SCHEMA,
+  describeEvidenceRuntimeSetup,
   loadEvidenceRuntimeContext,
 } from '../../scripts/evidence-runtime-context.ts'
 
@@ -89,7 +92,101 @@ describe('evidence runtime context', () => {
     fs.appendFileSync(fixture.executorModulePath, '\n')
     expect(() => context.isolatedCheckExecutor?.({} as never)).toThrow('isolated_executor_module_changed')
   })
+
+  it('reports every missing input and the empty issuer enrollment together without accepting an anchor', async () => {
+    const fixture = runtimeFixture()
+    clearEnrolledIssuers(fixture.workspaceRoot)
+    const setup = describeEvidenceRuntimeSetup(fixture.workspaceRoot, [], {})
+    expect(setup.inputs.map(input => input.environment)).toEqual(Object.values(EVIDENCE_RUNTIME_INPUTS).map(input => input.environment))
+    expect(setup.inputs.every(input => input.status === 'missing')).toBe(true)
+    expect(setup.enrolledIssuerCount).toBe(0)
+    expect(setup.blockers.map(blocker => blocker.code)).toEqual(['runtime_inputs_unresolved', 'dispatch_issuers_unenrolled'])
+    expect(setup.grantsAuthority).toBe(false)
+    expect(setup.executorImportedByDiagnostic).toBe(false)
+    await expect(loadEvidenceRuntimeContext(fixture.workspaceRoot, [], {}))
+      .rejects.toMatchObject({ code: 'evidence_runtime_context_incomplete' })
+  })
+
+  it('does not read trust files or import configured executors and never claims readiness', () => {
+    const fixture = runtimeFixture(), marker = path.join(fixture.externalRoot, 'executor-imported')
+    fs.writeFileSync(fixture.anchorPath, 'not a trust anchor')
+    fs.writeFileSync(fixture.executorModulePath,
+      `import fs from 'node:fs'; fs.writeFileSync(${JSON.stringify(marker)}, 'must not run')\n`)
+    const setup = describeEvidenceRuntimeSetup(fixture.workspaceRoot, [], fixture.environment)
+    expect(setup.inputs.every(input => input.status === 'configured')).toBe(true)
+    expect(setup.blockers).toEqual([])
+    expect(setup.observationOnly).toBe(true)
+    expect(setup.grantsAuthority).toBe(false)
+    expect(setup.executorImportedByDiagnostic).toBe(false)
+    expect(setup).not.toHaveProperty('ok')
+    expect(fs.existsSync(marker)).toBe(false)
+    expect(JSON.stringify(setup)).not.toContain(fixture.externalRoot)
+  })
+
+  it('diagnoses a missing legacy lifecycle verifier only for an explicit root', () => {
+    const fixture = runtimeFixture()
+    fs.writeFileSync(path.join(fixture.agenticCanvasOsRoot, 'package.json'), JSON.stringify({
+      scripts: { doctor: 'agentic-os doctor', 'check:adlc': 'npm --prefix node_modules/agentic-os run evals' },
+    }))
+    const setup = describeEvidenceRuntimeSetup(fixture.workspaceRoot,
+      [`${EVIDENCE_RUNTIME_INPUTS.agenticCanvasOsRoot.flag}${fixture.agenticCanvasOsRoot}`], {})
+    expect(setup.blockers.map(blocker => blocker.code)).toEqual(['runtime_inputs_unresolved', 'lifecycle_verifier_unavailable'])
+    expect(describeEvidenceRuntimeSetup(fixture.workspaceRoot, [], {}).blockers.map(blocker => blocker.code))
+      .not.toContain('lifecycle_verifier_unavailable')
+  })
+
+  it('reports invalid and ambiguous bindings without leaking their values or skipping enrollment gaps', () => {
+    const fixture = runtimeFixture(), confidential = 'never-print-this-private-input'
+    clearEnrolledIssuers(fixture.workspaceRoot)
+    const setup = describeEvidenceRuntimeSetup(fixture.workspaceRoot,
+      [`${EVIDENCE_RUNTIME_INPUTS.dispatchTrustAnchor.flag}/outside/${confidential}`], {
+        ...fixture.environment,
+        [EVIDENCE_RUNTIME_INPUTS.trustedGitExecutable.environment]: confidential,
+        [EVIDENCE_RUNTIME_INPUTS.isolatedExecutorModule.environment]: path.join(fs.realpathSync(fixture.workspaceRoot), confidential),
+      })
+    expect(setup.inputs.find(input => input.name === 'dispatchTrustAnchor')?.status).toBe('ambiguous')
+    expect(setup.inputs.find(input => input.name === 'trustedGitExecutable')?.status).toBe('invalid')
+    expect(setup.inputs.find(input => input.name === 'isolatedExecutorModule')?.status).toBe('invalid')
+    expect(setup.blockers.map(blocker => blocker.code)).toContain('dispatch_issuers_unenrolled')
+    for (const hidden of [confidential, fixture.workspaceRoot, fixture.externalRoot])
+      expect(JSON.stringify(setup)).not.toContain(hidden)
+    expect(Buffer.byteLength(JSON.stringify(setup))).toBeLessThan(8192)
+  })
+
+  it('keeps the actual evidence CLI red and includes all source setup gaps in its existing response', () => {
+    const fixture = runtimeFixture()
+    clearEnrolledIssuers(fixture.workspaceRoot)
+    fs.writeFileSync(path.join(fixture.agenticCanvasOsRoot, 'package.json'), JSON.stringify({ scripts: { doctor: 'agentic-os doctor' } }))
+    const environment = { ...process.env }
+    for (const input of Object.values(EVIDENCE_RUNTIME_INPUTS)) delete environment[input.environment]
+    const result = spawnSync(process.execPath, [fileURLToPath(new URL('../../scripts/checks/evidence.ts', import.meta.url)),
+      `${EVIDENCE_RUNTIME_INPUTS.agenticCanvasOsRoot.flag}${fixture.agenticCanvasOsRoot}`], {
+      cwd: fixture.workspaceRoot, env: environment, encoding: 'utf8', timeout: 10_000,
+    })
+    expect(result.status, result.stderr).toBe(1)
+    const output = JSON.parse(result.stdout)
+    expect(output).toMatchObject({ ok: false, check: 'evidence', code: 'evidence_runtime_context_incomplete' })
+    expect(output.setup.blockers.map((blocker: { code: string }) => blocker.code)).toEqual([
+      'runtime_inputs_unresolved', 'dispatch_issuers_unenrolled', 'lifecycle_verifier_unavailable',
+    ])
+    expect(output.setup.inputs.filter((input: { status: string }) => input.status === 'missing')).toHaveLength(3)
+    expect(result.stdout).not.toContain(fixture.externalRoot)
+  })
+
+  it('reports malformed local baseline bytes without throwing or inspecting an unconfigured lifecycle root', () => {
+    const fixture = runtimeFixture()
+    fs.writeFileSync(path.join(fixture.workspaceRoot, 'docs/verification-baseline.json'), '{')
+    const setup = describeEvidenceRuntimeSetup(fixture.workspaceRoot, [], {})
+    expect(setup.enrolledIssuerCount).toBe(null)
+    expect(setup.blockers.map(blocker => blocker.code)).toEqual(['runtime_inputs_unresolved', 'verification_baseline_invalid'])
+  })
 })
+
+function clearEnrolledIssuers(workspaceRoot: string): void {
+  const baselinePath = path.join(workspaceRoot, 'docs/verification-baseline.json')
+  const baseline = JSON.parse(fs.readFileSync(baselinePath, 'utf8'))
+  fs.writeFileSync(baselinePath, JSON.stringify({ ...baseline, trustedDispatchIssuers: [] }))
+}
 
 type RuntimeFixture = Readonly<{
   workspaceRoot: string

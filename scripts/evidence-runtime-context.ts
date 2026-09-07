@@ -132,6 +132,61 @@ export function evidenceRuntimeErrorCode(error: unknown): string {
   return error instanceof EvidenceRuntimeContextError ? error.code : 'evidence_runtime_context_invalid'
 }
 
+/** Explain setup gaps without loading trust files, importing an executor, or granting authority. */
+export function describeEvidenceRuntimeSetup(
+  workspaceRoot: string,
+  argumentsValue: readonly string[] = process.argv.slice(2),
+  environment: Readonly<Record<string, string | undefined>> = process.env,
+) {
+  const workspace = realDirectory(workspaceRoot)
+  const requested = new Map<string, string>()
+  const inputs = Object.entries(EVIDENCE_RUNTIME_INPUTS).map(([name, input]) => {
+    let status: 'missing' | 'configured' | 'invalid' | 'ambiguous' = 'missing'
+    let code: string | null = null
+    try {
+      const value = runtimeValue(argumentsValue, environment, input)
+      if (value !== null) {
+        if (!workspace) throw runtimeError('evidence_runtime_path_invalid')
+        assertExternalLexicalPath(workspace, value)
+        requested.set(name, value)
+        status = 'configured'
+      }
+    } catch (error) {
+      code = evidenceRuntimeErrorCode(error)
+      status = code === 'evidence_runtime_context_ambiguous' ? 'ambiguous' : 'invalid'
+    }
+    return Object.freeze({ name, environment: input.environment, flag: input.flag, status, code })
+  })
+  const blockers: Array<Readonly<{ code: string; owner: string; remedy: string }>> = []
+  if (inputs.some(input => input.status !== 'configured')) blockers.push(Object.freeze({
+    code: 'runtime_inputs_unresolved', owner: 'external-evaluator',
+    remedy: 'Supply each missing named input and resolve invalid or conflicting bindings; values are not included in this report.',
+  }))
+  let baseline: ReturnType<typeof readVerificationBaseline> = null
+  try { if (workspace) baseline = readVerificationBaseline({ workspaceRoot: workspace }) } catch { /* report below */ }
+  if (!baseline) blockers.push(Object.freeze({
+    code: 'verification_baseline_invalid', owner: 'agentic-commerce-os',
+    remedy: 'Repair the source-owned verification baseline through its protected review workflow.',
+  }))
+  else if (baseline.trustedDispatchIssuers.length === 0) blockers.push(Object.freeze({
+    code: 'dispatch_issuers_unenrolled', owner: 'agentic-commerce-os',
+    remedy: 'Enroll actual independent evaluator public issuer metadata through protected baseline review; then obtain its external anchor for the resulting baseline digest. An empty issuer set cannot validate any anchor.',
+  }))
+  const lifecycleRoot = requested.get('agenticCanvasOsRoot')
+  if (workspace && lifecycleRoot) {
+    let supported = false
+    try { supported = hasLifecycleCheck(workspace, externalDirectory(workspace, lifecycleRoot)) } catch { /* report below */ }
+    if (!supported) blockers.push(Object.freeze({
+      code: 'lifecycle_verifier_unavailable', owner: 'agentic-commerce-os',
+      remedy: 'The supplied root cannot provide worktree:lifecycle:check. Migrate the task and evaluator binding to an equivalent owner verifier of claim, lease, fence, and runtime identity; doctor, observe, and check:adlc are not substitutes.',
+    }))
+  }
+  return Object.freeze({ schema: 'agentic-commerce-evidence-runtime-setup/v1', observationOnly: true,
+    grantsAuthority: false, executorImportedByDiagnostic: false,
+    inputs: Object.freeze(inputs), enrolledIssuerCount: baseline?.trustedDispatchIssuers.length ?? null,
+    blockers: Object.freeze(blockers) })
+}
+
 type RuntimeInput = Readonly<{ flag: string; environment: string }>
 type ExternalFile = Readonly<{ path: string; bytes: Buffer; sha256: string }>
 
