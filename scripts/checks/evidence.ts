@@ -31,7 +31,7 @@ import {
   listEvidenceJsonFiles,
   readEvidenceFile,
 } from '../evidence-safe-files.ts'
-import { evidenceRuntimeErrorCode, loadEvidenceRuntimeContext } from '../evidence-runtime-context.ts'
+import { describeEvidenceRuntimeSetup, evidenceRuntimeErrorCode, loadEvidenceRuntimeContext } from '../evidence-runtime-context.ts'
 
 const MAXIMUM_EVIDENCE_FILE_BYTES = 2 * 1024 * 1024
 const MAXIMUM_VERDICT_DIRECTORY_ENTRIES = 256
@@ -320,6 +320,7 @@ async function main(): Promise<void> {
       ok: false,
       check: 'evidence',
       code: evidenceRuntimeErrorCode(error),
+      setup: describeEvidenceRuntimeSetup(process.cwd(), argumentsValue, process.env),
     })}\n`)
     process.exitCode = 1
     return

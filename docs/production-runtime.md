@@ -328,6 +328,27 @@ receipt for the four authoritative registration inputs.
 
 ## Exact remaining blockers
 
+`npm run check:evidence` retains its failing exit and original error code when runtime context is
+missing or invalid. Its `setup` observation reports all four named input bindings together, the
+source-owned baseline's enrolled issuer count, and unsupported lifecycle tooling when an explicit
+`--agentic-canvas-os-root=` is supplied. It exposes no input values, loads no trust-anchor contents,
+and imports or runs no executor. These are facts about the diagnostic, not prior context loading.
+An empty diagnostic blocker list does not establish trusted context
+or readiness; the original context validation and independent evidence checks remain required.
+
+Provisioning starts with actual independent evaluator public issuer metadata enrolled through
+protected review of `docs/verification-baseline.json`. Its current empty issuer set cannot match any
+valid trust anchor. After enrollment, that evaluator supplies an external anchor bound to the resulting
+baseline digest, its issuer policy, the exact Git binary digest, and an attested artifact sink, plus
+the isolated executor and signed dispatch/artifact evidence. Do not manufacture these inputs from
+candidate code or reuse fixture signers as independent authority.
+
+Task 1.1 still requires Canvas `worktree:lifecycle:check`, which current Canvas no longer exposes.
+Its task contract and evaluator binding need a protected migration to an equivalent source owner
+verifier of live claim, lease, fence, and runtime identity. `doctor`, `observe`, and `check:adlc`
+do not prove those assertions. This diagnostic exposes the mismatch without changing the task's
+requirements, enrolling an issuer, or creating an independent evaluator.
+
 The current lane cannot truthfully claim Production delivery because:
 
 - the terminal evidence gate still lacks all 100 independently issued verdicts,
