@@ -39,16 +39,16 @@ const ACOS_DEPLOYMENT_PIN = Object.freeze({
 })
 
 describe('Commerce Agentic OS admission provider v3 contract', () => {
-  it('pins the exact acceptance vector bytes with an owner-copyable SHA-256 manifest', () => {
-    const fixtureBytes = readFileSync(new URL('../contracts/acos-admission-v2.fixture.json', import.meta.url))
+  it('pins the exact acceptance vector bytes with the upstream SHA-256 manifest', () => {
+    const fixtureBytes = readFileSync(new URL(import.meta.resolve('agentic-os/test/contracts/admission-v2.fixture.json')))
     const manifest = readFileSync(
-      new URL('../contracts/acos-admission-v2.fixture.sha256', import.meta.url), 'utf8',
+      new URL(import.meta.resolve('agentic-os/test/contracts/admission-v2.fixture.sha256')), 'utf8',
     ).trim()
     const digest = createHash('sha256').update(fixtureBytes).digest('hex')
-    expect(manifest).toBe(`${digest}  acos-admission-v2.fixture.json`)
+    expect(manifest).toBe(`${digest}  admission-v2.fixture.json`)
   })
 
-  it('emits the checked-in acceptance request fixture byte-for-byte from live producer code', async () => {
+  it('emits the upstream acceptance request fixture byte-for-byte from live producer code', async () => {
     const fixture = readAcceptanceFixture()
     expect(projectCommerceAgentDefinitionForAcos(fixture.commerceAgentDefinition))
       .toEqual(fixture.request.body.agent_definition)
@@ -593,7 +593,7 @@ type AcceptanceFixture = Readonly<{
 
 function readAcceptanceFixture(): AcceptanceFixture {
   return JSON.parse(readFileSync(
-    new URL('../contracts/acos-admission-v2.fixture.json', import.meta.url),
+    new URL(import.meta.resolve('agentic-os/test/contracts/admission-v2.fixture.json')),
     'utf8',
   )) as AcceptanceFixture
 }
