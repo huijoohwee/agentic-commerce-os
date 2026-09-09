@@ -1,10 +1,6 @@
 import { canonicalJson } from '../evidence-integrity.ts'
-import {
-  sameContainerDeployment,
-  sandboxContainerApplicationAbsent,
-  validateSandboxContainerDeployment,
-  type SandboxContainerProof,
-} from './container-release.ts'
+import { validateDeviceHostProof, type DeviceHostProof } from './device-host-release.ts'
+import { parseDeviceHostPins, type DeviceHostPins } from '../../src/sandbox/device-host.ts'
 import {
   revalidateWorkerVersionProof,
   validateProductionSandboxTopology,
@@ -48,6 +44,7 @@ export type ProductionOperatorPins = Readonly<{
   checkoutProviderEvidencePinJson: string
   marketplaceProviderEvidencePinJson: string
   humanPresenceTrustAnchorJson: string
+  executionHost: DeviceHostPins
 }>
 
 export type UploadInput = Readonly<{
@@ -63,8 +60,7 @@ export type ProductionReleaseAdapter = Readonly<{
   deploySandbox(input: UploadInput): Promise<void>
   viewVersion(kind: WorkerKind, versionId: string): Promise<unknown>
   activate(kind: 'core' | 'edge', versionId: string): Promise<void>
-  waitForSandboxContainer(): Promise<unknown>
-  containerInventory(): Promise<unknown>
+  probeExecutionHost(pins: DeviceHostPins, token: string): Promise<unknown>
   readRouteAuthority(authority: ProductionRouteAuthority, phase: 'before' | 'after' | 'recovery'): Promise<unknown>
   activateBootstrapRoute(authority: ProductionRouteAuthority): Promise<void>
   proveLiveRoute(input: Readonly<{
@@ -105,8 +101,8 @@ export async function executeProductionRelease(
     'before',
   )
   const predecessors = await readActiveTuple(input.adapter)
-  const containerBefore = await input.adapter.containerInventory()
-  await validateStartingState(input, predecessors, containerBefore)
+  await proveExecutionHost(input)
+  await validateStartingState(input, predecessors)
   const listedBefore = await listAllVersions(input.adapter)
   const candidates: MutablePartial<CandidateVersions> = {}
   const proofs: MutablePartial<DeploymentProofs> = {}
@@ -128,7 +124,7 @@ export async function executeProductionRelease(
     }
     stage = 'compare-and-swap-before-sandbox'
     await requireActiveTuple(input.adapter, predecessors)
-    stage = 'deploy-sandbox-worker-and-container-immediate'
+    stage = 'deploy-sandbox-worker-immediate'
     sandboxMutationStarted = true
     await input.adapter.deploySandbox(uploadInput(input, 'sandbox'))
     const listedAfterSandbox = await listAllVersions(input.adapter)
@@ -144,17 +140,14 @@ export async function executeProductionRelease(
       core: predecessors.core,
       edge: predecessors.edge,
     }))
-    stage = 'prove-sandbox-container-rollout'
-    const sandboxContainer = validateSandboxContainerDeployment(
-      await input.adapter.waitForSandboxContainer(),
-      input.identity.sandboxContainerBuildInputDigest,
-    )
-    requireContainerProgression(input.priorReceipt, containerBefore, sandboxContainer)
+    stage = 'prove-device-execution-host'
+    let executionHost = await proveExecutionHost(input)
     const exactCandidates = completeCandidates(candidates)
     const exactProofs = completeProofs(proofs)
     for (const kind of VERSIONED_WORKERS) {
       stage = `compare-and-swap-before-${kind}`
       await requireActiveTuple(input.adapter, expectedTuple(predecessors, exactCandidates, kind))
+      await proveExecutionHost(input)
       stage = `activate-${kind}`
       await input.adapter.activate(kind, exactCandidates[kind])
       stage = `verify-active-${kind}`
@@ -164,6 +157,7 @@ export async function executeProductionRelease(
         kind === 'core' ? 'edge' : 'complete',
       ))
     }
+    await proveExecutionHost(input)
     stage = 'activate-or-revalidate-route-authority'
     if (input.releaseMode === 'bootstrap') {
       await input.adapter.activateBootstrapRoute(input.routeAuthority)
@@ -183,6 +177,9 @@ export async function executeProductionRelease(
       edgeVersionId: exactCandidates.edge,
       coreVersionId: exactCandidates.core,
     })
+    stage = 'verify-final-execution-host'
+    executionHost = await proveExecutionHost(input)
+    await requireActiveTuple(input.adapter, exactCandidates)
     return Object.freeze({
       ok: true,
       receipt: buildDeploymentReceipt({
@@ -195,7 +192,7 @@ export async function executeProductionRelease(
         predecessors,
         candidates: exactCandidates,
         deploymentProofs: exactProofs,
-        sandboxContainer,
+        executionHost,
         routeAuthorityBefore: routeBefore,
         routeAuthorityAfter: routeAfter,
         routeProof,
@@ -223,8 +220,8 @@ async function executeRecoveryRelease(input: ProductionControllerInput): Promise
     await input.adapter.readRouteAuthority(input.routeAuthority, 'recovery'),
   )
   let active = await readActiveTuple(input.adapter)
-  const containerBefore = await input.adapter.containerInventory()
-  await validateRecoveryStartingState(input, active, containerBefore)
+  await proveExecutionHost(input)
+  await validateRecoveryStartingState(input, active)
   let listed = await listAllVersions(input.adapter)
   const candidates: MutablePartial<CandidateVersions> = { ...receipt.candidates }
   const proofs: MutablePartial<DeploymentProofs> = {}
@@ -251,20 +248,17 @@ async function executeRecoveryRelease(input: ProductionControllerInput): Promise
       input.identity.candidateSha,
       candidates.sandbox ?? (active.sandbox !== predecessors.sandbox ? active.sandbox ?? undefined : undefined),
     )
-    let sandboxContainer: SandboxContainerProof
+    let executionHost: DeviceHostProof
     if (sandboxId !== null && active.sandbox === sandboxId) {
       requireController(sandboxMutationStarted, 'recovery_unproven_sandbox_activation')
       candidates.sandbox = sandboxId
       proofs.sandbox = validateUploadedVersion(
         input, 'sandbox', sandboxId, await input.adapter.viewVersion('sandbox', sandboxId),
       )
-      sandboxContainer = validateSandboxContainerDeployment(
-        await input.adapter.waitForSandboxContainer(), input.identity.sandboxContainerBuildInputDigest,
-      )
-      if (input.priorReceipt) requireContainerProgression(input.priorReceipt, containerBefore, sandboxContainer)
+      executionHost = await proveExecutionHost(input)
     } else {
       requireController(active.sandbox === predecessors.sandbox, 'recovery_sandbox_baseline_changed')
-      stage = 'recovery-deploy-sandbox-worker-and-container-immediate'
+      stage = 'recovery-deploy-sandbox-worker-immediate'
       sandboxMutationStarted = true
       await input.adapter.deploySandbox(uploadInput(input, 'sandbox'))
       const after = await input.adapter.listVersions('sandbox')
@@ -275,10 +269,7 @@ async function executeRecoveryRelease(input: ProductionControllerInput): Promise
       )
       active = await readActiveTuple(input.adapter)
       requireController(active.sandbox === sandboxId, 'recovery_sandbox_activation_unconfirmed')
-      sandboxContainer = validateSandboxContainerDeployment(
-        await input.adapter.waitForSandboxContainer(), input.identity.sandboxContainerBuildInputDigest,
-      )
-      requireContainerProgression(input.priorReceipt, containerBefore, sandboxContainer)
+      executionHost = await proveExecutionHost(input)
     }
     const exactCandidates = completeCandidates(candidates)
     const exactProofs = completeProofs(proofs)
@@ -286,11 +277,13 @@ async function executeRecoveryRelease(input: ProductionControllerInput): Promise
       active = await readActiveTuple(input.adapter)
       if (active[kind] === exactCandidates[kind]) continue
       requireController(active[kind] === predecessors[kind], `recovery_${kind}_baseline_changed`)
+      await proveExecutionHost(input)
       stage = `recovery-activate-${kind}`
       await input.adapter.activate(kind, exactCandidates[kind])
       const after = await readActiveTuple(input.adapter)
       requireController(after[kind] === exactCandidates[kind], `recovery_${kind}_activation_unconfirmed`)
     }
+    await proveExecutionHost(input)
     stage = 'recovery-activate-or-revalidate-route-authority'
     if (routeBefore.state === 'absent') await input.adapter.activateBootstrapRoute(input.routeAuthority)
     const routeAfter = validateProductionRouteAuthorityProof(
@@ -303,11 +296,14 @@ async function executeRecoveryRelease(input: ProductionControllerInput): Promise
       edgeVersionId: exactCandidates.edge,
       coreVersionId: exactCandidates.core,
     })
+    stage = 'recovery-verify-final-execution-host'
+    executionHost = await proveExecutionHost(input)
+    await requireActiveTuple(input.adapter, exactCandidates)
     return Object.freeze({ ok: true, receipt: buildDeploymentReceipt({
       releaseMode: 'recovery', identity: input.identity, runId: input.runId,
       humanAuthorization: input.humanAuthorization, operatorPins: input.operatorPins,
       priorArtifactAuthorityProof: input.priorAuthorityProof, predecessors, candidates: exactCandidates,
-      deploymentProofs: exactProofs, sandboxContainer, routeAuthorityBefore: routeBefore,
+      deploymentProofs: exactProofs, executionHost, routeAuthorityBefore: routeBefore,
       routeAuthorityAfter: routeAfter, routeProof,
     }) })
   } catch (error) {
@@ -319,6 +315,8 @@ async function executeRecoveryRelease(input: ProductionControllerInput): Promise
 function validateStaticContracts(input: ProductionControllerInput): void {
   validateProductionTopology(input.configs.core, input.configs.edge)
   validateProductionSandboxTopology(input.configs.sandbox)
+  parseDeviceHostPins(input.operatorPins.executionHost)
+  requireController(/^[a-f0-9]{64}$/u.test(input.secrets.EXECUTION_HOST_BEARER_TOKEN ?? ''), 'execution_host_secret_invalid')
   const expectedRouteMode = input.releaseMode === 'steady-state' ? 'steady-state' : 'bootstrap'
   requireController(input.routeAuthority.mode === expectedRouteMode, 'route_authority_mode_mismatch')
   requireController(input.humanAuthorization.candidateSha === input.identity.candidateSha
@@ -344,7 +342,6 @@ function validateStaticContracts(input: ProductionControllerInput): void {
 async function validateRecoveryStartingState(
   input: ProductionControllerInput,
   active: WorkerVersions,
-  containerInventory: unknown,
 ): Promise<void> {
   const receipt = input.recoveryReceipt as PreserveRequiredReceipt
   const prior = receipt.priorDeploymentReceipt
@@ -380,31 +377,17 @@ async function validateRecoveryStartingState(
       )
     }
   }
-  if (active.sandbox === receipt.predecessors.sandbox) {
-    if (prior === null) {
-      requireController(sandboxContainerApplicationAbsent(containerInventory),
-        'recovery_bootstrap_container_not_absent')
-    } else {
-      const observed = validateSandboxContainerDeployment(
-        containerInventory, prior.sandboxContainer.buildInputDigest,
-      )
-      requireController(sameContainerDeployment(observed, prior.sandboxContainer),
-        'recovery_container_predecessor_mismatch')
-    }
-  }
+
 }
 
 async function validateStartingState(
   input: ProductionControllerInput,
   active: WorkerVersions,
-  containerInventory: unknown,
 ): Promise<void> {
   if (input.releaseMode === 'bootstrap') {
     requireController(WORKERS.every((kind) => active[kind] === null), 'bootstrap_active_worker_present')
     requireController(input.priorReceipt === null && input.priorAuthorityProof === null,
       'bootstrap_prior_evidence_forbidden')
-    requireController(sandboxContainerApplicationAbsent(containerInventory),
-      'bootstrap_container_application_present')
     return
   }
   requireController(input.priorReceipt !== null && input.priorAuthorityProof !== null,
@@ -416,12 +399,7 @@ async function validateStartingState(
     const version = await input.adapter.viewVersion(kind, active[kind] as string)
     revalidateWorkerVersionProof(version, input.priorReceipt.evidence.deploymentProofs[kind])
   }
-  const observedContainer = validateSandboxContainerDeployment(
-    containerInventory,
-    input.priorReceipt.sandboxContainer.buildInputDigest,
-  )
-  requireController(sameContainerDeployment(observedContainer, input.priorReceipt.sandboxContainer),
-    'steady_state_container_baseline_mismatch')
+
 }
 
 function uploadInput(input: ProductionControllerInput, kind: WorkerKind): UploadInput {
@@ -430,11 +408,12 @@ function uploadInput(input: ProductionControllerInput, kind: WorkerKind): Upload
     RELEASE_CANDIDATE_DIGEST: input.identity.candidateDigest,
   }
   if (kind === 'core') Object.assign(variables, coreOverrides(input.operatorPins))
+  if (kind === 'sandbox') Object.assign(variables, hostOverrides(input.operatorPins))
   if (kind === 'edge') variables.HUMAN_CONFIRMATION_TRUST_ANCHOR_JSON = input.operatorPins.humanPresenceTrustAnchorJson
   return Object.freeze({
     candidateSha: input.identity.candidateSha,
     variables: Object.freeze(variables),
-    secrets: Object.freeze(kind === 'sandbox' ? {} : requiredSecrets(input.secrets, kind)),
+    secrets: Object.freeze(requiredSecrets(input.secrets, kind)),
   })
 }
 
@@ -454,6 +433,7 @@ function validateUploadedVersion(
       acosCandidateDigest: input.operatorPins.acosCandidateDigest,
       variableOverrides: coreOverrides(input.operatorPins),
     } : {}),
+    ...(kind === 'sandbox' ? { variableOverrides: hostOverrides(input.operatorPins) } : {}),
     ...(kind === 'edge' ? {
       humanPresenceTrustAnchorBinding: input.operatorPins.humanPresenceTrustAnchorJson,
     } : {}),
@@ -470,7 +450,12 @@ function coreOverrides(pins: ProductionOperatorPins): Readonly<Record<string, st
   })
 }
 
-function requiredSecrets(values: Readonly<Record<string, string>>, kind: 'core' | 'edge'): Record<string, string> {
+function hostOverrides(pins: ProductionOperatorPins): Readonly<Record<string, string>> {
+  return Object.freeze({ EXECUTION_HOST_URL: pins.executionHost.origin,
+    EXECUTION_HOST_BUNDLE_SHA256: pins.executionHost.bundleSha256, EXECUTION_HOST_IMAGE_ID: pins.executionHost.imageId })
+}
+
+function requiredSecrets(values: Readonly<Record<string, string>>, kind: WorkerKind): Record<string, string> {
   const names = kind === 'core'
     ? [
         'DISCOVERY_PROVIDER_BEARER_TOKEN',
@@ -478,7 +463,8 @@ function requiredSecrets(values: Readonly<Record<string, string>>, kind: 'core' 
         'CHECKOUT_PROVIDER_AUTH_SECRET',
         'MARKETPLACE_PROVIDER_AUTH_SECRET',
       ]
-    : ['MCP_BEARER_TOKEN', 'OPERATOR_BEARER_TOKEN', 'STOREFRONT_SESSION_SECRET']
+    : kind === 'sandbox' ? ['EXECUTION_HOST_BEARER_TOKEN']
+      : ['MCP_BEARER_TOKEN', 'OPERATOR_BEARER_TOKEN', 'STOREFRONT_SESSION_SECRET']
   return Object.fromEntries(names.map((name) => [name, values[name] as string]))
 }
 
@@ -529,19 +515,9 @@ function completeProofs(value: MutablePartial<DeploymentProofs>): DeploymentProo
   })
 }
 
-function requireContainerProgression(
-  prior: DeploymentReceipt | null,
-  before: unknown,
-  current: SandboxContainerProof,
-): void {
-  if (prior === null) {
-    requireController(sandboxContainerApplicationAbsent(before), 'bootstrap_container_baseline_not_absent')
-    return
-  }
-  requireController(current.applicationId === prior.sandboxContainer.applicationId,
-    'container_application_identity_changed')
-  requireController(current.applicationVersion > prior.sandboxContainer.applicationVersion,
-    'authorized_container_build_version_not_advanced')
+async function proveExecutionHost(input: ProductionControllerInput): Promise<DeviceHostProof> {
+  return validateDeviceHostProof(await input.adapter.probeExecutionHost(input.operatorPins.executionHost,
+    input.secrets.EXECUTION_HOST_BEARER_TOKEN as string), input.operatorPins.executionHost)
 }
 
 function failureReason(
@@ -551,8 +527,8 @@ function failureReason(
 ): PreserveRequiredReceipt['reason'] {
   if (stage.includes('route-authority')) return 'route_authority_changed'
   if (stage.includes('compare-and-swap')) return 'compare_and_swap_lost'
-  if (stage === 'prove-sandbox-container-rollout') return 'container_rollout_unproven'
-  if (sandboxMutationStarted) return 'container_rollout_not_transactional'
+  if (stage === 'prove-device-execution-host') return 'execution_host_unproven'
+  if (sandboxMutationStarted) return 'worker_activation_not_transactional'
   return mode === 'bootstrap' ? 'bootstrap_has_no_predecessor' : 'release_stage_failed'
 }
 

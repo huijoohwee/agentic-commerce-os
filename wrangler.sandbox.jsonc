@@ -1,12 +1,16 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "agentic-commerce-sandbox",
-  "main": "src/sandbox/executor.ts",
+  "main": "src/sandbox/device-executor.ts",
   "compatibility_date": "2026-08-29",
-  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   "workers_dev": false,
   "preview_urls": false,
-  "version_metadata": { "binding": "CF_VERSION_METADATA" },
+  "version_metadata": {
+    "binding": "CF_VERSION_METADATA"
+  },
   "vars": {
     "DEPLOY_LANE": "Local",
     "RELEASE_CANDIDATE_SHA": "local-unreleased",
@@ -14,42 +18,39 @@
   },
   "observability": {
     "enabled": true,
-    "logs": { "enabled": true, "head_sampling_rate": 1 }
-  },
-  "durable_objects": {
-    "bindings": [
-      { "name": "Sandbox", "class_name": "Sandbox" }
-    ]
-  },
-  "migrations": [
-    { "tag": "v1", "new_sqlite_classes": ["Sandbox"] }
-  ],
-  "containers": [
-    {
-      "class_name": "Sandbox",
-      "image": "./config/sandbox.Dockerfile",
-      "max_instances": 1,
-      "instance_type": "lite"
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1
     }
-  ],
+  },
   "env": {
     "proof": {
       "name": "agentic-commerce-sandbox-proof",
       "workers_dev": true,
       "preview_urls": false,
       "secrets": {
-        "required": ["SANDBOX_PROOF_BEARER_TOKEN"]
+        "required": [
+          "SANDBOX_PROOF_BEARER_TOKEN"
+        ]
       },
       "vars": {
         "SANDBOX_PUBLIC_PROOF_ONLY": "true"
       },
       "durable_objects": {
         "bindings": [
-          { "name": "Sandbox", "class_name": "Sandbox" }
+          {
+            "name": "Sandbox",
+            "class_name": "Sandbox"
+          }
         ]
       },
       "migrations": [
-        { "tag": "v1", "new_sqlite_classes": ["Sandbox"] }
+        {
+          "tag": "v1",
+          "new_sqlite_classes": [
+            "Sandbox"
+          ]
+        }
       ],
       "containers": [
         {
@@ -58,13 +59,16 @@
           "max_instances": 1,
           "instance_type": "lite"
         }
-      ]
+      ],
+      "main": "src/sandbox/executor.ts"
     },
     "dev": {
       "name": "agentic-commerce-sandbox-dev",
       "workers_dev": false,
       "preview_urls": false,
-      "version_metadata": { "binding": "CF_VERSION_METADATA" },
+      "version_metadata": {
+        "binding": "CF_VERSION_METADATA"
+      },
       "vars": {
         "DEPLOY_LANE": "Dev",
         "RELEASE_CANDIDATE_SHA": "dev-unreleased",
@@ -72,11 +76,19 @@
       },
       "durable_objects": {
         "bindings": [
-          { "name": "Sandbox", "class_name": "Sandbox" }
+          {
+            "name": "Sandbox",
+            "class_name": "Sandbox"
+          }
         ]
       },
       "migrations": [
-        { "tag": "v1", "new_sqlite_classes": ["Sandbox"] }
+        {
+          "tag": "v1",
+          "new_sqlite_classes": [
+            "Sandbox"
+          ]
+        }
       ],
       "containers": [
         {
@@ -85,62 +97,50 @@
           "max_instances": 1,
           "instance_type": "lite"
         }
-      ]
+      ],
+      "main": "src/sandbox/executor.ts"
     },
     "staging": {
       "name": "agentic-commerce-sandbox-staging",
       "workers_dev": false,
       "preview_urls": false,
-      "version_metadata": { "binding": "CF_VERSION_METADATA" },
+      "version_metadata": {
+        "binding": "CF_VERSION_METADATA"
+      },
       "vars": {
         "DEPLOY_LANE": "Staging",
         "RELEASE_CANDIDATE_SHA": "staging-release-required-sandbox",
-        "RELEASE_CANDIDATE_DIGEST": "staging-digest-required-sandbox"
+        "RELEASE_CANDIDATE_DIGEST": "staging-digest-required-sandbox",
+        "EXECUTION_HOST_URL": "https://execution-host.invalid",
+        "EXECUTION_HOST_BUNDLE_SHA256": "host-bundle-required",
+        "EXECUTION_HOST_IMAGE_ID": "host-image-required"
       },
-      "durable_objects": {
-        "bindings": [
-          { "name": "Sandbox", "class_name": "Sandbox" }
+      "secrets": {
+        "required": [
+          "EXECUTION_HOST_BEARER_TOKEN"
         ]
-      },
-      "migrations": [
-        { "tag": "v1", "new_sqlite_classes": ["Sandbox"] }
-      ],
-      "containers": [
-        {
-          "class_name": "Sandbox",
-          "image": "./config/sandbox.Dockerfile",
-          "max_instances": 1,
-          "instance_type": "lite"
-        }
-      ]
+      }
     },
     "production": {
       "name": "agentic-commerce-sandbox-production",
       "workers_dev": false,
       "preview_urls": false,
-      "version_metadata": { "binding": "CF_VERSION_METADATA" },
+      "version_metadata": {
+        "binding": "CF_VERSION_METADATA"
+      },
       "vars": {
         "DEPLOY_LANE": "Production",
         "RELEASE_CANDIDATE_SHA": "production-release-required-sandbox",
-        "RELEASE_CANDIDATE_DIGEST": "production-digest-required-sandbox"
+        "RELEASE_CANDIDATE_DIGEST": "production-digest-required-sandbox",
+        "EXECUTION_HOST_URL": "https://execution-host.invalid",
+        "EXECUTION_HOST_BUNDLE_SHA256": "host-bundle-required",
+        "EXECUTION_HOST_IMAGE_ID": "host-image-required"
       },
-      "durable_objects": {
-        "bindings": [
-          { "name": "Sandbox", "class_name": "Sandbox" }
+      "secrets": {
+        "required": [
+          "EXECUTION_HOST_BEARER_TOKEN"
         ]
-      },
-      "migrations": [
-        { "tag": "v1", "new_sqlite_classes": ["Sandbox"] }
-      ],
-      "containers": [
-        {
-          "name": "agentic-commerce-sandbox-production-sandbox",
-          "class_name": "Sandbox",
-          "image": "./config/sandbox.Dockerfile",
-          "max_instances": 1,
-          "instance_type": "lite"
-        }
-      ]
+      }
     }
   }
 }

@@ -93,7 +93,7 @@ test('Release authority emits a typed pre-mutation refusal for missing platform 
 
 test('Production preflight reports every input and never leaks malformed secret values', () => {
   const empty = describeProductionSetup({})
-  assert.equal(empty.inputs.length, 16)
+  assert.equal(empty.inputs.length, 18)
   assert.ok(empty.inputs.every(input => input.status === 'missing'))
   assert.equal(empty.configurationValid, false)
   const sensitive = 'operator-private-value-'.repeat(3)
@@ -115,6 +115,8 @@ test('Valid configuration shape cannot claim authenticated production readiness'
     describeProductionSetup({}).inputs.map(input => [input.name, 'f'.repeat(64)]))
   env.CLOUDFLARE_ACCOUNT_ID = 'a'.repeat(32)
   env.ACOS_RUNTIME_SOURCE_REVISION = CANDIDATE
+  env.EXECUTION_HOST_PINS_JSON = JSON.stringify({ origin: 'https://executor.example.net',
+    bundleSha256: 'a'.repeat(64), imageId: 'b'.repeat(64) })
   const pin = JSON.stringify({ sourceRevision: CANDIDATE, receiptDigest: 'd'.repeat(64),
     storageCompatibilityRevision: 'v1', providerVersionId: 'provider-1' })
   for (const name of ['DISCOVERY', 'CHECKOUT', 'MARKETPLACE']) env[`${name}_PROVIDER_EVIDENCE_PIN_JSON`] = pin
@@ -196,5 +198,38 @@ test('CI and release verification share pinned isolation and browser prerequisit
     const install = workflow.indexOf('npm ci')
     assert.ok(install >= 0 && setup > install)
     assert.ok(setup < workflow.indexOf(name === 'ci.yml' ? 'npm run check:integration' : 'npm run check:implementation'))
+  }
+})
+
+
+test('bootstrap distinguishes exact provider absence from CLI, authentication and transport failures', async () => {
+  const { readWorkerList } = await import('../../scripts/production-release/wrangler-release-adapter.ts')
+  const savedAccount = process.env.CLOUDFLARE_ACCOUNT_ID, savedToken = process.env.CLOUDFLARE_API_TOKEN
+  process.env.CLOUDFLARE_ACCOUNT_ID = 'a'.repeat(32)
+  process.env.CLOUDFLARE_API_TOKEN = 'test-only-inventory-token'
+  const run = () => { throw Error('CLI failed') }
+  const absent = { success: false, result: null, errors: [{ code: 10007, message: 'Worker does not exist' }] }
+  try {
+    for (const operation of ['versions', 'deployments'] as const) {
+      const result = await readWorkerList(ROOT, 'sandbox', operation, run, async (url, init) => {
+        assert.equal(url, `https://api.cloudflare.com/client/v4/accounts/${'a'.repeat(32)}/workers/scripts/agentic-commerce-sandbox-production/settings`)
+        assert.equal(new Headers(init?.headers).get('authorization'), 'Bearer test-only-inventory-token')
+        return Response.json(absent, { status: 404 })
+      })
+      assert.deepEqual(result, [])
+    }
+    for (const [status, body] of [[403, absent], [500, absent], [404, { ...absent, errors: [{ code: 10000 }] }],
+      [404, { ...absent, errors: [] }], [200, { success: true, result: {} }]] as const) {
+      await assert.rejects(readWorkerList(ROOT, 'sandbox', 'versions', run,
+        async () => Response.json(body, { status })), /worker_inventory_unproven/)
+    }
+    await assert.rejects(readWorkerList(ROOT, 'sandbox', 'versions', run, async () => { throw Error('network down') }))
+    assert.deepEqual(await readWorkerList(ROOT, 'sandbox', 'versions', () => ['observed'],
+      async () => { throw Error('unexpected fallback') }), ['observed'])
+  } finally {
+    if (savedAccount === undefined) delete process.env.CLOUDFLARE_ACCOUNT_ID
+    else process.env.CLOUDFLARE_ACCOUNT_ID = savedAccount
+    if (savedToken === undefined) delete process.env.CLOUDFLARE_API_TOKEN
+    else process.env.CLOUDFLARE_API_TOKEN = savedToken
   }
 })

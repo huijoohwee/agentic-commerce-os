@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { parseDeviceHostPins } from '../../src/sandbox/device-host.ts'
 import { readUpstreamEvidencePin } from '../../src/core/upstream-evidence.ts'
 import { isNonzeroHexIdentity } from '../../src/shared/digest.ts'
 import { canonicalJson } from '../evidence-integrity.ts'
@@ -30,9 +31,10 @@ type ReleaseEnvironment = Readonly<Record<string, string | undefined>>
 const WORKER_SECRET_NAMES = Object.freeze([
   'DISCOVERY_PROVIDER_BEARER_TOKEN', 'AGENTIC_OS_ADMISSION_AUTH_SECRET',
   'CHECKOUT_PROVIDER_AUTH_SECRET', 'MARKETPLACE_PROVIDER_AUTH_SECRET',
-  'MCP_BEARER_TOKEN', 'OPERATOR_BEARER_TOKEN', 'STOREFRONT_SESSION_SECRET',
+  'MCP_BEARER_TOKEN', 'OPERATOR_BEARER_TOKEN', 'STOREFRONT_SESSION_SECRET', 'EXECUTION_HOST_BEARER_TOKEN',
 ])
 const CONFIGURATION_READERS: Readonly<Record<string, (env: ReleaseEnvironment) => unknown>> = Object.freeze({
+  EXECUTION_HOST_PINS_JSON: env => parseDeviceHostPins(JSON.parse(environment('EXECUTION_HOST_PINS_JSON', env))),
   CLOUDFLARE_ACCOUNT_ID: env => validatedIdentity('CLOUDFLARE_ACCOUNT_ID', 32, env),
   CLOUDFLARE_API_TOKEN: env => credential('CLOUDFLARE_API_TOKEN', env),
   ACOS_RUNTIME_SOURCE_REVISION: env => validatedIdentity('ACOS_RUNTIME_SOURCE_REVISION', 40, env),
@@ -181,6 +183,7 @@ function readOperatorPins(): ProductionOperatorPins {
     checkoutProviderEvidencePinJson,
     marketplaceProviderEvidencePinJson,
     humanPresenceTrustAnchorJson,
+    executionHost: configured('EXECUTION_HOST_PINS_JSON') as ProductionOperatorPins['executionHost'],
   })
 }
 
@@ -203,6 +206,7 @@ function readWorkerSecrets(): Readonly<Record<string, string>> {
 
 function credential(name: string, env: ReleaseEnvironment = process.env): string {
   const value = environment(name, env)
+  if (name === 'EXECUTION_HOST_BEARER_TOKEN') requireRelease(/^[a-f0-9]{64}$/u.test(value) && !/^0+$/u.test(value), 'execution_host_credential_invalid')
   const maximum = name === 'AGENTIC_OS_ADMISSION_AUTH_SECRET' ? 256 : 4096
   requireRelease(value.length >= 32 && value.length <= maximum && !PLACEHOLDER_PATTERN.test(value),
     `${name.toLowerCase()}_invalid`)
