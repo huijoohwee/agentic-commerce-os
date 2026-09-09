@@ -1,3 +1,4 @@
+import { podmanEnvironment } from '../container-runtime.ts'
 import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
@@ -213,7 +214,7 @@ function command(root: string, arguments_: readonly string[]): string {
     timeout: COMMAND_TIMEOUT_MS,
     killSignal: 'SIGKILL',
     stdio: ['ignore', 'pipe', 'pipe'],
-    env: process.env,
+    env: arguments_[0] === 'deploy' && arguments_.includes(CONFIGS.sandbox) ? podmanEnvironment() : process.env,
   })
 }
 

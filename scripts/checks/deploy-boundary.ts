@@ -9,7 +9,7 @@ type BoundaryRegister = Readonly<{
 
 const manifest = readJson<PackageManifest>('package.json')
 const runtimeEntries = Object.entries(manifest.scripts)
-  .filter(([, command]) => /^wrangler dev\b/u.test(command))
+  .filter(([, command]) => /^node scripts\/dev\.ts(?: |$)/u.test(command))
   .map(([name]) => name)
   .sort()
 const boundaries = readJson<BoundaryRegister>('docs/deploy-boundary-register.json')
