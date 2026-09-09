@@ -182,3 +182,19 @@ test('Preflight CLI works without Git or credentials and refuses extra arguments
   assert.equal(extra.status, 1)
   assert.match(extra.stderr, /arguments_invalid/u)
 })
+
+test('CI and release verification share pinned isolation and browser prerequisites', () => {
+  const action = fs.readFileSync(`${ROOT}/.github/actions/setup-commerce-runtime/action.yml`, 'utf8')
+  assert.doesNotMatch(action, /secrets\.|CLOUDFLARE_API_TOKEN|continue-on-error/u)
+  assert.match(action, /MINIFLARE_WORKERD_PATH/u)
+  assert.match(action, /sha256sum --check/u)
+  assert.match(action, /npm run check:isolated-process/u)
+  assert.match(action, /playwright install --with-deps chromium/u)
+  for (const name of ['ci.yml', 'production-release.yml']) {
+    const workflow = fs.readFileSync(`${ROOT}/.github/workflows/${name}`, 'utf8')
+    const setup = workflow.indexOf('uses: ./.github/actions/setup-commerce-runtime')
+    const install = workflow.indexOf('npm ci')
+    assert.ok(install >= 0 && setup > install)
+    assert.ok(setup < workflow.indexOf(name === 'ci.yml' ? 'npm run check:integration' : 'npm run check:implementation'))
+  }
+})

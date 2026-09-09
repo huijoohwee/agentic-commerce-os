@@ -123,6 +123,7 @@ describe('commerce edge Worker', () => {
       new Request('https://airvio.co/agentic-commerce-os/'),
       Object.freeze({
         ...EDGE_TEST_BINDINGS,
+        GRAPH_WORKSPACE_URL: 'https://airvio.co/agentic-graph/',
         COMMERCE_CORE: Object.freeze({ fetch: EDGE_TEST_SERVICE_BINDINGS.COMMERCE_CORE }),
       }) as unknown as EdgeEnv,
       createExecutionContext(),
@@ -137,6 +138,7 @@ describe('commerce edge Worker', () => {
     expect(response.headers.get('x-commerce-edge-version-id')).toBe(EDGE_TEST_VERSION.id)
     expect(response.headers.get('x-commerce-core-version-id')).toBe('commerce-core-worker-test-version')
     const html = await response.text()
+    expect(html).toContain('href="https://airvio.co/agentic-graph/?openEditorWorkspace=1"')
     expect(html).toContain('id="catalog-search"')
     expect(html).toContain('src="/agentic-commerce-os/assets/storefront.js"')
     expect(html).toContain('name="ag-runtime-base-path" content="/agentic-commerce-os"')
@@ -155,6 +157,41 @@ describe('commerce edge Worker', () => {
     expect(mcp.status).toBe(401)
     await expect(mcp.json()).resolves.toMatchObject({ jsonrpc: '2.0', error: { code: -32_001 } })
   })
+
+  it.each(['/mcp/operator', '/agentic-commerce-os/mcp/operator'])(
+    'preserves fenced operator authority through %s', async (path) => {
+      const forwarded: Request[] = []
+      const claims = {
+        'x-authoring-semantic-scope': 'operator-registry',
+        'x-authoring-claim-id': 'mcp-prefix-claim',
+        'x-authoring-lease-epoch': '1',
+        'x-authoring-fence-revision': 'mcp-prefix-fence',
+      }
+      const env = { ...EDGE_TEST_BINDINGS, COMMERCE_CORE: { async fetch(request: Request) {
+        forwarded.push(request)
+        if (new URL(request.url).pathname === '/internal/v1/invocations/authorize') {
+          return EDGE_TEST_SERVICE_BINDINGS.COMMERCE_CORE(request)
+        }
+        return Response.json({ ok: true })
+      } } } as unknown as EdgeEnv
+      const invoke = (token: string, claimed: boolean) => edgeWorker.fetch(new Request(`https://airvio.co${path}`, {
+        method: 'POST', headers: { authorization: `Bearer ${token}`,
+          'content-type': 'application/json', accept: 'application/json, text/event-stream',
+          ...(claimed ? claims : {}),
+        }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call',
+          params: { name: 'commerce.theme.deploy', arguments: { merchantId: 'merchant-fixture', manifest: {} } },
+        }),
+      }), env, createExecutionContext())
+      expect((await invoke(EDGE_MCP_TOKEN, true)).status).toBe(401)
+      await invoke(EDGE_OPERATOR_TOKEN, false)
+      expect(forwarded).toHaveLength(0)
+      const response = await invoke(EDGE_OPERATOR_TOKEN, true)
+      expect(response.status).toBe(200)
+      const mutation = forwarded.find(request => new URL(request.url).pathname.endsWith('/theme'))
+      expect(mutation).toBeDefined()
+      for (const [name, value] of Object.entries(claims)) expect(mutation?.headers.get(name)).toBe(value)
+    },
+  )
 
   it('keeps the unrouted diagnostic readiness route-live unknown', async () => {
     const live = await SELF.fetch('https://edge.test/livez')

@@ -1,4 +1,5 @@
 import { THEME_MANIFEST_DEFAULTS, type ThemeManifest } from '../shared/theme-manifest'
+import { graphWorkspaceUrl } from './graph-workspace'
 
 export type ConsoleMetadata = Readonly<{
   lane: string
@@ -11,6 +12,7 @@ export type ConsoleOptions = Readonly<{
   catalogPath?: string
   clientModulePath?: string
   deliveryBoundary?: 'open' | 'closed'
+  graphWorkspaceUrl?: string
 }>
 
 export function consoleResponse(
@@ -28,6 +30,14 @@ export function consoleResponse(
   const modulePath = escapeHtml(options.clientModulePath ?? `${basePath}/assets/storefront.js`)
   const homePath = escapeHtml(basePath ? `${basePath}/` : '/')
   const deliveryClosed = options.deliveryBoundary === 'closed'
+  const workspaceUrl = deliveryClosed ? null : graphWorkspaceUrl(options.graphWorkspaceUrl, metadata.lane)
+  const workspace = workspaceUrl
+    ? `<article class="card" aria-labelledby="canvas-workspace-heading">
+        <div class="card-head"><h2 id="canvas-workspace-heading">Canvas workspace</h2></div>
+        <p class="hint">Arrange agents and review workflows in your canvas workspace.</p>
+        <a class="route" href="${escapeHtml(workspaceUrl)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" aria-label="Open in canvas (new tab)">Open in canvas <span aria-hidden="true">↗</span></a>
+      </article>`
+    : ''
   const brand = escapeHtml(manifest.copy.brand)
   const headline = escapeHtml(manifest.copy.headline)
   const subhead = escapeHtml(manifest.copy.subhead)
@@ -146,6 +156,7 @@ export function consoleResponse(
     </section>
     <section class="grid" aria-label="Storefront and runtime details">
       ${storefront}
+      ${workspace}
       <article class="card">
         <div class="card-head"><h2>Release identity</h2><span class="index">02</span></div>
         <dl><dt>Candidate</dt><dd><code>${releaseCandidateSha}</code></dd><dt>Worker version</dt><dd>${versionId}</dd><dt>Observed</dt><dd>${versionTimestamp}</dd></dl>

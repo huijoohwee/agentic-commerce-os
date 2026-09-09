@@ -52,6 +52,12 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Install locked verification dependencies
+        run: timeout --foreground --kill-after=30s 8m npm ci --ignore-scripts
+
+      - name: Set up Commerce verification runtime
+        uses: ./.github/actions/setup-commerce-runtime
+
       - name: Verify source, topology, checks, and all three dry bundles
         run: |
           set -euo pipefail
@@ -59,7 +65,6 @@ jobs:
           test "$GITHUB_SHA" = "$CANDIDATE_SHA"
           test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
           test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$CANDIDATE_SHA"
-          timeout --foreground --kill-after=30s 8m npm ci --ignore-scripts
           timeout --foreground --kill-after=30s 20m npm run check:implementation
           node scripts/production-release/contracts.ts topology wrangler.core.jsonc wrangler.edge.jsonc >/dev/null
           node scripts/production-release/contracts.ts sandbox-topology wrangler.sandbox.jsonc >/dev/null
