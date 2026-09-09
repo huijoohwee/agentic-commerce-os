@@ -1,4 +1,3 @@
-import { podmanEnvironment } from '../container-runtime.ts'
 import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
@@ -9,12 +8,12 @@ import { proveProductionRoute } from './route-proof.ts'
 import type { ProductionReleaseAdapter, UploadInput } from './production-controller.ts'
 import type { ProductionRouteAuthority } from './route-authority.ts'
 import type { WorkerKind } from './controller-receipts.ts'
-import { SANDBOX_CONTAINER_APPLICATION } from './container-release.ts'
+import { probeDeviceHost } from '../../src/sandbox/device-host.ts'
+import { DEVICE_HOST_PROOF_SCHEMA } from './device-host-release.ts'
 import { readBoundedJsonResponse } from './bounded-response.ts'
 
 const MAXIMUM_COMMAND_OUTPUT_BYTES = 4 * 1_048_576
 const COMMAND_TIMEOUT_MS = 12 * 60_000
-const INVENTORY_TIMEOUT_MS = 6 * 60_000
 const CONFIGS: Readonly<Record<WorkerKind, string>> = Object.freeze({
   sandbox: 'wrangler.sandbox.jsonc',
   core: 'wrangler.core.jsonc',
@@ -56,11 +55,10 @@ export function createWranglerReleaseAdapter(root: string): ProductionReleaseAda
         '--message', `exact-candidate activation ${kind}`, '--yes',
       ])
     },
-    async waitForSandboxContainer() {
-      return waitForSandboxContainer(cwd)
-    },
-    async containerInventory() {
-      return containerInventory(cwd)
+    async probeExecutionHost(pins, token) {
+      await probeDeviceHost(pins, token)
+      return Object.freeze({ ...pins, schema: DEVICE_HOST_PROOF_SCHEMA,
+        availability: 'device-session', observedAt: new Date().toISOString() })
     },
     async readRouteAuthority(authority, phase) {
       return readRouteAuthority(authority, phase)
@@ -92,34 +90,15 @@ function uploadVersion(root: string, kind: 'core' | 'edge', input: UploadInput):
 }
 
 function deploySandbox(root: string, input: UploadInput): void {
-  if (Object.keys(input.secrets).length !== 0) throw new Error('wrangler_release:sandbox_secrets_forbidden')
-  command(root, [
-    'deploy', '-c', CONFIGS.sandbox, '--env', 'production',
-    '--tag', input.candidateSha, '--message', 'exact protected candidate sandbox and container',
-    '--minify', '--strict', '--keep-vars', '--containers-rollout', 'immediate',
-    ...variableArguments(input.variables),
-  ])
-}
-
-async function waitForSandboxContainer(root: string): Promise<unknown> {
-  const deadline = Date.now() + INVENTORY_TIMEOUT_MS
-  while (Date.now() < deadline) {
-    const inventory = containerInventory(root)
-    if (!Array.isArray(inventory)) throw new Error('wrangler_release:container_inventory_invalid')
-    const app = inventory.filter((entry) => isRecord(entry) && entry.name === SANDBOX_CONTAINER_APPLICATION)
-    if (app.length === 1 && (app[0]?.state === 'active' || app[0]?.state === 'ready')) return inventory
-    if (app.length === 1 && app[0]?.state === 'degraded') {
-      throw new Error('wrangler_release:container_rollout_degraded')
-    }
-    await new Promise((resolve) => setTimeout(resolve, 5_000))
+  if (Object.keys(input.secrets).join(',') !== 'EXECUTION_HOST_BEARER_TOKEN') {
+    throw new Error('wrangler_release:sandbox_secret_inventory_invalid')
   }
-  throw new Error('wrangler_release:container_rollout_timeout')
-}
-
-function containerInventory(root: string): unknown {
-  return jsonCommand(root, [
-    'containers', 'list', '-c', CONFIGS.sandbox, '--env', 'production', '--json',
-  ])
+  withSecretFile(input.secrets, 'sandbox', secretFile => command(root, [
+    'deploy', '-c', CONFIGS.sandbox, '--env', 'production',
+    '--tag', input.candidateSha, '--message', 'exact protected candidate device sandbox',
+    '--minify', '--strict', '--keep-vars', '--secrets-file', secretFile as string,
+    ...variableArguments(input.variables),
+  ]))
 }
 
 async function readRouteAuthority(
@@ -214,7 +193,7 @@ function command(root: string, arguments_: readonly string[]): string {
     timeout: COMMAND_TIMEOUT_MS,
     killSignal: 'SIGKILL',
     stdio: ['ignore', 'pipe', 'pipe'],
-    env: arguments_[0] === 'deploy' && arguments_.includes(CONFIGS.sandbox) ? podmanEnvironment() : process.env,
+    env: process.env,
   })
 }
 

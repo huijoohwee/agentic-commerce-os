@@ -79,11 +79,14 @@ verification now consume the same local composite action, preserving the
 existing checksums and direct process-isolation check. Production credentials
 remain confined to the protected release job.
 
-The source contains a direct FOSS Podman isolation executor, but the production
-controller still targets Cloudflare Containers. The device-session host has separate local and hosted operational checks.
-Its authenticated connection to the public runtime is still a separate deployment
-requirement; passing ephemeral CI does not establish that connection. Source checks, provider deployment, human-presence/evaluator trust, and
-live production acceptance remain distinct evidence.
+Production and Staging now use a private Worker relay to the device-session
+Podman host. The controller binds its HTTPS origin, host bundle and image,
+requires a fresh authenticated v2 probe, and checks the pins again before each
+execution. Cloudflare Containers remain confined to the existing local Dev and
+explicit proof configurations. The named tunnel at `commerce-executor.airvio.co`
+has passed missing/wrong-token rejection, authenticated execution and disconnect
+checks. This transport observation does not establish a deployed relay, provider
+or independent trust.
 
 ## Acceptance and release handoff
 

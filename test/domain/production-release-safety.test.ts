@@ -93,7 +93,7 @@ test('Release authority emits a typed pre-mutation refusal for missing platform 
 
 test('Production preflight reports every input and never leaks malformed secret values', () => {
   const empty = describeProductionSetup({})
-  assert.equal(empty.inputs.length, 16)
+  assert.equal(empty.inputs.length, 18)
   assert.ok(empty.inputs.every(input => input.status === 'missing'))
   assert.equal(empty.configurationValid, false)
   const sensitive = 'operator-private-value-'.repeat(3)
@@ -115,6 +115,8 @@ test('Valid configuration shape cannot claim authenticated production readiness'
     describeProductionSetup({}).inputs.map(input => [input.name, 'f'.repeat(64)]))
   env.CLOUDFLARE_ACCOUNT_ID = 'a'.repeat(32)
   env.ACOS_RUNTIME_SOURCE_REVISION = CANDIDATE
+  env.EXECUTION_HOST_PINS_JSON = JSON.stringify({ origin: 'https://executor.example.net',
+    bundleSha256: 'a'.repeat(64), imageId: 'b'.repeat(64) })
   const pin = JSON.stringify({ sourceRevision: CANDIDATE, receiptDigest: 'd'.repeat(64),
     storageCompatibilityRevision: 'v1', providerVersionId: 'provider-1' })
   for (const name of ['DISCOVERY', 'CHECKOUT', 'MARKETPLACE']) env[`${name}_PROVIDER_EVIDENCE_PIN_JSON`] = pin

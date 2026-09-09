@@ -71,7 +71,7 @@ test('candidate digest binds the canonical Production core-service manifest dige
     coreServicesManifestDigest: '3'.repeat(64),
     edgeConfigDigest: '4'.repeat(64),
     sandboxConfigDigest: '5'.repeat(64),
-    sandboxContainerBuildInputDigest: '6'.repeat(64),
+    executionHostContractDigest: '6'.repeat(64),
     durableObjectStorageCompatibilityRevision: '7'.repeat(64),
     sandboxStorageCompatibilityRevision: '8'.repeat(64),
   }

@@ -81,13 +81,19 @@ uncertain-runtime refusal and partial-upload shutdown.
 
 ## Production composition and roadmap
 
-This is a working local execution endpoint, not a public ingress or a Cloudflare
-release receipt. The Cloudflare release controller still expects its original
-container rollout contract. Do not point that contract at localhost or fabricate
-a container receipt for this process. Connecting the public Commerce runtime
-requires a separately authenticated transport, binding the selected host bundle
-and image, and source-owned rollout/readiness/recovery support. Provider and
-independent evaluator/human-presence evidence remain separate gates.
+Production and Staging use a private Worker relay over authenticated HTTPS.
+Configure its protected `EXECUTION_HOST_PINS_JSON` and dedicated
+`EXECUTION_HOST_BEARER_TOKEN`; never expose the credential to the browser.
+The relay requires `commerce.local-execution-host/v2` and sends both
+`x-commerce-host-bundle-sha256` and `x-commerce-host-image-id` on each request.
+The host checks those pins before execution and rejects a mismatch or partial
+pair with HTTP 409. Unpinned authenticated local clients remain supported.
+
+The source-owned controller records fresh host identity and availability instead
+of a Cloudflare Container rollout. Dev retains its existing local four-Worker
+sandbox fixture. See [Production runtime contract](production-runtime.md) for
+release, recovery and evidence requirements. A running host or tunnel alone is
+not a production deployment receipt.
 
 For the current phase, that transport must show executor unavailability when
 this Mac sleeps or disconnects. It must not automatically replay a checkout.

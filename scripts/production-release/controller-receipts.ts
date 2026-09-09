@@ -1,14 +1,14 @@
 import { canonicalJson, sha256 } from '../evidence-integrity.ts'
-import { SANDBOX_CONTAINER_APPLICATION, type SandboxContainerProof } from './container-release.ts'
+import { parseDeviceHostProof, type DeviceHostProof } from './device-host-release.ts'
 import type { WorkerDeploymentProof } from './contracts.ts'
 import type { CandidateIdentity } from './lifecycle.ts'
 
 export const PRODUCTION_DEPLOYMENT_RECEIPT_SCHEMA =
-  'agentic-commerce-production-deployment-receipt/v2' as const
+  'agentic-commerce-production-deployment-receipt/v3' as const
 export const PRODUCTION_ROLLBACK_RECEIPT_SCHEMA =
   'agentic-commerce-production-rollback-receipt/v2' as const
 export const PRODUCTION_PRESERVE_RECEIPT_SCHEMA =
-  'agentic-commerce-production-preserve-required/v2' as const
+  'agentic-commerce-production-preserve-required/v3' as const
 
 export type WorkerKind = 'sandbox' | 'core' | 'edge'
 export type ProductionReleaseMode = 'bootstrap' | 'steady-state' | 'recovery'
@@ -35,8 +35,8 @@ export type DeploymentReceipt = Readonly<{
     routeAuthorityAfterDigest: string
     deploymentProofs: DeploymentProofs
     deploymentProofDigests: Readonly<Record<WorkerKind, string>>
-    sandboxContainerProofDigest: string
-    sandboxContainerBuildAuthorizationDigest: string
+    executionHostProofDigest: string
+    executionHostAuthorizationDigest: string
     routeProofDigest: string
   }>
   workerVersions: Readonly<{
@@ -44,15 +44,15 @@ export type DeploymentReceipt = Readonly<{
     candidates: CandidateVersions
     activationOrder: readonly ['sandbox-full-deploy', 'core-version', 'edge-version']
   }>
-  sandboxContainer: SandboxContainerProof
+  executionHost: DeviceHostProof
   releaseSemantics: Readonly<{
     atomic: false
-    sandboxWorkerActivatesBeforeContainerRollout: true
-    containerRolloutMode: 'immediate'
+    sandboxWorkerActivatesBeforeHostVerification: true
+    hostAvailability: 'device-session'
     postSandboxFailureRecovery: 'preserve-and-forward-recover'
   }>
   storageCompatibility: Readonly<{ coreRevision: string; sandboxRevision: string }>
-  rollback: Readonly<{ supported: false; reason: 'sandbox_container_image_rollback_unproven' }>
+  rollback: Readonly<{ supported: false; reason: 'device_host_and_storage_rollback_unproven' }>
 }>
 
 export type RollbackReceipt = Readonly<{
@@ -83,7 +83,7 @@ export type PreserveRequiredReceipt = Readonly<{
   }>
   failedStage: string
   reason: 'bootstrap_has_no_predecessor' | 'compare_and_swap_lost'
-    | 'container_rollout_not_transactional' | 'container_rollout_unproven'
+    | 'worker_activation_not_transactional' | 'execution_host_unproven'
     | 'route_authority_changed' | 'prior_release_evidence_invalid' | 'release_stage_failed'
   predecessors: WorkerVersions
   priorDeploymentReceipt: DeploymentReceipt | null
@@ -108,7 +108,7 @@ export function buildDeploymentReceipt(input: Readonly<{
   predecessors: WorkerVersions
   candidates: CandidateVersions
   deploymentProofs: DeploymentProofs
-  sandboxContainer: SandboxContainerProof
+  executionHost: DeviceHostProof
   routeAuthorityBefore: unknown
   routeAuthorityAfter: unknown
   routeProof: unknown
@@ -136,13 +136,13 @@ export function buildDeploymentReceipt(input: Readonly<{
         core: evidenceDigest(input.deploymentProofs.core),
         edge: evidenceDigest(input.deploymentProofs.edge),
       }),
-      sandboxContainerProofDigest: evidenceDigest(input.sandboxContainer),
-      sandboxContainerBuildAuthorizationDigest: evidenceDigest({
+      executionHostProofDigest: evidenceDigest(input.executionHost),
+      executionHostAuthorizationDigest: evidenceDigest({
         candidateIdentityDigest: evidenceDigest(input.identity),
         humanAuthorizationDigest: evidenceDigest(input.humanAuthorization),
-        buildInputDigest: input.sandboxContainer.buildInputDigest,
-        imageDigest: input.sandboxContainer.imageDigest,
-        applicationVersion: input.sandboxContainer.applicationVersion,
+        origin: input.executionHost.origin,
+        bundleSha256: input.executionHost.bundleSha256,
+        imageId: input.executionHost.imageId,
       }),
       routeProofDigest: evidenceDigest(input.routeProof),
     }),
@@ -151,18 +151,18 @@ export function buildDeploymentReceipt(input: Readonly<{
       candidates: input.candidates,
       activationOrder: Object.freeze(['sandbox-full-deploy', 'core-version', 'edge-version'] as const),
     }),
-    sandboxContainer: input.sandboxContainer,
+    executionHost: input.executionHost,
     releaseSemantics: Object.freeze({
       atomic: false,
-      sandboxWorkerActivatesBeforeContainerRollout: true,
-      containerRolloutMode: 'immediate',
+      sandboxWorkerActivatesBeforeHostVerification: true,
+      hostAvailability: 'device-session',
       postSandboxFailureRecovery: 'preserve-and-forward-recover',
     }),
     storageCompatibility: Object.freeze({
       coreRevision: input.identity.durableObjectStorageCompatibilityRevision,
       sandboxRevision: input.identity.sandboxStorageCompatibilityRevision,
     }),
-    rollback: Object.freeze({ supported: false, reason: 'sandbox_container_image_rollback_unproven' }),
+    rollback: Object.freeze({ supported: false, reason: 'device_host_and_storage_rollback_unproven' }),
   })
 }
 
@@ -170,7 +170,7 @@ export function parseDeploymentReceipt(value: unknown): DeploymentReceipt {
   const receipt = record(value, 'prior_receipt_invalid')
   exactKeys(receipt, [
     'candidateDigest', 'candidateSha', 'disposition', 'evidence', 'protectedMainVerified', 'releaseMode',
-    'releaseSemantics', 'rollback', 'runAttempt', 'runId', 'sandboxContainer', 'schema',
+    'releaseSemantics', 'rollback', 'runAttempt', 'runId', 'executionHost', 'schema',
     'storageCompatibility', 'workerVersions',
   ], 'prior_receipt_shape_invalid')
   requireReceipt(receipt.schema === PRODUCTION_DEPLOYMENT_RECEIPT_SCHEMA
@@ -190,12 +190,12 @@ export function parseDeploymentReceipt(value: unknown): DeploymentReceipt {
   exactKeys(evidence, [
     'candidateIdentityDigest', 'deploymentProofDigests', 'deploymentProofs', 'humanAuthorizationDigest',
     'operatorPinsDigest', 'priorArtifactAuthorityProofDigest', 'routeAuthorityAfterDigest',
-    'routeAuthorityBeforeDigest', 'routeProofDigest', 'sandboxContainerBuildAuthorizationDigest',
-    'sandboxContainerProofDigest',
+    'routeAuthorityBeforeDigest', 'routeProofDigest', 'executionHostAuthorizationDigest',
+    'executionHostProofDigest',
   ], 'prior_receipt_evidence_shape_invalid')
   for (const key of ['candidateIdentityDigest', 'humanAuthorizationDigest', 'operatorPinsDigest',
     'routeAuthorityAfterDigest', 'routeAuthorityBeforeDigest', 'routeProofDigest',
-    'sandboxContainerBuildAuthorizationDigest', 'sandboxContainerProofDigest']) {
+    'executionHostAuthorizationDigest', 'executionHostProofDigest']) {
     requireReceipt(digest(evidence[key]), 'prior_receipt_evidence_digest_invalid')
   }
   requireReceipt(evidence.priorArtifactAuthorityProofDigest === null
@@ -213,17 +213,17 @@ export function parseDeploymentReceipt(value: unknown): DeploymentReceipt {
       && proof.candidateDigest === receipt.candidateDigest
       && proof.versionId === candidates[kind], 'prior_receipt_worker_candidate_join_invalid')
   }
-  validateContainerProof(receipt.sandboxContainer)
-  requireReceipt(evidence.sandboxContainerProofDigest === evidenceDigest(receipt.sandboxContainer),
-    'prior_receipt_container_digest_mismatch')
-  const container = receipt.sandboxContainer as Record<string, unknown>
-  requireReceipt(evidence.sandboxContainerBuildAuthorizationDigest === evidenceDigest({
+  parseDeviceHostProof(receipt.executionHost)
+  requireReceipt(evidence.executionHostProofDigest === evidenceDigest(receipt.executionHost),
+    'prior_receipt_host_digest_mismatch')
+  const host = receipt.executionHost as Record<string, unknown>
+  requireReceipt(evidence.executionHostAuthorizationDigest === evidenceDigest({
     candidateIdentityDigest: evidence.candidateIdentityDigest,
     humanAuthorizationDigest: evidence.humanAuthorizationDigest,
-    buildInputDigest: container.buildInputDigest,
-    imageDigest: container.imageDigest,
-    applicationVersion: container.applicationVersion,
-  }), 'prior_receipt_container_build_authorization_mismatch')
+    origin: host.origin,
+    bundleSha256: host.bundleSha256,
+    imageId: host.imageId,
+  }), 'prior_receipt_host_authorization_mismatch')
   validateSemantics(receipt.releaseSemantics, receipt.rollback)
   const storage = record(receipt.storageCompatibility, 'prior_receipt_storage_invalid')
   exactKeys(storage, ['coreRevision', 'sandboxRevision'], 'prior_receipt_storage_shape_invalid')
@@ -346,35 +346,20 @@ function validateProof(value: unknown, kind: WorkerKind): void {
   }
 }
 
-function validateContainerProof(value: unknown): void {
-  const proof = record(value, 'prior_receipt_container_invalid')
-  exactKeys(proof, [
-    'applicationId', 'applicationName', 'applicationVersion', 'imageDigest', 'imageReference', 'instances',
-    'buildInputDigest', 'rollout', 'schema', 'state', 'updatedAt',
-  ], 'prior_receipt_container_shape_invalid')
-  requireReceipt(proof.schema === 'agentic-commerce-sandbox-container-deployment/v1'
-    && proof.rollout === 'immediate-complete'
-    && proof.applicationName === SANDBOX_CONTAINER_APPLICATION
-    && digest(proof.buildInputDigest) && typeof proof.imageReference === 'string'
-    && typeof proof.imageDigest === 'string' && /^sha256:[0-9a-f]{64}$/u.test(proof.imageDigest)
-    && Number.isSafeInteger(proof.applicationVersion) && Number(proof.applicationVersion) >= 1,
-  'prior_receipt_container_invalid')
-}
-
 function validateSemantics(value: unknown, rollbackValue: unknown): void {
   const semantics = record(value, 'prior_receipt_semantics_invalid')
   exactKeys(semantics, [
-    'atomic', 'containerRolloutMode', 'postSandboxFailureRecovery',
-    'sandboxWorkerActivatesBeforeContainerRollout',
+    'atomic', 'hostAvailability', 'postSandboxFailureRecovery',
+    'sandboxWorkerActivatesBeforeHostVerification',
   ], 'prior_receipt_semantics_shape_invalid')
-  requireReceipt(semantics.atomic === false && semantics.containerRolloutMode === 'immediate'
-    && semantics.sandboxWorkerActivatesBeforeContainerRollout === true
+  requireReceipt(semantics.atomic === false && semantics.hostAvailability === 'device-session'
+    && semantics.sandboxWorkerActivatesBeforeHostVerification === true
     && semantics.postSandboxFailureRecovery === 'preserve-and-forward-recover',
   'prior_receipt_semantics_invalid')
   const rollback = record(rollbackValue, 'prior_receipt_rollback_invalid')
   exactKeys(rollback, ['reason', 'supported'], 'prior_receipt_rollback_shape_invalid')
   requireReceipt(rollback.supported === false
-    && rollback.reason === 'sandbox_container_image_rollback_unproven', 'prior_receipt_rollback_invalid')
+    && rollback.reason === 'device_host_and_storage_rollback_unproven', 'prior_receipt_rollback_invalid')
 }
 
 function exactVersions(value: unknown, nullable: boolean): void {

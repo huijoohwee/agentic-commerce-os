@@ -70,16 +70,14 @@ test('Core service bindings use the exact Graph-declared staging and production 
   )
 })
 
-test('Production sandbox is a private exact service with one bounded container-backed Durable Object', () => {
+test('Production sandbox is a private exact service with an authenticated device host without paid compute', () => {
   const proof = validateProductionSandboxTopology(config('sandbox'))
   assert.equal(proof.sandboxWorker, 'agentic-commerce-sandbox-production')
-  assert.deepEqual(proof.durableObjectBinding, { name: 'Sandbox', className: 'Sandbox' })
-  assert.deepEqual(proof.container, {
-    applicationName: 'agentic-commerce-sandbox-production-sandbox',
-    className: 'Sandbox',
-    instanceType: 'lite',
-    maxInstances: 1,
-  })
+  assert.equal(proof.execution, 'authenticated-device-host')
+  assert.deepEqual(proof.requiredSecrets, ['EXECUTION_HOST_BEARER_TOKEN'])
+  const paid = config('sandbox') as any
+  paid.env.production.containers = [{ class_name: 'Sandbox' }]
+  assert.throws(() => validateProductionSandboxTopology(paid), /sandbox_managed_compute_forbidden/u)
 
   const publicSandbox = config('sandbox') as any
   publicSandbox.env.production.workers_dev = true

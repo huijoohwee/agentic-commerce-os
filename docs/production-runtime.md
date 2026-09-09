@@ -34,13 +34,13 @@ admission, Worker-secret, provider-evidence, and route-authority inputs needed
 by the controller.
 
 The controller supports `bootstrap`, `steady-state`, and authenticated
-`recovery`. Bootstrap requires all three Worker baselines and the sandbox
-container application to be absent. Steady state requires a separately
-authenticated prior deployment receipt whose exact versions and container are
+`recovery`. Bootstrap requires all three Worker baselines to be absent and a fresh,
+authenticated device-host probe to pass. Steady state requires a separately
+authenticated prior deployment receipt whose exact Worker versions are
 still active. Recovery requires a separately authenticated preserve-required
 receipt and accepts only its predecessor-or-candidate state. Core and edge are
-uploaded inactive and fully read back before activation. The sandbox Worker and
-container transition is immediate and non-transactional, so the controller
+uploaded inactive and fully read back before activation. The private sandbox relay Worker
+transition is immediate and non-transactional, so the controller
 records that boundary explicitly, rechecks the active three-Worker tuple before
 each later activation, and returns a typed preserve-required artifact for every
 ambiguous or partial transition. It never describes a forward-only recovery as
@@ -53,7 +53,7 @@ artifact when the selected mode requires one. Without them the controller
 fails before mutation; this repository does not manufacture those inputs.
 
 Before dispatching a release, run `node scripts/production-release/run-production-release.ts preflight`
-in the operator's configured environment. The existing release entrypoint validates all 16 common
+in the operator's configured environment. The existing release entrypoint validates all 18 common
 configuration inputs using the same readers as execution and reports names and missing/invalid/valid
 status only. All-zero account, admission revision/digest, and provider revision/receipt sentinels are
 invalid; the admission and provider runtime readers enforce the same identity rule. Leading-zero
@@ -105,7 +105,7 @@ or downstream remapping for either product name.
 | Commerce core | Registration, deterministic selection and dispatch fences, invocation-pin verification, checkout/offer observation, derived markup, theme activation, and authoring claims |
 | Commerce edge | Public Storefront Console and catalog plus session-, agent-, and operator-authorized facades over the private core |
 | Release workflow | Protected exact-candidate verifier and authenticated bootstrap, steady-state, or forward-recovery controller; it emits typed deployment or preserve-required evidence |
-| Sandbox Executor | Private bounded container-backed Worker included in the three-Worker release tuple; it has no public route or independent release authority |
+| Sandbox Executor | Private device-host relay Worker included in the three-Worker release tuple; it has no public route or independent release authority |
 
 The core runs six SQLite-backed Durable Object classes:
 
@@ -146,7 +146,7 @@ database, or parallel money ledger.
 
 This repository declares no D1 database, KV namespace, R2 bucket, or Queue. Its
 core state is the six Durable Objects above. The separate Sandbox Executor
-declares one bounded container-backed Sandbox class. In Production it is a
+uses isolated Podman execution on the operator device. In Production its relay is a
 private Service Binding and a separately proven member of the release tuple;
 it has no public route. `agentic-graph` remains the sole owner of vendor D1,
 authoritative bundle and money-ledger writes, same-transaction split persistence,
@@ -157,8 +157,9 @@ and payout coordination.
 Production deploys three Workers in one Cloudflare account:
 
 1. `agentic-commerce-sandbox-production` has `workers.dev` and preview URLs
-   disabled. It owns one bounded container-backed Sandbox Durable Object and is
-   reachable only through the core Service Binding.
+   disabled. It relays bounded requests to the authenticated device host and is
+   reachable only through the core Service Binding. Production and Staging declare
+   no Cloudflare Container or Sandbox Durable Object.
 2. `agentic-commerce-core-production` has `workers.dev` and preview URLs
    disabled. It is reachable only through Service Bindings and binds the six
    Durable Objects plus the authoritative ACOS admission, external MCP,
@@ -187,6 +188,30 @@ The Production config contains deliberately invalid release placeholders. The
 release workflow must inject the same lowercase 40-hex
 `RELEASE_CANDIDATE_SHA` and candidate digest into all three Workers. A direct
 Production deploy that omits either override cannot pass readiness.
+
+## Device execution release evidence
+
+The protected environment provides `EXECUTION_HOST_PINS_JSON` with exactly
+`origin`, `bundleSha256` and `imageId`, and the separate
+`EXECUTION_HOST_BEARER_TOKEN` secret. The relay validates an HTTPS origin and
+immutable nonzero SHA-256 pins. It forwards neither browser nor operator tokens.
+Every request carries both host pins; host contract
+`commerce.local-execution-host/v2` rejects a changed bundle or image before
+creating an executor. Redirects, cached probes, older host contracts and malformed
+responses fail closed. Requests are bounded and execution is never retried automatically.
+
+The controller proves the host before mutation, before later activation, and
+again after live-route verification. Deployment receipt v3 binds the latest
+`commerce-device-execution-host-proof/v1`, candidate, human authorization, host
+origin, bundle and image. Receipt v3 does not accept historical paid-container
+receipts as device-host proof. Partial activation produces a preserve-required
+receipt; host or storage rollback remains unproven. Changing the host can make
+an older relay unavailable until a matching authorized release completes.
+
+Current availability is `device-session`: the Mac, Podman, host process and
+connector must be running. An authenticated tunnel is transport evidence;
+provider, trust, protected deployment and live checkout remain separate checks.
+The independent always-on Free/FOSS host remains roadmap work.
 
 ## Invocation reuse
 

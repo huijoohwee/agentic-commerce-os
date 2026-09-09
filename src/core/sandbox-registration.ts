@@ -1,3 +1,4 @@
+import { DEVICE_HOST_CONTRACT } from '../sandbox/device-host.ts'
 import { canonicalJson, sha256Hex } from '../shared/digest.js'
 import { isRecord, readJsonResponse } from '../shared/http.js'
 import { REGISTRATION_DRY_RUN_WALL_CLOCK_SECONDS, REGISTRATION_SANDBOX_TIMEOUT_MS } from '../shared/registration-budget.js'
@@ -47,7 +48,7 @@ export async function probeRegistrationSandbox(
   try {
     response = await binding.fetch(new Request('https://sandbox.internal/readyz', {
       method: 'GET',
-      signal: AbortSignal.timeout(3_000),
+      signal: AbortSignal.timeout(12_000),
     }))
   } catch {
     return Object.freeze({ ok: false, status: 503, contract: null, versionId: null })
@@ -55,10 +56,20 @@ export async function probeRegistrationSandbox(
   const payload = await readJsonResponse(response, MAXIMUM_RESPONSE_BYTES)
   const version = isRecord(payload) && isRecord(payload.version) ? payload.version : null
   const containerProbe = isRecord(payload) && isRecord(payload.containerProbe) ? payload.containerProbe : null
+  const hostProbe = isRecord(payload) && isRecord(payload.hostProbe) ? payload.hostProbe : null
+  const deviceLane = lane === 'Production' || lane === 'Staging'
+  const runtimeValid = deviceLane ? hostProbe !== null
+    && exactKeys(hostProbe, ['ok', 'contract', 'availability', 'bundleSha256', 'imageId'])
+    && hostProbe.ok === true && hostProbe.contract === DEVICE_HOST_CONTRACT
+    && hostProbe.availability === 'device-session'
+    && typeof hostProbe.bundleSha256 === 'string' && /^[a-f0-9]{64}$/u.test(hostProbe.bundleSha256)
+    && typeof hostProbe.imageId === 'string' && /^[a-f0-9]{64}$/u.test(hostProbe.imageId)
+    : containerProbe !== null && exactKeys(containerProbe, ['ok', 'runtime', 'version'])
+      && containerProbe.ok === true && containerProbe.runtime === 'node' && containerProbe.version === 'v22.22.3'
   const valid = response.status === 200
     && isRecord(payload)
     && exactKeys(payload, [
-      'containerProbe', 'ok', 'contract', 'lane', 'releaseCandidateDigest', 'releaseCandidateSha', 'version',
+      deviceLane ? 'hostProbe' : 'containerProbe', 'ok', 'contract', 'lane', 'releaseCandidateDigest', 'releaseCandidateSha', 'version',
     ])
     && payload.ok === true
     && payload.contract === 'agentic-commerce-registration-sandbox/v1'
@@ -72,11 +83,7 @@ export async function probeRegistrationSandbox(
     && version.tag === candidateSha
     && typeof version.timestamp === 'string'
     && Number.isFinite(Date.parse(version.timestamp))
-    && containerProbe !== null
-    && exactKeys(containerProbe, ['ok', 'runtime', 'version'])
-    && containerProbe.ok === true
-    && containerProbe.runtime === 'node'
-    && containerProbe.version === 'v22.22.3'
+    && runtimeValid
   return Object.freeze({
     ok: valid,
     status: response.status,

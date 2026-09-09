@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 
-import { validateSandboxContainerDeployment } from '../../scripts/production-release/container-release.ts'
+import { validateDeviceHostProof, DEVICE_HOST_PROOF_SCHEMA } from '../../scripts/production-release/device-host-release.ts'
 import { evidenceDigest } from '../../scripts/production-release/controller-receipts.ts'
 import {
   executeProductionRelease,
@@ -33,7 +33,7 @@ const BUILD_INPUT = 'c'.repeat(64)
 const ROUTE_ID = 'd'.repeat(32)
 const WORKERS = ['sandbox', 'core', 'edge'] as const
 type Kind = typeof WORKERS[number]
-type Failure = 'after-sandbox' | 'container' | 'after-core' | 'after-edge' | 'after-route' | 'live'
+type Failure = 'after-sandbox' | 'host' | 'after-core' | 'after-edge' | 'after-route' | 'live'
 
 test('bootstrap controller deploys the exact candidate and emits a non-atomic live receipt', async () => {
   const adapter = new FakeReleaseAdapter()
@@ -48,7 +48,7 @@ test('bootstrap controller deploys the exact candidate and emits a non-atomic li
 
 test('authenticated preserve recovery converges after every remote mutation boundary', async () => {
   for (const failure of [
-    'after-sandbox', 'container', 'after-core', 'after-edge', 'after-route', 'live',
+    'after-sandbox', 'host', 'after-core', 'after-edge', 'after-route', 'live',
   ] as const) {
     const adapter = new FakeReleaseAdapter(failure)
     const first = await executeProductionRelease(input('bootstrap', adapter))
@@ -71,7 +71,7 @@ test('authenticated preserve recovery converges after every remote mutation boun
   }
 })
 
-test('authority and container parsers reject unknown identity and shape drift', () => {
+test('authority and device-host parsers reject unknown identity and shape drift', () => {
   const authority = parseProductionRouteAuthority(routeAuthority())
   assert.equal(authority.pattern, PRODUCTION_ROUTE_PATTERN)
   assert.throws(() => parseProductionRouteAuthority({ ...routeAuthority(), extra: true }), /authority_shape_invalid/u)
@@ -84,10 +84,9 @@ test('authority and container parsers reject unknown identity and shape drift', 
     artifactDigest: DIGEST,
     extra: true,
   }), /authority_shape_invalid/u)
-  assert.equal(validateSandboxContainerDeployment(containerInventory(), BUILD_INPUT).applicationVersion, 1)
-  const malformed = structuredClone(containerInventory()) as Array<Record<string, unknown>>
-  malformed[0]!.extra = true
-  assert.throws(() => validateSandboxContainerDeployment(malformed, BUILD_INPUT), /container_application_shape_invalid/u)
+  assert.equal(validateDeviceHostProof(hostProof(), PINS.executionHost).bundleSha256, BUILD_INPUT)
+  assert.throws(() => validateDeviceHostProof({ ...hostProof(), extra: true }, PINS.executionHost), /device_host_proof_invalid/u)
+  assert.throws(() => validateDeviceHostProof({ ...hostProof(), observedAt: '2020-01-01T00:00:00Z' }, PINS.executionHost), /device_host_proof_mismatch/u)
 })
 
 function input(
@@ -106,7 +105,7 @@ function input(
       coreServicesManifestDigest: '7'.repeat(64),
       edgeConfigDigest: '3'.repeat(64),
       sandboxConfigDigest: '4'.repeat(64),
-      sandboxContainerBuildInputDigest: BUILD_INPUT,
+      executionHostContractDigest: BUILD_INPUT,
       durableObjectStorageCompatibilityRevision: '5'.repeat(64),
       sandboxStorageCompatibilityRevision: '6'.repeat(64),
       candidateDigest: DIGEST,
@@ -129,8 +128,8 @@ function input(
     secrets: Object.freeze(Object.fromEntries([
       'DISCOVERY_PROVIDER_BEARER_TOKEN', 'AGENTIC_OS_ADMISSION_AUTH_SECRET',
       'CHECKOUT_PROVIDER_AUTH_SECRET', 'MARKETPLACE_PROVIDER_AUTH_SECRET',
-      'MCP_BEARER_TOKEN', 'OPERATOR_BEARER_TOKEN', 'STOREFRONT_SESSION_SECRET',
-    ].map((name) => [name, `${name}-secret-value-longer-than-thirty-two`]))),
+      'MCP_BEARER_TOKEN', 'OPERATOR_BEARER_TOKEN', 'STOREFRONT_SESSION_SECRET', 'EXECUTION_HOST_BEARER_TOKEN',
+    ].map((name) => [name, name === 'EXECUTION_HOST_BEARER_TOKEN' ? 'f'.repeat(64) : `${name}-secret-value-longer-than-thirty-two`]))),
     priorReceipt: null,
     priorAuthorityProof: recoveryReceipt ? Object.freeze({
       schema: RECOVERY_RELEASE_AUTHORITY_PROOF_SCHEMA,
@@ -153,6 +152,7 @@ const PINS = Object.freeze({
   checkoutProviderEvidencePinJson: '{"pin":"checkout"}',
   marketplaceProviderEvidencePinJson: '{"pin":"marketplace"}',
   humanPresenceTrustAnchorJson: '{"anchor":"human"}',
+  executionHost: { origin: 'https://executor.example.net', bundleSha256: BUILD_INPUT, imageId: 'a'.repeat(64) },
 })
 
 const CONFIGS = Object.freeze({
@@ -181,7 +181,6 @@ class FakeReleaseAdapter implements ProductionReleaseAdapter {
   private readonly versions: Record<Kind, Array<Record<string, unknown>>> = {
     sandbox: [], core: [], edge: [],
   }
-  private container: unknown[] = []
   private routeBound = false
   private failed = false
   private readonly failure: Failure | null
@@ -193,7 +192,6 @@ class FakeReleaseAdapter implements ProductionReleaseAdapter {
   async deploySandbox(): Promise<void> {
     this.addVersion('sandbox')
     this.active.sandbox = 'sandbox-candidate'
-    this.container = containerInventory()
     this.failOnce('after-sandbox')
   }
   async viewVersion(kind: Kind, versionId: string): Promise<unknown> {
@@ -204,11 +202,10 @@ class FakeReleaseAdapter implements ProductionReleaseAdapter {
     this.active[kind] = versionId
     this.failOnce(kind === 'core' ? 'after-core' : 'after-edge')
   }
-  async waitForSandboxContainer(): Promise<unknown> {
-    this.failOnce('container')
-    return structuredClone(this.container)
+  async probeExecutionHost(): Promise<unknown> {
+    if (this.active.sandbox) this.failOnce('host')
+    return hostProof()
   }
-  async containerInventory(): Promise<unknown> { return structuredClone(this.container) }
   async readRouteAuthority(
     _authority: ProductionRouteAuthority,
     _phase: 'before' | 'after' | 'recovery',
@@ -241,6 +238,9 @@ function workerVersion(kind: Kind, versionId: string): Record<string, unknown> {
   const configValue = CONFIGS[kind] as any
   const production = configValue.env.production
   const overrides: Record<string, string> = {
+    EXECUTION_HOST_URL: PINS.executionHost.origin,
+    EXECUTION_HOST_BUNDLE_SHA256: PINS.executionHost.bundleSha256,
+    EXECUTION_HOST_IMAGE_ID: PINS.executionHost.imageId,
     RELEASE_CANDIDATE_SHA: CANDIDATE,
     RELEASE_CANDIDATE_DIGEST: DIGEST,
     ACOS_RUNTIME_SOURCE_REVISION: PINS.acosSourceRevision,
@@ -274,15 +274,7 @@ function workerVersion(kind: Kind, versionId: string): Record<string, unknown> {
   }
 }
 
-function containerInventory(): Array<Record<string, unknown>> {
-  return [{
-    id: '123e4567-e89b-42d3-a456-426614174000',
-    name: 'agentic-commerce-sandbox-production-sandbox',
-    image: `registry.example/sandbox@sha256:${'a'.repeat(64)}`,
-    version: 1,
-    state: 'active',
-    instances: 1,
-    created_at: '2026-09-03T00:00:00.000Z',
-    updated_at: '2026-09-03T00:01:00.000Z',
-  }]
+function hostProof(): Record<string, unknown> {
+  return { schema: DEVICE_HOST_PROOF_SCHEMA, ...PINS.executionHost,
+    availability: 'device-session', observedAt: new Date().toISOString() }
 }

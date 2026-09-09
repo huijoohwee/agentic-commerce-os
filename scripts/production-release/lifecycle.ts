@@ -27,7 +27,7 @@ export type CandidateIdentity = Readonly<{
   coreServicesManifestDigest: string
   edgeConfigDigest: string
   sandboxConfigDigest: string
-  sandboxContainerBuildInputDigest: string
+  executionHostContractDigest: string
   durableObjectStorageCompatibilityRevision: string
   sandboxStorageCompatibilityRevision: string
   candidateDigest: string
@@ -201,12 +201,11 @@ export function buildCandidateIdentity(candidateSha: string): CandidateIdentity 
     coreServicesManifestDigest: PRODUCTION_CORE_SERVICES_SNAPSHOT.digest,
     edgeConfigDigest: fileDigest('wrangler.edge.jsonc'),
     sandboxConfigDigest: fileDigest('wrangler.sandbox.jsonc'),
-    sandboxContainerBuildInputDigest: fileDigest('config/sandbox.Dockerfile'),
+    executionHostContractDigest: fileDigest('src/sandbox/device-host.ts'),
     durableObjectStorageCompatibilityRevision: digest(gitNodeStorageRevision()),
     sandboxStorageCompatibilityRevision: sha256(canonicalJson([
-      fileDigest('src/sandbox/executor.ts'),
-      fileDigest('src/sandbox/isolation.ts'),
-      fileDigest('src/sandbox/preview.ts'),
+      fileDigest('src/sandbox/device-executor.ts'),
+      fileDigest('src/sandbox/device-host.ts'),
     ])),
   })
   assertProductionCoreServicesManifestCurrent()
@@ -222,7 +221,7 @@ export function sealCandidateIdentity(input: CandidateIdentityInput): CandidateI
     coreServicesManifestDigest: digest(input.coreServicesManifestDigest),
     edgeConfigDigest: digest(input.edgeConfigDigest),
     sandboxConfigDigest: digest(input.sandboxConfigDigest),
-    sandboxContainerBuildInputDigest: digest(input.sandboxContainerBuildInputDigest),
+    executionHostContractDigest: digest(input.executionHostContractDigest),
     durableObjectStorageCompatibilityRevision: digest(input.durableObjectStorageCompatibilityRevision),
     sandboxStorageCompatibilityRevision: digest(input.sandboxStorageCompatibilityRevision),
   })

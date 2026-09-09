@@ -19,9 +19,8 @@ export const PRODUCTION_ZONE_NAME = 'airvio.co'
 export const PRODUCTION_CORE_WORKER = 'agentic-commerce-core-production'
 export const PRODUCTION_EDGE_WORKER = 'agentic-commerce-edge-production'
 export const PRODUCTION_SANDBOX_WORKER = 'agentic-commerce-sandbox-production'
-export const PRODUCTION_SANDBOX_CONTAINER_APPLICATION =
-  'agentic-commerce-sandbox-production-sandbox' as const
-export const PRODUCTION_SANDBOX_TOPOLOGY_SCHEMA = 'agentic-commerce-production-sandbox-topology/v1'
+export const PRODUCTION_SANDBOX_TOPOLOGY_SCHEMA = 'agentic-commerce-production-sandbox-topology/v2'
+export const PRODUCTION_SANDBOX_SECRETS = Object.freeze(['EXECUTION_HOST_BEARER_TOKEN'])
 export const HUMAN_PRESENCE_ANCHOR_PLACEHOLDER = 'external-trust-anchor-required'
 
 export const PRODUCTION_DURABLE_OBJECT_BINDINGS = Object.freeze([
@@ -81,13 +80,9 @@ export type WorkerDeploymentProof = Readonly<{
 export type ProductionSandboxTopologyProof = Readonly<{
   schema: typeof PRODUCTION_SANDBOX_TOPOLOGY_SCHEMA
   sandboxWorker: typeof PRODUCTION_SANDBOX_WORKER
-  durableObjectBinding: Readonly<{ name: 'Sandbox'; className: 'Sandbox' }>
-  container: Readonly<{
-    applicationName: typeof PRODUCTION_SANDBOX_CONTAINER_APPLICATION
-    className: 'Sandbox'
-    instanceType: 'lite'
-    maxInstances: 1
-  }>
+  execution: 'authenticated-device-host'
+  availability: 'device-session'
+  requiredSecrets: typeof PRODUCTION_SANDBOX_SECRETS
 }>
 
 export function validateProductionTopology(coreValue: unknown, edgeValue: unknown): ProductionTopologyProof {
@@ -156,34 +151,17 @@ export function validateProductionSandboxTopology(value: unknown): ProductionSan
   validatePrivateLane(production, 'sandbox')
   exact(asArray(production.routes).length === 0, 'sandbox_route_must_be_private')
   exact(asArray(production.services).length === 0, 'sandbox_service_binding_forbidden')
-  exact(production.secrets === undefined, 'sandbox_secret_binding_forbidden')
-  validateNoUnmanagedStorage(config)
-  validateNoUnmanagedStorage(production)
-  const namespaces = asArray(object(production.durable_objects, 'sandbox_durable_objects_invalid').bindings)
-  exact(namespaces.length === 1, 'sandbox_durable_object_binding_invalid')
-  const namespace = object(namespaces[0], 'sandbox_durable_object_binding_invalid')
-  exactKeys(namespace, ['class_name', 'name'], 'sandbox_durable_object_binding_shape_invalid')
-  exact(namespace.name === 'Sandbox' && namespace.class_name === 'Sandbox',
-    'sandbox_durable_object_binding_invalid')
-  const containers = asArray(production.containers)
-  exact(containers.length === 1, 'sandbox_container_invalid')
-  const container = object(containers[0], 'sandbox_container_invalid')
-  exactKeys(container, ['class_name', 'image', 'instance_type', 'max_instances', 'name'],
-    'sandbox_container_shape_invalid')
-  exact(container.name === PRODUCTION_SANDBOX_CONTAINER_APPLICATION
-    && container.class_name === 'Sandbox' && container.image === './config/sandbox.Dockerfile'
-    && container.max_instances === 1 && container.instance_type === 'lite', 'sandbox_container_invalid')
-  return Object.freeze({
-    schema: PRODUCTION_SANDBOX_TOPOLOGY_SCHEMA,
-    sandboxWorker: PRODUCTION_SANDBOX_WORKER,
-    durableObjectBinding: Object.freeze({ name: 'Sandbox', className: 'Sandbox' }),
-    container: Object.freeze({
-      applicationName: PRODUCTION_SANDBOX_CONTAINER_APPLICATION,
-      className: 'Sandbox',
-      instanceType: 'lite',
-      maxInstances: 1,
-    }),
-  })
+  exact(config.main === 'src/sandbox/device-executor.ts', 'sandbox_entrypoint_invalid')
+  const secrets = object(production.secrets, 'sandbox_secrets_invalid')
+  exactStringSet(asArray(secrets.required).map(text), PRODUCTION_SANDBOX_SECRETS, 'sandbox_secrets_invalid')
+  for (const scope of [config, production]) {
+    validateNoUnmanagedStorage(scope)
+    exact(scope.durable_objects === undefined && scope.migrations === undefined
+      && scope.containers === undefined, 'sandbox_managed_compute_forbidden')
+  }
+  return Object.freeze({ schema: PRODUCTION_SANDBOX_TOPOLOGY_SCHEMA,
+    sandboxWorker: PRODUCTION_SANDBOX_WORKER, execution: 'authenticated-device-host',
+    availability: 'device-session', requiredSecrets: PRODUCTION_SANDBOX_SECRETS })
 }
 
 export function validateWorkerVersion(
@@ -370,7 +348,7 @@ function validateConfiguredBindings(
   requiredBinding(actual, metadataName, 'version_metadata')
   expectedNames.push(metadataName)
   const secrets = expected.kind === 'edge' ? PRODUCTION_EDGE_SECRETS
-    : expected.kind === 'core' ? PRODUCTION_CORE_SECRETS : []
+    : expected.kind === 'core' ? PRODUCTION_CORE_SECRETS : PRODUCTION_SANDBOX_SECRETS
   for (const name of secrets) {
     requiredBinding(actual, name, 'secret_text')
     expectedNames.push(name)
