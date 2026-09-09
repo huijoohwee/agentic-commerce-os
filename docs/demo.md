@@ -19,8 +19,9 @@ npm ci
 ```
 
 Expected observable outcome: npm installs the exact committed dependency graph
-with no range resolution. Deploy boundary: `sandbox-to-mirror` is
-`pending-protected-integration`; every delivery boundary is `closed`.
+with no range resolution. Complete the [local container runtime](container-runtime.md)
+prerequisites and export `MINIFLARE_WORKERD_PATH` for every runtime/check command below.
+Source integration and live release remain separate; every delivery boundary is `closed`.
 
 ## 2. Start the mobile-first Dev surface
 
@@ -30,7 +31,7 @@ Command:
 npm run dev:apex
 ```
 
-Expected observable outcome: the provider fixture, private core, and edge Worker
+Expected observable outcome: the provider fixture, private Sandbox Executor, core, and edge Worker
 start on the local Dev topology, with the edge listening on port 5173. No
 live-mode provider call is issued. Deploy boundary: unchanged.
 
@@ -95,9 +96,7 @@ verdict for every bounded task. In a fresh lane it is expected to remain red
 while those artifacts are absent. The portable task snapshot assigns task-level
 contract and source closure to non-recursive checks, so the former aggregate
 self-reference is closed without fabricating the still-absent verdict set.
-Deploy boundary: `sandbox-to-mirror` remains
-`pending-protected-integration`; every Delivery boundary remains `closed`; live
-release remains not-ready.
+Every Delivery boundary remains `closed`; live release remains not-ready.
 
 This repository also has no evaluator-owned dispatch trust anchor or isolated
 check executor. Evidence capture therefore stops before any candidate command

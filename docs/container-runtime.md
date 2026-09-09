@@ -10,7 +10,8 @@ On macOS install Podman, initialize a machine once, and start it only when neede
 brew install podman
 podman machine init --cpus 2 --memory 4096 --disk-size 30
 podman machine start
-MINIFLARE_WORKERD_PATH=/absolute/path/to/verified/workerd npm run dev
+export MINIFLARE_WORKERD_PATH=/absolute/path/to/verified/workerd
+npm run dev
 # After the owned workload has closed:
 podman machine stop
 ```
@@ -45,6 +46,18 @@ verified against pinned archive and binary SHA-256 values in the workflow. Local
 checks require a matching-platform binary verified against its build receipt and
 checksums before setting `MINIFLARE_WORKERD_PATH` to its absolute path. Miniflare's
 existing override selects that runtime without editing installed packages.
+
+Dev and browser/E2E entry points reject a missing, relative, inaccessible, or
+non-executable override before contacting Podman, building images, or creating a
+browser artifact directory. This preflight validates the path, not compatibility;
+verify the build receipt and binary checksum before selecting it. Do not substitute
+the bundled runtime: it can turn registration into a delayed `sandbox_request_failed`.
+
+The Podman adapter emits `podman-built <requested-tag>` only after a successful
+build. The browser owner consumes that exact tag; Podman's `Successfully tagged`
+lines also list old aliases of a cached image and do not establish run ownership.
+Existing image/count bounds and main/proxy identity checks still apply. Cached
+aliases are retained, not pruned to make a check pass.
 
 Podman 4.9 exposes a Go timestamp in event templates; newer versions expose integer
 nanoseconds. The event template selects the native representation while preserving

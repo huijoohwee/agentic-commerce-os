@@ -52,11 +52,13 @@ sentence above and in externally owned service targets are retained only where
 
 ## Start and verify
 
-Requires Node.js 22.22 or newer.
+Requires Node.js 22.22 or newer and the [local container runtime](docs/container-runtime.md)
+prerequisites: running rootless Podman and an explicitly selected compatible `workerd`.
 
 ```bash
 npm ci
 cp .dev.vars.example .dev.vars
+export MINIFLARE_WORKERD_PATH=/absolute/path/to/verified/workerd
 npm run dev
 ```
 
@@ -66,8 +68,8 @@ cryptographically secure password manager or secret generator, use at least 32
 characters, keep the discovery credential distinct from both edge bearer
 tokens, and never commit either value.
 
-`npm run dev` runs edge, core, and one explicitly demo-only provider Worker
-locally, including a minimal three-token invocation fixture. It performs no
+`npm run dev` runs edge, core, the private Sandbox Executor, and one explicitly
+demo-only provider Worker locally, including a minimal three-token invocation fixture. It performs no
 cloud or payment mutation. `npm run dev:offline` runs the same boundaries under
 the complete local workerd test harness in watch mode; it is a test harness, not
 a third Dev runtime entry point. `npm run dev:apex` starts the same Dev topology
