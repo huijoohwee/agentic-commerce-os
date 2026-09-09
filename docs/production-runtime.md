@@ -1,5 +1,8 @@
 # Production runtime contract
 
+See [Commerce and Graph runtime composition](commerce-graph-runtime.md) for the
+canonical URLs, canvas reuse, shared verification setup, and current live gaps.
+
 ## Readiness result
 
 This repository is a fail-closed production candidate, not a currently verified

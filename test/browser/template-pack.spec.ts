@@ -48,6 +48,33 @@ test('default and themed storefronts keep semantic controls and touch targets', 
   }
 })
 
+test('mobile canvas navigation opens a separate workspace without eager loading', async ({ page }) => {
+  const requests: string[] = []
+  page.on('request', request => requests.push(request.url()))
+  const response = consoleResponse({ lane: 'Production', releaseCandidateSha: 'a'.repeat(40),
+    version: { id: 'browser-fixture' } }, THEME_MANIFEST_DEFAULTS,
+  { graphWorkspaceUrl: 'https://canvas.example/agentic-graph/' })
+  await page.setContent(await response.text())
+  const link = page.getByRole('link', { name: 'Open in canvas (new tab)' })
+  await expect(link).toBeVisible()
+  await expect(link).toHaveAttribute('href', 'https://canvas.example/agentic-graph/?openEditorWorkspace=1')
+  await expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+  await expect(link).toHaveAttribute('referrerpolicy', 'no-referrer')
+  expect((await link.boundingBox())?.height).toBeGreaterThanOrEqual(44)
+  expect(await page.evaluate('document.documentElement.scrollWidth <= innerWidth')).toBe(true)
+  expect(requests.filter(url => url.includes('canvas.example'))).toEqual([])
+  await page.context().route('https://canvas.example/**', route => route.fulfill({
+    status: 200, contentType: 'text/html', body: '<title>Canvas fixture</title>',
+  }))
+  const popupPromise = page.waitForEvent('popup')
+  await link.click()
+  const popup = await popupPromise
+  await popup.waitForLoadState('domcontentloaded')
+  expect(await popup.evaluate('window.opener === null')).toBe(true)
+  await expect(page.locator('#catalog-search')).toBeVisible()
+  await popup.close()
+})
+
 test('shipped WebMCP registration has explicit count and two-second bounds', () => {
   expect(STOREFRONT_CLIENT_MODULE).toContain('const MAXIMUM_REGISTERED_TOOLS = 16;')
   expect(STOREFRONT_CLIENT_MODULE).toContain('const WEBMCP_REGISTRATION_LIMIT_MS = 2000;')

@@ -116,7 +116,7 @@ export default {
           request,
           context,
           requestId,
-          createCorePayload(env, requestId, request),
+          createCorePayload(env, requestId, request, operator),
           operator ? 'operator' : 'agent',
         )
         return finalizeResponse(response, requestId, request, env)
@@ -223,7 +223,7 @@ async function routePublic(
     })
   }
   if (request.method === 'GET' && url.pathname === '/') {
-    const dashboard = dashboardResponse(metadata(env), { basePath })
+    const dashboard = dashboardResponse(metadata(env), { basePath, graphWorkspaceUrl: env.GRAPH_WORKSPACE_URL })
     if (!basePath) return dashboard
     const routeReadiness = await observeProductionRouteReadiness(request, {
       lane: env.DEPLOY_LANE,
@@ -463,13 +463,13 @@ function routeToCore(request: Request, url: URL): CoreRoute | null {
   return null
 }
 
-function createCorePayload(env: EdgeRuntimeEnv, requestId: string, request: Request): CorePayload {
+function createCorePayload(env: EdgeRuntimeEnv, requestId: string, request: Request, operator: boolean): CorePayload {
   return async (path, body, method = body ? 'POST' : 'GET') => {
     const authoringClaim = readAuthoringClaimHeaders(request)
     const result = await coreCall(env, path, {
       method,
       ...(body ? { body: JSON.stringify(body) } : {}),
-      ...(new URL(request.url).pathname === '/mcp/operator' && authoringClaim.ok
+      ...(operator && authoringClaim.ok
         ? { forwardedHeaders: authoringClaim.headers }
         : {}),
     }, requestId)
