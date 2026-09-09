@@ -3,7 +3,7 @@ import { bearerAuthorized } from '../../src/shared/auth.ts'
 import { parseSandboxRequest, type IsolatedExecutor } from '../../src/sandbox/isolation.ts'
 import { runServerIsolated } from '../../src/sandbox/server-run.ts'
 
-export const LOCAL_HOST_CONTRACT = 'commerce.local-execution-host/v1'
+export const LOCAL_HOST_CONTRACT = 'commerce.local-execution-host/v2'
 export const MAXIMUM_HOST_BODY_BYTES = 1_000_000
 export type LocalHostOptions = Readonly<{
   token: string
@@ -54,6 +54,12 @@ export async function startLocalHost(options: LocalHostOptions) {
     if (!await bearerAuthorized(new Request('http://localhost/', {
       headers: { authorization: request.headers.authorization ?? '' },
     }), options.token)) return reply(response, 401, { ok: false, code: 'unauthorized' })
+    const bundlePin = request.headers['x-commerce-host-bundle-sha256']
+    const imagePin = request.headers['x-commerce-host-image-id']
+    if ((bundlePin !== undefined || imagePin !== undefined)
+      && (bundlePin !== options.identity.bundleSha256 || imagePin !== options.identity.imageId)) {
+      return reply(response, 409, { ok: false, code: 'local_host_identity_mismatch' })
+    }
     if (stopping) return reply(response, 503, { ok: false, code: 'local_host_stopping' })
     if (request.method === 'GET' && request.url === '/livez') {
       return reply(response, 200, { ok: true, contract: LOCAL_HOST_CONTRACT, availability: 'device-session' })

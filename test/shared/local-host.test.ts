@@ -29,6 +29,23 @@ function call(origin: string, path = '/v1/run', body: unknown = payload, headers
 }
 
 describe('device-session execution host', () => {
+  it('refuses stale or partial runtime pins before reading source or provisioning', async () => {
+    const host = await start()
+    for (const headers of [
+      { 'x-commerce-host-bundle-sha256': 'd'.repeat(64), 'x-commerce-host-image-id': identity.imageId },
+      { 'x-commerce-host-bundle-sha256': identity.bundleSha256, 'x-commerce-host-image-id': 'd'.repeat(64) },
+      { 'x-commerce-host-bundle-sha256': identity.bundleSha256 },
+    ]) {
+      const response = await call(host.origin, '/v1/run', payload, headers)
+      expect(response.status).toBe(409)
+      expect(await response.json()).toEqual({ ok: false, code: 'local_host_identity_mismatch' })
+    }
+    expect(host.createExecutor).not.toHaveBeenCalled()
+    expect(host.probe).not.toHaveBeenCalled()
+    expect((await call(host.origin, '/readyz', undefined, {
+      'x-commerce-host-bundle-sha256': identity.bundleSha256, 'x-commerce-host-image-id': identity.imageId,
+    })).status).toBe(200)
+  })
   it('requires local authority and a credential before probing or accepting source', async () => {
     const host = await start()
     for (const headers of [{ authorization: '' }, { authorization: `Bearer ${'d'.repeat(64)}` }]) {
