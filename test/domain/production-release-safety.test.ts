@@ -1,9 +1,14 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import { Buffer } from 'node:buffer'
+import { generateKeyPairSync } from 'node:crypto'
+import { spawnSync } from 'node:child_process'
 import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 
 import { buildReleaseAuthorityRefusal } from '../../scripts/production-release/release-authority.ts'
+
+import { describeProductionSetup } from '../../scripts/production-release/run-production-release.ts'
 
 const CANDIDATE = 'c'.repeat(40)
 const ROOT = fileURLToPath(new URL('../..', import.meta.url))
@@ -81,4 +86,68 @@ test('Release authority emits a typed pre-mutation refusal for missing platform 
     humanAuthorization: json('human'),
     coreBundleProof: json('core'), edgeBundleProof: json('edge'),
   }), /run_attempt_not_authorizable/u)
+})
+
+
+test('Production preflight reports every input and never leaks malformed secret values', () => {
+  const empty = describeProductionSetup({})
+  assert.equal(empty.inputs.length, 16)
+  assert.ok(empty.inputs.every(input => input.status === 'missing'))
+  assert.equal(empty.configurationValid, false)
+  const sensitive = 'operator-private-value-'.repeat(3)
+  const report = describeProductionSetup({
+    CLOUDFLARE_ACCOUNT_ID: 'a'.repeat(32), CLOUDFLARE_API_TOKEN: sensitive,
+    HUMAN_CONFIRMATION_TRUST_ANCHOR_JSON: `{invalid:${sensitive}`,
+    PRODUCTION_ROUTE_AUTHORITY_JSON: sensitive, MCP_BEARER_TOKEN: '',
+  })
+  const statuses = Object.fromEntries(report.inputs.map(input => [input.name, input.status]))
+  assert.equal(statuses.CLOUDFLARE_API_TOKEN, 'valid')
+  assert.equal(statuses.HUMAN_CONFIRMATION_TRUST_ANCHOR_JSON, 'invalid')
+  assert.equal(statuses.PRODUCTION_ROUTE_AUTHORITY_JSON, 'invalid')
+  assert.equal(statuses.MCP_BEARER_TOKEN, 'invalid')
+  assert.ok(!JSON.stringify(report).includes(sensitive))
+})
+
+test('Valid configuration shape cannot claim authenticated production readiness', () => {
+  const env: Record<string, string> = Object.fromEntries(
+    describeProductionSetup({}).inputs.map(input => [input.name, 'f'.repeat(64)]))
+  env.CLOUDFLARE_ACCOUNT_ID = 'a'.repeat(32)
+  env.ACOS_RUNTIME_SOURCE_REVISION = CANDIDATE
+  const pin = JSON.stringify({ sourceRevision: CANDIDATE, receiptDigest: 'd'.repeat(64),
+    storageCompatibilityRevision: 'v1', providerVersionId: 'provider-1' })
+  for (const name of ['DISCOVERY', 'CHECKOUT', 'MARKETPLACE']) env[`${name}_PROVIDER_EVIDENCE_PIN_JSON`] = pin
+  env.HUMAN_CONFIRMATION_TRUST_ANCHOR_JSON = JSON.stringify({
+    schema: 'agentic-graph-human-presence-trust-anchor/v1', issuer: 'test-only-issuer',
+    publicKeySpkiBase64: Buffer.from(generateKeyPairSync('ed25519').publicKey.export({ type: 'spki', format: 'der' })).toString('base64'),
+  })
+  env.PRODUCTION_ROUTE_AUTHORITY_JSON = JSON.stringify({
+    schema: 'agentic-commerce-production-route-authority/v2', mode: 'bootstrap',
+    zoneId: 'b'.repeat(32), zoneName: 'airvio.co', routeId: null,
+    pattern: 'airvio.co/agentic-commerce-os*', script: 'agentic-commerce-edge-production',
+  })
+  const report = describeProductionSetup(env)
+  assert.deepEqual(report.inputs.filter(input => input.status !== 'valid'), [])
+  assert.equal(report.configurationValid, true)
+  assert.equal(report.grantsAuthority, false)
+  assert.equal(report.remoteStateObserved, false)
+  assert.equal(report.productionRuntimeReady, false)
+  assert.ok(report.requiredExternalEvidence.length > 0)
+  env.AGENTIC_OS_ADMISSION_AUTH_SECRET = 'f'.repeat(257)
+  assert.equal(describeProductionSetup(env).inputs.find(input =>
+    input.name === 'AGENTIC_OS_ADMISSION_AUTH_SECRET')?.status, 'invalid')
+})
+
+test('Preflight CLI works without Git or credentials and refuses extra arguments', () => {
+  const script = `${ROOT}/scripts/production-release/run-production-release.ts`
+  const result = spawnSync(process.execPath, [script, 'preflight'], {
+    cwd: '/', env: { PATH: '/unavailable' } as unknown as NodeJS.ProcessEnv, encoding: 'utf8', timeout: 10_000,
+  })
+  assert.equal(result.status, 1)
+  assert.equal(result.stderr, '')
+  assert.ok(JSON.parse(result.stdout).inputs.every((input: { status: string }) => input.status === 'missing'))
+  const extra = spawnSync(process.execPath, [script, 'preflight', 'execute'], {
+    cwd: '/', env: { PATH: '/unavailable' } as unknown as NodeJS.ProcessEnv, encoding: 'utf8', timeout: 10_000,
+  })
+  assert.equal(extra.status, 1)
+  assert.match(extra.stderr, /arguments_invalid/u)
 })
