@@ -56,7 +56,8 @@
     "check:implementation": "npm run types:check && npm run typecheck && npm run test && npm run test:workers && npm run check:named && npm run deploy:dev:dry && npm run deploy:production:dry",
     "check:adlc": "npm --prefix node_modules/agentic-os run evals",
     "check:integration": "npm run check:adlc && npm run check:evidence-contract && npm run check:implementation",
-    "check": "npm run check:integration && npm run check:evidence"
+    "check": "npm run check:integration && npm run check:evidence",
+    "check:isolated-process": "node --test test/operational/isolated-process.test.ts"
   },
   "dependencies": {
     "@cloudflare/sandbox": "0.12.9",

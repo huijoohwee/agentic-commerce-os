@@ -71,3 +71,33 @@ so compatibility errors remain diagnosable. Reference source:
 Require the complete `check:integration` result, including paid Dev flow and owned
 runtime cleanup, before protected merge. Independent external provider/evaluator
 proof and the local Node-only Canvas provider have separate release boundaries.
+
+## Direct isolated execution on a Free/FOSS host
+
+`scripts/isolated-process.ts` runs a supplied Node program in an existing, exact
+Podman image ID. It passes source over stdin, mounts no host directories or
+sockets, disables networking and proxy inheritance, drops capabilities, and runs
+as UID 65534 with a read-only root filesystem. Writable scratch space is limited
+to a 64 MiB tmpfs. Limits are 256 MiB memory with no swap, one CPU, 64 processes,
+300 seconds maximum, and at most 1 MiB of captured output. Podman also enforces
+a host-independent deadline with a five-second termination grace. Timeout, cancellation,
+OOM and output overflow cannot be reported as successful execution. Cleanup
+checks the exact container ID, execution label and image; it never bulk-prunes.
+
+`scripts/sandbox-podman-executor.ts` adapts this runner to the existing Commerce
+`IsolatedExecutor` contract and reuses the same registration, theme and WebMCP
+harness source. One executor instance accepts one job. This does not yet replace
+the deployed Worker, its rollout proof, or the independently managed evaluator.
+Cloudflare Containers and Dynamic Workers remain forbidden under Free-only policy.
+
+Run the real isolation checks on demand, after starting the owning Podman host:
+
+```sh
+AG_PODMAN_EXECUTABLE=/absolute/path/to/podman \
+AG_PODMAN_IMAGE_ID=<existing-immutable-image-id> npm run check:isolated-process
+```
+
+The required Integration Gate runs these checks against the already pinned Node
+image from `config/sandbox.Dockerfile`. They verify filesystem/network denial,
+credential exclusion, kernel limits, timeout, output flooding, OOM and exact cleanup.
+Image resolution is explicit; the runner never downloads images or starts machines.

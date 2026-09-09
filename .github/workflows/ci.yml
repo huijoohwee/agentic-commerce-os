@@ -55,6 +55,14 @@ jobs:
           "$runtime/workerd" --version
           echo "MINIFLARE_WORKERD_PATH=$runtime/workerd" >> "$GITHUB_ENV"
 
+      - name: Verify direct FOSS process isolation
+        run: |
+          image=$(node --input-type=module -e "import fs from 'node:fs'; const first=fs.readFileSync('config/sandbox.Dockerfile','utf8').split('\\n')[0]; const match=/^FROM (node:[a-zA-Z0-9.-]+@sha256:[0-9a-f]{64}) AS node-runtime$/.exec(first); if(!match)process.exit(1); process.stdout.write(match[1]);")
+          podman pull --quiet "$image"
+          export AG_PODMAN_EXECUTABLE="$(command -v podman)"
+          export AG_PODMAN_IMAGE_ID="$(podman image inspect "$image" --format '{{.Id}}')"
+          npm run check:isolated-process
+
       - name: Install locked browser runtime
         run: node_modules/.bin/playwright install --with-deps chromium
 
