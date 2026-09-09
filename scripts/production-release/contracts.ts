@@ -151,7 +151,8 @@ export function validateProductionSandboxTopology(value: unknown): ProductionSan
   validatePrivateLane(production, 'sandbox')
   exact(asArray(production.routes).length === 0, 'sandbox_route_must_be_private')
   exact(asArray(production.services).length === 0, 'sandbox_service_binding_forbidden')
-  exact(config.main === 'src/sandbox/device-executor.ts', 'sandbox_entrypoint_invalid')
+  exact(config.main === 'src/sandbox/device-executor.ts'
+    && (production.main === undefined || production.main === config.main), 'sandbox_entrypoint_invalid')
   const secrets = object(production.secrets, 'sandbox_secrets_invalid')
   exactStringSet(asArray(secrets.required).map(text), PRODUCTION_SANDBOX_SECRETS, 'sandbox_secrets_invalid')
   for (const scope of [config, production]) {

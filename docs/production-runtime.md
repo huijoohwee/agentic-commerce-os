@@ -35,7 +35,9 @@ by the controller.
 
 The controller supports `bootstrap`, `steady-state`, and authenticated
 `recovery`. Bootstrap requires all three Worker baselines to be absent and a fresh,
-authenticated device-host probe to pass. Steady state requires a separately
+authenticated device-host probe to pass. Worker-list CLI errors count as absence only
+after an authenticated exact-name API read returns HTTP 404 with code 10007;
+permission, network and ambiguous failures remain blocking. Steady state requires a separately
 authenticated prior deployment receipt whose exact Worker versions are
 still active. Recovery requires a separately authenticated preserve-required
 receipt and accepts only its predecessor-or-candidate state. Core and edge are

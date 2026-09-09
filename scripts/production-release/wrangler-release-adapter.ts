@@ -24,17 +24,13 @@ export function createWranglerReleaseAdapter(root: string): ProductionReleaseAda
   const cwd = path.resolve(root)
   return Object.freeze({
     async activeVersion(kind) {
-      const deployments = jsonCommand(cwd, [
-        'deployments', 'list', '-c', CONFIGS[kind], '--env', 'production', '--json',
-      ])
+      const deployments = await readWorkerList(cwd, kind, 'deployments')
       if (!Array.isArray(deployments)) throw new Error('wrangler_release:deployments_invalid')
       if (deployments.length === 0) return null
       return parseActiveVersion(deployments[0])
     },
     async listVersions(kind) {
-      const versions = jsonCommand(cwd, [
-        'versions', 'list', '-c', CONFIGS[kind], '--env', 'production', '--json',
-      ])
+      const versions = await readWorkerList(cwd, kind, 'versions')
       if (!Array.isArray(versions)) throw new Error('wrangler_release:versions_invalid')
       return versions
     },
@@ -75,6 +71,26 @@ export function createWranglerReleaseAdapter(root: string): ProductionReleaseAda
       })
     },
   })
+}
+
+/** A CLI failure is absence only after an authenticated, exact-name API readback. */
+export async function readWorkerList(root: string, kind: WorkerKind, operation: 'versions' | 'deployments',
+  run = jsonCommand, send: typeof fetch = fetch): Promise<unknown> {
+  try { return run(root, [operation, 'list', '-c', CONFIGS[kind], '--env', 'production', '--json']) }
+  catch {
+    const account = process.env.CLOUDFLARE_ACCOUNT_ID ?? ''
+    const token = process.env.CLOUDFLARE_API_TOKEN ?? ''
+    if (!/^[a-f0-9]{32}$/u.test(account) || !token) throw Error('wrangler_release:inventory_authority_missing')
+    const worker = `agentic-commerce-${kind}-production`
+    const response = await send(`https://api.cloudflare.com/client/v4/accounts/${account}/workers/scripts/${worker}/settings`, {
+      headers: { authorization: `Bearer ${token}` }, redirect: 'error', signal: AbortSignal.timeout(10_000),
+    })
+    const body = await readBoundedJsonResponse(response, 65_536)
+    if (response.status === 404 && isRecord(body) && body.success === false
+      && body.result === null && Array.isArray(body.errors) && body.errors.length === 1
+      && isRecord(body.errors[0]) && body.errors[0].code === 10007) return []
+    throw Error('wrangler_release:worker_inventory_unproven')
+  }
 }
 
 function uploadVersion(root: string, kind: 'core' | 'edge', input: UploadInput): void {

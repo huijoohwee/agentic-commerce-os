@@ -200,3 +200,36 @@ test('CI and release verification share pinned isolation and browser prerequisit
     assert.ok(setup < workflow.indexOf(name === 'ci.yml' ? 'npm run check:integration' : 'npm run check:implementation'))
   }
 })
+
+
+test('bootstrap distinguishes exact provider absence from CLI, authentication and transport failures', async () => {
+  const { readWorkerList } = await import('../../scripts/production-release/wrangler-release-adapter.ts')
+  const savedAccount = process.env.CLOUDFLARE_ACCOUNT_ID, savedToken = process.env.CLOUDFLARE_API_TOKEN
+  process.env.CLOUDFLARE_ACCOUNT_ID = 'a'.repeat(32)
+  process.env.CLOUDFLARE_API_TOKEN = 'test-only-inventory-token'
+  const run = () => { throw Error('CLI failed') }
+  const absent = { success: false, result: null, errors: [{ code: 10007, message: 'Worker does not exist' }] }
+  try {
+    for (const operation of ['versions', 'deployments'] as const) {
+      const result = await readWorkerList(ROOT, 'sandbox', operation, run, async (url, init) => {
+        assert.equal(url, `https://api.cloudflare.com/client/v4/accounts/${'a'.repeat(32)}/workers/scripts/agentic-commerce-sandbox-production/settings`)
+        assert.equal(new Headers(init?.headers).get('authorization'), 'Bearer test-only-inventory-token')
+        return Response.json(absent, { status: 404 })
+      })
+      assert.deepEqual(result, [])
+    }
+    for (const [status, body] of [[403, absent], [500, absent], [404, { ...absent, errors: [{ code: 10000 }] }],
+      [404, { ...absent, errors: [] }], [200, { success: true, result: {} }]] as const) {
+      await assert.rejects(readWorkerList(ROOT, 'sandbox', 'versions', run,
+        async () => Response.json(body, { status })), /worker_inventory_unproven/)
+    }
+    await assert.rejects(readWorkerList(ROOT, 'sandbox', 'versions', run, async () => { throw Error('network down') }))
+    assert.deepEqual(await readWorkerList(ROOT, 'sandbox', 'versions', () => ['observed'],
+      async () => { throw Error('unexpected fallback') }), ['observed'])
+  } finally {
+    if (savedAccount === undefined) delete process.env.CLOUDFLARE_ACCOUNT_ID
+    else process.env.CLOUDFLARE_ACCOUNT_ID = savedAccount
+    if (savedToken === undefined) delete process.env.CLOUDFLARE_API_TOKEN
+    else process.env.CLOUDFLARE_API_TOKEN = savedToken
+  }
+})

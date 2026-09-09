@@ -79,6 +79,10 @@ test('Production sandbox is a private exact service with an authenticated device
   paid.env.production.containers = [{ class_name: 'Sandbox' }]
   assert.throws(() => validateProductionSandboxTopology(paid), /sandbox_managed_compute_forbidden/u)
 
+  const overridden = config('sandbox') as any
+  overridden.env.production.main = 'src/sandbox/executor.ts'
+  assert.throws(() => validateProductionSandboxTopology(overridden), /sandbox_entrypoint_invalid/u)
+
   const publicSandbox = config('sandbox') as any
   publicSandbox.env.production.workers_dev = true
   assert.throws(() => validateProductionSandboxTopology(publicSandbox), /sandbox_public_preview_enabled/u)

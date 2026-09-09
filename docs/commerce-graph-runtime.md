@@ -107,8 +107,10 @@ those observations are absent. See [Production runtime contract](production-runt
 
 ## Validation of this change
 
-Local type generation/type checking, 79 domain tests, 254 unit tests, 59 Worker
-tests and 12 mobile browser tests pass. Graph's two existing mirror migration
+Local type generation/type checking, 79 domain tests, 271 unit tests and 59 Worker
+tests pass. After review fixes, 39 focused release tests and 10 host/relay tests
+pass, including the compiled relay in workerd. The earlier navigation change
+passed 12 mobile browser tests; this relay change awaits the hosted full browser gate. Graph's two existing mirror migration
 suites pass all 29 tests without source changes. Dev dry deployment and
 Production core/edge dry bundles pass; largest production chunk is 489,138
 bytes. The full local integration command reaches the paid browser gate and
