@@ -21,7 +21,7 @@ export function podmanArguments(args: readonly string[]): string[] {
 
 export function podman(args: string[], env: NodeJS.ProcessEnv): string {
   const result = spawnSync('podman', args, { env, encoding: 'utf8', timeout: 5_000, maxBuffer: 65_536 })
-  if (result.status !== 0) throw new Error(`podman_${args[0]}_failed:${result.error?.message ?? result.status}`)
+  if (result.status !== 0) throw new Error(`podman_${args[0]}_failed:${result.error?.message ?? `${result.status}:${result.stderr.trim().slice(0, 1024)}`}`)
   return result.stdout.trim()
 }
 

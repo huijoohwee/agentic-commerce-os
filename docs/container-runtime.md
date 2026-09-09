@@ -48,7 +48,10 @@ existing override selects that runtime without editing installed packages.
 
 Podman 4.9 exposes a Go timestamp in event templates; newer versions expose integer
 nanoseconds. The event template selects the native representation while preserving
-nanosecond ordering and exact ownership checks. Reference source:
+nanosecond ordering and exact ownership checks. Container inspect templates use
+the native `ID` field; the Docker `Id` alias is only normalized for a bare template
+on Podman 4.9 and fails inside `json`. Native command failures retain bounded stderr
+so compatibility errors remain diagnosable. Reference source:
 [4.9 events](https://github.com/containers/podman/blob/v4.9.3/libpod/events/config.go),
 [5.8 events](https://github.com/containers/podman/blob/v5.8.3/cmd/podman/system/events.go).
 

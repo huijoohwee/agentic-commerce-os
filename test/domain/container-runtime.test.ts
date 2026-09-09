@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { createServer } from 'node:http'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { podmanArguments, podmanEndpoint, podmanEnvironment, podmanIdentity } from '../../scripts/container-runtime.ts'
+import { podman, podmanArguments, podmanEndpoint, podmanEnvironment, podmanIdentity } from '../../scripts/container-runtime.ts'
 
 test('Wrangler build adapter removes only disabled BuildKit provenance', () => {
   const args = ['build', '--load', '--provenance=false', '--platform', 'linux/amd64', '-f', '-', '.']
@@ -59,4 +59,18 @@ test('identity is stable, detects storage changes, and rejects malformed or over
     await new Promise<void>(resolve => server.close(() => resolve()))
     rmSync(directory, { recursive: true })
   }
+})
+
+
+test('native command failures preserve a bounded diagnostic and exit status', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'podman-diagnostic-'))
+  try {
+    writeFileSync(join(directory, 'podman'), `#!${process.execPath}\nprocess.stderr.write('template field unavailable:' + 'x'.repeat(2000)); process.exit(125);\n`, { mode: 0o700 })
+    assert.throws(() => podman(['container', 'inspect', 'owned'], { ...process.env, PATH: directory }), (error: unknown) => {
+      assert.ok(error instanceof Error)
+      assert.match(error.message, /^podman_container_failed:125:template field unavailable:/u)
+      assert.equal(error.message.length, 'podman_container_failed:125:'.length + 1024)
+      return true
+    })
+  } finally { rmSync(directory, { recursive: true }) }
 })

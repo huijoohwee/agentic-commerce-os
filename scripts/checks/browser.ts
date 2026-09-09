@@ -233,7 +233,7 @@ type SidecarCapture = {
 function sidecarError(capture: SidecarCapture, message: string): void {
   if (capture.errors.length < 16) capture.errors.push(message.slice(0, 512))
 }
-const CONTAINER_FORMAT = '{"id":{{json .Id}},"name":{{json .Name}},"created":{{json .Created}},"image":{{json .Config.Image}},"imageId":{{json .Image}},"network":{{json .HostConfig.NetworkMode}}}'
+const CONTAINER_FORMAT = '{"id":{{json .ID}},"name":{{json .Name}},"created":{{json .Created}},"image":{{json .Config.Image}},"imageId":{{json .Image}},"network":{{json .HostConfig.NetworkMode}}}'
 // Podman 4.9 exposes time.Time; 5.8+ exposes int64 plus TimeNano. Keep nanosecond precision.
 const EVENT_FORMAT = '{"id":{{json .ID}},"name":{{json .Name}},"image":{{json .Image}},"time":"{{if eq (printf "%T" .Time) "int64"}}{{.TimeNano}}{{else}}{{.Time.UnixNano}}{{end}}"}'
 
