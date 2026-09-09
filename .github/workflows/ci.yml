@@ -34,6 +34,27 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
+      - name: Start rootless Podman API
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes podman
+          systemctl --user start podman.socket
+          echo "CONTAINER_HOST=unix://$XDG_RUNTIME_DIR/podman/podman.sock" >> "$GITHUB_ENV"
+          podman info
+
+      - name: Install verified Podman-compatible workerd
+        run: |
+          runtime="$RUNNER_TEMP/workerd-podman"
+          mkdir "$runtime"
+          curl --fail --location --retry 2 --max-time 300 \
+            https://github.com/huijoohwee/workerd/releases/download/podman-649aa72a91e4/workerd-linux-x64.tar.gz \
+            --output "$runtime/runtime.tar.gz"
+          echo "69980517bef8b81ae91c22b11a50194b853b99b684853d41f36bd7f5be874ce4  $runtime/runtime.tar.gz" | sha256sum --check
+          tar -xzf "$runtime/runtime.tar.gz" -C "$runtime"
+          echo "278b7d05aa8d54954a3eecc42eaba36e4f4f6f21a37911080ba89701a2f56473  $runtime/workerd" | sha256sum --check
+          "$runtime/workerd" --version
+          echo "MINIFLARE_WORKERD_PATH=$runtime/workerd" >> "$GITHUB_ENV"
+
       - name: Install locked browser runtime
         run: node_modules/.bin/playwright install --with-deps chromium
 

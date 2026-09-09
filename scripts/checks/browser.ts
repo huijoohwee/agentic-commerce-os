@@ -5,6 +5,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 import { fileURLToPath } from 'node:url'
+import { podman, podmanEnvironment, podmanIdentity } from '../container-runtime.ts'
 import { readJson } from './common.ts'
 import { REGISTRATION_CORE_REQUEST_TIMEOUT_MS } from '../../src/shared/registration-budget.ts'
 import { DEV_AGENTIC_OS_ADMISSION_AUTH_SECRET, DEV_CHECKOUT_PROVIDER_AUTH_SECRET, DEV_MARKETPLACE_PROVIDER_AUTH_SECRET } from '../../src/dev/provider-credentials.ts'
@@ -14,7 +15,7 @@ type ManagedChild = { child: ChildProcess; terminal: Promise<number>; result: nu
 type Fixture = { secrets: Record<string, string>; vars: Record<string, string> }
 const children: ManagedChild[] = []
 let sidecars: SidecarCapture | null = null
-let dockerLock: DockerLock | null = null
+let podmanLock: PodmanLock | null = null
 const PLAYWRIGHT = './node_modules/@playwright/test/cli.js'
 const CONFIGS = ['wrangler.edge.jsonc', 'wrangler.core.jsonc', 'wrangler.dev-provider.jsonc', 'wrangler.sandbox.jsonc']
 const CLOSE_TIMEOUT_MS = 30_000
@@ -83,8 +84,8 @@ function assertNoAmbientVariables(): void {
 }
 
 function localEnvironment(): NodeJS.ProcessEnv {
-  const names = ['PATH', 'HOME', 'TMPDIR', 'LANG', 'LC_ALL', 'DOCKER_HOST', 'DOCKER_CONFIG', 'PLAYWRIGHT_BROWSERS_PATH', 'CI']
-  return Object.fromEntries(names.flatMap(name => process.env[name] === undefined ? [] : [[name, process.env[name]]]))
+  const names = ['PATH', 'HOME', 'TMPDIR', 'LANG', 'LC_ALL', 'CONTAINER_HOST', 'AGENTIC_PODMAN_MACHINE', 'XDG_RUNTIME_DIR', 'XDG_CONFIG_HOME', 'PLAYWRIGHT_BROWSERS_PATH', 'MINIFLARE_WORKERD_PATH', 'CI']
+  return podmanEnvironment(Object.fromEntries(names.flatMap(name => process.env[name] === undefined ? [] : [[name, process.env[name]]])))
 }
 
 function launch(args: string[], env: NodeJS.ProcessEnv, runtime?: RuntimeState): ManagedChild {
@@ -124,9 +125,9 @@ function launch(args: string[], env: NodeJS.ProcessEnv, runtime?: RuntimeState):
 
 async function startRuntime(fixture: Fixture, env: NodeJS.ProcessEnv, timeoutMs: number): Promise<string> {
   const deadline = Date.now() + timeoutMs
-  sidecars = startSidecarCapture(await acquireDockerLock(env, deadline), deadline)
+  sidecars = await startSidecarCapture(await acquirePodmanLock(env, deadline), deadline)
   const runtime: RuntimeState = { baseUrl: null, closed: false, failure: null }
-  const runtimeEnv = { ...env, DOCKER_HOST: sidecars.env.DOCKER_HOST }
+  const runtimeEnv = sidecars.env
   const managed = launch([fileURLToPath(import.meta.url), '--runtime-child'], runtimeEnv, runtime)
   managed.child.send?.({ type: 'start', fixture })
   while (!runtime.baseUrl && !runtime.failure && managed.result === null && !interrupted && Date.now() < deadline) await delay(100)
@@ -212,12 +213,12 @@ async function stopOwnedProcesses(): Promise<void> {
   } catch (error) { failures.push(error) }
   if (failures.length) throw new AggregateError(failures, 'browser_cleanup_incomplete')
   await Promise.all(children.map(value => value.terminal))
-  if (dockerLock) {
-    const owned = dockerLock
-    if (JSON.parse(docker(['info', '--format', '{{json .ID}}'], owned.env)) !== owned.daemon) throw new Error('browser_docker_daemon_changed')
-    owned.finishOperationLock(owned.identity, { label: 'browser-dev-docker', result: null })
-    dockerLock = null
-    process.stdout.write(JSON.stringify({ check: 'browser-dev-docker-lock', state: 'released', daemon: owned.daemon, path: owned.identity.path }) + '\n')
+  if (podmanLock) {
+    const owned = podmanLock
+    if ((await podmanIdentity(owned.env)) !== owned.daemon) throw new Error('browser_podman_daemon_changed')
+    owned.finishOperationLock(owned.identity, { label: 'browser-dev-podman', result: null })
+    podmanLock = null
+    process.stdout.write(JSON.stringify({ check: 'browser-dev-podman-lock', state: 'released', daemon: owned.daemon, path: owned.identity.path }) + '\n')
   }
 }
 
@@ -232,69 +233,65 @@ type SidecarCapture = {
 function sidecarError(capture: SidecarCapture, message: string): void {
   if (capture.errors.length < 16) capture.errors.push(message.slice(0, 512))
 }
-const CONTAINER_FORMAT = '{"id":{{json .Id}},"name":{{json .Name}},"created":{{json .Created}},"image":{{json .Config.Image}},"imageId":{{json .Image}},"network":{{json .HostConfig.NetworkMode}}}'
-const EVENT_FORMAT = '{"id":{{json .Actor.ID}},"name":{{json (index .Actor.Attributes "name")}},"image":{{json (index .Actor.Attributes "image")}},"time":"{{.TimeNano}}"}'
-
-function docker(args: string[], env: NodeJS.ProcessEnv): string {
-  const result = spawnSync('docker', args, { env, encoding: 'utf8', timeout: 5_000, maxBuffer: 65_536 })
-  if (result.status !== 0) throw new Error(`browser_docker_${args[0]}_failed:${result.error?.message ?? result.status}`)
-  return result.stdout.trim()
-}
+const CONTAINER_FORMAT = '{"id":{{json .ID}},"name":{{json .Name}},"created":{{json .Created}},"image":{{json .Config.Image}},"imageId":{{json .Image}},"network":{{json .HostConfig.NetworkMode}}}'
+// Podman 4.9 exposes time.Time; 5.8+ exposes int64 plus TimeNano. Keep nanosecond precision.
+const EVENT_FORMAT = '{"id":{{json .ID}},"name":{{json .Name}},"image":{{json .Image}},"time":"{{if eq (printf "%T" .Time) "int64"}}{{.TimeNano}}{{else}}{{.Time.UnixNano}}{{end}}"}'
 
 function containerIds(args: string[], env: NodeJS.ProcessEnv): Set<string> {
-  const text = docker(['container', 'ls', '--all', '--no-trunc', ...args, '--format', '{{.ID}}'], env)
+  const text = podman(['container', 'ls', '--all', '--no-trunc', ...args, '--format', '{{.ID}}'], env)
   const ids = text ? text.split('\n') : []
-  if (ids.length > 256 || ids.some(id => !/^[0-9a-f]{64}$/u.test(id))) throw new Error('browser_docker_inventory_invalid')
+  if (ids.length > 256 || ids.some(id => !/^[0-9a-f]{64}$/u.test(id))) throw new Error('browser_podman_inventory_invalid')
   return new Set(ids)
 }
 
 function inspectContainer(id: string, capture: SidecarCapture): ContainerIdentity {
-  const value = JSON.parse(docker(['container', 'inspect', id, '--format', CONTAINER_FORMAT], capture.env)) as ContainerIdentity
+  const value = JSON.parse(podman(['container', 'inspect', id, '--format', CONTAINER_FORMAT], capture.env)) as ContainerIdentity
+  if (typeof value.name === 'string' && !value.name.startsWith('/')) value.name = `/${value.name}`
+  if (/^[0-9a-f]{64}$/u.test(value.imageId)) value.imageId = `sha256:${value.imageId}`
   if (!/^[0-9a-f]{64}$/u.test(value.id) || !/^[a-z0-9][a-z0-9_.-]*$/iu.test(value.name.slice(1))
     || !Number.isFinite(Date.parse(value.created)) || !/^sha256:[0-9a-f]{64}$/u.test(value.imageId)
-    || typeof value.image !== 'string' || typeof value.network !== 'string') throw new Error('browser_docker_identity_invalid')
+    || typeof value.image !== 'string' || typeof value.network !== 'string') throw new Error('browser_podman_identity_invalid')
+  value.image = nativeImageIdentity(value.image)
   return value
 }
 
-type DockerSession = { env: NodeJS.ProcessEnv; daemon: string }
+type PodmanSession = { env: NodeJS.ProcessEnv; daemon: string }
 type LockIdentity = Readonly<{ path: string; dev: bigint; ino: bigint }>
 type LockPrimitives = {
   acquireDirectoryLock: (path: string) => LockIdentity | null
   finishOperationLock: (lock: LockIdentity, options: { label: string; result: null }) => unknown
 }
-type DockerLock = DockerSession & { identity: LockIdentity; finishOperationLock: LockPrimitives['finishOperationLock'] }
+type PodmanLock = PodmanSession & { identity: LockIdentity; finishOperationLock: LockPrimitives['finishOperationLock'] }
 
-async function acquireDockerLock(environment: NodeJS.ProcessEnv, deadline: number): Promise<DockerSession> {
+async function acquirePodmanLock(environment: NodeJS.ProcessEnv, deadline: number): Promise<PodmanSession> {
   const startedAt = Date.now()
-  const endpoint = environment.DOCKER_HOST ?? JSON.parse(docker(['context', 'inspect', '--format', '{{json .Endpoints.docker.Host}}'], environment)) as string
-  if (typeof endpoint !== 'string' || !/^(unix|npipe|tcp):\/\//u.test(endpoint)) throw new Error('browser_docker_endpoint_invalid')
-  const env = { ...environment, DOCKER_HOST: endpoint }
-  const daemon = JSON.parse(docker(['info', '--format', '{{json .ID}}'], env)) as unknown
-  if (typeof daemon !== 'string' || !daemon || daemon.length > 256) throw new Error('browser_docker_daemon_identity_missing')
+  const env = podmanEnvironment(environment)
+  const endpoint = env.CONTAINER_HOST
+  const daemon = await podmanIdentity(env)
   const primitives = await import(new URL('./file-integrity.mjs', import.meta.resolve('agentic-os')).href) as LockPrimitives
   // Home is shared by local runners even when each invocation has a different TMPDIR.
-  const lockPath = path.join(os.homedir(), `.agentic-commerce-dev-docker-${createHash('sha256').update(daemon).digest('hex')}.lock`)
+  const lockPath = path.join(os.homedir(), `.agentic-commerce-dev-podman-${createHash('sha256').update(daemon).digest('hex')}.lock`)
   while (!interrupted && Date.now() < deadline) {
     const identity = primitives.acquireDirectoryLock(lockPath)
     if (identity) {
-      dockerLock = { env, daemon, identity, finishOperationLock: primitives.finishOperationLock }
-      if (!ownedDirectory) throw new Error('browser_docker_lock_evidence_directory_missing')
+      podmanLock = { env, daemon, identity, finishOperationLock: primitives.finishOperationLock }
+      if (!ownedDirectory) throw new Error('browser_podman_lock_evidence_directory_missing')
       const receipt = { daemon, endpoint, identity, pid: process.pid, acquiredAt: new Date().toISOString(), artifactDirectory: ownedDirectory.path }
-      fs.writeFileSync(path.join(ownedDirectory.path, 'native-docker-lock.json'), JSON.stringify(receipt, (_key, value: unknown) => typeof value === 'bigint' ? value.toString() : value, 2) + '\n', { flag: 'wx', mode: 0o600 })
-      process.stdout.write(JSON.stringify({ check: 'browser-dev-docker-lock', state: 'acquired', daemon, path: lockPath, waitMs: Date.now() - startedAt }) + '\n')
+      fs.writeFileSync(path.join(ownedDirectory.path, 'native-podman-lock.json'), JSON.stringify(receipt, (_key, value: unknown) => typeof value === 'bigint' ? value.toString() : value, 2) + '\n', { flag: 'wx', mode: 0o600 })
+      process.stdout.write(JSON.stringify({ check: 'browser-dev-podman-lock', state: 'acquired', daemon, path: lockPath, waitMs: Date.now() - startedAt }) + '\n')
       return { env, daemon }
     }
     await delay(Math.min(250, Math.max(1, deadline - Date.now())))
   }
-  throw new Error(interrupted ? 'browser_interrupted' : `browser_dev_docker_lock_timeout:${lockPath}`)
+  throw new Error(interrupted ? 'browser_interrupted' : `browser_dev_podman_lock_timeout:${lockPath}`)
 }
 
-function startSidecarCapture({ env, daemon }: DockerSession, deadline: number): SidecarCapture {
-  if (JSON.parse(docker(['info', '--format', '{{json .ID}}'], env)) !== daemon) throw new Error('browser_docker_daemon_changed')
+async function startSidecarCapture({ env, daemon }: PodmanSession, deadline: number): Promise<SidecarCapture> {
+  if ((await podmanIdentity(env)) !== daemon) throw new Error('browser_podman_daemon_changed')
   const since = String(Math.floor(Date.now() / 1_000))
   const before = containerIds([], env)
   if (interrupted || Date.now() >= deadline) throw new Error(interrupted ? 'browser_interrupted' : 'dev_runtime_startup_timeout')
-  const observer = spawn('docker', ['events', '--since', since, '--filter', 'type=container', '--filter', 'event=create', '--format', EVENT_FORMAT], {
+  const observer = spawn('podman', ['events', '--since', since, '--filter', 'type=container', '--filter', 'event=create', '--format', EVENT_FORMAT], {
     env, stdio: ['ignore', 'pipe', 'pipe'],
   })
   const capture: SidecarCapture = { env, daemon, before, observer, ended: false, stopping: false, bytes: 0,
@@ -302,31 +299,40 @@ function startSidecarCapture({ env, daemon }: DockerSession, deadline: number): 
   let pending = ''
   observer.stdout?.on('data', (chunk: Buffer) => {
     capture.bytes += chunk.length
-    if (capture.bytes > 262_144) { sidecarError(capture, 'docker_events_over_budget'); observer.kill(); return }
+    if (capture.bytes > 262_144) { sidecarError(capture, 'podman_events_over_budget'); observer.kill(); return }
     pending += chunk.toString('utf8')
     const lines = pending.split('\n'); pending = lines.pop() ?? ''
-    if (Buffer.byteLength(pending) > 16_384) { sidecarError(capture, 'docker_event_line_over_budget'); observer.kill(); return }
+    if (Buffer.byteLength(pending) > 16_384) { sidecarError(capture, 'podman_event_line_over_budget'); observer.kill(); return }
     for (const line of lines) try {
       const event = JSON.parse(line) as Creation
-      if (!/^[0-9a-f]{64}$/u.test(event.id) || typeof event.name !== 'string' || typeof event.image !== 'string' || !/^\d+$/u.test(event.time)) throw new Error('docker_event_invalid')
-      if (capture.events.size >= 256 && !capture.events.has(event.id)) throw new Error('docker_event_count_over_budget')
+      event.image = nativeImageIdentity(event.image)
+      if (!/^[0-9a-f]{64}$/u.test(event.id) || typeof event.name !== 'string' || typeof event.image !== 'string' || !/^\d+$/u.test(event.time)) throw new Error('podman_event_invalid')
+      if (capture.events.size >= 256 && !capture.events.has(event.id)) throw new Error('podman_event_count_over_budget')
       capture.events.set(event.id, event)
       captureOwnedSidecars(capture)
     } catch (error) { sidecarError(capture, error instanceof Error ? error.message : String(error)) }
   })
-  observer.stderr?.on('data', () => { if (capture.errors.length < 16) sidecarError(capture, 'docker_event_observer_stderr') })
-  observer.once('error', () => { sidecarError(capture, 'docker_event_observer_failed'); capture.ended = true })
+  observer.stderr?.on('data', () => { if (capture.errors.length < 16) sidecarError(capture, 'podman_event_observer_stderr') })
+  observer.once('error', () => { sidecarError(capture, 'podman_event_observer_failed'); capture.ended = true })
   observer.once('close', () => {
     capture.ended = true
-    if (pending.trim()) sidecarError(capture, 'docker_event_truncated')
-    if (!capture.stopping) sidecarError(capture, 'docker_event_observer_ended_early')
+    if (pending.trim()) sidecarError(capture, 'podman_event_truncated')
+    if (!capture.stopping) sidecarError(capture, 'podman_event_observer_ended_early')
   })
   return capture
 }
 
+function nativeImageIdentity(value: string): string {
+  if (typeof value !== 'string') throw new Error('native_image_invalid')
+  return value.replace(/^localhost\/(?=cloudflare-dev\/sandbox:)/u, '')
+    .replace(/^docker\.io\/(?=cloudflare\/proxy-everything)/u, '')
+    .replace(/^(cloudflare\/proxy-everything):[a-zA-Z0-9._-]+(?=@sha256:)/u, '$1')
+}
+
 function observeNativeImage(line: string, capture: SidecarCapture): void {
-  const image = /^#\d+ naming to docker\.io\/(cloudflare-dev\/sandbox:[0-9a-f]{8}) done$/u.exec(line)?.[1]
-  const proxy = /^(?:docker\.io\/)?(cloudflare\/proxy-everything:[a-zA-Z0-9._-]+@sha256:[0-9a-f]{64})$/u.exec(line)?.[1]
+  const image = /^Successfully tagged (?:localhost\/)?(cloudflare-dev\/sandbox:[0-9a-f]{8})$/u.exec(line)?.[1]
+  const pulled = /^podman-pulled ((?:docker\.io\/)?cloudflare\/proxy-everything:[a-zA-Z0-9._-]+@sha256:[0-9a-f]{64})$/u.exec(line)?.[1]
+  const proxy = pulled ? nativeImageIdentity(pulled) : null
   if ((image && !capture.images.has(image) && capture.images.size >= 8)
     || (proxy && !capture.proxyImages.has(proxy) && capture.proxyImages.size >= 2)) { sidecarError(capture, 'native_image_inventory_over_budget'); return }
   if (image) capture.images.add(image)
@@ -364,7 +370,7 @@ async function finishSidecarCapture(capture: SidecarCapture, nativeClosed: boole
   if (!capture.ended) {
     capture.observer.kill('SIGKILL'); deadline = Date.now() + 2_000
     while (!capture.ended && Date.now() < deadline) await delay(50)
-    sidecarError(capture, 'docker_event_observer_shutdown_unconfirmed')
+    sidecarError(capture, 'podman_event_observer_shutdown_unconfirmed')
   }
   if (!nativeClosed) sidecarError(capture, 'native_close_required_before_proxy_cleanup')
   captureOwnedSidecars(capture)
@@ -377,12 +383,12 @@ async function finishSidecarCapture(capture: SidecarCapture, nativeClosed: boole
   fs.writeFileSync(evidencePath, JSON.stringify(evidence, null, 2) + '\n', { flag: 'wx', mode: 0o600 })
   if (capture.errors.length) throw new Error(`browser_sidecar_ownership_incomplete:${capture.errors.slice(0, 8).join(',')}`)
   for (const proof of capture.proofs.values()) {
-    if (JSON.parse(docker(['info', '--format', '{{json .ID}}'], capture.env)) !== capture.daemon) throw new Error('browser_docker_daemon_changed')
+    if ((await podmanIdentity(capture.env)) !== capture.daemon) throw new Error('browser_podman_daemon_changed')
     if (containerIds(['--filter', `id=${proof.main.id}`], capture.env).size !== 0) throw new Error('browser_owned_main_removal_unconfirmed')
     const ids = containerIds(['--filter', `id=${proof.proxy.id}`], capture.env)
     if (ids.size === 0) { proof.outcome = 'native-removed'; continue }
     if (ids.size !== 1 || !ids.has(proof.proxy.id) || JSON.stringify(inspectContainer(proof.proxy.id, capture)) !== JSON.stringify(proof.proxy)) throw new Error('browser_sidecar_identity_changed')
-    const removed = docker(['container', 'rm', '--force', proof.proxy.id], capture.env)
+    const removed = podman(['container', 'rm', '--force', proof.proxy.id], capture.env)
     if (removed !== proof.proxy.id || containerIds(['--filter', `id=${proof.proxy.id}`], capture.env).size !== 0) throw new Error('browser_sidecar_removal_unconfirmed')
     proof.outcome = 'owned-proxy-removed'
   }
