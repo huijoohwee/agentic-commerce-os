@@ -59,6 +59,16 @@ describe('upstream runtime evidence', () => {
       storageCompatibilityRevision: STORAGE_REVISION,
     }))).toBeNull()
   })
+
+  it('rejects undeployed source and receipt sentinels while allowing leading-zero identities', () => {
+    const pin = { sourceRevision: SOURCE_REVISION, receiptDigest: 'b'.repeat(64),
+      storageCompatibilityRevision: STORAGE_REVISION, providerVersionId: PROVIDER_VERSION_ID }
+    for (const [field, length] of [['sourceRevision', 40], ['receiptDigest', 64]] as const) {
+      expect(readUpstreamEvidencePin(JSON.stringify({ ...pin, [field]: '0'.repeat(length) }))).toBeNull()
+      expect(readUpstreamEvidencePin(JSON.stringify({ ...pin, [field]: `${'0'.repeat(length - 1)}1` })))
+        .not.toBeNull()
+    }
+  })
 })
 
 async function validEvidence() {

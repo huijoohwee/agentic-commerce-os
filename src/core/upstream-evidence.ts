@@ -1,5 +1,5 @@
 import { isRecord } from '../shared/http.ts'
-import { canonicalJson, sha256Hex } from '../shared/digest.ts'
+import { canonicalJson, isNonzeroHexIdentity, sha256Hex } from '../shared/digest.ts'
 import {
   declaredRequirements,
   evaluateConvergence,
@@ -44,10 +44,8 @@ export function readUpstreamEvidencePin(value: string): UpstreamEvidencePin | nu
     const parsed: unknown = JSON.parse(value)
     if (!isRecord(parsed)
       || Object.keys(parsed).sort().join(',') !== 'providerVersionId,receiptDigest,sourceRevision,storageCompatibilityRevision'
-      || typeof parsed.sourceRevision !== 'string'
-      || !/^[0-9a-f]{40}$/u.test(parsed.sourceRevision)
-      || typeof parsed.receiptDigest !== 'string'
-      || !/^[0-9a-f]{64}$/u.test(parsed.receiptDigest)
+      || !isNonzeroHexIdentity(parsed.sourceRevision, 40)
+      || !isNonzeroHexIdentity(parsed.receiptDigest, 64)
       || typeof parsed.storageCompatibilityRevision !== 'string'
       || !/^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$/u.test(parsed.storageCompatibilityRevision)
       || typeof parsed.providerVersionId !== 'string'

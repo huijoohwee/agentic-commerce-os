@@ -66,7 +66,7 @@
     {
       "sourceFile": "src/shared/digest.ts",
       "purpose": "Canonical JSON and SHA-256 binding for persisted records.",
-      "sourceSha256": "fa329e2381668e50978cb37ca331559a54def6f594c87848bb0f40fa60c62027"
+      "sourceSha256": "76325633a574f2ad35a444e80b49f59a5291429f40ac9e43ea15c249cc9d5634"
     },
     {
       "sourceFile": "src/shared/theme-manifest.ts",
@@ -81,7 +81,7 @@
     {
       "sourceFile": "src/core/acos-deployment-identity.ts",
       "purpose": "ACOS deployment identity and configured-pin codec persisted by AgentRegistry.",
-      "sourceSha256": "9c9650443a354dc3c4654a53a2da19928d7a27ab7ac7a02fef426ffba6254e4b"
+      "sourceSha256": "0750fafd098b6cc47dd0d78b96b8498276c5fc7ec8186156390444eaa2a29d08"
     },
     {
       "sourceFile": "src/core/agent-registry-record.ts",
@@ -370,5 +370,5 @@
       ]
     }
   ],
-  "revision": "e826c7462ae3e7c5e759670c80bc8fd1d12a6f239f0ff4361f24ea1f3d030608"
+  "revision": "9f14a7c1a374860635ed2ab5fc864713306c82385e70e53cf2736203cf285912"
 }

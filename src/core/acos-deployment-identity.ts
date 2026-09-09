@@ -1,10 +1,10 @@
+import { isNonzeroHexIdentity } from '../shared/digest.ts'
+
 export const ACOS_DEPLOYMENT_IDENTITY_SCHEMA = 'acos-cloudflare-deployment-identity/v1' as const
 
 const IDENTITY_KEYS = Object.freeze([
   'schema', 'sourceRevision', 'candidateDigest', 'versionId', 'versionTag', 'versionTimestamp',
 ])
-const SHA1_PATTERN = /^[0-9a-f]{40}$/u
-const SHA256_PATTERN = /^[0-9a-f]{64}$/u
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u
 const UTC_TIMESTAMP_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?Z$/u
 
@@ -26,15 +26,13 @@ export function readAcosDeploymentPin(
   sourceRevision: unknown,
   candidateDigest: unknown,
 ): AcosDeploymentPin | null {
-  return typeof sourceRevision === 'string'
-    && SHA1_PATTERN.test(sourceRevision)
-    && typeof candidateDigest === 'string'
-    && SHA256_PATTERN.test(candidateDigest)
+  return isNonzeroHexIdentity(sourceRevision, 40)
+    && isNonzeroHexIdentity(candidateDigest, 64)
     ? Object.freeze({ sourceRevision, candidateDigest }) : null
 }
 
 export function validAcosDeploymentPin(value: AcosDeploymentPin): boolean {
-  return SHA1_PATTERN.test(value.sourceRevision) && SHA256_PATTERN.test(value.candidateDigest)
+  return readAcosDeploymentPin(value.sourceRevision, value.candidateDigest) !== null
 }
 
 export function readAcosDeploymentIdentity(
@@ -43,8 +41,8 @@ export function readAcosDeploymentIdentity(
 ): AcosDeploymentIdentity | null {
   if (!record(value) || !exactKeys(value, IDENTITY_KEYS)
     || value.schema !== ACOS_DEPLOYMENT_IDENTITY_SCHEMA
-    || typeof value.sourceRevision !== 'string' || !SHA1_PATTERN.test(value.sourceRevision)
-    || typeof value.candidateDigest !== 'string' || !SHA256_PATTERN.test(value.candidateDigest)
+    || !isNonzeroHexIdentity(value.sourceRevision, 40)
+    || !isNonzeroHexIdentity(value.candidateDigest, 64)
     || typeof value.versionId !== 'string' || !UUID_PATTERN.test(value.versionId)
     || value.versionTag !== `acos-prod-${value.candidateDigest}`
     || typeof value.versionTimestamp !== 'string'
