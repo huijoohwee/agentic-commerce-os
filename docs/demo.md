@@ -4,6 +4,10 @@ This walkthrough stays entirely in the Dev lane. It exercises the two revenue
 paths without writing the generated Production mirror or the Cloudflare delivery
 route. The live release state throughout is `liveReleaseReadiness: not-ready`.
 
+For the merchant-agnostic concierge sprint, use the
+[MVP-to-GTM handoff](mvp-gtm-handoff.md) for role profiles, prospect inputs,
+the timed walkthrough and independent out-of-band payment verification.
+
 The feature specification requests this document at
 `.kiro/specs/agentic-graph-commerce-platform/demo.md`. That path belongs to the
 workspace-level specification owner, outside this repository's admitted write
