@@ -63,3 +63,18 @@ test('real memory exhaustion is kernel-enforced and retained as an OOM failure',
   assert.notEqual(result.exitCode, 0)
   assert.equal(result.containerRemoved, true)
 })
+
+test('real Unicode output cut inside a code point remains within the byte budget', async () => {
+  const result = await runIsolatedProcess({ ...config, timeoutMs: 5000, maxOutputBytes: 4095,
+    files: { 'probe.mjs': 'process.stdout.write("😀".repeat(4096))' } })
+  assert.equal(result.outputTruncated, true)
+  assert(Buffer.byteLength(result.stdout) + Buffer.byteLength(result.stderr) <= 4095)
+  assert(!result.stdout.includes('\uFFFD'))
+  assert.equal(result.containerRemoved, true)
+})
+
+test('real malformed output is rejected without replacement-character expansion', async () => {
+  await assert.rejects(runIsolatedProcess({ ...config, timeoutMs: 5000,
+    files: { 'probe.mjs': 'process.stdout.write(Buffer.alloc(1024, 0x80))' } }),
+  /isolated_process_output_encoding_invalid/u)
+})

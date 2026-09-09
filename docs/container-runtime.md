@@ -83,6 +83,8 @@ to a 64 MiB tmpfs. Limits are 256 MiB memory with no swap, one CPU, 64 processes
 a host-independent deadline with a five-second termination grace. Timeout, cancellation,
 OOM and output overflow cannot be reported as successful execution. Cleanup
 checks the exact container ID, execution label and image; it never bulk-prunes.
+Output must be UTF-8: malformed bytes reject execution, and a forced truncation
+omits an unfinished trailing code point without expanding the byte budget.
 
 `scripts/sandbox-podman-executor.ts` adapts this runner to the existing Commerce
 `IsolatedExecutor` contract and reuses the same registration, theme and WebMCP

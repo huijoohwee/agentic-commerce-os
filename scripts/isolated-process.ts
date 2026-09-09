@@ -156,8 +156,15 @@ function attach(executable: string, id: string, environment: NodeJS.ProcessEnv,
     child.once('close', () => {
       clearTimeout(timer); input.signal?.removeEventListener('abort', abort)
       if (failure) reject(failure)
-      else resolve({ stdout: Buffer.concat(chunks.stdout).toString('utf8'),
-        stderr: Buffer.concat(chunks.stderr).toString('utf8'), timedOut, outputTruncated })
+      else {
+        try {
+          // Replacement characters can expand malformed bytes past the output cap.
+          // A forced stop may cut a valid final code point; omit only that unfinished suffix.
+          const decode = (channel: 'stdout' | 'stderr') => new TextDecoder('utf-8', { fatal: true })
+            .decode(Buffer.concat(chunks[channel]), { stream: timedOut || outputTruncated })
+          resolve({ stdout: decode('stdout'), stderr: decode('stderr'), timedOut, outputTruncated })
+        } catch { reject(new Error('isolated_process_output_encoding_invalid')) }
+      }
     })
     child.stdin.on('error', () => { /* Early container termination closes stdin. */ })
     child.stdin.end(JSON.stringify({ files: input.files, entrypoint: input.entrypoint }))
