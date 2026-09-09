@@ -6,6 +6,14 @@ Commerce owns `https://airvio.co/agentic-commerce-os/`. Graph owns
 contract. The implementation is merchant-agnostic; it does not invent buyer,
 price, revenue, or independent evaluator evidence.
 
+## Execution availability
+
+The current MVP permits execution to stop while the operator Mac sleeps or is
+offline. Availability independent of that Mac is a future roadmap item. The
+[device-session execution host](local-host-runtime.md) implements authenticated
+local execution and explicit unavailable/busy responses. This availability
+decision does not waive provider, transport, trust or release evidence.
+
 ## Runtime behavior
 
 `GRAPH_WORKSPACE_URL` is nonsecret configuration. Production and Staging use
@@ -72,9 +80,9 @@ existing checksums and direct process-isolation check. Production credentials
 remain confined to the protected release job.
 
 The source contains a direct FOSS Podman isolation executor, but the production
-controller still targets Cloudflare Containers. A stable execution host and
-its authenticated transport are not established by passing the ephemeral CI
-suite. Source checks, provider deployment, human-presence/evaluator trust, and
+controller still targets Cloudflare Containers. The device-session host has separate local and hosted operational checks.
+Its authenticated connection to the public runtime is still a separate deployment
+requirement; passing ephemeral CI does not establish that connection. Source checks, provider deployment, human-presence/evaluator trust, and
 live production acceptance remain distinct evidence.
 
 ## Acceptance and release handoff
@@ -88,7 +96,7 @@ missing claims never dispatch a mutation.
 Before live acceptance, publish the protected Graph candidate through its
 source-owned release workflow and verify canonical assets/editor entry. Deploy
 and observe the real provider owners, obtain independently issued evidence and
-human-presence trust configuration, resolve the FOSS production execution host,
+human-presence trust configuration, bind the adopted device-session host through authenticated production transport,
 and complete Commerce's exact-candidate protected release controller. Verify
 `/agentic-commerce-os/readyz`, provider-backed checkout, evaluator receipts and
 recovery evidence. Do not label this source candidate production-ready while
