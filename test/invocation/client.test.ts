@@ -3,6 +3,7 @@ import { assert, expect, test } from "vitest";
 import {
   INVOCATION_ROUTING_SCHEMA,
   MCP_PROTOCOL_VERSION,
+  DOCS_INVOCATION_ENDPOINT,
   DOCS_INVOCATION_TOOL,
   buildInvocationDigests,
   createInvocationClient,
@@ -12,7 +13,7 @@ import {
 
 const SOURCE_REVISION = "a".repeat(40);
 const SESSION_ID = "fixture-session-1";
-const ENDPOINT = "https://commerce.test/agenticgraph/control-plane/mcp";
+const ENDPOINT = new URL(new URL(DOCS_INVOCATION_ENDPOINT).pathname, "https://commerce.test").href;
 const DISCOVERY_CREDENTIAL = "commerce-discovery-provider-test-credential";
 
 const CATALOG: readonly InvocationCatalogEntry[] = Object.freeze([

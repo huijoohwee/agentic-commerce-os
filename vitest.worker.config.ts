@@ -12,8 +12,10 @@ import {
 } from './test/workers/fake-services.ts'
 import { operationalEvidenceResponseHeaders } from './src/core/provider-operation-gate.ts'
 import { discoveryOperationBinding } from './src/dev/provider-evidence.ts'
+import { DOCS_INVOCATION_ENDPOINT } from './src/invocation/catalog.ts'
 
 const TEST_COMPATIBILITY_DATE = '2026-08-22'
+const DOCS_INVOCATION_PATH = new URL(DOCS_INVOCATION_ENDPOINT).pathname
 
 export default defineConfig({
   test: {
@@ -72,7 +74,7 @@ export default defineConfig({
 })
 
 async function propertyAwareDocsMcp(request: Request): Promise<Response> {
-  if (new URL(request.url).pathname === '/agenticgraph/control-plane/mcp'
+  if (new URL(request.url).pathname === DOCS_INVOCATION_PATH
     && request.headers.get('authorization') !== `Bearer ${CORE_DISCOVERY_PROVIDER_CREDENTIAL}`) {
     return authenticatedDiscoveryProvider(request)
   }
