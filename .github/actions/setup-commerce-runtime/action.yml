@@ -44,8 +44,8 @@ runs:
         export AG_PODMAN_EXECUTABLE="$(command -v podman)"
         export AG_PODMAN_IMAGE_ID="$(podman image inspect "$image" --format '{{.Id}}')"
         npm run check:isolated-process
+        npm run check:local-host
 
     - name: Install locked browser runtime
       shell: bash
       run: node_modules/.bin/playwright install --with-deps chromium
-
