@@ -1,22 +1,56 @@
 #!/usr/bin/env node
 import { spawn, spawnSync } from 'node:child_process'
-import { lstatSync } from 'node:fs'
+import { accessSync, constants, lstatSync, statSync } from 'node:fs'
 import { request } from 'node:http'
+import { isAbsolute } from 'node:path'
 import { fileURLToPath } from 'node:url'
+
+const BUILD_VALUE_FLAGS = new Set(['-t', '--tag', '--platform', '--build-arg', '--network', '-f', '--file'])
 
 // Wrangler 4.127.1 emits a BuildKit flag that Podman does not implement.
 // Remove only this disabled option; retain all other argv and native exit status.
 export function podmanArguments(args: readonly string[]): string[] {
   if (args[0] !== 'build') return [...args]
   const translated = ['build']
-  const values = new Set(['-t', '--tag', '--platform', '--build-arg', '--network', '-f', '--file'])
   for (let index = 1; index < args.length; index++) {
     const arg = args[index]!
     if (arg === '--') { translated.push(...args.slice(index)); break }
     if (arg !== '--provenance=false') translated.push(arg)
-    if (values.has(arg) && index + 1 < args.length) translated.push(args[++index]!)
+    if (BUILD_VALUE_FLAGS.has(arg) && index + 1 < args.length) translated.push(args[++index]!)
   }
   return translated
+}
+
+// Podman prints every cached alias after a build. Only the requested tag belongs
+// to this invocation; old aliases are neither new images nor cleanup authority.
+export function podmanBuildTag(args: readonly string[]): string | null {
+  if (args[0] !== 'build') return null
+  const tags: string[] = []
+  for (let index = 1; index < args.length; index++) {
+    const arg = args[index]!
+    if (arg === '--') break
+    if (arg.startsWith('--tag=')) tags.push(arg.slice(6))
+    if (!BUILD_VALUE_FLAGS.has(arg)) continue
+    const value = args[++index]
+    if (value === undefined) return null
+    if (arg === '-t' || arg === '--tag') tags.push(value)
+  }
+  return tags.length === 1 && /^cloudflare-dev\/sandbox:[0-9a-f]{8}$/u.test(tags[0]!) ? tags[0]! : null
+}
+
+export function podmanRuntimeEnvironment(parent: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
+  const runtime = parent.MINIFLARE_WORKERD_PATH
+  if (!runtime) throw new Error('podman_workerd_override_required:see docs/container-runtime.md')
+  if (runtime.length > 4096 || !isAbsolute(runtime) || /[\0\r\n]/u.test(runtime)) {
+    throw new Error('podman_workerd_override_invalid:absolute_executable_required')
+  }
+  try {
+    if (!statSync(runtime).isFile()) throw new Error('not a file')
+    accessSync(runtime, constants.R_OK | constants.X_OK)
+  } catch { throw new Error('podman_workerd_override_invalid:absolute_executable_required') }
+  // Compatibility and checksum verification remain the build receipt's contract.
+  // Check this prerequisite before contacting Podman or launching Wrangler.
+  return podmanEnvironment(parent)
 }
 
 export function podman(args: string[], env: NodeJS.ProcessEnv): string {
@@ -93,6 +127,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   child.once('error', () => { process.exitCode = 1 })
   child.once('close', (code, signal) => {
     const args = process.argv.slice(2)
+    const built = code === 0 ? podmanBuildTag(args) : null
+    if (built) process.stdout.write(`podman-built ${built}\n`)
     if (code === 0 && args.length === 2 && args[0] === 'pull'
       && /^(?:docker\.io\/)?cloudflare\/proxy-everything:[a-zA-Z0-9._-]+@sha256:[0-9a-f]{64}$/u.test(args[1]!)) {
       process.stdout.write(`podman-pulled ${args[1]}\n`)

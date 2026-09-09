@@ -5,7 +5,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 import { fileURLToPath } from 'node:url'
-import { podman, podmanEnvironment, podmanIdentity } from '../container-runtime.ts'
+import { podman, podmanEnvironment, podmanIdentity, podmanRuntimeEnvironment } from '../container-runtime.ts'
 import { readJson } from './common.ts'
 import { REGISTRATION_CORE_REQUEST_TIMEOUT_MS } from '../../src/shared/registration-budget.ts'
 import { DEV_AGENTIC_OS_ADMISSION_AUTH_SECRET, DEV_CHECKOUT_PROVIDER_AUTH_SECRET, DEV_MARKETPLACE_PROVIDER_AUTH_SECRET } from '../../src/dev/provider-credentials.ts'
@@ -28,6 +28,7 @@ async function main(): Promise<void> {
   const manifest = readJson<Readonly<{ devDependencies?: Readonly<Record<string, string>> }>>('package.json')
   if (manifest.devDependencies?.['@playwright/test'] !== '1.62.1') throw new Error('playwright_not_exact_pinned')
   assertNoAmbientVariables()
+  const runtimeEnvironment = localEnvironment()
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'agentic-commerce-dev-e2e-'))
   const stat = fs.lstatSync(directory)
   ownedDirectory = { path: directory, dev: stat.dev, ino: stat.ino }
@@ -51,7 +52,7 @@ async function main(): Promise<void> {
     },
   }
   const environment = {
-    ...localEnvironment(), TMPDIR: directory,
+    ...runtimeEnvironment, TMPDIR: directory,
     WRANGLER_REGISTRY_PATH: path.join(directory, 'registry'),
     CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV: 'false',
     CLOUDFLARE_INCLUDE_PROCESS_ENV: 'false', WRANGLER_SEND_METRICS: 'false',
@@ -85,7 +86,7 @@ function assertNoAmbientVariables(): void {
 
 function localEnvironment(): NodeJS.ProcessEnv {
   const names = ['PATH', 'HOME', 'TMPDIR', 'LANG', 'LC_ALL', 'CONTAINER_HOST', 'AGENTIC_PODMAN_MACHINE', 'XDG_RUNTIME_DIR', 'XDG_CONFIG_HOME', 'PLAYWRIGHT_BROWSERS_PATH', 'MINIFLARE_WORKERD_PATH', 'CI']
-  return podmanEnvironment(Object.fromEntries(names.flatMap(name => process.env[name] === undefined ? [] : [[name, process.env[name]]])))
+  return podmanRuntimeEnvironment(Object.fromEntries(names.flatMap(name => process.env[name] === undefined ? [] : [[name, process.env[name]]])))
 }
 
 function launch(args: string[], env: NodeJS.ProcessEnv, runtime?: RuntimeState): ManagedChild {
@@ -330,7 +331,7 @@ function nativeImageIdentity(value: string): string {
 }
 
 function observeNativeImage(line: string, capture: SidecarCapture): void {
-  const image = /^Successfully tagged (?:localhost\/)?(cloudflare-dev\/sandbox:[0-9a-f]{8})$/u.exec(line)?.[1]
+  const image = /^podman-built (cloudflare-dev\/sandbox:[0-9a-f]{8})$/u.exec(line)?.[1]
   const pulled = /^podman-pulled ((?:docker\.io\/)?cloudflare\/proxy-everything:[a-zA-Z0-9._-]+@sha256:[0-9a-f]{64})$/u.exec(line)?.[1]
   const proxy = pulled ? nativeImageIdentity(pulled) : null
   if ((image && !capture.images.has(image) && capture.images.size >= 8)
