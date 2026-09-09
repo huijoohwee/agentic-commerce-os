@@ -9,6 +9,8 @@ import { fileURLToPath } from 'node:url'
 import { buildReleaseAuthorityRefusal } from '../../scripts/production-release/release-authority.ts'
 
 import { describeProductionSetup } from '../../scripts/production-release/run-production-release.ts'
+import { readAcosDeploymentIdentity, readAcosDeploymentPin, validAcosDeploymentPin }
+  from '../../src/core/acos-deployment-identity.ts'
 
 const CANDIDATE = 'c'.repeat(40)
 const ROOT = fileURLToPath(new URL('../..', import.meta.url))
@@ -135,6 +137,35 @@ test('Valid configuration shape cannot claim authenticated production readiness'
   env.AGENTIC_OS_ADMISSION_AUTH_SECRET = 'f'.repeat(257)
   assert.equal(describeProductionSetup(env).inputs.find(input =>
     input.name === 'AGENTIC_OS_ADMISSION_AUTH_SECRET')?.status, 'invalid')
+})
+
+test('Production setup rejects undeployed identity sentinels', () => {
+  const env = {
+    CLOUDFLARE_ACCOUNT_ID: '0'.repeat(32),
+    ACOS_RUNTIME_SOURCE_REVISION: '0'.repeat(40),
+    ACOS_RUNTIME_CANDIDATE_DIGEST: '0'.repeat(64),
+    DISCOVERY_PROVIDER_EVIDENCE_PIN_JSON: JSON.stringify({ sourceRevision: '0'.repeat(40),
+      receiptDigest: 'd'.repeat(64), storageCompatibilityRevision: 'v1', providerVersionId: 'provider-1' }),
+  }
+  const report = describeProductionSetup(env)
+  assert.equal(report.configurationValid, false)
+  for (const name of Object.keys(env)) {
+    assert.equal(report.inputs.find(input => input.name === name)?.status, 'invalid', name)
+  }
+})
+
+test('Admission refuses zero identities even when the expected pin matches the sentinel', () => {
+  const valid = { sourceRevision: CANDIDATE, candidateDigest: 'd'.repeat(64) }
+  for (const [field, length] of [['sourceRevision', 40], ['candidateDigest', 64]] as const) {
+    const pin = { ...valid, [field]: '0'.repeat(length) }
+    assert.equal(readAcosDeploymentPin(pin.sourceRevision, pin.candidateDigest), null)
+    assert.equal(validAcosDeploymentPin(pin), false)
+    assert.equal(readAcosDeploymentIdentity({ schema: 'acos-cloudflare-deployment-identity/v1',
+      ...pin, versionId: '11223344-5566-4788-99aa-bbccddeeff00',
+      versionTag: `acos-prod-${pin.candidateDigest}`, versionTimestamp: '2026-09-09T00:00:00Z' }, pin), null)
+    const leadingZero = { ...valid, [field]: `${'0'.repeat(length - 1)}1` }
+    assert.deepEqual(readAcosDeploymentPin(leadingZero.sourceRevision, leadingZero.candidateDigest), leadingZero)
+  }
 })
 
 test('Preflight CLI works without Git or credentials and refuses extra arguments', () => {

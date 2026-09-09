@@ -52,7 +52,9 @@ fails before mutation; this repository does not manufacture those inputs.
 Before dispatching a release, run `node scripts/production-release/run-production-release.ts preflight`
 in the operator's configured environment. The existing release entrypoint validates all 16 common
 configuration inputs using the same readers as execution and reports names and missing/invalid/valid
-status only. It exits nonzero for incomplete configuration. It performs no Git, network, deployment,
+status only. All-zero account, admission revision/digest, and provider revision/receipt sentinels are
+invalid; the admission and provider runtime readers enforce the same identity rule. Leading-zero
+nonzero identities remain valid shapes. It exits nonzero for incomplete configuration. It performs no Git, network, deployment,
 secret write, or evaluator execution. Valid shape does not authenticate a credential, provider pin,
 human-presence issuer, route, approval, or deployed runtime. Mode-specific predecessor/recovery proof
 still belongs to the authenticated release path. Demand validation remains a separate pending commercial

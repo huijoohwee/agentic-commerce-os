@@ -4,6 +4,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { readUpstreamEvidencePin } from '../../src/core/upstream-evidence.ts'
+import { isNonzeroHexIdentity } from '../../src/shared/digest.ts'
 import { canonicalJson } from '../evidence-integrity.ts'
 import { parseHumanAuthorizationReceipt } from './human-authorization.ts'
 import { buildHumanPresenceAnchorProof } from './human-presence-anchor.ts'
@@ -23,7 +24,6 @@ import { parseProductionRouteAuthority } from './route-authority.ts'
 
 const MAXIMUM_JSON_BYTES = 1_048_576
 const SHA1_PATTERN = /^[0-9a-f]{40}$/u
-const SHA256_PATTERN = /^[0-9a-f]{64}$/u
 const PLACEHOLDER_PATTERN = /(?:change[-_ ]?me|example|placeholder|required|unreleased)/iu
 
 type ReleaseEnvironment = Readonly<Record<string, string | undefined>>
@@ -33,10 +33,10 @@ const WORKER_SECRET_NAMES = Object.freeze([
   'MCP_BEARER_TOKEN', 'OPERATOR_BEARER_TOKEN', 'STOREFRONT_SESSION_SECRET',
 ])
 const CONFIGURATION_READERS: Readonly<Record<string, (env: ReleaseEnvironment) => unknown>> = Object.freeze({
-  CLOUDFLARE_ACCOUNT_ID: env => validatedIdentity('CLOUDFLARE_ACCOUNT_ID', /^[0-9a-f]{32}$/u, env),
+  CLOUDFLARE_ACCOUNT_ID: env => validatedIdentity('CLOUDFLARE_ACCOUNT_ID', 32, env),
   CLOUDFLARE_API_TOKEN: env => credential('CLOUDFLARE_API_TOKEN', env),
-  ACOS_RUNTIME_SOURCE_REVISION: env => validatedIdentity('ACOS_RUNTIME_SOURCE_REVISION', SHA1_PATTERN, env),
-  ACOS_RUNTIME_CANDIDATE_DIGEST: env => validatedIdentity('ACOS_RUNTIME_CANDIDATE_DIGEST', SHA256_PATTERN, env),
+  ACOS_RUNTIME_SOURCE_REVISION: env => validatedIdentity('ACOS_RUNTIME_SOURCE_REVISION', 40, env),
+  ACOS_RUNTIME_CANDIDATE_DIGEST: env => validatedIdentity('ACOS_RUNTIME_CANDIDATE_DIGEST', 64, env),
   DISCOVERY_PROVIDER_EVIDENCE_PIN_JSON: env => evidencePin('DISCOVERY_PROVIDER_EVIDENCE_PIN_JSON', env),
   CHECKOUT_PROVIDER_EVIDENCE_PIN_JSON: env => evidencePin('CHECKOUT_PROVIDER_EVIDENCE_PIN_JSON', env),
   MARKETPLACE_PROVIDER_EVIDENCE_PIN_JSON: env => evidencePin('MARKETPLACE_PROVIDER_EVIDENCE_PIN_JSON', env),
@@ -75,9 +75,9 @@ function configured(name: string): unknown {
   return read!(process.env)
 }
 
-function validatedIdentity(name: string, pattern: RegExp, env: ReleaseEnvironment): string {
+function validatedIdentity(name: string, length: 32 | 40 | 64, env: ReleaseEnvironment): string {
   const value = environment(name, env)
-  requireRelease(pattern.test(value), `${name.toLowerCase()}_invalid`)
+  requireRelease(isNonzeroHexIdentity(value, length), `${name.toLowerCase()}_invalid`)
   return value
 }
 
