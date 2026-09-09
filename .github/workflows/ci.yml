@@ -37,7 +37,17 @@ jobs:
       - name: Start rootless Podman API
         run: |
           sudo apt-get update
-          sudo apt-get install --yes podman
+          sudo apt-get install --yes podman build-essential pkg-config libglib2.0-dev libsystemd-dev libseccomp-dev
+          # The distro conmon 2.1.10 has the cgroup-v2 OOM race fixed by upstream #581.
+          runtime="$RUNNER_TEMP/conmon"
+          mkdir "$runtime"
+          curl --fail --location --retry 2 --max-time 60 \
+            https://codeload.github.com/containers/conmon/tar.gz/ff908cce92cf89167b6b97ed240e91a6b147acc1 \
+            --output "$runtime/source.tar.gz"
+          echo "c5b76e3b441f5507e85f03aac144054a97280a8ef2959f601cf143675b3774e5  $runtime/source.tar.gz" | sha256sum --check
+          tar -xzf "$runtime/source.tar.gz" -C "$runtime" --strip-components=1
+          make -C "$runtime" -j2
+          sudo make -C "$runtime" install.podman
           systemctl --user start podman.socket
           echo "CONTAINER_HOST=unix://$XDG_RUNTIME_DIR/podman/podman.sock" >> "$GITHUB_ENV"
           podman info
@@ -54,6 +64,14 @@ jobs:
           echo "278b7d05aa8d54954a3eecc42eaba36e4f4f6f21a37911080ba89701a2f56473  $runtime/workerd" | sha256sum --check
           "$runtime/workerd" --version
           echo "MINIFLARE_WORKERD_PATH=$runtime/workerd" >> "$GITHUB_ENV"
+
+      - name: Verify direct FOSS process isolation
+        run: |
+          image=$(node --input-type=module -e "import fs from 'node:fs'; const first=fs.readFileSync('config/sandbox.Dockerfile','utf8').split('\\n')[0]; const match=/^FROM (node:[a-zA-Z0-9.-]+@sha256:[0-9a-f]{64}) AS node-runtime$/.exec(first); if(!match)process.exit(1); process.stdout.write(match[1]);")
+          podman pull --quiet "$image"
+          export AG_PODMAN_EXECUTABLE="$(command -v podman)"
+          export AG_PODMAN_IMAGE_ID="$(podman image inspect "$image" --format '{{.Id}}')"
+          npm run check:isolated-process
 
       - name: Install locked browser runtime
         run: node_modules/.bin/playwright install --with-deps chromium
