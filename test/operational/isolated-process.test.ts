@@ -59,7 +59,7 @@ test('real output flooding is bounded, terminated and never reported as success'
 test('real memory exhaustion is kernel-enforced and retained as an OOM failure', async () => {
   const result = await runIsolatedProcess({ ...config, timeoutMs: 15000,
     files: { 'probe.mjs': 'const blocks = []; while (true) blocks.push(Buffer.alloc(16 * 1024 * 1024, 1))' } })
-  assert.equal(result.oomKilled, true, result.stderr)
+  assert.equal(result.oomKilled, true, JSON.stringify(result))
   assert.notEqual(result.exitCode, 0)
   assert.equal(result.containerRemoved, true)
 })

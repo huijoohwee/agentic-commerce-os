@@ -101,3 +101,10 @@ The required Integration Gate runs these checks against the already pinned Node
 image from `config/sandbox.Dockerfile`. They verify filesystem/network denial,
 credential exclusion, kernel limits, timeout, output flooding, OOM and exact cleanup.
 Image resolution is explicit; the runner never downloads images or starts machines.
+
+Admission requires Linux, rootless Podman, seccomp, cgroup v2 with CPU/memory/PID
+controllers and conmon 2.2.0 or newer. Earlier conmon releases can lose the OOM
+event when systemd removes the cgroup; exit code 137 alone is not OOM evidence.
+CI builds the pinned, checksum-verified conmon 2.2.0 source outside the checkout
+and selects its standard Podman override. See the owning
+[upstream fix](https://github.com/containers/conmon/pull/581).

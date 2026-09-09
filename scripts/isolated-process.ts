@@ -52,6 +52,7 @@ export async function runIsolatedProcess(input: IsolatedProcessInput): Promise<I
     if (result.status !== 0) throw new Error(`isolated_process_podman_${args[0]}_failed`)
     return result.stdout.trim()
   }
+  assertIsolatedProcessHost(JSON.parse(command(['info', '--format', '{{json .Host}}'])))
   // Resolve an existing immutable image. No pulls, tags, image builds or host shell execution.
   const image = JSON.parse(command(['image', 'inspect', input.imageId]))
   const expectedImage = input.imageId.replace(/^sha256:/u, '')
@@ -98,6 +99,20 @@ export async function runIsolatedProcess(input: IsolatedProcessInput): Promise<I
         }).status !== 1) throw new Error('isolated_process_cleanup_unproven')
       } else if (observed.status !== 1) throw new Error('isolated_process_cleanup_unproven')
     }
+  }
+}
+
+/** Fail before container creation when the engine cannot supply the required isolation evidence. */
+export function assertIsolatedProcessHost(host: unknown): void {
+  const value = host as { os?: string; cgroupVersion?: string; cgroupControllers?: string[];
+    security?: { rootless?: boolean; seccompEnabled?: boolean }; conmon?: { version?: string } } | null
+  const version = /^conmon version (\d+)\.(\d+)\.(\d+)(?:,|$)/u.exec(value?.conmon?.version ?? '')
+  if (!value || value.os !== 'linux' || value.cgroupVersion !== 'v2'
+    || value.security?.rootless !== true || value.security?.seccompEnabled !== true
+    || !Array.isArray(value.cgroupControllers)
+    || !['cpu', 'memory', 'pids'].every(controller => value.cgroupControllers!.includes(controller))
+    || !version || Number(version[1]) < 2 || (Number(version[1]) === 2 && Number(version[2]) < 2)) {
+    throw new Error('isolated_process_host_unsupported')
   }
 }
 
