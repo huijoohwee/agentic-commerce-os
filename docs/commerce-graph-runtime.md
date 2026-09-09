@@ -41,6 +41,12 @@ route selects this authority; public MCP still cannot acquire it.
 
 ## Source and live namespace
 
+Graph's [docs MCP contract](https://github.com/huijoohwee/agentic-graph/blob/8503f9947ba7dc5705ab7c7ff022ed5c908fd0b1/mcp/agentic-canvas-os-docs-contract.mjs)
+owns the protocol endpoint `/agentic-os/control-plane/mcp` and tool
+`agentic-graph.agentic_canvas_os.docs.invoke`. Commerce's invocation client uses
+those identities; its Worker test double and client fixture derive the path
+from the client contract. The public canvas entry remains `/agentic-graph/`.
+
 On 2026-09-09, Graph source at
 `4e9056ce12fc68a19ddec1381f2aee8b76de36ae` already builds and publishes
 `/agentic-graph/`. Its `mirror-namespace-contract.mjs`, `pages-mirror-sync.mjs`,
