@@ -14,7 +14,7 @@ This repository implements the committed `v0.3.0` requirements in the
 `1acbbcc3b06534f9712f5b05b781010f749fa842`. Uncommitted revisions of that
 document were deliberately excluded from the implementation baseline. The
 bounded solopreneur MVP-to-GTM sprint over this source is specified in
-[docs/prd-tad-adr-20260909T1320Z-solopreneur-mvp-gtm.md](docs/prd-tad-adr-20260909T1320Z-solopreneur-mvp-gtm.md).
+[docs/prd-tad-adr-mvp-gtm-20260909T1320Z-solopreneur-mvp-gtm.md](docs/prd-tad-adr-mvp-gtm-20260909T1320Z-solopreneur-mvp-gtm.md).
 
 ## Runtime shape
 

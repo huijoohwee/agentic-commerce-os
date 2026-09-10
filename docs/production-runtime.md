@@ -8,7 +8,7 @@ canonical URLs, canvas reuse, shared verification setup, and current live gaps.
 This repository is a fail-closed production candidate, not a currently verified
 Production runtime. It implements a private commerce ingress and coordination
 layer for the committed v0.3.0 baseline of
-`agentic-graph-commerce-platform-prd-tad-adr.md`; it does not relocate the
+`agentic-graph-agentic-commerce-platform-prd-tad-adr-mvp-gtm.md`; it does not relocate the
 authoritative graph, payment, or settlement runtime from its owning repository.
 Production readiness requires the source, administration, dependency, consumer,
 deployment, live-probe, and externally authorized rollback evidence listed below.
