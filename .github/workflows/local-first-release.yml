@@ -1,0 +1,110 @@
+name: Local-first Production Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_sha:
+        description: Exact protected main for the local-first MVP; checkout remains deferred
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+  deployments: read
+
+concurrency:
+  group: agentic-commerce-production
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify Local-first Candidate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+      LOCAL_FIRST_EVIDENCE_DIR: ${{ runner.temp }}/commerce-local-first
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.candidate_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+          cache: npm
+      - name: Validate protected source before preparation
+        run: |
+          set -euo pipefail
+          [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$GITHUB_RUN_ATTEMPT" = 1
+          test "$GITHUB_REF" = refs/heads/main
+          test "$GITHUB_SHA" = "$CANDIDATE_SHA"
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$CANDIDATE_SHA"
+      - run: npm ci --ignore-scripts
+      - run: node_modules/.bin/playwright install --with-deps chromium
+      - name: Verify browser, mutation refusal and deployable artifact
+        run: |
+          npm run typecheck
+          npm run check:authored-limits
+          npm run check:local-first
+          node scripts/local-first-release/artifact.mjs
+          test -z "$(git status --porcelain --untracked-files=all)"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: local-first-prepared-${{ github.run_id }}
+          path: ${{ runner.temp }}/commerce-local-first
+          if-no-files-found: error
+          retention-days: 90
+
+  release:
+    name: Authorized Local-first Production Release
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    env:
+      CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+      LOCAL_FIRST_EVIDENCE_DIR: ${{ runner.temp }}/commerce-local-first
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.candidate_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: node_modules/.bin/playwright install --with-deps chromium
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: local-first-prepared-${{ github.run_id }}
+          path: ${{ runner.temp }}/commerce-local-first
+      - name: Verify existing production reviewer policy and actual run approval
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ROUTE_AUTHORITY: ${{ vars.PRODUCTION_ROUTE_AUTHORITY_JSON }}
+        run: |
+          set -euo pipefail
+          mode=$(node -e 'process.stdout.write(JSON.parse(process.env.ROUTE_AUTHORITY).mode)')
+          node scripts/production-release/human-authorization.ts fetch "$mode" "$CANDIDATE_SHA" \
+            "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$LOCAL_FIRST_EVIDENCE_DIR/human-authorization.json"
+      - name: Deploy asset-only Worker and verify the exact public release
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          PRODUCTION_ROUTE_AUTHORITY_JSON: ${{ vars.PRODUCTION_ROUTE_AUTHORITY_JSON }}
+        run: node scripts/local-first-release/execute.mjs
+      - name: Retain completion or precise failure evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: local-first-result-${{ github.run_id }}
+          path: ${{ runner.temp }}/commerce-local-first
+          if-no-files-found: error
+          retention-days: 90

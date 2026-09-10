@@ -1,22 +1,22 @@
 ---
 title: "Reference Implementation — Agentic Commerce OS Solopreneur MVP-to-GTM Sprint"
 doc_type: "PRD-TAD-ADR"
-version: "1.0.0"
-date: "2026-09-09"
+version: "1.1.0"
+date: "2026-09-11"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Solo Founder / AI Orchestrator"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
-universal_scope: false
+universal_scope: true
 runtime_readiness_policy: "fail-closed"
-lifecycle_status: "proposed"
+lifecycle_status: "accepted"
 load_policy: "on-demand"
 continuity_id: "PRD-TAD-ADR-COMMERCE-MVP-GTM-001"
-prd_revision: "1.0.0"
-tad_revision: "1.0.0"
-adr_revision: "1.0.0"
+prd_revision: "1.1.0"
+tad_revision: "1.1.0"
+adr_revision: "1.1.0"
 parent: "agentic-graph Agentic Commerce Platform — Combined PRD/TAD/ADR"
 parent_version: "0.3.0"
 parent_source_revision: "1acbbcc3b06534f9712f5b05b781010f749fa842"
@@ -33,6 +33,30 @@ verification_scope: "source-grounded sprint specification; no runtime, payment, 
 ---
 
 # Reference implementation — Agentic Commerce OS solopreneur MVP-to-GTM sprint
+
+## Current release amendment — local-first MVP (1.1.0)
+
+The operator selected **free local-first MVP with checkout explicitly deferred** on 2026-09-11. This amendment owns the current release scope under the existing continuity ID. PRD 1.1.0, TAD 1.1.0 and ADR 1.1.0 bind this same amendment. It supersedes conflicting first-dollar and live-checkout release conditions below for this bounded MVP only. The original 1.0.0 sprint and the parent platform's full-Commerce criteria remain future work; no independent verdict, provider, merchant demand or payment result is claimed.
+
+**PRD.** A merchant-neutral browser workspace creates, edits and persists offer drafts locally, exports/imports JSON backups, and opens the existing Graph canvas on explicit request. It can reload and edit offline after its first successful cache installation. No account, server-side draft storage, live supplier, payment, issuance, order, catalogue publication or execution host is part of this profile. Drafts are not automatically synchronized between devices; clearing browser data removes them, so the UI explains backup/export. Checkout is visibly deferred and all server mutations are rejected.
+
+**TAD.** The existing Commerce edge service identity and `/agentic-commerce-os/` route serve a separate asset-only entrypoint (`src/local-first/worker.ts`) and five same-origin assets. The worker has only static assets, release revision and version metadata bindings. It imports no core, provider, sandbox or checkout runtime. IndexedDB holds at most 100 drafts; field and JSON import bounds are explicit. Writes compare saved revisions inside one read/write transaction; imports reject conflicts atomically. A narrowly scoped service worker caches only the four application-shell resources, excludes readiness/API/Graph requests, and deletes only this profile's old caches. Graph remains a navigation link using its existing workspace contract.
+
+**ADR LF-01.** Release this provider-free profile through `Local-first Production Release`, retaining exact protected main, first-attempt run identity, existing production reviewer/self-review policy, immutable artifact hashes, candidate browser verification, provider readback, and bounded failure evidence. Bootstrap activates a private asset-only worker, then binds the existing exact route authority after version verification. No environment approval policy is relaxed. The full-Commerce workflow remains separate and closed by its existing evidence requirements. Free Workers/static assets are the only hosting resources; no database, container, provider account, paid plan or overage is introduced.
+
+| Current criterion | Acceptance check / receipt |
+|---|---|
+| LF-01 Local drafts survive reload without transmitting content | `check:local-first`, browser storage and no-network-write observations |
+| LF-02 Offline navigation and edits work after first load | Real Chromium offline/reload test against workerd; repeated against the production route |
+| LF-03 Concurrent tabs cannot overwrite stale versions | Two-page IndexedDB contention test with retained losing editor text |
+| LF-04 Export/import preserves drafts and rejects malformed/conflicting input | JSON roundtrip, atomic import conflict and injection tests |
+| LF-05 Mobile use and optional Graph canvas access | 390px viewport overflow check, screenshots and no-opener link contract |
+| LF-06 Checkout and remote mutations remain unavailable | Worker and live HTTP refusal tests for checkout, session, sync and MCP mutation endpoints |
+| LF-07 Exact local-first production deployment | Artifact digest, approved protected run, Worker version/route readback, live browser proof, sealed `commerce.local-first-production-completion/v1` |
+
+Implementation/release budget: no new npm dependency, one Worker runtime entrypoint, five static assets, each authored file below 600 lines and each emitted chunk below 500 kB. Independent full-platform verdicts, provider/trust setup, real checkout and a first collected dollar are deferred and must not be described as completed by this profile's receipt.
+
+## Original first-dollar sprint — retained future scope (1.0.0)
 
 Every vendor, runtime and protocol named below is this project's own reference implementation choice, not a universal requirement. This document owns **one bounded sprint**: taking the already-implemented Commerce control plane from `dev-proven` source to a first collected dollar and a measured learning loop, as a solo operator, within free tiers. It consumes and never restates its parents: the [platform PRD/TAD/ADR][parent] (requirements, components, monetization streams), the [composition owner][techstack] (topology, Division of Work, DR-1..DR-11), the [feature index][features] (F01–F25) and the [ADLC pipeline][pipeline] (T01–T09). On conflict the joined parent set wins; this sprint document adds sequencing, acceptance, decisions and evidence for the GTM slice only. No route, store, ledger, schema or dependency is added by this revision.
 

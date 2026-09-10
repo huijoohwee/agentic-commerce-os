@@ -36,7 +36,7 @@
     "check:invocation-surface": "node scripts/checks/invocation-surface.ts",
     "check:webmcp": "node scripts/checks/webmcp.ts",
     "check:routing": "node scripts/checks/routing.ts",
-    "check:local-first": "node scripts/checks/local-first.ts",
+    "check:local-first": "node --test test/local-first/*.test.mjs && node scripts/local-first-release/check.mjs",
     "check:offer-watch": "node scripts/checks/offer-watch.ts",
     "check:sandbox": "node scripts/checks/sandbox.ts",
     "check:sandbox:source": "node scripts/checks/sandbox.ts --source-only",

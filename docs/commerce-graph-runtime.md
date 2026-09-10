@@ -6,6 +6,18 @@ Commerce owns `https://airvio.co/agentic-commerce-os/`. Graph owns
 contract. The implementation is merchant-agnostic; it does not invent buyer,
 price, revenue, or independent evaluator evidence.
 
+## Current local-first MVP scope
+
+The accepted 2026-09-11 sprint amendment selects browser-local offer drafts and
+JSON transfer at the Commerce URL, with checkout explicitly deferred. The
+asset-only entrypoint reuses the existing Graph workspace URL on an explicit click.
+It never sends drafts, cookies or checkout state to Graph. Offline access covers
+the Commerce shell and drafts after the first successful visit; opening Graph
+requires its own connection and runtime. The production receipt identifies
+`profile: local-first` and `checkout: deferred`; it cannot claim full-Commerce
+provider readiness or transaction completion. The dated full-runtime investigation
+below remains historical evidence for the deferred profile.
+
 ## Execution availability
 
 The current MVP permits execution to stop while the operator Mac sleeps or is
