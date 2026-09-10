@@ -38,7 +38,7 @@ Every vendor, runtime and protocol named below is this project's own reference i
 
 ## Identity and opening directive
 
-Stable locator `docs/prd-tad-adr-20260909T1320Z-solopreneur-mvp-gtm.md`; continuity `PRD-TAD-ADR-COMMERCE-MVP-GTM-001` at `1.0.0` binds the [PRD](#prd), [TAD](#tad) and [ADR](#adr) sections below. TAD consumes exactly PRD `1.0.0`; ADR binds exactly TAD `1.0.0`. Joins resolve by these IDs and the exact revisions in the [grounding record](#codebase-grounding-record--reference-implementation), never by filename.
+Stable locator `docs/prd-tad-adr-mvp-gtm-20260909T1320Z-solopreneur-mvp-gtm.md`; continuity `PRD-TAD-ADR-COMMERCE-MVP-GTM-001` at `1.0.0` binds the [PRD](#prd), [TAD](#tad) and [ADR](#adr) sections below. TAD consumes exactly PRD `1.0.0`; ADR binds exactly TAD `1.0.0`. Joins resolve by these IDs and the exact revisions in the [grounding record](#codebase-grounding-record--reference-implementation), never by filename.
 
 ```yaml
 directive_id: "DIR-GTM-01"

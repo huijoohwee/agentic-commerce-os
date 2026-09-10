@@ -76,7 +76,8 @@ import { Buffer } from 'node:buffer'; export async function executeTool() {
       abort.abort()
       assert.equal(await running, 'aborted')
       let recovered = false
-      for (let count = 0; count < 40 && !recovered; count += 1) {
+      // Socket close aborts the executor immediately; allow Podman kill/rm to settle.
+      for (let count = 0; count < 50 && !recovered; count += 1) {
         await delay(100)
         recovered = (await fetch(`${ready.origin}/readyz`, { headers })).status === 200
       }

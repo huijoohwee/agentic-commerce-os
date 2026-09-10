@@ -134,6 +134,31 @@ describe('device-session execution host', () => {
     expect((await call(host.origin, '/v1/run')).status).toBe(503)
     expect(host.execute).toHaveBeenCalledOnce()
   })
+  it('releases the host slot when the caller disconnects mid-execution', async () => {
+    const hanging = Promise.withResolvers<Awaited<ReturnType<IsolatedExecutor['execute']>>>()
+    const source = 'export async function executeTool() { while (true) {} }'
+    const host = await start()
+    host.execute.mockImplementation(() => hanging.promise)
+    host.terminate.mockImplementation(async () => {
+      hanging.resolve({ ok: false, exceededLimit: null, attemptedCalls: [] })
+    })
+    const abort = new AbortController()
+    const running = fetch(`${host.origin}/v1/run`, { method: 'POST', signal: abort.signal,
+      headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ ...payload, payload: { ...payload.payload,
+        executableTarget: { contract: 'agentic-graph-sandbox-executable/v1', kind: 'javascript-module',
+          source, sourceDigest: createHash('sha256').update(source).digest('hex') },
+      } }),
+    }).then(() => 'completed', () => 'aborted')
+    await vi.waitFor(() => expect(host.execute).toHaveBeenCalledOnce())
+    expect((await call(host.origin, '/readyz')).status).toBe(503)
+    abort.abort()
+    expect(await running).toBe('aborted')
+    await vi.waitFor(async () => {
+      expect(host.terminate).toHaveBeenCalled()
+      expect((await call(host.origin, '/readyz')).status).toBe(200)
+    })
+  })
   it('closes a partial upload and removes the listener on shutdown', async () => {
     const host = await start()
     const connected = Promise.withResolvers<void>()
