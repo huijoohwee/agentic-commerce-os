@@ -76,7 +76,8 @@ import { Buffer } from 'node:buffer'; export async function executeTool() {
       abort.abort()
       assert.equal(await running, 'aborted')
       let recovered = false
-      for (let count = 0; count < 40 && !recovered; count += 1) {
+      // Cover the 7s HTTP requestTimeout plus container teardown when client abort is delayed.
+      for (let count = 0; count < 120 && !recovered; count += 1) {
         await delay(100)
         recovered = (await fetch(`${ready.origin}/readyz`, { headers })).status === 200
       }
