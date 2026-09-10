@@ -109,15 +109,24 @@ export async function startLocalHost(options: LocalHostOptions) {
       terminate: () => guarded(() => raw.terminate()) }
     const ownedExecutor = executor
     const cancelled = () => {
-      if (!response.writableFinished) void ownedExecutor.terminate().catch(() => undefined)
+      // Fetch abort after the body is complete does not emit IncomingMessage
+      // 'aborted' (request.complete is already true) and may not emit
+      // ServerResponse 'close' until requestTimeout. The socket close is the
+      // disconnect signal that must free the host slot.
+      if (response.writableFinished) return
+      void ownedExecutor.terminate().catch(() => undefined)
     }
     response.once('close', cancelled)
+    request.once('aborted', cancelled)
+    request.socket?.once('close', cancelled)
     try {
       const result = await runServerIsolated(parsed, () => ownedExecutor)
       reply(response, result.ok ? 200 : result.code === 'sandbox_call_not_allowlisted' ? 409
         : result.code === 'sandbox_build_failed' ? 422 : 503, result)
     } finally {
       response.off('close', cancelled)
+      request.off('aborted', cancelled)
+      request.socket?.off('close', cancelled)
       // Keep the slot owned until the actual executor has settled and cleaned up.
       await ownedExecutor.terminate()
     }
