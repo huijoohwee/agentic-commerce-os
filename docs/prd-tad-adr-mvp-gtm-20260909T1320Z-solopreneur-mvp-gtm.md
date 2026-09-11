@@ -1,79 +1,81 @@
 ---
 title: "Reference Implementation — Agentic Commerce OS Solopreneur MVP-to-GTM Sprint"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.1.0"
-date: "2026-09-11"
+version: "1.2.0"
+date: "2026-09-12"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Solo Founder / AI Orchestrator"
-local_rung: "spec-complete"
+local_rung: "dev-proven"
 delivered_rung: "undocumented"
 lane: "authoring"
-universal_scope: true
+universal_scope: false
 runtime_readiness_policy: "fail-closed"
 lifecycle_status: "accepted"
 load_policy: "on-demand"
 continuity_id: "PRD-TAD-ADR-COMMERCE-MVP-GTM-001"
-prd_revision: "1.1.0"
-tad_revision: "1.1.0"
-adr_revision: "1.1.0"
+prd_revision: "1.2.0"
+tad_revision: "1.2.0"
+adr_revision: "1.2.0"
 parent: "agentic-graph Agentic Commerce Platform — Combined PRD/TAD/ADR"
 parent_version: "0.3.0"
 parent_source_revision: "1acbbcc3b06534f9712f5b05b781010f749fa842"
 related_continuity_id: "TAD-COMPOSE-ARCH-001"
 pipeline_continuity_id: "PRD-TAD-ADR-ADLC-PIPELINE-001"
-source_revision: "4774a4fc1543c4bcb1b912fe79c78c61384efc7c"
-guideline_revision: "2.5.0"
-guideline_source_revision: "8bca42dd6af33d35d9a2195887ceb82ff7b96442"
+source_revision: "50cc1d7e1a81af4ca89c2c4584bc50aee89ec55f"
+guideline_revision: "2.6.0"
+guideline_source_revision: "c83b43bd7fd018e0ac41629787e0e713db9a1e13"
 demand_status: "unvalidated"
 sprint_clock: "40 operator hours within 10 working days; set at first dispatch"
-worktree_id: "agent/huis-macbook-pro-3.local/prd-tad-adr-mvp-gtm"
-agent_id: "cursor-claude-orchestrator-20260909"
-verification_scope: "source-grounded sprint specification; no runtime, payment, deployment or demand claim"
+worktree_id: "agent/device-0232231d4a19/commerce-planning-alignment"
+agent_id: "codex-commerce-planning-alignment"
+verification_scope: "first-dollar sprint criteria remain unproven; deployed sandbox capability is owned by edge-commerce-agent-mvp@0.6.0"
+revision: "1.2.0"
+mvp_revision: "1.2.0"
+gtm_revision: "1.2.0"
+agenticOsCanvasRenderMode: "2d"
+agenticOsCanvas2dRenderer: "d3"
+surfaces: ["2D Renderer: D3 Graph"]
 ---
 
 # Reference implementation — Agentic Commerce OS solopreneur MVP-to-GTM sprint
 
-## Current release amendment — local-first MVP (1.1.0)
+## Current scope and ownership — reference implementation (1.2.0)
 
-The operator selected **free local-first MVP with checkout explicitly deferred** on 2026-09-11. This amendment owns the current release scope under the existing continuity ID. PRD 1.1.0, TAD 1.1.0 and ADR 1.1.0 bind this same amendment. It supersedes conflicting first-dollar and live-checkout release conditions below for this bounded MVP only. The original 1.0.0 sprint and the parent platform's full-Commerce criteria remain future work; no independent verdict, provider, merchant demand or payment result is claimed.
+The 2026-09-12 operator direction supersedes 1.1.0's deferred-checkout release: enable and
+verify sandbox payment, never actual payment. The implementation owner is
+[`edge-commerce-agent-mvp@0.6.0`](prd-tad-adr-mvp-gtm-edge-commerce-agent.md), which records the
+exact source, acceptance checks, authorized public release and provider verification. This
+sprint consumes that capability; it does not redefine its checkout or release contracts.
 
-**PRD.** A merchant-neutral browser workspace creates, edits and persists offer drafts locally, exports/imports JSON backups, and opens the existing Graph canvas on explicit request. It can reload and edit offline after its first successful cache installation. No account, server-side draft storage, live supplier, payment, issuance, order, catalogue publication or execution host is part of this profile. Drafts are not automatically synchronized between devices; clearing browser data removes them, so the UI explains backup/export. Checkout is visibly deferred and all server mutations are rejected.
+This artifact owns the **first collected dollar and learning loop** below. Its local rung is
+`dev-proven` from S04 and S07 checks; delivered rung stays `undocumented`: a test payment does not satisfy
+AC-M01's priced prospect, AC-M03's prospect timing, or AC-M04's actual collection. The separate
+sandbox capability is production-verified within its explicitly scoped implementation owner.
 
-**TAD.** The existing Commerce edge service identity and `/agentic-commerce-os/` route serve a separate asset-only entrypoint (`src/local-first/worker.ts`) and five same-origin assets. The worker has only static assets, release revision and version metadata bindings. It imports no core, provider, sandbox or checkout runtime. IndexedDB holds at most 100 drafts; field and JSON import bounds are explicit. Writes compare saved revisions inside one read/write transaction; imports reject conflicts atomically. A narrowly scoped service worker caches only the four application-shell resources, excludes readiness/API/Graph requests, and deletes only this profile's old caches. Graph remains a navigation link using its existing workspace contract.
+The original 1.0.0 sprint survives as the basis of these uncompleted criteria; 1.2.0 rebinds its
+five roles and removes the conflicting local-first contract. Historical evidence rows remain
+unchanged and explicitly dated. The [evidence companion](prd-tad-adr-mvp-gtm-handoff.md) consumes
+`PRD-TAD-ADR-COMMERCE-MVP-GTM-001@1.2.0` and the sandbox owner by exact revision.
 
-**ADR LF-01.** Release this provider-free profile through `Local-first Production Release`, retaining exact protected main, first-attempt run identity, existing production reviewer/self-review policy, immutable artifact hashes, candidate browser verification, provider readback, and bounded failure evidence. Bootstrap activates a private asset-only worker, then binds the existing exact route authority after version verification. No environment approval policy is relaxed. The full-Commerce workflow remains separate and closed by its existing evidence requirements. Free Workers/static assets are the only hosting resources; no database, container, provider account, paid plan or overage is introduced.
-
-| Current criterion | Acceptance check / receipt |
-|---|---|
-| LF-01 Local drafts survive reload without transmitting content | `check:local-first`, browser storage and no-network-write observations |
-| LF-02 Offline navigation and edits work after first load | Real Chromium offline/reload test against workerd; repeated against the production route |
-| LF-03 Concurrent tabs cannot overwrite stale versions | Two-page IndexedDB contention test with retained losing editor text |
-| LF-04 Export/import preserves drafts and rejects malformed/conflicting input | JSON roundtrip, atomic import conflict and injection tests |
-| LF-05 Mobile use and optional Graph canvas access | 390px viewport overflow check, screenshots and no-opener link contract |
-| LF-06 Checkout and remote mutations remain unavailable | Worker and live HTTP refusal tests for checkout, session, sync and MCP mutation endpoints |
-| LF-07 Exact local-first production deployment | Artifact digest, approved protected run, Worker version/route readback, live browser proof, sealed `commerce.local-first-production-completion/v1` |
-
-Implementation/release budget: no new npm dependency, one Worker runtime entrypoint, five static assets, each authored file below 600 lines and each emitted chunk below 500 kB. Independent full-platform verdicts, provider/trust setup, real checkout and a first collected dollar are deferred and must not be described as completed by this profile's receipt.
-
-## Original first-dollar sprint — retained future scope (1.0.0)
-
-Every vendor, runtime and protocol named below is this project's own reference implementation choice, not a universal requirement. This document owns **one bounded sprint**: taking the already-implemented Commerce control plane from `dev-proven` source to a first collected dollar and a measured learning loop, as a solo operator, within free tiers. It consumes and never restates its parents: the [platform PRD/TAD/ADR][parent] (requirements, components, monetization streams), the [composition owner][techstack] (topology, Division of Work, DR-1..DR-11), the [feature index][features] (F01–F25) and the [ADLC pipeline][pipeline] (T01–T09). On conflict the joined parent set wins; this sprint document adds sequencing, acceptance, decisions and evidence for the GTM slice only. No route, store, ledger, schema or dependency is added by this revision.
+All concrete vendor and repository choices in this document belong to this reference implementation.
+The shared [authoring guideline][guideline] is pinned at version 2.6.0, source
+`c83b43bd7fd018e0ac41629787e0e713db9a1e13`; no schema is inferred from this file's name.
 
 ## Identity and opening directive
 
-Stable locator `docs/prd-tad-adr-mvp-gtm-20260909T1320Z-solopreneur-mvp-gtm.md`; continuity `PRD-TAD-ADR-COMMERCE-MVP-GTM-001` at `1.0.0` binds the [PRD](#prd), [TAD](#tad) and [ADR](#adr) sections below. TAD consumes exactly PRD `1.0.0`; ADR binds exactly TAD `1.0.0`. Joins resolve by these IDs and the exact revisions in the [grounding record](#codebase-grounding-record--reference-implementation), never by filename.
+Stable locator `docs/prd-tad-adr-mvp-gtm-20260909T1320Z-solopreneur-mvp-gtm.md`; continuity `PRD-TAD-ADR-COMMERCE-MVP-GTM-001` at `1.2.0` binds [PRD](#prd), [TAD](#tad), [ADR](#adr), [MVP](#mvp) and [GTM](#gtm). TAD consumes exactly PRD `1.2.0`; ADR binds exactly TAD `1.2.0`; MVP and GTM consume those criteria and decisions. Joins resolve by these IDs and the exact revisions in the [grounding record](#codebase-grounding-record--reference-implementation), never by filename.
 
 ```yaml
 directive_id: "DIR-GTM-01"
-context: "Commerce source at 4774a4fc implements registry, routing, human-confirmed checkout, derived markup, theme deployment, local-first drafts and WebMCP tools; feature:rank at OS 0580b20b returns no-admissible-candidate; no paid transaction, payer or production route is evidenced"
+context: "Commerce at 50cc1d7e1a81af4ca89c2c4584bc50aee89ec55f has a deployed sandbox and tested role/verifier contracts; ER-SB-01–07 prove a test mechanism, while ER-GTM-01–03 still lack a prospect and actual collection"
 intent: "Reach one real, recorded first dollar and one measured learning loop with the smallest change, reusing built capability and keeping every money, deploy and demand claim separately evidenced"
 directive: "Specify the sprint slice, bind each acceptance criterion to an owner check, rank monetization by distance to first dollar, decide the contested transport and collection choices, and keep every boundary closed"
 role: "solo-founder-ai-orchestrator"
-action: "author and sequence the GTM sprint over existing owner contracts"
+action: "the solo-founder-ai-orchestrator specifies the solopreneur MVP-to-GTM sprint"
 outcome: "one combined PRD/TAD/ADR whose criteria, steps, decisions and evidence are joined by continuity ID"
-subject: "agent"
-verb: "specify"
+subject: "solo-founder-ai-orchestrator"
+verb: "specifies"
 object: "solopreneur-mvp-gtm-sprint"
 ```
 
@@ -116,7 +118,7 @@ G08–G11 block production self-serve, not the concierge first dollar. G10 block
 
 ## PRD
 
-**Continuity:** `PRD-TAD-ADR-COMMERCE-MVP-GTM-001` · PRD `1.0.0`.
+**Continuity:** `PRD-TAD-ADR-COMMERCE-MVP-GTM-001` · PRD `1.2.0`.
 
 ### Problem, personas and journey stage
 
@@ -203,7 +205,7 @@ Domain object: **a governed agent-to-human commerce transaction** (offer → hel
 
 ## TAD
 
-**Continuity:** `PRD-TAD-ADR-COMMERCE-MVP-GTM-001` · TAD `1.0.0` consumes PRD `1.0.0`; decisions ADR `1.0.0`.
+**Continuity:** `PRD-TAD-ADR-COMMERCE-MVP-GTM-001` · TAD `1.2.0` consumes PRD `1.2.0`; decisions ADR `1.2.0`.
 
 ### Journey-to-system mapping and sprint RAO steps
 
@@ -260,7 +262,7 @@ sequenceDiagram
     Prospect->>Operator: out-of-band payment
     Operator->>Evidence: S05 receipt row, S06 re-rank
   else Declined or stale
-    Operator->>Evidence: typed finding; no relabel
+    Operator->>Evidence: typed finding, no relabel
   end
 ```
 
@@ -410,12 +412,12 @@ The Deploy Boundary Register is owned by [`docs/deploy-boundary-register.json`][
 | Core | Theme deployment, checkout session, revenue ledger, authoring claim | `src/core` | `dev-proven` | `undocumented` |
 | Execution | Podman runner, sandbox executor adapter | `scripts/isolated-process.ts`, `scripts/sandbox-podman-executor.ts` | `dev-proven` (local) | `undocumented` |
 | Release | Production controller | `scripts/production-release` | `dev-proven` (dry) | `undocumented` |
-| Learning | Demand verifier adapter | `scripts/` (planned) | `spec-complete` | `undocumented` |
+| Learning | Demand verifier adapter | `scripts/demand-evidence-verifier.mjs` | `dev-proven`; ER-SB-02 and historical verifier checks in the handoff | `undocumented` |
 | Specification | This document | `docs/` | `spec-complete` | `undocumented` |
 
 ## ADR
 
-**Continuity:** `PRD-TAD-ADR-COMMERCE-MVP-GTM-001` · ADR `1.0.0` binds PRD/TAD `1.0.0`. Parent decisions DR-1..DR-11 and ADR-1..ADR-6 remain in force; nothing here reopens them.
+**Continuity:** `PRD-TAD-ADR-COMMERCE-MVP-GTM-001` · ADR `1.2.0` binds PRD/TAD `1.2.0`. Parent decisions DR-1..DR-11 and ADR-1..ADR-6 remain in force; nothing here reopens them.
 
 | Decision | Context, decision, alternatives | Rationale, consequences, recovery |
 |---|---|---|
@@ -449,6 +451,23 @@ Stage 3 argumentation: a1 "Phase 1 input is operator-authored, so isolation adds
 | Ops burden | Near-zero | Patching, uptime, recovery owned by operator | One host's burden, not one per workload |
 | Vendor risk | Medium (single edge provider) | Low (FOSS runner) | Low / Medium |
 
+## MVP
+
+`PRD-TAD-ADR-COMMERCE-MVP-GTM-001@1.2.0`: the dependency-closed first-dollar slice is
+AC-M01 → AC-M02/M03 → AC-M04 → AC-M05, implemented through S01–S06 and ADR-G01–G04.
+S04 is independently source-proven; S07's adapter exists, but independent verifier enrollment
+and authentic receipts remain absent. Neither fact closes the prospect or payment prerequisites.
+The demo skeleton and ER-GTM-01–03 define the next evidence; no synthetic row substitutes for them.
+The public sandbox owner supplies rehearsal capability only, with its own release receipts.
+
+## GTM
+
+`PRD-TAD-ADR-COMMERCE-MVP-GTM-001@1.2.0`: consume the PRD's ranked streams and AC-M01/M04/M05.
+Concierge setup remains the nearest built path; no existing payer segment or high WTP is verified.
+Record a priced conversation before selecting a customer-specific offer; record actual collection
+and accepted delivery before revenue; create a successor Context after each result. No outreach,
+invoice or real payment is authorized by this document. ER-GTM-01–03 remain pending.
+
 ## Division of work — reference implementation
 
 The seven-repository partition is owned by the [composition owner][techstack]; this table states only the sprint's single writer per capability and what each other owner is consumed for at its pinned revision. No sibling repository is edited by this sprint; a needed sibling change is a named follow-up.
@@ -472,7 +491,7 @@ This revision was authored in one path-scoped OS lane (`worktree_id` above) rese
 | Phase | Feature | Reuses | New | Priority rationale / prerequisite |
 |---|---|---|---|---|
 | 1 (this sprint) | F-GTM-1, F-GTM-2 concierge first dollar | Theme deployment, console, WebMCP, human confirmation, Dev topology | Evidence rows only | Zero code, one unvalidated assumption; prerequisite S01 |
-| 2 | F-GTM-3 demand verifier adapter | Demand read, OS ranker option | ≤200-line script | Turns payment into ranking input; prerequisite `ER-GTM-03` |
+| 2 | F-GTM-3 authentic demand-verifier use | Implemented `scripts/demand-evidence-verifier.mjs`, demand read and OS ranker option | Independent enrollment and authenticated receipt readers | Adapter source is proven; paid ranking still requires `ER-GTM-03` |
 | 3 | F-GTM-4 free-tier production activation, recurring hosting fee | Podman runner, release controller, register | Authenticated transport, rollout migration, evaluator enrollment | Enables self-serve and Stream 4 recurring; prerequisites G08–G11, ADR-G05 Phase 2 verdict |
 | 4 | Stream 1 external volume; shopping/merchant role UX (F24) | Take-rate, routing, role profiles | Demand-gated role surfaces | Only after two external principals transact twice (parent R3.11) |
 | Won't (this increment) | Streams 2/3, autonomous cart re-derivation, real-time resettlement, new framework or store | — | — | Segment absent or forbidden by parent decisions |
@@ -488,7 +507,13 @@ This revision was authored in one path-scoped OS lane (`worktree_id` above) rese
 | ER-GTM-02 | Timed mobile walkthrough (`npm run test:e2e:dev` plus manual timing) | pending | Authoring (Dev lane) | AC-M03 |
 | ER-GTM-03 | Out-of-band receipt reference and acceptance note | pending | External | AC-M04; only this row can relabel PP-1 |
 
-**Applicable-rule trace:** 12/12 selected artifact-bearing rules link to an artifact — `directive-grammar-cid#1,#7` (opening directive; S01–S09), `artifact-continuity-authoring-seam#1,#3,#5,#6,#8` (frontmatter joins; one combined document; grounding record; 9/9 coverage; evidence table), `flow-patterns#1,#2` (five diagrams and inventories), `readiness-ladder#3` (separate rungs), `pain-point-to-feature-mapping#1` (PP table), `monetization#3` (first-dollar ordering). This is a bounded slice, not an exhaustive conformance audit; the site's guideline checker validates the shared set, not consumer specifications, so join review is manual.
+**Historical 2026-09-09 applicable-rule trace:** 12/12 selected artifact-bearing rules link to an artifact — `directive-grammar-cid#1,#7` (opening directive; S01–S09), `artifact-continuity-authoring-seam#1,#3,#5,#6,#8` (frontmatter joins; one combined document; grounding record; 9/9 coverage; evidence table), `flow-patterns#1,#2` (five diagrams and inventories), `readiness-ladder#3` (separate rungs), `pain-point-to-feature-mapping#1` (PP table), `monetization#3` (first-dollar ordering). This is a bounded slice, not an exhaustive conformance audit; the site's guideline checker validates the shared set, not consumer specifications, so join review is manual.
+
+**Current revision checks:** shared metadata parser and five-role joins pass; 27 local links/anchors
+resolve across the three documents; authored limits, terminology and convergence pass. The diagram
+projection contains 23 nodes / 20 edges / 4 clusters for this file. This is bounded source evidence;
+full Integration Gate is required on the published candidate. Static rendering results are in the
+implementation owner's alignment record.
 
 **Maintenance:** re-derive rungs and the PP ordering whenever an `ER-GTM-*` row lands; bound revision cycles to 3 with the stated circuit-breaker; refresh grounding revisions at each consuming transition; record a successor ADR before implementing ADR-G05 Phase 2. A green documentation check proves this document's bounded contract, not any deployed behavior or demand.
 
@@ -500,3 +525,5 @@ This revision was authored in one path-scoped OS lane (`worktree_id` above) rese
 [prod]: ./production-runtime.md
 [cr]: ./container-runtime.md
 [dbr]: ./deploy-boundary-register.json
+
+[guideline]: https://github.com/huijoohwee/huijoohwee.github.io/blob/c83b43bd7fd018e0ac41629787e0e713db9a1e13/guidelines/prd-tad-adr-mvp-gtm-guidelines.md

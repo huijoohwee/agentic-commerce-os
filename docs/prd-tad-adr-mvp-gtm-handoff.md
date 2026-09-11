@@ -1,4 +1,93 @@
-# Merchant-agnostic PRD-TAD-ADR-MVP-GTM handoff
+---
+title: "Reference Implementation — Commerce Planning Evidence Handoff"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
+version: "1.2.0"
+revision: "1.2.0"
+date: "2026-09-12"
+lang: "en-US"
+frontmatter_contract: "required"
+owner: "Commerce verification evidence"
+artifact_role: "evidence-companion"
+continuity_id: "PRD-TAD-ADR-COMMERCE-MVP-GTM-001"
+prd_revision: "1.2.0"
+tad_revision: "1.2.0"
+adr_revision: "1.2.0"
+mvp_revision: "1.2.0"
+gtm_revision: "1.2.0"
+local_rung: "dev-proven"
+delivered_rung: "undocumented"
+lane: "authoring"
+universal_scope: false
+load_policy: "on-demand"
+worktree_id: "agent/device-0232231d4a19/commerce-planning-alignment"
+agent_id: "codex-commerce-planning-alignment"
+source_revision: "50cc1d7e1a81af4ca89c2c4584bc50aee89ec55f"
+guideline_revision: "2.6.0"
+guideline_source_revision: "c83b43bd7fd018e0ac41629787e0e713db9a1e13"
+---
+
+# Reference implementation — Commerce planning evidence handoff
+
+This companion owns observations, not requirements. It consumes
+[`PRD-TAD-ADR-COMMERCE-MVP-GTM-001@1.2.0`](prd-tad-adr-mvp-gtm-20260909T1320Z-solopreneur-mvp-gtm.md)
+and the separate implementation owner
+[`edge-commerce-agent-mvp@0.6.0`](prd-tad-adr-mvp-gtm-edge-commerce-agent.md).
+The frontmatter rungs apply to the first-dollar sprint. The verified public sandbox does not
+promote that sprint's demand, prospect, actual-payment or independent-verifier criteria.
+All concrete provider names below are choices of this reference implementation.
+
+## PRD
+
+Consume AC-M01–M09 from the sprint owner and EC-01–EC-10 from the implementation owner.
+The current authorized outcome is the sandbox loop; actual collection remains unproven.
+Historical 2026-09-09 statements below describe that revision only, including its then-blocked checks.
+
+## TAD
+
+Consume the named owners and evidence mappings from those exact revisions. The public profile uses
+`src/local-first/worker.ts`, `checkout.ts`, `stripe-checkout.ts` and existing browser drafts;
+the full Edge/Core production runtime retains its own trust, provider and execution gates.
+No source, schema, route or release owner is added by this handoff.
+
+## ADR
+
+Consume EC-A1–EC-A6 and ADR-G01–G05. Existing local draft, launch-pack and demand-verifier contracts
+remain stable. Selecting a hosted test provider does not select the payment rail for a real prospect.
+
+## MVP
+
+| Evidence | Exact observation | Scope and outcome |
+|---|---|---|
+| ER-SB-01 | [PR #49][pr49], head `d1eb2f06dff7994c848c0277cac5bea1ffbb6b87`, merged `50cc1d7e1a81af4ca89c2c4584bc50aee89ec55f` | Implemented sandbox runtime and protected integration; no demand claim |
+| ER-SB-02 | [Integration Gate][ci49], success; domain 91, unit 278, Worker 60, local-first contracts 53, public browser groups 11, Edge browser 18, Dev loop 1 | Exact candidate source/runtime checks; fixture settlement is synthetic |
+| ER-SB-03 | [Protected production release][release49], success, 2026-09-11T22:42:22.889Z | Exact source/version, public route and 11 browser groups; operator approval recorded in protected run |
+| ER-SB-04 | Worker `agentic-commerce-edge-production`; version `927f0fa9-8aa2-4a9d-9dcc-1e104220ce3b`; deployment `6de96dff-ff08-45ad-a232-d4ad7bd4f747` | Route `airvio.co/agentic-commerce-os*`; `checkout:sandbox`, `realMoney:false` |
+| ER-SB-05 | Official Stripe MCP, account `acct_1TKGGUGzH0w0k4VU`, session `cs_test_a11tryy67pRHwffjdcMAYWZb9mybZTSTre765qNxeOSFn06fEIkFrB1CiE` | `livemode:false`, `status:complete`, `payment_status:paid`, test amount 800, currency `sgd`; independent provider read after hosted UI test |
+| ER-SB-06 | Hosted test card ending 0002 declined; 4242 succeeded; return page verified the same session | Test payment only; no customer credentials or real payment details retained |
+| ER-SB-07 | Browser `Page.downloadProgress` completed after HTTP 200: `airvio-sandbox-receipt.json` 387 bytes; `airvio-education-materials.md` 8,842 bytes | Actual public receipt and sample delivery, signed browser session; no redirect-only fulfillment |
+| ER-SB-08 | Cleanup receipt `79aae25b921fd0b71cfe6e57054fd20457b6f20dcda8ca7131b0af63c31cbcc1`, 2026-09-11T22:49:15.802Z | PR49 worktree/registration quarantined; branches, source and objects retained; main synchronized |
+
+The release run retains artifact `local-first-result-34654936540`: `completion.json`,
+`human-authorization.json`, and `live/browser-proof.json`. Completion receipt digest is
+`be373fa81639adbb93a4f8cba14cd12edd798c9737dcf54182118fc6f5693e8a`.
+The provider/dashboard can re-read ER-SB-05; a new browser needs its own confirmed test session.
+No API key, cookie, personal buyer details or real-payment data belongs in source control.
+
+## GTM
+
+| Boundary | Evidence | Current conclusion / next owner action |
+|---|---|---|
+| Buyer pain and WTP | ER-GTM-01 absent | Unvalidated; solo operator obtains a priced conversation before a paid pilot |
+| Offer | Fixed public education sample; private drafts unchanged | Rehearsal offer only; no prospect-selected deliverable |
+| Transaction mechanism | ER-SB-02–07 | `mechanism-proven` in sandbox; real payment and revenue absent |
+| Fulfillment | ER-SB-07 | Sample delivery proven; customer acceptance absent |
+| Runtime | ER-SB-03–04 | Public sandbox production-verified; full agent production remains gated |
+| Economics | Zero model calls in native checkout; no added package/resource; no account bill or operator-time study | No measured $0 TCO, ROI improvement or demand-validated label |
+
+Successor work follows S01–S08 in the sprint owner. Keep the historical evidence below intact;
+new observations reference exact candidates and do not rewrite earlier check outcomes.
+
+## Historical implementation observation — reference implementation, 2026-09-09
 
 This implements the reusable slice of
 [PRD-TAD-ADR-COMMERCE-MVP-GTM-001, revision 1.0.0](https://github.com/huijoohwee/agentic-commerce-os/blob/6e4ce92c48b14cfbc5a0b797901916ef404c4bd4/docs/prd-tad-adr-mvp-gtm-20260909T1320Z-solopreneur-mvp-gtm.md).
@@ -152,3 +241,7 @@ verified build/checksum evidence and its absolute path is supplied as
 its dispatch trust anchor, trusted Git executable, Canvas source root and isolated
 executor, with independently enrolled issuer metadata. Neither condition supplies a
 prospect or a payment. Protected CI must verify the exact published candidate separately.
+
+[pr49]: https://github.com/huijoohwee/agentic-commerce-os/pull/49
+[ci49]: https://github.com/huijoohwee/agentic-commerce-os/actions/runs/34654535033
+[release49]: https://github.com/huijoohwee/agentic-commerce-os/actions/runs/34654936540
