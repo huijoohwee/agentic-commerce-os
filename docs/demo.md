@@ -5,7 +5,7 @@ paths without writing the generated Production mirror or the Cloudflare delivery
 route. The live release state throughout is `liveReleaseReadiness: not-ready`.
 
 For the merchant-agnostic concierge sprint, use the
-[MVP-to-GTM handoff](mvp-gtm-handoff.md) for role profiles, prospect inputs,
+[PRD-TAD-ADR-MVP-GTM handoff](prd-tad-adr-mvp-gtm-handoff.md) for role profiles, prospect inputs,
 the timed walkthrough and independent out-of-band payment verification.
 
 The feature specification requests this document at
