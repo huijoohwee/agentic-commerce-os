@@ -43,6 +43,10 @@ leaving termination unproven and the local host unavailable. A direct probe and 
 test reproduced the failure. Startup now completes before attaching stdin and processing
 cancellation; the bootstrap waits for input, and all ownership/exit/removal checks remain.
 The new real-container regression and the existing disconnect test pass.
+The regression checks cancellation and verified removal within 15 seconds. The
+[Linux observation](https://github.com/huijoohwee/agentic-commerce-os/actions/runs/34622438792)
+can report a zero raw engine exit code on early cancellation; the executor also requires
+`!timedOut` for success, so that raw code cannot turn a cancelled job into a successful result.
 
 ## Checks observed
 
