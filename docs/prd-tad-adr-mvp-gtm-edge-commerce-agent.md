@@ -2,11 +2,11 @@
 title: "Edge Commerce Agent — Grounded First-Dollar Loop"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "edge-commerce-agent-mvp"
-revision: "0.2.0"
-version: "0.2.0"
-prd_revision: "0.2.0"
-tad_revision: "0.2.0"
-adr_revision: "0.2.0"
+revision: "0.3.0"
+version: "0.3.0"
+prd_revision: "0.3.0"
+tad_revision: "0.3.0"
+adr_revision: "0.3.0"
 date: "2026-09-12"
 lang: "en-US"
 frontmatter_contract: "required"
@@ -19,7 +19,7 @@ load_policy: "on-demand"
 runtime_readiness_policy: "fail-closed"
 lifecycle_status: "implemented-candidate"
 demand_status: "unvalidated"
-worktree_id: "agent/device-0232231d4a19/edge-commerce-mvp-verified"
+worktree_id: "agent/device-0232231d4a19/native-commerce-workspaces"
 agent_id: "codex-edge-commerce-mvp"
 source_revision: "addf6afb3821c61b33f44d1b0a4e82afb7e139fa"
 related_continuity_id: "PRD-TAD-ADR-COMMERCE-MVP-GTM-001"
@@ -28,7 +28,7 @@ related_continuity_id: "PRD-TAD-ADR-COMMERCE-MVP-GTM-001"
 # Edge Commerce Agent — grounded first-dollar loop
 
 This combined PRD/TAD/ADR/MVP/GTM is the implementation owner for
-`edge-commerce-agent-mvp@0.2.0`. All five sections consume this exact identity.
+`edge-commerce-agent-mvp@0.3.0`. All five sections consume this exact identity.
 The supplied private, untracked `joohwee/prd-tad-ard/prd-tad-adr-mvp-gtm-edge-commerce-agent.md`
 at SHA-256 `fc833b05a1ab59520a45fb6b1f0149d298341a62c248cb118629535aae5223bf`
 is preserved as the 0.1.0 input, rather than treated as an existing runtime or duplicated
@@ -43,10 +43,10 @@ changes the protected production route automatically.
 ```yaml
 context: "Existing Commerce has offline drafts, merchant themes, discovery, guarded checkout and derived revenue; the source input incorrectly assumes no codebase"
 intent: "Help a solo operator take one specific buyer outcome through review into the existing first-sale flow with no new dependencies or infrastructure"
-directive: "Reuse the draft store and theme/checkout owners, implement bounded launch economics and exact-content review, then verify the native Dev loop"
+directive: "Reuse the draft store and theme/checkout owners, implement bounded launch economics, native vendor/admin review and shared shopper/merchant agent actions, then verify the native Dev loop"
 role: "solo-operator-and-authorized-agent"
 action: "review one offer, publish its theme under the existing claim, confirm the provider quote, and fulfill against the settlement receipt"
-outcome: "one reviewable merchant launch pack and a tested draft-to-settlement mechanism; actual demand and payment remain evidence-gated"
+outcome: "one reviewable merchant launch pack, human-operated workspaces and a tested draft-to-settlement mechanism; actual demand and payment remain evidence-gated"
 subject: "solo-operator"
 verb: "launch"
 object: "one-reviewed-commerce-offer"
@@ -150,6 +150,8 @@ flowchart LR
 | Browser proof completeness | `scripts/local-first-release/browser-proof.mjs`; shared by check and release, without changing external release authority |
 | Device executor cancellation | `scripts/isolated-process.ts`; startup completes before attach/cancel, exact-container cleanup remains mandatory; real isolation and local-host checks |
 | Live merchant catalog scope and storefront | `src/core/theme-deployment.ts`, `theme-deployment-store.ts`, `merchant-catalog.ts`, `src/edge/index.ts` |
+| Native vendor/admin workspaces and merchant tools | `src/edge/merchant-page.ts`, `src/edge/client/merchant.client.js`, `merchant-state.client.js`; `test/browser/merchant-workspace.spec.ts` |
+| Stale-review protection | `src/core/theme-deployment-store.ts`; reviewed base participates in the authoring permit digest and fenced SQLite transaction; `test/workers/theme-review.property.test.ts` |
 | Guarded payment and revenue idempotency | `src/core/checkout-session.ts`, `checkout-markup.ts`, `src/edge/human-confirmation.ts`; existing Worker tests and strengthened Dev E2E |
 
 `commerce.local-drafts/v2` adds nullable `launch` to the existing draft; v1 is an explicit backup
@@ -193,6 +195,14 @@ and server-side human approval of arbitrary merchant price changes are not imple
 pack. Existing trusted operator APIs remain trusted operator APIs; do not describe their token
 as cryptographic human presence. Agents without operator authority cannot use that write path.
 
+**EC-A4 — native role workspaces and staged agent writes (accepted).** Use the existing
+public/private APIs, IndexedDB and WebMCP owner for vendor proposals and admin review. Public role
+pages grant no extra authority. Merchant tools stage changes; only the visible operator controls
+publish. Conditional theme writes bind the reviewed previous digest into the permit and atomic
+store transaction. Browser credentials remain transient and proposal storage remains local.
+[Native source, reference pins and validation](native-commerce-workspaces.md) describe the exact
+scope; no external framework, agent SDK, prompt or code is copied into the implementation.
+
 ## MVP
 
 One scoped Commerce lane. Ground against `addf6afb…`, implement the bridge, run focused behavior
@@ -211,8 +221,9 @@ zero-bill or demand claim based on test fixtures.
    pilot commitment; retain the evidence with its owner. No outreach has been sent by this task.
 2. Agree on one deliverable and configure its actual registered provider quote. Enter delivery time,
    collection, agent and acquisition costs in the draft; inspect contribution and setup recovery.
-3. Review/export the pack. An authorized operator feeds its `nextAction.arguments` to
-   `commerce.theme.deploy` using the current authoring claim; [runtime API][api] owns that contract.
+3. Review/export the pack and import it in `/vendor`. Stage with a fresh live version, then
+   review in `/admin` and publish with the operator credential. Existing `commerce.theme.deploy`
+   remains the headless operator path; [runtime API][api] owns its contract.
 4. After separately authorized deployment and readiness proof, use the merchant storefront's
    discovery and human-confirmation flow. Treat uncertain settlement as unresolved, never paid.
 5. Deliver only against the authoritative receipt. Verify actual collected revenue/costs and buyer

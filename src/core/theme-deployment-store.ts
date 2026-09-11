@@ -19,13 +19,14 @@ export type ActivatedTheme = Readonly<{
   deployedAt: string
 }>
 
-export function themeActivationMutationIntent(record: ActivatedTheme): unknown {
+export function themeActivationMutationIntent(record: ActivatedTheme, expectedPreviousManifestDigest?: string | null): unknown {
   return Object.freeze({
     merchantId: record.merchantId,
     manifestDigest: record.manifestDigest,
     manifest: record.manifest,
     resolvedCatalogScope: record.resolvedCatalogScope,
     defaultedFields: record.defaultedFields,
+    ...(expectedPreviousManifestDigest !== undefined ? { expectedPreviousManifestDigest } : {}),
   })
 }
 
@@ -72,11 +73,13 @@ export class ThemeDeployment extends DurableObject<CoreEnv> {
     })
   }
 
-  async activate(record: ActivatedTheme, permit: ClaimMutationPermit): Promise<unknown> {
+  async activate(record: ActivatedTheme, permit: ClaimMutationPermit, expectedPreviousManifestDigest?: string | null): Promise<unknown> {
     if (!validActivatedTheme(record)) return rejected('theme_activation_malformed')
+    if (expectedPreviousManifestDigest !== undefined && expectedPreviousManifestDigest !== null
+      && !/^[0-9a-f]{64}$/u.test(expectedPreviousManifestDigest)) return rejected('theme_review_invalid')
     const requestDigest = await authoringMutationRequestDigest(
       merchantThemeClaim(record.merchantId),
-      themeActivationMutationIntent(record),
+      themeActivationMutationIntent(record, expectedPreviousManifestDigest),
     )
     const fenced = runAuthoringFencedMutation(
       this.ctx.storage,
@@ -89,6 +92,8 @@ export class ThemeDeployment extends DurableObject<CoreEnv> {
         if (prior?.manifestDigest === record.manifestDigest) {
           return Object.freeze({ ok: true, idempotent: true, record: prior })
         }
+        if (expectedPreviousManifestDigest !== undefined
+          && (prior?.manifestDigest ?? null) !== expectedPreviousManifestDigest) return rejected('theme_review_stale')
         this.#sql.exec(
           `INSERT INTO theme_deployment (
             singleton, merchant_id, manifest_digest, record_json, deployed_at_ms, deployed_at

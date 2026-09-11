@@ -124,6 +124,8 @@ same paths without that prefix.
 |---|---|---|
 | `GET /` | public | Default mobile-first Storefront Console |
 | `GET /s/{merchantId}` | public | The same console with an activated merchant theme |
+| `GET /vendor`, `GET /admin` | public page; writes require operator + claim | Native vendor proposal and admin review workspaces |
+| `GET /assets/merchant.js` | public | Lazy merchant client; no embedded credential or approval tool |
 | `GET /assets/storefront.js` | public | First-party client module |
 | `GET /livez` | public | Lane, candidate, and version metadata |
 | `GET /readyz` | public | Fail-closed dependency, source, and live-release report |
@@ -142,7 +144,7 @@ same paths without that prefix.
 | `DELETE /v1/operator/agents/{agentId}` | operator + claim | CAS-bound deregistration |
 | `GET /v1/operator/registry/events` | operator | Ordered registration evidence |
 | `POST /v1/operator/vendors/{vendorId}/transition` | operator + claim | Vendor transition |
-| `POST /v1/operator/merchants/{merchantId}/theme` | operator + claim | Theme activation |
+| `POST /v1/operator/merchants/{merchantId}/theme` | operator + claim | Theme activation; optional reviewed-version envelope |
 | `POST /v1/operator/claims/{acquire,release,admit}` | operator | Claim lifecycle or admission check |
 | `GET /v1/operator/release-boundaries` | operator | Read-only boundary projection |
 
@@ -277,3 +279,20 @@ and reconciliation owner. `MARKETPLACE_PROVIDER` remains the authoritative
 vendor, split, payout, and audit owner. This repository owns only the receipt-
 bound coordination state and the derived markup projection; it does not create
 a second money ledger, vendor database, payout path, or token dictionary.
+
+
+## Reviewed merchant theme writes
+
+The existing `POST /v1/operator/merchants/{merchantId}/theme` accepts either its legacy manifest
+or the exact envelope `{ "manifest": <ThemeManifest>, "expectedPreviousManifestDigest": null | "<sha256>" }`.
+`null` means no theme existed at review time. The public merchant catalog already returns
+`manifestDigest`; staging captures it without operator credentials. Extra envelope fields,
+missing base or a malformed digest are refused as `theme_review_invalid`.
+The base participates in the authoring mutation digest and the atomic fenced activation.
+A different live base returns HTTP 409 `theme_review_stale`; an identical desired live manifest
+is idempotent. This is optimistic concurrency, not a new identity or human-presence assertion.
+
+The native `/vendor` and `/admin` flows use this envelope and the existing claim acquire/release
+routes. [Workspace contract](native-commerce-workspaces.md) owns their browser-local proposal
+lifecycle, bounded merchant WebMCP tools, transient credential and uncertain-result recovery.
+Legacy trusted operator/MCP callers keep their existing contract and authority requirements.

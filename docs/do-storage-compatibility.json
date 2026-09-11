@@ -136,7 +136,7 @@
     {
       "sourceFile": "src/core/theme-deployment.ts",
       "purpose": "Theme activation record construction persisted by ThemeDeployment.",
-      "sourceSha256": "c6eba579670a7f8fd6da23cdd97e98da5c14506c32b714aa04e8926582f7ceb2"
+      "sourceSha256": "28134eab7cd532f7928c508fb4510656df7a5581b4b8ac19be2c327e566f7223"
     },
     {
       "sourceFile": "src/domain/exclusive-category-router.ts",
@@ -156,7 +156,7 @@
     {
       "sourceFile": "src/core/core-actions.ts",
       "purpose": "Boundary normalization for records passed to Durable Objects.",
-      "sourceSha256": "02b4fe664b0e15697ee0ebc1e7036257623da4f60cf834af5caace8af829afd6"
+      "sourceSha256": "7f7a28f983f6d01272475cde36fab6d508026b7aab635b5885b1ce9de69f8e5a"
     },
     {
       "sourceFile": "src/core/checkout-input.ts",
@@ -308,7 +308,7 @@
     {
       "className": "ThemeDeployment",
       "sourceFile": "src/core/theme-deployment-store.ts",
-      "sourceSha256": "601e7146181068bf19a3ea6f37cfc0d5ec6ac22cb63cfcff9c15e7a31c04f7fd",
+      "sourceSha256": "69cc17be4ebcf737fb2c24d5c6eaf628826fa63aef97b06699bb28538247c10a",
       "startMarker": "    state.blockConcurrencyWhile(async () => {",
       "endMarker": "\n  async activate(",
       "regionSha256": "1ed44a2343a14d5b821c382ad2dac72c0d181e5dcfcae38b6a068e1e67a60b77",
@@ -370,5 +370,5 @@
       ]
     }
   ],
-  "revision": "9f14a7c1a374860635ed2ab5fc864713306c82385e70e53cf2736203cf285912"
+  "revision": "b3e4a18be9963ff27208b4ce5514a13b09ca77bb2589ed9b26815e5e87a09c0b"
 }

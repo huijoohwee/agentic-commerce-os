@@ -1,3 +1,4 @@
+import { merchantPage } from './merchant-page'
 import { THEME_MANIFEST_DEFAULTS, type ThemeManifest } from '../shared/theme-manifest'
 import { graphWorkspaceUrl } from './graph-workspace'
 
@@ -8,6 +9,7 @@ export type ConsoleMetadata = Readonly<{
 }>
 
 export type ConsoleOptions = Readonly<{
+  workspaceRole?: 'admin' | 'vendor'
   basePath?: string
   catalogPath?: string
   clientModulePath?: string
@@ -27,7 +29,8 @@ export function consoleResponse(
   const versionTimestamp = escapeHtml(formatTimestamp(metadata.version.timestamp))
   const basePath = options.basePath ?? ''
   const catalogPath = escapeHtml(options.catalogPath ?? `${basePath}/v1/public/agents`)
-  const modulePath = escapeHtml(options.clientModulePath ?? `${basePath}/assets/storefront.js`)
+  const role = options.workspaceRole
+  const modulePath = escapeHtml(options.clientModulePath ?? `${basePath}/assets/${role ? 'merchant' : 'storefront'}.js`)
   const homePath = escapeHtml(basePath ? `${basePath}/` : '/')
   const deliveryClosed = options.deliveryBoundary === 'closed'
   const workspaceUrl = deliveryClosed ? null : graphWorkspaceUrl(options.graphWorkspaceUrl, metadata.lane)
@@ -39,15 +42,15 @@ export function consoleResponse(
       </article>`
     : ''
   const brand = escapeHtml(manifest.copy.brand)
-  const headline = escapeHtml(manifest.copy.headline)
-  const subhead = escapeHtml(manifest.copy.subhead)
+  const headline = role === 'admin' ? 'Review. Approve. Publish.' : role === 'vendor' ? 'Turn your offer into a store.' : escapeHtml(manifest.copy.headline)
+  const subhead = role ? 'A clear path from buyer outcome to a storefront your customers can use.' : escapeHtml(manifest.copy.subhead)
   const footer = escapeHtml(manifest.copy.footer)
   const logo = manifest.logo.href
     ? `<img class="logo" src="${escapeHtml(manifest.logo.href)}" alt="${escapeHtml(manifest.logo.alt)}">`
     : `<span class="brand-mark">${brand}</span>`
   const storefront = deliveryClosed
     ? `<article class="card storefront"><div class="card-head"><h2>Delivery boundary</h2><span class="index">01</span></div><p class="hint">Delivery boundary closed. This exact route exposes no nested storefront, API, WebMCP, or Sandbox authority.</p></article>`
-    : `<article class="card storefront">
+    : role ? merchantPage(role) : `<article class="card storefront">
         <div class="card-head"><h2>Catalog</h2><span class="index">01</span></div>
         <form id="catalog-search" role="search">
           <label class="sr-only" for="catalog-query">Search catalog</label>
@@ -55,7 +58,8 @@ export function consoleResponse(
           <button type="submit" aria-label="Search catalog">Search</button>
         </form>
         <div id="catalog-results" aria-live="polite"><p class="hint">Search to load the current catalog.</p></div>
-        <div class="checkout-row"><button id="initiate-checkout" type="button" disabled aria-label="Initiate guarded checkout">Initiate guarded checkout</button></div>
+        <p id="offer-selection" class="hint" role="status">Choose an offer to review its total.</p>
+        <div class="checkout-row"><button id="initiate-checkout" type="button" disabled aria-label="Review checkout">Review checkout</button></div>
         <section id="checkout-confirmation" class="confirmation" aria-labelledby="checkout-confirmation-heading" hidden>
           <h3 id="checkout-confirmation-heading">Review and confirm</h3>
           <p id="checkout-confirmation-summary" class="hint" aria-live="polite"></p>
@@ -63,7 +67,7 @@ export function consoleResponse(
           <button id="confirm-checkout" type="button" aria-label="Confirm checkout after reviewing the total">Confirm checkout</button>
         </section>
       </article>`
-  const probes = deliveryClosed
+  const probes = deliveryClosed || role !== 'admin'
     ? ''
     : `<article class="card">
         <div class="card-head"><h2>Machine probes</h2><span class="index">03</span></div>
@@ -82,7 +86,8 @@ export function consoleResponse(
   <meta name="theme-color" content="${escapeHtml(manifest.palette.background)}">
   <meta name="ag-catalog-path" content="${catalogPath}">
   <meta name="ag-runtime-base-path" content="${escapeHtml(basePath)}">
-  <title>${brand}</title>
+  <meta name="ag-workspace-role" content="${role ?? 'shopper'}">
+  <title>${role ? role[0]?.toUpperCase() + role.slice(1) + ' · ' : ''}${brand}</title>
   <style>
     :root { color-scheme: dark; --ink: ${manifest.palette.ink}; --muted: ${manifest.palette.muted}; --line: ${manifest.palette.line}; --panel: ${manifest.palette.panel}; --accent: ${manifest.palette.accent}; --background: ${manifest.palette.background}; }
     * { box-sizing: border-box; }
@@ -121,6 +126,13 @@ export function consoleResponse(
     .route span, .hint { color: var(--muted); }
     .storefront { grid-column: 1 / -1; }
     form { align-items: stretch; }
+    .stack, label { display: grid; gap: 8px; }
+    .stack { margin-top: 20px; gap: 16px; }
+    label input { width: 100%; }
+    .workspace-nav { display: flex; gap: 8px; flex-wrap: wrap; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; }
+    summary { cursor: pointer; min-height: 44px; padding: 10px 0; }
+    .listing button { margin: 8px 8px 0 0; }
     input, button { min-height: 44px; border: 1px solid var(--line); border-radius: 10px; font: inherit; }
     input { min-width: 0; flex: 1; padding: 10px 12px; background: var(--background); color: var(--ink); }
     button { min-width: 44px; padding: 10px 16px; background: var(--accent); color: var(--background); cursor: pointer; font-weight: 800; }
@@ -145,25 +157,25 @@ export function consoleResponse(
   <main>
     <nav aria-label="Runtime navigation">
       <a class="brand" href="${homePath}" aria-label="${brand} home">${logo}</a>
-      <span class="lane">${lane} lane</span>
+      ${deliveryClosed ? `<span class="lane">${lane} lane</span>` : `<div class="workspace-nav"><a class="route" href="${homePath}" ${!role ? 'aria-current="page"' : ''}>Shop</a><a class="route" href="${escapeHtml(basePath)}/vendor" ${role === 'vendor' ? 'aria-current="page"' : ''}>Vendor</a><a class="route" href="${escapeHtml(basePath)}/admin" ${role === 'admin' ? 'aria-current="page"' : ''}>Admin</a></div>`}
     </nav>
     <section class="hero" aria-labelledby="storefront-heading">
-      <p class="eyebrow">Edge commerce runtime</p>
+      <p class="eyebrow">${role ? role + ' workspace' : 'Agent-powered commerce'}</p>
       <h1 id="storefront-heading">${headline}</h1>
       <p>${subhead}</p>
-      <div class="status-row" role="status"><span class="pulse" aria-hidden="true"></span><strong>Edge live</strong><span>Local-first storefront</span></div>
+      <div class="status-row" role="status"><span class="pulse" aria-hidden="true"></span><strong>${role ? 'Your changes, reviewed' : 'You confirm every purchase'}</strong><span>${lane} lane</span></div>
       <p id="offline-indicator" role="status" hidden>Offline — showing the last completed synchronization. Settlement is unavailable.</p>
     </section>
     <section class="grid" aria-label="Storefront and runtime details">
       ${storefront}
       ${workspace}
-      <article class="card">
+      ${role === 'admin' ? `<article class="card">
         <div class="card-head"><h2>Release identity</h2><span class="index">02</span></div>
         <dl><dt>Candidate</dt><dd><code>${releaseCandidateSha}</code></dd><dt>Worker version</dt><dd>${versionId}</dd><dt>Observed</dt><dd>${versionTimestamp}</dd></dl>
-      </article>
+      </article>` : ''}
       ${probes}
     </section>
-    <footer><span>${footer}</span><span>Operational routes remain bearer-protected.</span></footer>
+    <footer><span>${footer}</span><span>${role ? 'Publishing requires operator review.' : 'Browse · choose · review'}</span></footer>
   </main>
   ${clientModule}
 </body>

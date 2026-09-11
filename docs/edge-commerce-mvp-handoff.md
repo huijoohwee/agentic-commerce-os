@@ -1,7 +1,7 @@
 ---
 title: "Edge Commerce MVP — Implementation Handoff"
 doc_type: "Handoff"
-version: "0.2.0"
+version: "0.3.0"
 date: "2026-09-12"
 lang: "en-US"
 frontmatter_contract: "required"
@@ -15,11 +15,40 @@ load_policy: "on-demand"
 # Edge Commerce MVP handoff
 
 [The grounded PRD/TAD/ADR/MVP/GTM](prd-tad-adr-mvp-gtm-edge-commerce-agent.md) owns
-`edge-commerce-agent-mvp@0.2.0`. Base: `addf6afb3821c61b33f44d1b0a4e82afb7e139fa`.
+`edge-commerce-agent-mvp@0.3.0`. Base: `addf6afb3821c61b33f44d1b0a4e82afb7e139fa`.
 The supplied private 0.1.0 draft remains byte-identical at its original untracked path;
 the executable product's grounded successor lives here with its source owner.
 
-## Diff
+## Current native workspace increment
+
+[Native source and behavior](native-commerce-workspaces.md) extends the reviewed launch pack into
+vendor staging, admin review and the existing shopper flow. Native merchant tools only read/stage;
+no agent publication/approval tool or credential persistence is introduced. Concurrent browser
+approvals atomically consume one proposal. The existing theme Durable Object binds the reviewed
+base digest into its permit and rejects a newer, different live version inside the activation
+transaction. Operator lease acquisition handles a definitive stale epoch once; unknown publication
+results use read-only recovery rather than replay.
+
+The Edge Worker uses native text modules for the merchant browser code and composes it only on
+its asset route. Shared IndexedDB and WebMCP logic remain source-owned once. Wrangler generates
+its corresponding module declaration, and the invocation validator follows the extracted route owner. The original 600-line/500,000-byte limits remain intact;
+no external project code, model SDK, dependency, service, migration or payment owner was added.
+
+Current observations: 278 unit tests, the new real SQLite version/permit test, 15 browser checks
+and the complete Dev loop passed. The loop includes two separately reviewed theme activations
+before the existing single settlement/markup/replay assertions. The 360px mobile vendor page was
+visually inspected. The final complete `npm run check:integration` passed after generated types,
+storage fingerprints and route-owner validation were updated. Current totals are 91 domain,
+278 unit, 60 Worker, 40 offline-contract, nine offline-browser and 15 storefront/workspace browser
+checks, plus the full Dev settlement loop. Production dry chunks are core 197,843 bytes, edge
+495,552 bytes and two merchant text assets of 12,491 / 3,888 bytes. The longest changed authored
+file is 590 lines. `git diff --check` passed; the owned Podman machine stopped after verification.
+
+`npm run check:evidence` still reports `evidence_runtime_context_incomplete` and zero enrolled
+independent dispatch issuers. This is a separate terminal readiness gate, not a source-suite pass.
+Protected CI must independently verify the published candidate; its result belongs to that PR.
+
+## Retained first-dollar increment
 
 The existing offline workspace now persists buyer/outcome/merchant/agent and explicit cost
 estimates. Its lazy launch module calculates integer contribution and setup recovery, reviews
@@ -48,7 +77,9 @@ The regression checks cancellation and verified removal within 15 seconds. The
 can report a zero raw engine exit code on early cancellation; the executor also requires
 `!timedOut` for success, so that raw code cannot turn a cancelled job into a successful result.
 
-## Checks observed
+## Earlier candidate verification
+
+The following records the retained first-dollar candidate before native workspaces.
 
 | Owner check | Result |
 |---|---|
@@ -82,6 +113,12 @@ retained in the task's local artifact directory. These unsigned observations are
 Dev evidence, not the external evaluator's missing production verdicts.
 
 ## Remaining boundaries
+
+The existing storage transition classifier reports `reviewed_backward_compatibility_proof_required`
+with `codec_drift` for revision `b3e4a18be9963ff27208b4ce5514a13b09ca77bb2589ed9b26815e5e87a09c0b`.
+The generated manifest fingerprints the changed theme mutation code; no SQL objects/classes or
+migration history were changed. Local legacy/current behavior tests do not grant the production
+controller its separately reviewed compatibility evidence.
 
 No real payer, WTP proof, payment, merchant fulfillment or public release was produced.
 The local asset-only Worker still refuses server mutations. The full-Commerce profile retains

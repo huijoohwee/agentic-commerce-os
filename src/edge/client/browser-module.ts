@@ -1,3 +1,4 @@
+import { LOCAL_DATABASE_RUNTIME } from './local-runtime.js'
 import { WEBMCP_CLIENT_RUNTIME } from './webmcp-runtime.js'
 
 export const STOREFRONT_CLIENT_MODULE = String.raw`
@@ -22,6 +23,8 @@ let selectedOffer = null;
 let selectedListingId = null;
 let preparedConfirmation = null;
 let replayInFlight = null;
+let checkoutPreparing = false;
+let searchGeneration = 0;
 
 const deviceId = (() => {
   try {
@@ -36,31 +39,7 @@ const deviceId = (() => {
   }
 })();
 
-const openDatabase = () => new Promise((resolve, reject) => {
-  const request = indexedDB.open('agentic-commerce-storefront', 1);
-  request.onupgradeneeded = () => {
-    const database = request.result;
-    if (!database.objectStoreNames.contains('completed-sync')) {
-      database.createObjectStore('completed-sync', { keyPath: 'scope' });
-    }
-    if (!database.objectStoreNames.contains('pending-changes')) {
-      database.createObjectStore('pending-changes', { keyPath: 'sequence', autoIncrement: true });
-    }
-  };
-  request.onsuccess = () => resolve(request.result);
-  request.onerror = () => reject(request.error || new Error('indexeddb_open_failed'));
-});
-
-const requestResult = request => new Promise((resolve, reject) => {
-  request.onsuccess = () => resolve(request.result);
-  request.onerror = () => reject(request.error || new Error('indexeddb_request_failed'));
-});
-
-const transactionDone = transaction => new Promise((resolve, reject) => {
-  transaction.oncomplete = () => resolve();
-  transaction.onerror = () => reject(transaction.error || new Error('indexeddb_transaction_failed'));
-  transaction.onabort = () => reject(transaction.error || new Error('indexeddb_transaction_aborted'));
-});
+${LOCAL_DATABASE_RUNTIME}
 
 const readSnapshot = async () => {
   const database = await openDatabase();
@@ -244,7 +223,11 @@ const discoverOffers = async (scoped, query) => {
 };
 
 const actions = Object.freeze({
-  async searchCatalog({ query, limit }) {
+  async searchCatalog({ query, limit }, options = {}) {
+    options.signal?.throwIfAborted();
+    if (checkoutPreparing) throw new Error('checkout_preparation_in_progress');
+    const generation = ++searchGeneration;
+    limit = Math.max(1, Math.min(100, Number(limit) || 20));
     if (!navigator.onLine) {
       await showOffline();
       throw new Error('connectivity_absent');
@@ -254,7 +237,7 @@ const actions = Object.freeze({
     url.searchParams.set('limit', String(Math.max(1, Math.min(100, Number(limit) || 20))));
     let response;
     try {
-      response = await fetch(url, { credentials: 'same-origin' });
+      response = await fetch(url, { credentials: 'same-origin', signal: options.signal });
     } catch (error) {
       await showOffline();
       throw error;
@@ -265,23 +248,39 @@ const actions = Object.freeze({
     const scoped = allListings.filter(listing => !normalizedQuery || [
       listing.title, listing.summary, listing.category, listing.agentId
     ].some(value => value.toLocaleLowerCase('en-US').includes(normalizedQuery))).slice(0, limit);
-    catalog = await discoverOffers(scoped, query);
+    const discovered = await discoverOffers(scoped, query);
+    options.signal?.throwIfAborted();
+    if (generation !== searchGeneration || checkoutPreparing) throw new Error('catalog_search_superseded');
+    catalog = discovered;
+    selectedOffer = null; selectedListingId = null; preparedConfirmation = null;
+    confirmationRegion.hidden = true;
+    document.querySelector('#offer-selection').textContent = 'Choose an offer to review its total.';
     const page = { ok: true, query, limit, listings: catalog };
     await saveSnapshot(page);
     showOnline();
+    renderCatalog(catalog);
     return page;
   },
-  async selectOffer({ listingId, offerId }) {
+  async selectOffer({ listingId, offerId }, options = {}) {
+    options.signal?.throwIfAborted();
+    if (checkoutPreparing) throw new Error('checkout_preparation_in_progress');
+    const generation = searchGeneration;
     const listing = catalog.find(value => value.listingId === listingId);
     const offer = listing?.offers.find(value => value.offerId === offerId);
     if (!offer) throw new Error('offer_not_found');
     const recorded = await recordLocalEvent({ type: 'offer_selected', listingId, offerId });
     if (!recorded.ok) return recorded;
+    options.signal?.throwIfAborted();
+    if (generation !== searchGeneration || checkoutPreparing) throw new Error('offer_selection_drift');
     selectedOffer = offer;
     selectedListingId = listingId;
     preparedConfirmation = null;
     confirmationRegion.hidden = true;
     checkoutButton.disabled = !navigator.onLine;
+    document.querySelector('#offer-selection').textContent = listing.title + ' · ' + formatMinorCurrency(offer.amountMinor, offer.currency);
+    resultsRegion.querySelectorAll('button[data-offer]').forEach(button => {
+      button.setAttribute('aria-pressed', String(button.dataset.offer === offerId && button.dataset.listing === listingId));
+    });
     return {
       ok: true,
       listingId,
@@ -290,59 +289,64 @@ const actions = Object.freeze({
       currency: offer.currency
     };
   },
-  async initiateCheckout({ offerId, amountMinor, currency }) {
-    if (!navigator.onLine) return { ok: false, code: 'connectivity_absent' };
-    if (!selectedOffer || selectedListingId === null || selectedOffer.offerId !== offerId) {
-      return { ok: false, code: 'offer_selection_required' };
-    }
-    if (selectedOffer.amountMinor !== amountMinor || selectedOffer.currency !== currency) {
-      return { ok: false, code: 'offer_selection_drift' };
-    }
-    if (!await establishSession()) return { ok: false, code: 'storefront_session_unavailable' };
-    const checkoutId = 'checkout-' + crypto.randomUUID();
-    const response = await fetch(runtimePath('/v1/checkouts/' + encodeURIComponent(checkoutId) + '/prepare'), {
-      method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
+  async initiateCheckout({ offerId, amountMinor, currency }, options = {}) {
+    options.signal?.throwIfAborted();
+    if (checkoutPreparing || preparedConfirmation) return { ok: false, code: 'checkout_already_prepared' };
+    checkoutPreparing = true;
+    try {
+      if (!navigator.onLine) return { ok: false, code: 'connectivity_absent' };
+      if (!selectedOffer || selectedListingId === null || selectedOffer.offerId !== offerId) {
+        return { ok: false, code: 'offer_selection_required' };
+      }
+      if (selectedOffer.amountMinor !== amountMinor || selectedOffer.currency !== currency) {
+        return { ok: false, code: 'offer_selection_drift' };
+      }
+      if (!await establishSession()) return { ok: false, code: 'storefront_session_unavailable' };
+      const checkoutId = 'checkout-' + crypto.randomUUID();
+      const response = await fetch(runtimePath('/v1/checkouts/' + encodeURIComponent(checkoutId) + '/prepare'), {
+        method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, signal: options.signal,
+        body: JSON.stringify({
+          checkoutId,
+          intentId: selectedOffer.intentId,
+          agentId: selectedOffer.agentId,
+          offerId: selectedOffer.offerId,
+          offerReceiptDigest: selectedOffer.offerReceiptDigest,
+          amountMinor: selectedOffer.amountMinor,
+          budgetMinor: selectedOffer.budgetMinor || selectedOffer.amountMinor,
+          currency: selectedOffer.currency
+        })
+      });
+      const payload = await response.json();
+      if (!response.ok || payload?.ok === false) return { ok: false, code: payload?.code || 'checkout_prepare_failed' };
+      if (typeof payload?.humanConfirmation?.csrfToken !== 'string'
+        || typeof payload?.humanConfirmation?.expiresAt !== 'string'
+        || typeof payload?.humanConfirmation?.challenge !== 'string'
+        || typeof payload?.humanConfirmation?.sessionNonceDigest !== 'string'
+        || typeof payload?.humanConfirmation?.blockerDigest !== 'string'
+        || payload?.humanConfirmation?.audience !== 'agentic-graph-commerce-checkout'
+        || payload?.humanConfirmation?.relyingPartyOrigin !== globalThis.location.origin
+        || typeof payload?.humanConfirmation?.verificationMode !== 'string') {
+        return { ok: false, code: 'human_confirmation_proof_unavailable' };
+      }
+      preparedConfirmation = {
         checkoutId,
-        intentId: selectedOffer.intentId,
-        agentId: selectedOffer.agentId,
+        csrfToken: payload.humanConfirmation.csrfToken,
+        expiresAt: payload.humanConfirmation.expiresAt,
         offerId: selectedOffer.offerId,
-        offerReceiptDigest: selectedOffer.offerReceiptDigest,
         amountMinor: selectedOffer.amountMinor,
-        budgetMinor: selectedOffer.budgetMinor || selectedOffer.amountMinor,
-        currency: selectedOffer.currency
-      })
-    });
-    const payload = await response.json();
-    if (!response.ok || payload?.ok === false) return { ok: false, code: payload?.code || 'checkout_prepare_failed' };
-    if (typeof payload?.humanConfirmation?.csrfToken !== 'string'
-      || typeof payload?.humanConfirmation?.expiresAt !== 'string'
-      || typeof payload?.humanConfirmation?.challenge !== 'string'
-      || typeof payload?.humanConfirmation?.sessionNonceDigest !== 'string'
-      || typeof payload?.humanConfirmation?.blockerDigest !== 'string'
-      || payload?.humanConfirmation?.audience !== 'agentic-graph-commerce-checkout'
-      || payload?.humanConfirmation?.relyingPartyOrigin !== globalThis.location.origin
-      || typeof payload?.humanConfirmation?.verificationMode !== 'string') {
-      return { ok: false, code: 'human_confirmation_proof_unavailable' };
-    }
-    preparedConfirmation = {
-      checkoutId,
-      csrfToken: payload.humanConfirmation.csrfToken,
-      expiresAt: payload.humanConfirmation.expiresAt,
-      offerId: selectedOffer.offerId,
-      amountMinor: selectedOffer.amountMinor,
-      currency: selectedOffer.currency,
-      blockerDigest: payload.humanConfirmation.blockerDigest,
-      audience: payload.humanConfirmation.audience,
-      relyingPartyOrigin: payload.humanConfirmation.relyingPartyOrigin,
-      blockers: Array.isArray(payload.humanConfirmation.blockers) ? payload.humanConfirmation.blockers : [],
-      challenge: payload.humanConfirmation.challenge,
-      sessionNonceDigest: payload.humanConfirmation.sessionNonceDigest,
-      verificationMode: payload.humanConfirmation.verificationMode,
-      presenceIssuer: payload.humanConfirmation.presenceIssuer || null
-    };
-    renderHumanConfirmation();
-    return { ok: true, checkoutId, state: 'awaiting-human-confirmation' };
+        currency: selectedOffer.currency,
+        blockerDigest: payload.humanConfirmation.blockerDigest,
+        audience: payload.humanConfirmation.audience,
+        relyingPartyOrigin: payload.humanConfirmation.relyingPartyOrigin,
+        blockers: Array.isArray(payload.humanConfirmation.blockers) ? payload.humanConfirmation.blockers : [],
+        challenge: payload.humanConfirmation.challenge,
+        sessionNonceDigest: payload.humanConfirmation.sessionNonceDigest,
+        verificationMode: payload.humanConfirmation.verificationMode,
+        presenceIssuer: payload.humanConfirmation.presenceIssuer || null
+      };
+      renderHumanConfirmation();
+      return { ok: true, checkoutId, state: 'awaiting-human-confirmation' };
+    } finally { checkoutPreparing = false; }
   }
 });
 
@@ -371,17 +375,16 @@ const renderCatalog = listings => {
     }
     for (const offer of listing.offers) {
       const button = document.createElement('button');
-      button.type = 'button';
-      button.textContent = 'Select ' + offer.offerId;
-      button.setAttribute('aria-label', 'Select offer ' + offer.offerId + ' from ' + listing.title);
+      button.type = 'button'; button.dataset.offer = offer.offerId; button.dataset.listing = listing.listingId;
+      button.textContent = formatMinorCurrency(offer.amountMinor, offer.currency) + ' · Select';
+      button.setAttribute('aria-pressed', String(selectedOffer?.offerId === offer.offerId && selectedListingId === listing.listingId));
+      button.setAttribute('aria-label', 'Select offer ' + offer.offerId + ' from ' + listing.title + ' · ' + button.textContent);
       button.addEventListener('click', async () => {
         const selection = await actions.selectOffer({ listingId: listing.listingId, offerId: offer.offerId });
         if (!selection.ok) {
           resultsRegion.setAttribute('data-selection-error', selection.code);
           return;
         }
-        resultsRegion.querySelectorAll('button').forEach(candidate => candidate.removeAttribute('aria-pressed'));
-        button.setAttribute('aria-pressed', 'true');
       });
       article.append(button);
     }
@@ -392,8 +395,7 @@ const renderCatalog = listings => {
 searchForm.addEventListener('submit', async event => {
   event.preventDefault();
   try {
-    const page = await actions.searchCatalog({ query: searchInput.value.trim(), limit: 20 });
-    renderCatalog(page.listings);
+    await actions.searchCatalog({ query: searchInput.value.trim(), limit: 20 });
   } catch (error) {
     if (navigator.onLine) resultsRegion.textContent = 'Catalog is temporarily unavailable.';
   }

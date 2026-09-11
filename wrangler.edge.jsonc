@@ -2,6 +2,7 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "agentic-commerce-edge-local",
   "main": "src/edge/index.ts",
+  "rules": [{ "type": "Text", "globs": ["**/*.client.js"], "fallthrough": true }],
   "compatibility_date": "2026-08-26",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,

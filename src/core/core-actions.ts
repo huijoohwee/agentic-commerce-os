@@ -367,7 +367,7 @@ export async function deployMerchantTheme(
     env,
     requestId,
     merchantThemeClaim(merchantId),
-    themeActivationMutationIntent(prepared.record),
+    themeActivationMutationIntent(prepared.record, prepared.expectedPreviousManifestDigest),
   )
   if (!reserved.ok) return reserved.response
   const result = await activatePreparedTheme(env, prepared, reserved.reservation.permit)
