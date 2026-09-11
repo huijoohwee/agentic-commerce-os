@@ -5,6 +5,8 @@ import { spawnSync } from 'node:child_process';
 import { assertLocalFirstConfig, WORKER } from '../../scripts/local-first-release/artifact.mjs';
 import { createProvider } from '../../scripts/local-first-release/provider.mjs';
 import { observeBefore, deployLocalFirst } from '../../scripts/local-first-release/deployment.mjs';
+import { validateLocalFirstAuthorization, parseLocalFirstAuthorization } from '../../scripts/local-first-release/authorization.mjs';
+import { validateHumanAuthorization, parseHumanAuthorizationReceipt } from '../../scripts/production-release/human-authorization.ts';
 
 const revision = 'a'.repeat(40), routeId = 'b'.repeat(32), zoneId = 'c'.repeat(32);
 const authority = { schema: 'agentic-commerce-production-route-authority/v2', mode: 'bootstrap',
@@ -114,4 +116,64 @@ test('bootstrap cannot reuse an existing Worker and steady state cannot adopt a 
   const input = fixture('steady-state');
   await assert.rejects(observeBefore({ ...input.provider, route: async () => absent }, authority), /Bootstrap Worker already exists/);
   await assert.rejects(observeBefore({ ...input.provider, version: async () => { throw Error('asset-only profile required'); } }, input.routeAuthority), /asset-only/);
+});
+
+function ownerApprovalFixture() {
+  const owner = { login: 'huijoohwee', id: 17, type: 'User' };
+  const environment = { name: 'production', protection_rules: [{ type: 'required_reviewers',
+    prevent_self_review: false, reviewers: [{ type: 'User', reviewer: owner }] }] };
+  const reviews = [{ state: 'approved', environments: [{ name: 'production' }], user: owner }];
+  const run = { id: 42, head_sha: revision, run_attempt: 1, head_branch: 'main', event: 'workflow_dispatch',
+    name: 'Local-first Production Release', path: '.github/workflows/local-first-release.yml',
+    repository: { full_name: 'huijoohwee/agentic-commerce-os', owner }, actor: owner, triggering_actor: owner };
+  const expected = { releaseMode: 'bootstrap', candidateSha: revision, runId: 42, runAttempt: 1, artifactDigest: 'b'.repeat(64) };
+  return { environment, reviews, run, expected, config: JSON.parse(fs.readFileSync('wrangler.local-first.jsonc')) };
+}
+const authorizeOwner = f => validateLocalFirstAuthorization(f.reviews, f.environment, f.run, f.config, f.expected);
+
+test('owner approval is admitted only as a distinct local-first receipt; full-provider policy stays strict', () => {
+  const f = ownerApprovalFixture();
+  assert.throws(() => validateHumanAuthorization(f.reviews, f.environment, f.expected), /self_review_not_prevented/);
+  const receipt = authorizeOwner(f);
+  assert.equal(parseLocalFirstAuthorization(receipt, f.expected).approval.approver.id, 17);
+  assert.throws(() => parseHumanAuthorizationReceipt(receipt, f.expected), /receipt_shape_invalid/);
+  f.environment.protection_rules[0].prevent_self_review = true;
+  assert.equal(validateHumanAuthorization(f.reviews, f.environment, f.expected).decision, 'approved');
+});
+test('owner approval cannot authorize another workflow, actor, source, attempt or provider profile', () => {
+  for (const mutate of [
+    f => { f.run.name = 'Production Release'; },
+    f => { f.run.path = '.github/workflows/production.yml'; },
+    f => { f.run.actor = { ...f.run.actor, id: 18 }; },
+    f => { f.run.triggering_actor = { ...f.run.actor, type: 'Bot' }; },
+    f => { f.run.repository.owner.type = 'Organization'; },
+    f => { f.run.head_sha = 'c'.repeat(40); },
+    f => { f.run.head_branch = 'feature'; },
+    f => { f.run.run_attempt = 2; },
+    f => { f.run.event = 'push'; },
+    f => { f.config.services = []; },
+  ]) {
+    const f = ownerApprovalFixture(); mutate(f); assert.throws(() => authorizeOwner(f));
+  }
+});
+test('owner policy still refuses missing, duplicated, unconfigured and non-owner approvals', () => {
+  for (const mutate of [
+    f => { f.reviews = []; },
+    f => { f.reviews.push(structuredClone(f.reviews[0])); },
+    f => { f.environment.protection_rules[0].reviewers = []; },
+    f => { f.environment.protection_rules[0].prevent_self_review = undefined; },
+    f => { f.reviews[0].user = { login: 'another-user', id: 18, type: 'User' };
+      f.environment.protection_rules[0].reviewers.push({ type: 'User', reviewer: f.reviews[0].user }); },
+  ]) {
+    const f = ownerApprovalFixture(); mutate(f); assert.throws(() => authorizeOwner(f));
+  }
+});
+test('local-first receipt refuses changed artifacts, source, run identity and checkout scope', () => {
+  const f = ownerApprovalFixture(), receipt = authorizeOwner(f);
+  for (const expected of [{ ...f.expected, artifactDigest: 'c'.repeat(64) },
+    { ...f.expected, candidateSha: 'd'.repeat(40) }, { ...f.expected, runId: 43 }, { ...f.expected, runAttempt: 2 }]) {
+    assert.throws(() => parseLocalFirstAuthorization(receipt, expected));
+  }
+  assert.throws(() => parseLocalFirstAuthorization({ ...receipt, checkout: 'enabled' }, f.expected));
+  assert.throws(() => parseLocalFirstAuthorization(receipt.approval, f.expected));
 });

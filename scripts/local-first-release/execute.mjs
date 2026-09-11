@@ -3,7 +3,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { WORKER, sourceManifest, assertCleanCandidate, git, digest } from './artifact.mjs';
 import { createProvider } from './provider.mjs';
-import { parseHumanAuthorizationReceipt } from '../production-release/human-authorization.ts';
+import { parseLocalFirstAuthorization } from './authorization.mjs';
 import { parseProductionRouteAuthority } from '../production-release/route-authority.ts';
 import { observeBefore, deployLocalFirst } from './deployment.mjs';
 
@@ -27,8 +27,8 @@ if (browser.ok !== true || browser.sourceRevision !== revision || browser.checko
   || browser.schema !== 'commerce.local-first-browser-proof/v1' || browser.checks?.length !== 6) throw Error('Candidate browser proof missing');
 const routeAuthority = parseProductionRouteAuthority(JSON.parse(env.PRODUCTION_ROUTE_AUTHORITY_JSON || '{}'));
 const mode = routeAuthority.mode;
-const authorization = parseHumanAuthorizationReceipt(read('human-authorization.json'), {
-  candidateSha: revision, runId, runAttempt: 1, releaseMode: mode,
+const authorization = parseLocalFirstAuthorization(read('human-authorization.json'), {
+  candidateSha: revision, runId, runAttempt: 1, releaseMode: mode, artifactDigest: artifact.artifactDigest,
 });
 const provider = createProvider({ accountId: env.CLOUDFLARE_ACCOUNT_ID, zoneId: routeAuthority.zoneId,
   token: env.CLOUDFLARE_API_TOKEN });

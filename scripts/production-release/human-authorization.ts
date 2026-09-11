@@ -86,6 +86,7 @@ export function validateHumanAuthorization(
     runId: number
     runAttempt: number
     observedAt?: Date
+    allowOwnerSelfReview?: boolean
   }>,
 ): ProductionHumanAuthorization {
   exact(SHA1_PATTERN.test(input.candidateSha), 'candidate_sha_invalid')
@@ -95,7 +96,7 @@ export function validateHumanAuthorization(
   exact(input.runAttempt === 1, 'run_attempt_not_authorizable')
   const observedAt = input.observedAt ?? new Date()
   exact(Number.isFinite(observedAt.getTime()), 'observation_time_invalid')
-  const configuredReviewerIds = validateProductionEnvironment(environmentValue)
+  const configuredReviewerIds = validateProductionEnvironment(environmentValue, input.allowOwnerSelfReview === true)
   const matches = array(reviewsValue, 'review_history_invalid').map((entry) => object(entry,
     'review_invalid')).filter((review) => review.state === 'approved'
       && array(review.environments, 'review_environments_invalid').some((entry) => object(entry,
@@ -121,7 +122,7 @@ export function validateHumanAuthorization(
   })
 }
 
-export function validateProductionEnvironment(value: unknown): ReadonlySet<number> {
+export function validateProductionEnvironment(value: unknown, allowOwnerSelfReview = false): ReadonlySet<number> {
   const environment = object(value, 'production_environment_invalid')
   exact(environment.name === 'production', 'production_environment_name_invalid')
   const reviewerRules = array(environment.protection_rules, 'production_protection_rules_invalid')
@@ -131,7 +132,8 @@ export function validateProductionEnvironment(value: unknown): ReadonlySet<numbe
   const rule = reviewerRules[0] as JsonObject
   const reviewers = array(rule.reviewers, 'required_reviewers_invalid')
   exact(reviewers.length > 0, 'required_reviewers_empty')
-  exact(rule.prevent_self_review === true, 'self_review_not_prevented')
+  exact(rule.prevent_self_review === true || (allowOwnerSelfReview && rule.prevent_self_review === false),
+    'self_review_not_prevented')
   const configuredUserIds = new Set<number>()
   for (const entryValue of reviewers) {
     const entry = object(entryValue, 'required_reviewer_invalid')
@@ -173,7 +175,7 @@ function exact(condition: boolean, code: string): asserts condition {
   if (!condition) throw new Error(`production_human_authorization:${code}`)
 }
 
-async function fetchGitHubJson(endpoint: string, token: string): Promise<unknown> {
+export async function fetchGitHubJson(endpoint: string, token: string): Promise<unknown> {
   exact(token === token.trim() && token.length >= 16 && token.length <= 4096, 'github_token_invalid')
   const response = await fetch(new Request(endpoint, {
     method: 'GET',
