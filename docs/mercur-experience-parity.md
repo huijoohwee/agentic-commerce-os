@@ -1,7 +1,7 @@
 ---
 title: "Native commerce experience — Mercur comparison"
 doc_type: "validation"
-version: "0.4.0"
+version: "0.5.0"
 continuity_id: "edge-commerce-agent-mvp"
 date: "2026-09-12"
 owner: "agentic-commerce-os"
@@ -12,8 +12,28 @@ lifecycle_status: "implemented-candidate"
 # Native commerce experience
 
 Scope and acceptance remain in [the combined PRD/TAD/ADR/MVP/GTM](prd-tad-adr-mvp-gtm-edge-commerce-agent.md)
-at `edge-commerce-agent-mvp@0.4.0`. This is native UI/UX coverage for the existing first-dollar
+at `edge-commerce-agent-mvp@0.5.0`. This is native UI/UX coverage for the existing first-dollar
 contracts, not a claim of Mercur's entire marketplace feature set or production deployment.
+
+## Stripe sandbox checkout amendment — 0.5.0
+
+The user requires sandbox payment and explicitly requested Stripe MCP. Authenticated MCP and
+Dashboard WebMCP confirmed account `acct_1TKGGUGzH0w0k4VU` in test mode. The public `#checkout`
+flow now reviews the fixed SGD 8 test offer, opens Stripe hosted test checkout, verifies the exact
+provider session and payment, and releases the sample download and explicitly nonfinancial receipt.
+Live keys/sessions are rejected. Graph's live payment Worker remains unchanged. No database,
+Worker or external dependency is added. Vendor/admin drafts remain local.
+
+[The shared PRD/TAD/ADR/MVP/GTM contract](prd-tad-adr-mvp-gtm-edge-commerce-agent.md#current-public-sandbox-contract-prd--tad--adr--mvp--gtm)
+owns exact source/provider boundaries. This replaces the interim native simulation. Test fixtures
+stay under `test/local-first/`; production cannot invoke fixture controls. Local behavior and browser
+checks cover delivery; protected remote checks create and expire a Stripe test session. The final
+handoff must record the separate hosted test-payment observation and deployed source/version.
+
+The protected release requires v2 source/artifact-bound owner authorization, all eleven public
+browser groups and live `checkout:sandbox` / `paymentProvider:stripe` / `realMoney:false` readiness.
+Test transactions do not establish real revenue or full Mercur feature parity. Existing full Edge
+experience descriptions below remain specific to that runtime.
 
 ## Reference and ownership
 
@@ -42,7 +62,7 @@ change the public site. The [local-first Worker](../src/local-first/worker.ts),
 
 | Public-profile view | Working native flow | Explicit limit |
 |---|---|---|
-| Shopper | Editorial landing, 12-card catalog, store/search/name filters, pagination, native details with Escape/focus restore | Preview of locally saved launch terms; no public listing, cart or payment. Private notes/costs excluded. |
+| Shopper | Editorial landing, 12-card catalog, store/search/name filters, pagination, native details with Escape/focus restore | Private draft previews exclude notes/costs. A separate fixed education offer opens Stripe test checkout; no live payment or multi-item cart. |
 | Vendor | Offer table, state/search filters, 10 rows/page, responsive cards, editor, storefront preview | Existing 100-draft IndexedDB store; no new product schema, tenant identity or inventory authority. |
 | Admin | Store/review/attention counts derived from drafts, review queue, exact existing human launch review, portable import/export | No invented sales metrics or production credentials; role navigation is not RBAC. |
 | Offline/update | Every role reloads offline. Release-scoped module/style URLs bypass legacy cache-first asset keys | One release cache; old unversioned asset paths retained for upgrade compatibility. |

@@ -1,3 +1,4 @@
+import { renderStorefrontTemplate } from '../../src/local-first/checkout-offer.ts';
 import fs from 'node:fs';
 import { createHash } from 'node:crypto';
 import { FILES, digest } from './artifact.mjs';
@@ -5,7 +6,7 @@ const pause = milliseconds => new Promise(resolve => setTimeout(resolve, millise
 export function authoredAssets(revision) {
   return FILES.map(file => {
     let bytes = fs.readFileSync('public/local-first/' + file);
-    if (file === 'sw.js' || file === 'index.html') bytes = Buffer.from(bytes.toString().replaceAll('__RELEASE__', revision));
+    if (file === 'sw.js' || file === 'index.html') bytes = Buffer.from(renderStorefrontTemplate(bytes.toString(), revision));
     return { path: file === 'index.html' ? '' : file, bytes: bytes.length, digest: digest(bytes),
       contentType: file.endsWith('.js') ? /(?:application|text)\/javascript/ : file.endsWith('.css') ? /text\/css/ : /text\/html/ };
   });

@@ -1,7 +1,7 @@
 ---
 title: "Native Commerce Workspaces"
 doc_type: "Implementation"
-version: "0.4.0"
+version: "0.5.0"
 date: "2026-09-12"
 lang: "en-US"
 frontmatter_contract: "required"
@@ -19,6 +19,26 @@ This increment implements the same CID, RAO and SVO as the
 The near-built buyer problem is a solo operator having to translate a reviewed offer into
 privileged API calls before a shopper can use it. The new path is vendor proposal → admin
 review → existing merchant storefront → human-confirmed provider checkout.
+
+## Stripe sandbox checkout amendment — 0.5.0
+
+The user requires sandbox payment and explicitly requested Stripe MCP. Authenticated MCP and
+Dashboard WebMCP confirmed account `acct_1TKGGUGzH0w0k4VU` in test mode. The public `#checkout`
+flow now reviews the fixed SGD 8 test offer, opens Stripe hosted test checkout, verifies the exact
+provider session and payment, and releases the sample download and explicitly nonfinancial receipt.
+Live keys/sessions are rejected. Graph's live payment Worker remains unchanged. No database,
+Worker or external dependency is added. Vendor/admin drafts remain local.
+
+[The shared PRD/TAD/ADR/MVP/GTM contract](prd-tad-adr-mvp-gtm-edge-commerce-agent.md#current-public-sandbox-contract-prd--tad--adr--mvp--gtm)
+owns exact source/provider boundaries. This replaces the interim native simulation. Test fixtures
+stay under `test/local-first/`; production cannot invoke fixture controls. Local behavior and browser
+checks cover delivery; protected remote checks create and expire a Stripe test session. The final
+handoff must record the separate hosted test-payment observation and deployed source/version.
+
+The protected release requires v2 source/artifact-bound owner authorization, all eleven public
+browser groups and live `checkout:sandbox` / `paymentProvider:stripe` / `realMoney:false` readiness.
+Test transactions do not establish real revenue or full Mercur feature parity. Existing full Edge
+experience descriptions below remain specific to that runtime.
 
 ## Human flow
 

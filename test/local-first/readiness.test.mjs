@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { waitForReadiness } from '../../scripts/local-first-release/readiness.mjs';
 const revision = 'a'.repeat(40), versionId = 'candidate-version';
-const current = { profile: 'local-first', checkout: 'deferred', storage: 'browser-only', sourceRevision: revision, workerVersionId: versionId };
+const current = { ok: true, profile: 'local-first', checkout: 'sandbox', storage: 'browser-only', realMoney: false, paymentStorage: 'stripe-test', paymentProvider: 'stripe', sourceRevision: revision, workerVersionId: versionId };
 const response = (body = current, status = 200) => new Response(typeof body === 'string' ? body : JSON.stringify(body),
   { status, headers: { 'content-type': typeof body === 'string' ? 'text/html' : 'application/json', 'cf-ray': 'test-ray' } });
 function probe(sequence, overrides = {}) {
@@ -61,4 +61,11 @@ test('unavailable response bodies are bounded while readiness can still converge
 test('local workerd may omit production version while keeping exact source and profile', async () => {
   const value = probe([() => response({ ...current, workerVersionId: null })], { versionId: undefined });
   assert.equal((await value.run()).sourceRevision, revision);
+});
+
+test('a deferred predecessor may converge, but the candidate cannot claim the old checkout profile', async () => {
+  const predecessor = { ...current, sourceRevision: 'b'.repeat(40), checkout: 'deferred' };
+  assert.equal((await probe([() => response(predecessor), () => response()]).run()).checkout, 'sandbox');
+  await assert.rejects(probe([() => response({ ...current, checkout: 'deferred' })]).run(), /invalid_profile/);
+  await assert.rejects(probe([() => response({ ...current, ok: false })]).run(), /invalid_profile/);
 });

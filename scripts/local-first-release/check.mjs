@@ -1,3 +1,4 @@
+import { checkSandboxCheckout } from '../../test/local-first/checkout-browser.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import net from 'node:net';
@@ -38,8 +39,15 @@ try {
   let base = remote;
   if (!base) {
     const port = await freePort(); base = `http://127.0.0.1:${port}`;
+    const config = JSON.parse(fs.readFileSync('wrangler.local-first.jsonc', 'utf8'));
+    config.main = path.join(root, 'test/local-first/stripe-fixture.ts');
+    config.assets.directory = path.join(root, 'public/local-first');
+    config.vars.STRIPE_TEST_SECRET_KEY = 'sk_test_' + 'f'.repeat(32);
+    config.vars.STOREFRONT_SESSION_SECRET = 'local-sandbox-fixture-secret-not-for-production';
+    const localConfig = path.join(output, 'wrangler-fixture.json');
+    fs.writeFileSync(localConfig, JSON.stringify(config));
     const log = fs.openSync(path.join(output, 'runtime.log'), 'w');
-    runtime = spawn(process.execPath, ['node_modules/wrangler/bin/wrangler.js', 'dev', '-c', 'wrangler.local-first.jsonc',
+    runtime = spawn(process.execPath, ['node_modules/wrangler/bin/wrangler.js', 'dev', '-c', localConfig,
       '--local', '--ip', '127.0.0.1', '--port', String(port), '--inspector-port', '0',
       '--var', `RELEASE_CANDIDATE_SHA:${revision}`, '--persist-to', path.join(output, 'runtime')],
     { cwd: root, stdio: ['ignore', log, log], detached: true });
@@ -58,7 +66,7 @@ try {
     versionId: process.env.LOCAL_FIRST_EXPECTED_VERSION,
     observe: observation => readinessObservations.push(observation) });
   assert.equal(readiness.profile, 'local-first');
-  assert.equal(readiness.sourceRevision, revision); assert.equal(readiness.checkout, 'deferred');
+  assert.equal(readiness.sourceRevision, revision); assert.equal(readiness.checkout, 'sandbox');
   await waitForAssets({ baseUrl: url, revision, stableMs: remote ? 15000 : 0,
     observe: observation => assetObservations.push(observation) });
   assert.equal((await fetch(origin + '/agentic-commerce-os')).url, url);
@@ -132,8 +140,9 @@ try {
   assert.deepEqual(failures.filter(failure => failure.type === 'page'), []);
   assert(requests.every(request => request.method === 'GET' && new URL(request.url).origin === origin));
   record(BROWSER_CHECKS.privacy);
+  await checkSandboxCheckout({ browser, url, output, record, remote: !!remote });
   const proof = assertBrowserProof({ schema: BROWSER_PROOF_SCHEMA, ok: true, sourceRevision: revision,
-    origin, checkout: 'deferred', checks, verifiedAt: new Date().toISOString() }, revision);
+    origin, checkout: 'sandbox', checks, verifiedAt: new Date().toISOString() }, revision);
   fs.writeFileSync(path.join(output, 'browser-proof.json'), JSON.stringify(proof, null, 2) + '\n');
   console.log(JSON.stringify(proof));
 } finally {

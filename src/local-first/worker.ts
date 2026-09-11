@@ -1,13 +1,15 @@
+import { handleCheckout, checkoutConfigured, type CheckoutEnv } from './checkout.ts'
+import type { PaymentFetch } from './stripe-checkout.ts'
+import { renderStorefrontTemplate } from './checkout-offer.ts'
 import { PRODUCTION_STOREFRONT_PREFIX } from '../edge/production-prefix.ts'
 
-export type LocalFirstEnv = Readonly<{
-  ASSETS: { fetch(request: Request): Promise<Response> }
+export type LocalFirstEnv = Readonly<CheckoutEnv & {
   RELEASE_CANDIDATE_SHA: string
   CF_VERSION_METADATA?: { id?: string }
 }>
 const ASSET_PATHS = new Map([
   ['/', '/index.html'], ['/app.js', '/app.js'], ['/drafts.js', '/drafts.js'],
-  ['/launch.js', '/launch.js'], ['/workspace.js', '/workspace.js'],
+  ['/checkout.js', '/checkout.js'], ['/launch.js', '/launch.js'], ['/workspace.js', '/workspace.js'],
   ['/style.css', '/style.css'], ['/sw.js', '/sw.js'],
 ])
 const CSP = "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; worker-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
@@ -25,17 +27,18 @@ function secured(response: Response, source: string, head: boolean): Response {
   return new Response(head ? null : response.body, { status: response.status, headers })
 }
 
-export default {
-  async fetch(request: Request, env: LocalFirstEnv): Promise<Response> {
+export async function fetchLocalFirst(request: Request, env: LocalFirstEnv, transport?: PaymentFetch): Promise<Response> {
     const url = new URL(request.url), prefix = PRODUCTION_STOREFRONT_PREFIX
     const head = request.method === 'HEAD'
     const finish = (response: Response) => secured(response, env.RELEASE_CANDIDATE_SHA, head)
     if (url.pathname !== prefix && !url.pathname.startsWith(`${prefix}/`)) {
       return finish(Response.json({ ok: false, code: 'not_found' }, { status: 404 }))
     }
+    const checkout = await handleCheckout(request, env, transport)
+    if (checkout) return finish(checkout)
     if (!['GET', 'HEAD'].includes(request.method)) {
       return finish(Response.json({ ok: false, code: 'checkout_deferred', profile: 'local-first',
-        message: 'This release stores drafts only in your browser. Server mutations and checkout are unavailable.' }, { status: 501 }))
+        message: 'Agent writes are unavailable. Use the reviewed offer and human-operated sandbox checkout.' }, { status: 501 }))
     }
     if (url.pathname === prefix) {
       url.pathname += '/'
@@ -47,9 +50,9 @@ export default {
       return finish(Response.redirect(url.href, 308));
     }
     if (relative === '/readyz') {
-      const valid = /^[0-9a-f]{40}$/u.test(env.RELEASE_CANDIDATE_SHA)
-      return finish(Response.json({ ok: valid, profile: 'local-first', checkout: 'deferred',
-        storage: 'browser-only', sourceRevision: env.RELEASE_CANDIDATE_SHA,
+      const valid = /^[0-9a-f]{40}$/u.test(env.RELEASE_CANDIDATE_SHA) && checkoutConfigured(env)
+      return finish(Response.json({ ok: valid, profile: 'local-first', checkout: valid ? 'sandbox' : 'unavailable',
+        storage: 'browser-only', paymentStorage: 'stripe-test', paymentProvider: 'stripe', realMoney: false, sourceRevision: env.RELEASE_CANDIDATE_SHA,
         workerVersionId: env.CF_VERSION_METADATA?.id ?? null }, { status: valid ? 200 : 503 }))
     }
     const versionPrefix = `/assets/${env.RELEASE_CANDIDATE_SHA}/`
@@ -65,8 +68,8 @@ export default {
       if (!/^(?:[0-9a-f]{40}|local-unreleased)$/u.test(source)) return finish(new Response('Invalid release', { status: 503 }))
       const headers = new Headers({ 'content-type': assetPath === '/' ? 'text/html; charset=utf-8' : 'application/javascript; charset=utf-8' })
       if (assetPath === '/sw.js') headers.set('service-worker-allowed', `${prefix}/`)
-      return finish(new Response((await response.text()).replaceAll('__RELEASE__', source), { headers }))
+      return finish(new Response(renderStorefrontTemplate(await response.text(), source), { headers }))
     }
     return finish(response)
-  },
 }
+export default { fetch: (request: Request, env: LocalFirstEnv) => fetchLocalFirst(request, env) }

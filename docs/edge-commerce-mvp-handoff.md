@@ -1,7 +1,7 @@
 ---
 title: "Edge Commerce MVP — Implementation Handoff"
 doc_type: "Handoff"
-version: "0.4.0"
+version: "0.5.0"
 date: "2026-09-12"
 lang: "en-US"
 frontmatter_contract: "required"
@@ -15,9 +15,29 @@ load_policy: "on-demand"
 # Edge Commerce MVP handoff
 
 [The grounded PRD/TAD/ADR/MVP/GTM](prd-tad-adr-mvp-gtm-edge-commerce-agent.md) owns
-`edge-commerce-agent-mvp@0.4.0`. Base: `addf6afb3821c61b33f44d1b0a4e82afb7e139fa`.
+`edge-commerce-agent-mvp@0.5.0`. Base: `addf6afb3821c61b33f44d1b0a4e82afb7e139fa`.
 The supplied private 0.1.0 draft remains byte-identical at its original untracked path;
 the executable product's grounded successor lives here with its source owner.
+
+## Stripe sandbox checkout amendment — 0.5.0
+
+The user requires sandbox payment and explicitly requested Stripe MCP. Authenticated MCP and
+Dashboard WebMCP confirmed account `acct_1TKGGUGzH0w0k4VU` in test mode. The public `#checkout`
+flow now reviews the fixed SGD 8 test offer, opens Stripe hosted test checkout, verifies the exact
+provider session and payment, and releases the sample download and explicitly nonfinancial receipt.
+Live keys/sessions are rejected. Graph's live payment Worker remains unchanged. No database,
+Worker or external dependency is added. Vendor/admin drafts remain local.
+
+[The shared PRD/TAD/ADR/MVP/GTM contract](prd-tad-adr-mvp-gtm-edge-commerce-agent.md#current-public-sandbox-contract-prd--tad--adr--mvp--gtm)
+owns exact source/provider boundaries. This replaces the interim native simulation. Test fixtures
+stay under `test/local-first/`; production cannot invoke fixture controls. Local behavior and browser
+checks cover delivery; protected remote checks create and expire a Stripe test session. The final
+handoff must record the separate hosted test-payment observation and deployed source/version.
+
+The protected release requires v2 source/artifact-bound owner authorization, all eleven public
+browser groups and live `checkout:sandbox` / `paymentProvider:stripe` / `realMoney:false` readiness.
+Test transactions do not establish real revenue or full Mercur feature parity. Existing full Edge
+experience descriptions below remain specific to that runtime.
 
 ## Public URL correction
 
@@ -32,9 +52,9 @@ The full comparison and limits are in [Mercur coverage](mercur-experience-parity
 Release-scoped static URLs also fix mixed new-HTML/old-CSS/JS behavior with the previously
 installed cache-first service worker. Existing drafts remain in the same database/version;
 unversioned asset endpoints remain only for upgrade compatibility. Editor/import controls remain
-disabled until their lazy handler loads. Server writes still fail closed in this release profile.
+disabled until their lazy handler loads. Agent writes still fail closed; 0.5.0 adds only the scoped Stripe test checkout endpoints.
 
-Candidate validation: 41 local-first contract tests and all 10 required browser groups passed,
+The prior 0.4.0 validation: 41 local-first contract tests and all 10 required browser groups passed,
 including all role views at 360px and 1440px, search/pagination/details, private projection,
 shared review and offline reload. Typecheck and authored limits passed. Public assets total under
 70 kB. The full local Integration Gate passed: 91 domain, 278 unit, 60 Worker tests, all public-profile

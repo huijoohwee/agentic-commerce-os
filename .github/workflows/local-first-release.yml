@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       candidate_sha:
-        description: Exact protected main for the local-first MVP; checkout remains deferred
+        description: Exact protected main for the local-first MVP; native sandbox checkout; no real payment
         required: true
         type: string
       retained_baseline:
@@ -105,9 +105,11 @@ jobs:
           mode=$(node -e 'process.stdout.write(JSON.parse(process.env.ROUTE_AUTHORITY).mode)')
           node scripts/local-first-release/authorization.mjs fetch "$mode" "$CANDIDATE_SHA" \
             "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$LOCAL_FIRST_EVIDENCE_DIR/human-authorization.json"
-      - name: Deploy asset-only Worker and verify the exact public release
+      - name: Deploy sandbox Worker and verify the exact public release
         env:
           GH_TOKEN: ${{ github.token }}
+          STRIPE_TEST_SECRET_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
+          STOREFRONT_SESSION_SECRET: ${{ secrets.STOREFRONT_SESSION_SECRET }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           PRODUCTION_ROUTE_AUTHORITY_JSON: ${{ vars.PRODUCTION_ROUTE_AUTHORITY_JSON }}

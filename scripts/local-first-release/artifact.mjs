@@ -6,7 +6,8 @@ import { fileURLToPath } from 'node:url';
 
 export const CONFIG = 'wrangler.local-first.jsonc';
 export const WORKER = 'agentic-commerce-edge-production';
-export const FILES = Object.freeze(['index.html', 'workspace.js', 'app.js', 'drafts.js', 'launch.js', 'style.css', 'sw.js']);
+export const FILES = Object.freeze(['index.html', 'workspace.js', 'app.js', 'drafts.js', 'launch.js', 'checkout.js', 'style.css', 'sw.js']);
+export const PRIVATE_FILES = Object.freeze(['education-materials.md']);
 export const digest = value => createHash('sha256').update(value).digest('hex');
 export const git = (...args) => execFileSync('git', args, { encoding: 'utf8', timeout: 20000 }).trim();
 export function assertLocalFirstConfig(config) {
@@ -15,21 +16,21 @@ export function assertLocalFirstConfig(config) {
     || config.main !== 'src/local-first/worker.ts' || config.workers_dev !== false || config.preview_urls !== false
     || JSON.stringify(config.assets) !== JSON.stringify({ directory: './public/local-first', binding: 'ASSETS', run_worker_first: true })
     || JSON.stringify(config.version_metadata) !== JSON.stringify({ binding: 'CF_VERSION_METADATA' })
-    || JSON.stringify(config.vars) !== JSON.stringify({ RELEASE_CANDIDATE_SHA: 'local-unreleased' })) {
-    throw Error('Local-first configuration must remain asset-only, private until route activation, and free of providers/secrets.');
+    || JSON.stringify(config.vars) !== JSON.stringify({ RELEASE_CANDIDATE_SHA: 'local-unreleased', CHECKOUT_MODE: 'sandbox' })) {
+    throw Error('Local-first configuration must remain sandbox-only, private until route activation, and free of payment providers or financial resources.');
   }
 }
 export function sourceManifest(revision) {
   if (!/^[0-9a-f]{40}$/.test(revision) || git('rev-parse', 'HEAD') !== revision) throw Error('Candidate source mismatch');
   assertLocalFirstConfig(JSON.parse(fs.readFileSync(CONFIG, 'utf8')));
-  if (fs.readdirSync('public/local-first').sort().join() !== [...FILES].sort().join()) throw Error('Unexpected static asset inventory');
-  const paths = [CONFIG, 'src/local-first/worker.ts', 'src/edge/production-prefix.ts', ...FILES.map(file => 'public/local-first/' + file)];
+  if (fs.readdirSync('public/local-first').sort().join() !== [...FILES, ...PRIVATE_FILES].sort().join()) throw Error('Unexpected static asset inventory');
+  const paths = [CONFIG, 'src/local-first/worker.ts', 'src/edge/production-prefix.ts', 'src/shared/http.ts', 'src/local-first/checkout.ts', 'src/local-first/stripe-checkout.ts', 'src/local-first/checkout-offer.ts', ...[...FILES, ...PRIVATE_FILES].map(file => 'public/local-first/' + file)];
   const entries = paths.sort().map(file => {
     const stat = fs.lstatSync(file); if (!stat.isFile() || stat.isSymbolicLink()) throw Error('Non-regular artifact source');
     const bytes = fs.readFileSync(file); if (bytes.length >= 500000) throw Error('Artifact file exceeds 500 kB');
     return { path: file, bytes: bytes.length, digest: digest(bytes) };
   });
-  const body = { schema: 'commerce.local-first-artifact/v1', profile: 'local-first', checkout: 'deferred',
+  const body = { schema: 'commerce.local-first-artifact/v2', profile: 'local-first', checkout: 'sandbox',
     sourceRevision: revision, sourceTree: git('rev-parse', 'HEAD^{tree}'), entries };
   return { ...body, artifactDigest: digest(JSON.stringify(body)) };
 }

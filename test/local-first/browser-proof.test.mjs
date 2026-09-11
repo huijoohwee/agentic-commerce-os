@@ -4,7 +4,7 @@ import { BROWSER_CHECKS, BROWSER_PROOF_SCHEMA, assertBrowserProof } from '../../
 
 const revision = 'a'.repeat(40);
 const proof = { schema: BROWSER_PROOF_SCHEMA, ok: true, sourceRevision: revision,
-  checkout: 'deferred', checks: Object.values(BROWSER_CHECKS) };
+  checkout: 'sandbox', checks: Object.values(BROWSER_CHECKS) };
 
 test('release accepts the complete browser suite bound to the candidate', () => {
   assert.equal(assertBrowserProof(proof, revision), proof);

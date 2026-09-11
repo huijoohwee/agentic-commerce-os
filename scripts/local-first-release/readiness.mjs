@@ -37,8 +37,11 @@ export async function waitForReadiness({ url, revision, versionId, observe = () 
         bodyDigest: createHash('sha256').update(body.text).digest('hex') });
       if (response.status === 200) {
         try { identity = JSON.parse(body.text); } catch { terminal = 'readiness_invalid_json'; }
-        if (!terminal && (body.truncated || identity?.profile !== 'local-first'
-          || identity?.checkout !== 'deferred' || identity?.storage !== 'browser-only')) terminal = 'readiness_invalid_profile';
+        const legacy = identity?.checkout === 'deferred' && identity?.sourceRevision !== revision
+          && /^[0-9a-f]{40}$/.test(identity?.sourceRevision ?? '') && identity?.storage === 'browser-only';
+        if (!terminal && (body.truncated || identity?.ok !== true || identity?.profile !== 'local-first'
+          || !legacy && (identity?.checkout !== 'sandbox' || identity?.storage !== 'browser-only' || identity?.realMoney !== false
+          || identity?.paymentStorage !== 'stripe-test' || identity?.paymentProvider !== 'stripe'))) terminal = 'readiness_invalid_profile';
         if (!terminal) {
           observation.sourceRevision = identity.sourceRevision;
           observation.workerVersionId = identity.workerVersionId;

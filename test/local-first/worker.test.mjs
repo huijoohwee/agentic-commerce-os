@@ -15,10 +15,10 @@ test('local-first route never reaches an asset or provider for a server mutation
   assert.equal((await worker.fetch(request('/agentic-graph/'), env)).status, 404);
 });
 test('readiness is scoped to local-first and binds a real release identity', async () => {
-  const env = { RELEASE_CANDIDATE_SHA: revision, CF_VERSION_METADATA: { id: 'version-id' } };
+  const env = { CHECKOUT_MODE: 'sandbox', STRIPE_TEST_SECRET_KEY: 'sk_test_' + 'f'.repeat(32), STOREFRONT_SESSION_SECRET: 'sandbox-readiness-fixture-secret-32', RELEASE_CANDIDATE_SHA: revision, CF_VERSION_METADATA: { id: 'version-id' } };
   const response = await worker.fetch(request('/agentic-commerce-os/readyz'), env);
   const body = await response.json();
-  assert.deepEqual(body, { ok: true, profile: 'local-first', checkout: 'deferred', storage: 'browser-only', sourceRevision: revision, workerVersionId: 'version-id' });
+  assert.deepEqual(body, { ok: true, profile: 'local-first', checkout: 'sandbox', storage: 'browser-only', paymentStorage: 'stripe-test', paymentProvider: 'stripe', realMoney: false, sourceRevision: revision, workerVersionId: 'version-id' });
   assert.equal((await worker.fetch(request('/agentic-commerce-os/readyz'), { ...env, RELEASE_CANDIDATE_SHA: 'local-unreleased' })).status, 503);
 });
 test('static serving strips credentials, restricts paths, and scopes the offline worker', async () => {

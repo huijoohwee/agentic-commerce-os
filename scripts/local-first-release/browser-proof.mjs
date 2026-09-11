@@ -1,5 +1,5 @@
 /** Shared completeness contract for the browser producer and protected release consumer. */
-export const BROWSER_PROOF_SCHEMA = 'commerce.local-first-browser-proof/v1';
+export const BROWSER_PROOF_SCHEMA = 'commerce.local-first-browser-proof/v2';
 export const BROWSER_CHECKS = Object.freeze({
   scope: 'exact production scope and server mutation refusal',
   mobile: 'mobile draft creation, safe canvas link and responsive layout',
@@ -10,7 +10,8 @@ export const BROWSER_CHECKS = Object.freeze({
   review: 'unsaved and concurrently changed offers require fresh merchant review',
   economics: 'launch terms survive offline reload and loss-making estimates fail review',
   roles: 'shopper, vendor and admin views use durable drafts, private projections, human review and offline mobile navigation',
-  privacy: 'imported text cannot inject markup; no draft or checkout network writes',
+  checkout: 'Stripe test checkout review, provider identity, pending delivery refusal, cancellation, reload and offline safety',
+  privacy: 'imported text cannot inject markup; no private draft network writes',
 });
 const required = Object.values(BROWSER_CHECKS);
 export function completeBrowserChecks(checks) {
@@ -19,7 +20,7 @@ export function completeBrowserChecks(checks) {
 }
 export function assertBrowserProof(proof, revision) {
   if (!/^[0-9a-f]{40}$/.test(revision) || proof?.ok !== true || proof.sourceRevision !== revision
-    || proof.checkout !== 'deferred' || proof.schema !== BROWSER_PROOF_SCHEMA
+    || proof.checkout !== 'sandbox' || proof.schema !== BROWSER_PROOF_SCHEMA
     || !completeBrowserChecks(proof.checks)) throw Error('Candidate browser proof missing or incomplete');
   return proof;
 }
