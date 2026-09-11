@@ -17,7 +17,7 @@ function secured(response: Response, source: string, head: boolean): Response {
   headers.set('x-content-type-options', 'nosniff')
   headers.set('referrer-policy', 'no-referrer')
   headers.set('permissions-policy', 'camera=(), microphone=(), geolocation=(), payment=()')
-  headers.set('cache-control', 'no-store')
+  headers.set('cache-control', 'no-store, no-transform')
   headers.set('x-commerce-profile', 'local-first')
   headers.set('x-commerce-source', source)
   headers.delete('etag')

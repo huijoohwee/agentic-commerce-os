@@ -6,6 +6,7 @@ import { createProvider } from './provider.mjs';
 import { parseLocalFirstAuthorization } from './authorization.mjs';
 import { parseProductionRouteAuthority } from '../production-release/route-authority.ts';
 import { observeBefore, deployLocalFirst } from './deployment.mjs';
+import { verifyRetainedBaseline } from './retained-baseline.mjs';
 
 const env = process.env, revision = env.CANDIDATE_SHA, runId = Number(env.GITHUB_RUN_ID);
 if (env.GITHUB_ACTIONS !== 'true' || env.GITHUB_REPOSITORY !== 'huijoohwee/agentic-commerce-os'
@@ -32,10 +33,12 @@ const authorization = parseLocalFirstAuthorization(read('human-authorization.jso
 });
 const provider = createProvider({ accountId: env.CLOUDFLARE_ACCOUNT_ID, zoneId: routeAuthority.zoneId,
   token: env.CLOUDFLARE_API_TOKEN });
-const before = await observeBefore(provider, routeAuthority);
+const retainedBaseline = await verifyRetainedBaseline(env.LOCAL_FIRST_RETAINED_BASELINE, env.GH_TOKEN);
+if (JSON.stringify(read('retained-baseline.json')) !== JSON.stringify(retainedBaseline)) throw Error('Retained baseline changed after preparation');
+const before = await observeBefore(provider, routeAuthority, retainedBaseline);
 const plan = { schema: 'commerce.local-first-release-plan/v1', sourceRevision: revision,
   artifactDigest: artifact.artifactDigest, runId, profile: 'local-first', checkout: 'deferred',
-  before, routeAuthority, authorization, createdAt: new Date().toISOString() };
+  before, retainedBaseline, routeAuthority, authorization, createdAt: new Date().toISOString() };
 write('plan.json', plan);
 const journal = { schema: 'commerce.local-first-release-journal/v1', planDigest: digest(JSON.stringify(plan)),
   stage: 'prepared', outcome: 'pending', active: null, route: null };

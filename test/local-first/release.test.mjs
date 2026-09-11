@@ -7,6 +7,7 @@ import { createProvider } from '../../scripts/local-first-release/provider.mjs';
 import { observeBefore, deployLocalFirst } from '../../scripts/local-first-release/deployment.mjs';
 import { validateLocalFirstAuthorization, parseLocalFirstAuthorization } from '../../scripts/local-first-release/authorization.mjs';
 import { validateHumanAuthorization, parseHumanAuthorizationReceipt } from '../../scripts/production-release/human-authorization.ts';
+import { parseRetainedBaseline, validateRetainedRun } from '../../scripts/local-first-release/retained-baseline.mjs';
 
 const revision = 'a'.repeat(40), routeId = 'b'.repeat(32), zoneId = 'c'.repeat(32);
 const authority = { schema: 'agentic-commerce-production-route-authority/v2', mode: 'bootstrap',
@@ -176,4 +177,35 @@ test('local-first receipt refuses changed artifacts, source, run identity and ch
   }
   assert.throws(() => parseLocalFirstAuthorization({ ...receipt, checkout: 'enabled' }, f.expected));
   assert.throws(() => parseLocalFirstAuthorization(receipt.approval, f.expected));
+});
+
+const retained = { failedRunId: 42, sourceRevision: revision,
+  deploymentId: '11111111-1111-1111-1111-111111111111', versionId: '22222222-2222-2222-2222-222222222222' };
+test('retained bootstrap requires the exact failed owner-authorized production run', () => {
+  const run = { ...ownerApprovalFixture().run, status: 'completed', conclusion: 'failure' };
+  const jobs = { jobs: [{ name: 'Authorized Local-first Production Release', conclusion: 'failure', steps: [
+    { name: 'Verify scoped owner policy and actual run approval', conclusion: 'success' },
+    { name: 'Deploy asset-only Worker and verify the exact public release', conclusion: 'failure' },
+  ] }] };
+  assert.deepEqual(validateRetainedRun(retained, run, jobs), retained);
+  for (const changed of [{ ...run, head_sha: 'c'.repeat(40) }, { ...run, conclusion: 'success' },
+    { ...run, run_attempt: 2 }, { ...run, actor: { ...run.actor, id: 18 } }]) {
+    assert.throws(() => validateRetainedRun(retained, changed, jobs));
+  }
+  jobs.jobs[0].steps[0].conclusion = 'failure';
+  assert.throws(() => validateRetainedRun(retained, run, jobs));
+  assert.throws(() => parseRetainedBaseline({ ...retained, extra: true }));
+  assert.equal(parseRetainedBaseline(''), null);
+});
+test('a retained bootstrap still refuses absent, moved, foreign or already routed provider state', async () => {
+  const active = { deploymentId: retained.deploymentId, versionId: retained.versionId };
+  const provider = { active: async () => active, route: async () => absent,
+    version: async (id, sha) => { assert.equal(id, retained.versionId); assert.equal(sha, revision); } };
+  assert.deepEqual(await observeBefore(provider, authority, retained), { active, route: absent });
+  await assert.rejects(observeBefore(provider, authority), /Bootstrap Worker already exists/);
+  for (const override of [{ active: async () => null },
+    { active: async () => ({ ...active, deploymentId: '33333333-3333-3333-3333-333333333333' }) },
+    { version: async () => { throw Error('foreign source or service binding'); } }, { route: async () => bound }]) {
+    await assert.rejects(observeBefore({ ...provider, ...override }, authority, retained));
+  }
 });

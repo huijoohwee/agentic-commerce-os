@@ -7,6 +7,11 @@ on:
         description: Exact protected main for the local-first MVP; checkout remains deferred
         required: true
         type: string
+      retained_baseline:
+        description: Optional exact retained deployment, version, source and failed run IDs for a restored bootstrap
+        required: false
+        default: ''
+        type: string
 
 permissions:
   contents: read
@@ -24,6 +29,7 @@ jobs:
     timeout-minutes: 15
     env:
       CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+      LOCAL_FIRST_RETAINED_BASELINE: ${{ inputs.retained_baseline }}
       LOCAL_FIRST_EVIDENCE_DIR: ${{ github.workspace }}/node_modules/.cache/local-first-verification
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -45,6 +51,10 @@ jobs:
           test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
           test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$CANDIDATE_SHA"
       - run: npm ci --ignore-scripts
+      - name: Validate the optional retained deployment reference
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/local-first-release/retained-baseline.mjs
       - run: node_modules/.bin/playwright install --with-deps chromium
       - name: Verify browser, mutation refusal and deployable artifact
         run: |
@@ -68,6 +78,7 @@ jobs:
     environment: production
     env:
       CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+      LOCAL_FIRST_RETAINED_BASELINE: ${{ inputs.retained_baseline }}
       LOCAL_FIRST_EVIDENCE_DIR: ${{ github.workspace }}/node_modules/.cache/local-first-verification
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -96,6 +107,7 @@ jobs:
             "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$LOCAL_FIRST_EVIDENCE_DIR/human-authorization.json"
       - name: Deploy asset-only Worker and verify the exact public release
         env:
+          GH_TOKEN: ${{ github.token }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           PRODUCTION_ROUTE_AUTHORITY_JSON: ${{ vars.PRODUCTION_ROUTE_AUTHORITY_JSON }}
