@@ -1,7 +1,7 @@
-# Merchant-agnostic MVP-to-GTM handoff
+# Merchant-agnostic PRD-TAD-ADR-MVP-GTM handoff
 
 This implements the reusable slice of
-[PRD-TAD-ADR-COMMERCE-MVP-GTM-001, revision 1.0.0](https://github.com/huijoohwee/agentic-commerce-os/blob/6e4ce92c48b14cfbc5a0b797901916ef404c4bd4/docs/prd-tad-adr-20260909T1320Z-solopreneur-mvp-gtm.md).
+[PRD-TAD-ADR-COMMERCE-MVP-GTM-001, revision 1.0.0](https://github.com/huijoohwee/agentic-commerce-os/blob/6e4ce92c48b14cfbc5a0b797901916ef404c4bd4/docs/prd-tad-adr-mvp-gtm-20260909T1320Z-solopreneur-mvp-gtm.md).
 Source baseline: Commerce `4774a4fc1543c4bcb1b912fe79c78c61384efc7c`.
 User clarification: universal and agnostic. No merchant, segment, price, hosting plan,
 payment provider or independent verifier is selected. The adapter is reusable preparation

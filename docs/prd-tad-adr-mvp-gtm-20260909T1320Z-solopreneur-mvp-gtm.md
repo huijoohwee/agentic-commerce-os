@@ -1,6 +1,6 @@
 ---
 title: "Reference Implementation — Agentic Commerce OS Solopreneur MVP-to-GTM Sprint"
-doc_type: "PRD-TAD-ADR"
+doc_type: "PRD-TAD-ADR-MVP-GTM"
 version: "1.1.0"
 date: "2026-09-11"
 lang: "en-US"
@@ -495,7 +495,7 @@ This revision was authored in one path-scoped OS lane (`worktree_id` above) rese
 [parent]: https://github.com/huijoohwee/agentic-graph/blob/1acbbcc3b06534f9712f5b05b781010f749fa842/docs/documents/agentic-graph-agentic-commerce-platform-prd-tad-adr.md
 [techstack]: https://github.com/huijoohwee/agentic-os/blob/0580b20b48f01eb95dd2a40f3806199b5354f3a9/guides/TECH-STACK.md
 [features]: https://github.com/huijoohwee/agentic-os/blob/0580b20b48f01eb95dd2a40f3806199b5354f3a9/guides/FEATURES.md
-[pipeline]: https://github.com/huijoohwee/agentic-os/blob/0580b20b48f01eb95dd2a40f3806199b5354f3a9/guides/PRD-TAD-ADR.md
+[pipeline]: https://github.com/huijoohwee/agentic-os/blob/0580b20b48f01eb95dd2a40f3806199b5354f3a9/guides/PRD-TAD-ADR-MVP-GTM-PREFLIGHT.md
 [api]: ./runtime-api.md
 [prod]: ./production-runtime.md
 [cr]: ./container-runtime.md
