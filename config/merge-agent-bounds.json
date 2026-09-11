@@ -11,12 +11,7 @@
   },
   "laneBinding": {
     "source": "runtime-input",
-    "requiredFields": [
-      "lane",
-      "claimId",
-      "leaseEpoch",
-      "fenceRevision"
-    ],
+    "requiredFields": ["lane", "claimId", "leaseEpoch", "fenceRevision"],
     "mutationAdmissionRequiredFields": [
       "semanticScope",
       "leaseExpiresAtMs",
@@ -27,90 +22,20 @@
   },
   "commandPolicy": {
     "observationCommands": [
-      {
-        "executable": "gh",
-        "argsPrefix": [
-          "pr",
-          "view"
-        ]
-      },
-      {
-        "executable": "gh",
-        "argsPrefix": [
-          "api"
-        ]
-      },
-      {
-        "executable": "git",
-        "args": [
-          "diff",
-          "--name-only",
-          "--diff-filter=U",
-          "--"
-        ]
-      },
-      {
-        "executable": "git",
-        "args": [
-          "rev-parse",
-          "--show-toplevel"
-        ]
-      },
-      {
-        "executable": "git",
-        "args": [
-          "branch",
-          "--show-current"
-        ]
-      },
-      {
-        "executable": "git",
-        "args": [
-          "rev-parse",
-          "HEAD"
-        ]
-      },
-      {
-        "executable": "git",
-        "args": [
-          "apply",
-          "--numstat",
-          "-z",
-          "-"
-        ]
-      },
-      {
-        "executable": "git",
-        "args": [
-          "apply",
-          "--check",
-          "--whitespace=nowarn",
-          "-"
-        ]
-      }
+      { "executable": "gh", "argsPrefix": ["pr", "view"] },
+      { "executable": "gh", "argsPrefix": ["api"] },
+      { "executable": "git", "args": ["diff", "--name-only", "--diff-filter=U", "--"] },
+      { "executable": "git", "args": ["rev-parse", "--show-toplevel"] },
+      { "executable": "git", "args": ["branch", "--show-current"] },
+      { "executable": "git", "args": ["rev-parse", "HEAD"] },
+      { "executable": "git", "args": ["apply", "--numstat", "-z", "-"] },
+      { "executable": "git", "args": ["apply", "--check", "--whitespace=nowarn", "-"] }
     ],
     "mutationCommands": [
-      {
-        "executable": "git",
-        "args": [
-          "apply",
-          "--whitespace=nowarn",
-          "-"
-        ]
-      },
-      {
-        "executable": "git",
-        "argsPrefix": [
-          "add",
-          "--"
-        ]
-      }
+      { "executable": "git", "args": ["apply", "--whitespace=nowarn", "-"] },
+      { "executable": "git", "argsPrefix": ["add", "--"] }
     ],
-    "allowedActions": [
-      "comment-change",
-      "check-repair",
-      "conflict-resolution"
-    ],
+    "allowedActions": ["comment-change", "check-repair", "conflict-resolution"],
     "requiredCheckCommands": [
       {
         "identity": "Integration Gate",
