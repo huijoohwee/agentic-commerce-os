@@ -6,6 +6,7 @@ import { chromium, expect } from '@playwright/test';
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
 import { waitForReadiness } from './readiness.mjs';
+import { waitForAssets } from './availability.mjs';
 
 const root = process.cwd();
 const output = path.resolve(process.env.LOCAL_FIRST_EVIDENCE_DIR || 'node_modules/.cache/local-first-verification');
@@ -13,7 +14,18 @@ fs.mkdirSync(output, { recursive: true });
 const remote = process.argv.find(arg => arg.startsWith('--base-url='))?.slice(11);
 const revision = process.env.CANDIDATE_SHA || execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
 let runtime, browser;
-const checks = [], requests = [], readinessObservations = [];
+const checks = [], requests = [], readinessObservations = [], assetObservations = [], responses = [], failures = [];
+const pages = [];
+function observeContext(context) {
+  context.on('request', request => requests.push({ url: request.url(), method: request.method() }));
+  context.on('response', response => responses.push({ url: response.url(), status: response.status(),
+    contentType: response.headers()['content-type'] }));
+  context.on('requestfailed', request => failures.push({ type: 'request', url: request.url(), error: request.failure()?.errorText }));
+  context.on('page', page => {
+    pages.push(page);
+    page.on('pageerror', error => failures.push({ type: 'page', url: page.url(), error: error.message }));
+  });
+}
 const record = name => { checks.push(name); console.log(`PASS ${name}`); };
 async function freePort() {
   const server = net.createServer(); server.listen(0, '127.0.0.1'); await once(server, 'listening');
@@ -44,6 +56,8 @@ try {
     observe: observation => readinessObservations.push(observation) });
   assert.equal(readiness.profile, 'local-first');
   assert.equal(readiness.sourceRevision, revision); assert.equal(readiness.checkout, 'deferred');
+  await waitForAssets({ baseUrl: url, revision, stableMs: remote ? 15000 : 0,
+    observe: observation => assetObservations.push(observation) });
   assert.equal((await fetch(origin + '/agentic-commerce-os')).url, url);
   for (const route of ['v1/checkouts/confirm', 'mcp', 'mcp/operator', 'v1/session', 'v1/sync/merge']) {
     const result = await fetch(url + route, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
@@ -52,9 +66,8 @@ try {
   record('exact production scope and server mutation refusal');
   browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, acceptDownloads: true });
-  const page = await context.newPage(), failures = [];
-  page.on('pageerror', error => failures.push(error.message));
-  context.on('request', request => requests.push({ url: request.url(), method: request.method() }));
+  observeContext(context);
+  const page = await context.newPage();
   const documentResponse = await page.goto(url);
   assert.match(documentResponse.headers()['cache-control'], /(?:^|,\s*)no-transform(?:,|$)/);
   await page.getByText('Offline access is ready.', { exact: false }).waitFor();
@@ -91,8 +104,9 @@ try {
   record('concurrent tabs reject stale overwrites and retain editor text');
   const downloadPromise = page.waitForEvent('download'); await page.getByRole('button', { name: 'Export drafts' }).click();
   const download = await downloadPromise, exported = fs.readFileSync(await download.path());
-  const fresh = await browser.newContext({ viewport: { width: 390, height: 844 } }), imported = await fresh.newPage();
-  fresh.on('request', request => requests.push({ url: request.url(), method: request.method() }));
+  const fresh = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  observeContext(fresh);
+  const imported = await fresh.newPage();
   await imported.goto(url); await imported.locator('#import').setInputFiles({ name: 'drafts.json', mimeType: 'application/json', buffer: exported });
   await imported.getByText('Imported 1 draft.', { exact: false }).waitFor();
   await imported.locator('#draft-list button').first().click();
@@ -108,7 +122,7 @@ try {
   await imported.getByText('Imported 1 draft.', { exact: false }).waitFor();
   assert.equal(await imported.locator('#draft-list img').count(), 0);
   assert.equal(await imported.evaluate(() => window.injected), undefined);
-  assert.deepEqual(failures, []);
+  assert.deepEqual(failures.filter(failure => failure.type === 'page'), []);
   assert(requests.every(request => request.method === 'GET' && new URL(request.url).origin === origin));
   record('imported text cannot inject markup; no draft or checkout network writes');
   const proof = { schema: 'commerce.local-first-browser-proof/v1', ok: true, sourceRevision: revision,
@@ -116,8 +130,17 @@ try {
   fs.writeFileSync(path.join(output, 'browser-proof.json'), JSON.stringify(proof, null, 2) + '\n');
   console.log(JSON.stringify(proof));
 } finally {
+  fs.writeFileSync(path.join(output, 'asset-observation.json'), JSON.stringify({ sourceRevision: revision, observations: assetObservations }, null, 2) + '\n');
+  if (checks.length !== 6) {
+    const state = await Promise.all(pages.filter(page => !page.isClosed()).map(async (page, index) => {
+      try { await page.screenshot({ path: path.join(output, 'failure-page-' + index + '.png'), fullPage: true, timeout: 5000 });
+        return { url: page.url(), text: await page.locator('body').innerText({ timeout: 5000 }) }; }
+      catch (error) { return { url: page.url(), error: error.message }; }
+    }));
+    fs.writeFileSync(path.join(output, 'browser-failure.json'), JSON.stringify({ failures, responses, pages: state }, null, 2) + '\n');
+  }
   fs.writeFileSync(path.join(output, 'readiness-observation.json'), JSON.stringify({ sourceRevision: revision, observations: readinessObservations }, null, 2) + '\n');
-  fs.writeFileSync(path.join(output, 'network-observation.json'), JSON.stringify({ sourceRevision: revision, requests }, null, 2) + '\n');
+  fs.writeFileSync(path.join(output, 'network-observation.json'), JSON.stringify({ sourceRevision: revision, requests, responses, failures }, null, 2) + '\n');
   await browser?.close();
   if (runtime && runtime.exitCode === null) {
     try { process.kill(-runtime.pid, 'SIGTERM'); } catch { /* already exited */ }

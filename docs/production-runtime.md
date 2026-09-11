@@ -40,6 +40,12 @@ or stale local-first identity observations are retried; authorization errors and
 invalid successful responses fail immediately. Every HTTP status, content type,
 body digest and observed identity is retained, including on failure. This bounded
 read never repeats deployment or route writes.
+The complete authored asset set must also match its source hashes, MIME types,
+candidate headers and response-integrity policy for 15 seconds before a live
+browser opens. Parallel GET observations use fresh connections, have a 60-second
+deadline, and reset the stability window on an unavailable or stale asset. A
+valid readiness response alone cannot admit an incomplete static module graph.
+Browser responses, errors and failure-page state are retained for every context.
 After a restored bootstrap, `retained_baseline` can select the exact prior deployment,
 version, source and failed run IDs. Preparation verifies the authenticated failed run
 and its successful owner-approval step; deployment rechecks the exact provider identity,
