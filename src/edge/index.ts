@@ -5,7 +5,7 @@ import { coreRequestTimeoutMs } from '../shared/registration-budget'
 import { isHttpFailure, isRecord, jsonResponse, readJsonObject, readJsonResponse } from '../shared/http'
 import { rejectLegacyIdentity, type LegacyIdentity } from '../shared/terminology-guard'
 import { validateThemeManifest } from '../shared/theme-manifest'
-import { STOREFRONT_CLIENT_MODULE } from './client/browser-module'
+import { storefrontClientModule } from './client/browser-module'
 import { consoleResponse, dashboardResponse, type ConsoleMetadata } from './dashboard'
 import {
   edgeExternalHumanPresenceRequired,
@@ -243,7 +243,7 @@ async function routePublic(
     return consoleResponse(metadata(env), undefined, { basePath, workspaceRole: url.pathname === '/admin' ? 'admin' : 'vendor' })
   }
   if (request.method === 'GET' && ['/assets/storefront.js', '/assets/merchant.js'].includes(url.pathname)) {
-    return new Response(url.pathname === '/assets/merchant.js' ? merchantClientModule() : STOREFRONT_CLIENT_MODULE, {
+    return new Response(url.pathname === '/assets/merchant.js' ? merchantClientModule() : storefrontClientModule(), {
       headers: {
         'cache-control': 'public, max-age=300',
         'content-type': 'text/javascript; charset=utf-8',

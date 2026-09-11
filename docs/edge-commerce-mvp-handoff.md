@@ -1,7 +1,7 @@
 ---
 title: "Edge Commerce MVP — Implementation Handoff"
 doc_type: "Handoff"
-version: "0.3.0"
+version: "0.4.0"
 date: "2026-09-12"
 lang: "en-US"
 frontmatter_contract: "required"
@@ -15,11 +15,33 @@ load_policy: "on-demand"
 # Edge Commerce MVP handoff
 
 [The grounded PRD/TAD/ADR/MVP/GTM](prd-tad-adr-mvp-gtm-edge-commerce-agent.md) owns
-`edge-commerce-agent-mvp@0.3.0`. Base: `addf6afb3821c61b33f44d1b0a4e82afb7e139fa`.
+`edge-commerce-agent-mvp@0.4.0`. Base: `addf6afb3821c61b33f44d1b0a4e82afb7e139fa`.
 The supplied private 0.1.0 draft remains byte-identical at its original untracked path;
 the executable product's grounded successor lives here with its source owner.
 
-## Current native workspace increment
+## Current experience increment
+
+[Mercur experience coverage](mercur-experience-parity.md) grounds the 0.4.0 update on the pinned
+reference and Commerce's existing contracts. Shopper catalog browsing, filters, pagination,
+keyboard details and checkout confirmation; vendor preview/catalog/proposal navigation; and admin
+registry/review navigation, search, status filtering and details now use native components.
+
+The browser modules are separated into bounded native Text owners and composed only on each
+role's asset request. The initial catalog browse uses GET without agent discovery. Offline snapshots
+are matched to their catalog path. In-flight confirmation prevents selection/search changes and
+leaves an accepted checkout's offer, total and reference visible. There are no new dependencies.
+
+Local integration coverage passed: 91 domain, 278 unit, 60 Worker, 40 offline-contract,
+nine offline-browser and 18 storefront/workspace browser checks, plus the real Dev loop with
+two reviewed theme activations, one settlement, one revenue entry and exact replay. The final
+browser/Dev/dry runs followed corrections to two assertions tied to the old presentation and
+initial-load behavior; earlier passing checks were retained. Generated types, typecheck, source
+checks, storage fingerprint and authored limits passed. The largest dry runtime chunk is 485,731
+bytes (Core 197,886 bytes); each native Text asset is below 12 kB. Mobile/desktop fixture previews
+were inspected for all three roles. The owned Podman machine was stopped after verification.
+Hosted CI must independently bind the full Integration Gate result to the published commit.
+
+## Retained native workspace increment (0.3.0)
 
 [Native source and behavior](native-commerce-workspaces.md) extends the reviewed launch pack into
 vendor staging, admin review and the existing shopper flow. Native merchant tools only read/stage;
@@ -34,11 +56,11 @@ its asset route. Shared IndexedDB and WebMCP logic remain source-owned once. Wra
 its corresponding module declaration, and the invocation validator follows the extracted route owner. The original 600-line/500,000-byte limits remain intact;
 no external project code, model SDK, dependency, service, migration or payment owner was added.
 
-Current observations: 278 unit tests, the new real SQLite version/permit test, 15 browser checks
+Prior 0.3.0 observations: 278 unit tests, the new real SQLite version/permit test, 15 browser checks
 and the complete Dev loop passed. The loop includes two separately reviewed theme activations
 before the existing single settlement/markup/replay assertions. The 360px mobile vendor page was
 visually inspected. The final complete `npm run check:integration` passed after generated types,
-storage fingerprints and route-owner validation were updated. Current totals are 91 domain,
+storage fingerprints and route-owner validation were updated. That revision's totals were 91 domain,
 278 unit, 60 Worker, 40 offline-contract, nine offline-browser and 15 storefront/workspace browser
 checks, plus the full Dev settlement loop. Production dry chunks are core 197,843 bytes, edge
 495,552 bytes and two merchant text assets of 12,491 / 3,888 bytes. The longest changed authored
@@ -115,8 +137,8 @@ Dev evidence, not the external evaluator's missing production verdicts.
 ## Remaining boundaries
 
 The existing storage transition classifier reports `reviewed_backward_compatibility_proof_required`
-with `codec_drift` for revision `b3e4a18be9963ff27208b4ce5514a13b09ca77bb2589ed9b26815e5e87a09c0b`.
-The generated manifest fingerprints the changed theme mutation code; no SQL objects/classes or
+with `codec_drift` for revision `fc0f09f3c01e06ba0141aab9e2b4aeadda71c32d8594e87248d048a93208cbe3`.
+The current delta fingerprints changed default theme colors/copy; no SQL objects/classes or
 migration history were changed. Local legacy/current behavior tests do not grant the production
 controller its separately reviewed compatibility evidence.
 

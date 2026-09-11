@@ -32,6 +32,9 @@ test('capable Chromium contract registers the bounded tool set and refuses drift
   expect(proof.toolCount).toBeLessThanOrEqual(16)
   expect(Math.max(0, proof.completedAt - proof.loadAt)).toBeLessThan(2_000)
 
+  await expect(page.locator('#catalog-results')).toHaveAttribute('aria-busy', 'false')
+  const callsBeforeRefusal = catalogCalls
+  expect(callsBeforeRefusal).toBe(1) // The initial read-only catalog browse has completed.
   const refusal = await page.evaluate(async () => {
     const harness = Reflect.get(globalThis, '__webMcpHarness') as WebMcpHarness | undefined
     if (!harness) throw new Error('webmcp_harness_missing')
@@ -41,7 +44,7 @@ test('capable Chromium contract registers the bounded tool set and refuses drift
     return await execute({ query: '', limit: 10 }, { signal: new AbortController().signal })
   })
   expect(refusal).toMatchObject({ ok: false, code: 'webmcp_registration_drift' })
-  expect(catalogCalls).toBe(0)
+  expect(catalogCalls).toBe(callsBeforeRefusal)
   await expect.poll(() => pendingEventTypes(page)).toContain('webmcp_registration_drift')
 })
 

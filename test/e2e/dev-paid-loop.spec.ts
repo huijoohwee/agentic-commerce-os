@@ -112,7 +112,7 @@ test('reviewed merchant offer reaches one visually confirmed settlement and one 
   const updated = await updateResponse
   expect(updated.request().postDataJSON().expectedPreviousManifestDigest).toBe(firstVersion)
   expect(updated.status(), await updated.text()).toBe(200)
-  await expect(page.locator('#merchant-proposals').getByText('solo-pilot · dev-e2e-flight · applied', { exact: true })).toHaveCount(2)
+  await expect(page.locator('#merchant-proposals .listing').filter({ hasText: 'solo-pilot' }).filter({ hasText: 'dev-e2e-flight' }).getByText('applied', { exact: true })).toHaveCount(2)
   await page.goto(pack.checkout.path, { waitUntil: 'domcontentloaded' })
   await expect(page.getByRole('heading', { name: 'One reviewed itinerary' })).toBeVisible()
   await page.locator('#catalog-query').fill('flight')

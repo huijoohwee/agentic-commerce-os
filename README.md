@@ -29,6 +29,8 @@ keep Dev evidence separate from a collected dollar or production release.
 The [native workspaces](docs/native-commerce-workspaces.md) share shopper/merchant WebMCP actions
 with the human UI. Merchant agents can stage proposals; operator review and an atomic live-version
 check precede publication. Credentials stay in tab memory, and no new dependencies were added.
+[Mercur experience coverage](docs/mercur-experience-parity.md) maps the native catalog, vendor preview
+and admin tables to verified workflows and identifies the remaining backend gaps.
 
 ## Runtime shape
 

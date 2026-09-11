@@ -71,7 +71,7 @@
     {
       "sourceFile": "src/shared/theme-manifest.ts",
       "purpose": "Validated and default-resolved theme codec persisted by ThemeDeployment.",
-      "sourceSha256": "32ea64a0f7926d3e9139a2177aac98c410850db30a2c00bf32df2b66b87b59d9"
+      "sourceSha256": "049f050275d449264bbf579f524ce8efbd530afe4616e0fc439db1893091fa92"
     },
     {
       "sourceFile": "src/core/acos-admission.ts",
@@ -370,5 +370,5 @@
       ]
     }
   ],
-  "revision": "b3e4a18be9963ff27208b4ce5514a13b09ca77bb2589ed9b26815e5e87a09c0b"
+  "revision": "fc0f09f3c01e06ba0141aab9e2b4aeadda71c32d8594e87248d048a93208cbe3"
 }

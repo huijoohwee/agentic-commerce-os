@@ -65,65 +65,6 @@ const publish = async scope => {
     await renderProposals();
   }
 };
-const renderProposals = async () => {
-  const proposals = await readProposals();
-  const fragment = document.createDocumentFragment();
-  for (const proposal of proposals) {
-    const card = document.createElement('article'); card.className = 'listing';
-    const heading = document.createElement('h3'); heading.textContent = proposal.manifest.copy.brand;
-    const copy = document.createElement('p'); copy.textContent = proposal.manifest.copy.headline + ' — ' + proposal.manifest.copy.subhead;
-    const detail = document.createElement('p'); detail.className = 'hint';
-    detail.textContent = proposal.manifest.merchantId + ' · ' + proposal.manifest.catalogScope.join(', ') + ' · ' + proposal.status;
-    const version = document.createElement('details'); const label = document.createElement('summary'); label.textContent = 'Review exact change';
-    const exact = document.createElement('pre'); exact.textContent = JSON.stringify({ manifest: proposal.manifest, expectedPreviousManifestDigest: proposal.expectedPreviousManifestDigest }, null, 2);
-    version.append(label, exact); card.append(heading, copy, detail, version);
-    if (proposal.result?.code) { const error = document.createElement('p'); error.textContent = errorText(proposal.result.code); card.append(error); }
-    const link = document.createElement('a'); link.className = 'route'; link.href = runtimePath('/s/' + encodeURIComponent(proposal.manifest.merchantId)); link.textContent = 'Open store';
-    if (proposal.expectedPreviousManifestDigest !== null || proposal.status === 'applied') card.append(link);
-    if (role === 'admin' && proposal.status === 'pending') {
-      for (const action of ['Approve and publish', 'Reject proposal']) {
-        const button = document.createElement('button'); button.type = 'button'; button.textContent = action;
-        button.disabled = applying || !operatorToken;
-        button.addEventListener('click', async event => {
-          if (!event.isTrusted) return;
-          button.disabled = true;
-          try {
-            if (action === 'Approve and publish') await publish(proposal.scope);
-            else { await changeProposal(proposal.scope, 'pending', 'rejected'); announce(); await renderProposals(); }
-          } catch (error) { report(error); }
-        });
-        card.append(button);
-      }
-    }
-    if (['applying', 'uncertain'].includes(proposal.status)) {
-      const inspect = document.createElement('button'); inspect.type = 'button'; inspect.textContent = 'Check publication';
-      inspect.disabled = applying;
-      inspect.addEventListener('click', async event => {
-        if (!event.isTrusted) return;
-        try {
-          if (Date.now() - proposal.updatedAtMs < 60000) throw new Error('publication_may_be_in_flight_wait_one_minute');
-          const live = await readMerchant({ merchantId: proposal.manifest.merchantId });
-          const matches = live.manifestDigest === await digest(proposal.manifest);
-          await changeProposal(proposal.scope, proposal.status, matches ? 'applied' : 'uncertain',
-            matches ? { manifestDigest: live.manifestDigest } : { code: 'live_version_differs_stage_a_fresh_review' });
-          announce(); await renderProposals();
-        } catch (error) { report(error); }
-      });
-      card.append(inspect);
-    }
-    if (['applied', 'rejected', 'uncertain'].includes(proposal.status)) {
-      const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = 'Remove local record';
-      remove.addEventListener('click', async event => {
-        if (!event.isTrusted) return;
-        await proposalStore('readwrite', store => store.delete(proposal.scope)); announce(); await renderProposals();
-      });
-      card.append(remove);
-    }
-    fragment.append(card);
-  }
-  if (!proposals.length) { const empty = document.createElement('p'); empty.textContent = 'No proposals yet. Prepare a storefront in the vendor workspace.'; fragment.append(empty); }
-  queue.replaceChildren(fragment);
-};
 document.querySelector('#merchant-editor')?.addEventListener('submit', async event => {
   event.preventDefault();
   try {
@@ -142,6 +83,7 @@ document.querySelector('#launch-import')?.addEventListener('change', async event
     const form = document.querySelector('#merchant-editor');
     const fields = { merchantId: manifest.merchantId, agentId: manifest.catalogScope[0], ...manifest.copy };
     for (const name of ['merchantId','agentId','brand','headline','subhead']) form.elements.namedItem(name).value = fields[name] || '';
+    updatePreview();
     status.textContent = 'Imported copy and agent scope. Review the fields, then stage with a fresh live version.';
   } catch (error) { report(error); }
   event.target.value = '';
@@ -150,8 +92,15 @@ const disconnect = () => {
   connectionRevision += 1;
   operatorToken = '';
   document.querySelector('#operator-overview').textContent = 'Disconnected.';
-  document.querySelector('#operator-agents').replaceChildren();
+  document.querySelector('#agent-detail').close();
+  document.querySelector('#agent-detail-body').replaceChildren();
+  registryAgents = [];
+  renderRegistry();
+  document.querySelector('#stat-agents').textContent = '—';
+  document.querySelector('#operator-session-badge').textContent = 'Disconnected';
+  document.querySelector('#registry-refresh').disabled = true;
   document.querySelector('#operator-disconnect').hidden = true;
+  document.querySelector('#operator-connect').hidden = false;
   void renderProposals().catch(report);
 };
 document.querySelector('#operator-connect')?.addEventListener('submit', async event => {
@@ -164,12 +113,12 @@ document.querySelector('#operator-connect')?.addEventListener('submit', async ev
     const registry = await operatorApi('/agents', null, {}, token);
     if (revision !== connectionRevision) return;
     operatorToken = token;
-    const agents = document.querySelector('#operator-agents');
-    for (const agent of (registry.agents || []).slice(0, 100)) {
-      const row = document.createElement('li'); row.textContent = agent.agentId + ' · ' + (agent.registrationState || 'registered'); agents.append(row);
-    }
+    acceptRegistry(registry);
     document.querySelector('#operator-overview').textContent = String(registry.agents?.length || 0) + ' registered agents. Ready to review proposals.';
     document.querySelector('#operator-disconnect').hidden = false;
+    document.querySelector('#operator-connect').hidden = true;
+    document.querySelector('#operator-session-badge').textContent = 'Connected';
+    document.querySelector('#registry-refresh').disabled = false;
     await renderProposals();
   } catch (error) { report(error); }
 });

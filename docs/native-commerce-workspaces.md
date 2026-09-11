@@ -1,7 +1,7 @@
 ---
 title: "Native Commerce Workspaces"
 doc_type: "Implementation"
-version: "0.3.0"
+version: "0.4.0"
 date: "2026-09-12"
 lang: "en-US"
 frontmatter_contract: "required"
@@ -116,3 +116,7 @@ Reviewed on 2026-09-12; the linked source commits pin the comparison:
 | [WebMCP at 97da8f5](https://github.com/webmachinelearning/webmcp/tree/97da8f515427594c856307e3476c0a0db9698fbb), [API draft](https://webmachinelearning.github.io/webmcp/) | Native browser registration, abort lifecycle and advisory tool annotations; existing local guard remains the owner. |
 
 No repository was forked, cloned into the product, copied or added to the dependency graph.
+
+The 0.4.0 experience update adds native browse/filter/detail and role workspace navigation;
+see [Mercur UI/UX coverage](mercur-experience-parity.md) for source owners, behavior checks and
+backend gaps. Shopper and merchant browser modules are composed on their asset request.

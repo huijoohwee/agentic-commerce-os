@@ -7,6 +7,6 @@ report('template-pack', [
   fileContains('src/core/theme-deployment.ts', 'theme_asset_unreachable'),
   fileContains('src/core/theme-deployment-store.ts', 'ThemeDeployment'),
   fileContains('src/edge/dashboard.ts', 'consoleResponse'),
-  fileContains('src/edge/dashboard.ts', 'min-height: 44px'),
+  fileContains('src/edge/experience-styles.ts', 'min-height: 44px'),
   fileExists('test/browser/template-pack.spec.ts'),
 ])

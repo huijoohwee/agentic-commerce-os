@@ -1,27 +1,33 @@
+export function merchantNavigation(role: 'admin' | 'vendor'): string {
+  const views = role === 'vendor'
+    ? [['storefront', 'Storefront', '◧'], ['catalog', 'Catalog', '▦'], ['proposals', 'Proposals', '▤']]
+    : [['overview', 'Overview', '◫'], ['agents', 'Agents', '▦'], ['reviews', 'Reviews', '▤'], ['runtime', 'Runtime', '⚙']]
+  return `<aside class="sidebar"><p class="eyebrow">${role === 'vendor' ? 'Your business' : 'Marketplace'}</p><nav aria-label="${role} workspace">${views.map(([id, label, icon]) => `<a href="#${id}" data-view-link="${id}" data-title="${label}"><span class="nav-icon" aria-hidden="true">${icon}</span>${label}</a>`).join('')}</nav><p class="sidebar-note">${role === 'vendor' ? 'Prepare a storefront. Review your catalog. Reach your first customer.' : 'Keep your marketplace running with clear, deliberate approvals.'}</p></aside>`
+}
+
 export function merchantPage(role: 'admin' | 'vendor'): string {
-  const editor = `<article class="card storefront">
-    <h2>Prepare your storefront</h2>
-    <p class="hint">Describe the offer for your buyer. Staging saves a proposal on this browser; an operator reviews it before publication.</p>
-    <label>Import a merchant launch pack <input id="launch-import" type="file" accept="application/json,.json"></label>
-    <form id="merchant-editor" class="stack">
-      <label>Merchant ID <input name="merchantId" required maxlength="128" pattern="[a-z0-9][a-z0-9._-]*" placeholder="your-store"></label>
-      <label>Registered agent ID <input name="agentId" required maxlength="128" pattern="[a-z0-9][a-z0-9._-]*" placeholder="your-agent"></label>
-      <label>Brand <input name="brand" required maxlength="280" placeholder="Your business"></label>
-      <label>Buyer outcome <input name="headline" required maxlength="280" placeholder="What will your buyer achieve?"></label>
-      <label>Who it helps and how <input name="subhead" required maxlength="280" placeholder="For… who need…"></label>
-      <button type="submit">Stage for review</button>
-    </form>
-  </article>`
-  const operator = `<article class="card storefront">
-    <h2>Operator session</h2>
-    <p class="hint">Connect with your operator credential to review the registry and publish approved proposals. It stays in this tab until disconnect or reload.</p>
-    <form id="operator-connect"><label class="sr-only" for="operator-token">Operator credential</label><input id="operator-token" type="password" autocomplete="off" required placeholder="Operator credential"><button>Connect</button></form>
-    <button id="operator-disconnect" type="button" hidden>Disconnect</button>
-    <p id="operator-overview" class="hint" aria-live="polite">Disconnected.</p><ul id="operator-agents"></ul>
-  </article>`
+  const editor = `<section data-views="storefront" class="editor-grid">
+    <div class="panel"><div class="section-head"><div><h2>Prepare your storefront</h2><p class="hint">Give your buyer a clear reason to choose you.</p></div></div>
+      <div class="panel-body"><form id="merchant-editor" class="stack">
+        <div class="field-grid"><label>Merchant ID <input name="merchantId" required maxlength="128" pattern="[a-z0-9][a-z0-9._-]*" placeholder="your-store"><span class="field-note">Your store’s address identifier.</span></label><label>Registered agent ID <input name="agentId" required maxlength="128" pattern="[a-z0-9][a-z0-9._-]*" placeholder="your-agent"><span class="field-note">The agent supplying your offers.</span></label></div>
+        <label>Brand <input name="brand" required maxlength="280" placeholder="Your business"></label>
+        <label>Buyer outcome <input name="headline" required maxlength="280" placeholder="What will your buyer achieve?"></label>
+        <label>Who it helps and how <input name="subhead" required maxlength="280" placeholder="For… who need…"></label>
+        <button type="submit">Stage for review</button><span class="field-note">Saves a proposal in this browser. Admin reviews it before it goes live.</span>
+      </form></div><div class="panel-footer"><details><summary>Import a merchant launch pack</summary><label class="hint">Choose a JSON launch pack <input id="launch-import" type="file" accept="application/json,.json"></label></details></div>
+    </div>
+    <div class="panel"><div class="section-head"><h2>Storefront preview</h2><span class="badge">Draft</span></div><div class="panel-body"><div class="preview" aria-label="Storefront preview">
+      <div class="preview-top"><strong id="preview-brand">Your business</strong><span>Shop</span></div><div class="preview-body"><p class="eyebrow">Made for your next step</p><h3 id="preview-headline">Your buyer’s next outcome</h3><p id="preview-subhead" class="hint">Tell buyers who you help and what they can achieve.</p></div><div class="preview-bottom"><div class="product-art"><span aria-hidden="true">a↗</span></div><p class="hint">Your published agent’s offers appear in the live catalog.</p></div>
+      </div><p class="field-note">Preview updates as you type. Staging does not publish.</p></div></div>
+    </section>
+    <section class="panel" data-views="catalog" hidden><div class="section-head"><div><h2>Your live catalog</h2><p class="hint">Check the listings customers can discover.</p></div></div><div class="panel-body"><form id="vendor-catalog-form" class="actions"><label>Merchant ID <input id="vendor-catalog-id" maxlength="128" required placeholder="your-store"></label><button type="submit">Load catalog</button></form><p id="vendor-catalog-status" class="hint" role="status">Enter your merchant ID to load the published catalog.</p><div id="vendor-catalog"></div></div></section>`
+  const operator = `<section class="stat-grid" data-views="overview"><div class="stat"><p>Registered agents</p><strong id="stat-agents">—</strong></div><div class="stat"><p>Awaiting review · local</p><strong id="stat-pending">0</strong></div><div class="stat"><p>Published · local</p><strong id="stat-published">0</strong></div></section>
+    <section class="panel" data-views="overview agents reviews"><div class="section-head"><div><h2>Operator session</h2><p class="hint">Connect to review agents and publish approved storefronts.</p></div><span id="operator-session-badge" class="badge">Disconnected</span></div><div class="panel-body"><form id="operator-connect"><label class="sr-only" for="operator-token">Operator credential</label><input id="operator-token" type="password" autocomplete="off" required placeholder="Operator credential"><button>Connect</button></form><button id="operator-disconnect" type="button" class="secondary" hidden>Disconnect</button><p id="operator-overview" class="hint" aria-live="polite">Disconnected.</p><p class="field-note">Your credential stays in this tab until disconnect or reload.</p></div></section>
+    <section class="panel" data-views="agents" hidden><div class="section-head"><div><h2>Registered agents</h2><p class="hint">Inspect the providers behind your marketplace.</p></div><button id="registry-refresh" type="button" class="secondary" disabled>Refresh agents</button></div><div class="table-toolbar"><input id="registry-query" type="search" aria-label="Search agents" placeholder="Search by agent or category"><select id="registry-state" aria-label="Filter agent state"><option value="">All states</option></select></div><div id="operator-agents" class="table-wrap"><p class="panel-body hint">Connect an operator session to view agents.</p></div><div class="panel-footer pagination"><button id="registry-previous" type="button" class="secondary" disabled>Previous</button><span id="registry-page">Page 1</span><button id="registry-next" type="button" class="secondary" disabled>Next</button></div></section>`
   return `${role === 'vendor' ? editor : operator}
-    <article class="card storefront"><h2>${role === 'admin' ? 'Review before publishing' : 'Your proposals'}</h2>
-      <p class="hint">This browser keeps up to 20 proposals. Applied changes must be reviewed again when the live version changes. An interrupted publication requires checking the live store before staging again.</p>
-      <p id="merchant-status" role="status"></p><div id="merchant-proposals"></div>
-    </article>`
+    <section class="panel" data-views="${role === 'vendor' ? 'storefront proposals' : 'overview reviews'}"><div class="section-head"><div><h2>${role === 'admin' ? 'Review before publishing' : 'Your proposals'}</h2><p class="hint">Storefront changes saved in this browser.</p></div><span id="proposal-count" class="badge">0 proposals</span></div>
+      <div class="table-toolbar"><input id="proposal-query" type="search" aria-label="Search proposals" placeholder="Search store or brand"><select id="proposal-state" aria-label="Filter proposal status"><option value="">All statuses</option><option value="pending">Awaiting review</option><option value="applied">Published</option><option value="rejected">Rejected</option><option value="uncertain">Needs attention</option><option value="applying">Publishing</option></select></div>
+      <div id="merchant-proposals"></div><div class="panel-footer field-note">Up to 20 local proposals. Review the current version before each publication.</div>
+    </section><p id="merchant-status" class="notice" role="status"></p>
+    <dialog id="agent-detail" aria-labelledby="agent-detail-heading"><div class="section-head"><h2 id="agent-detail-heading">Agent details</h2><button type="button" class="secondary" data-close-dialog>Close</button></div><div id="agent-detail-body" class="panel-body"></div></dialog>`
 }

@@ -2,11 +2,11 @@
 title: "Edge Commerce Agent — Grounded First-Dollar Loop"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "edge-commerce-agent-mvp"
-revision: "0.3.0"
-version: "0.3.0"
-prd_revision: "0.3.0"
-tad_revision: "0.3.0"
-adr_revision: "0.3.0"
+revision: "0.4.0"
+version: "0.4.0"
+prd_revision: "0.4.0"
+tad_revision: "0.4.0"
+adr_revision: "0.4.0"
 date: "2026-09-12"
 lang: "en-US"
 frontmatter_contract: "required"
@@ -19,7 +19,7 @@ load_policy: "on-demand"
 runtime_readiness_policy: "fail-closed"
 lifecycle_status: "implemented-candidate"
 demand_status: "unvalidated"
-worktree_id: "agent/device-0232231d4a19/native-commerce-workspaces"
+worktree_id: "agent/device-0232231d4a19/mercur-experience"
 agent_id: "codex-edge-commerce-mvp"
 source_revision: "addf6afb3821c61b33f44d1b0a4e82afb7e139fa"
 related_continuity_id: "PRD-TAD-ADR-COMMERCE-MVP-GTM-001"
@@ -28,7 +28,7 @@ related_continuity_id: "PRD-TAD-ADR-COMMERCE-MVP-GTM-001"
 # Edge Commerce Agent — grounded first-dollar loop
 
 This combined PRD/TAD/ADR/MVP/GTM is the implementation owner for
-`edge-commerce-agent-mvp@0.3.0`. All five sections consume this exact identity.
+`edge-commerce-agent-mvp@0.4.0`. All five sections consume this exact identity.
 The supplied private, untracked `joohwee/prd-tad-ard/prd-tad-adr-mvp-gtm-edge-commerce-agent.md`
 at SHA-256 `fc833b05a1ab59520a45fb6b1f0149d298341a62c248cb118629535aae5223bf`
 is preserved as the 0.1.0 input, rather than treated as an existing runtime or duplicated
@@ -43,7 +43,7 @@ changes the protected production route automatically.
 ```yaml
 context: "Existing Commerce has offline drafts, merchant themes, discovery, guarded checkout and derived revenue; the source input incorrectly assumes no codebase"
 intent: "Help a solo operator take one specific buyer outcome through review into the existing first-sale flow with no new dependencies or infrastructure"
-directive: "Reuse the draft store and theme/checkout owners, implement bounded launch economics, native vendor/admin review and shared shopper/merchant agent actions, then verify the native Dev loop"
+directive: "Reuse the draft store and theme/checkout owners, implement bounded launch economics, native role workspaces with catalog browsing, preview, searchable registry/review views and shared shopper/merchant agent actions, then verify the native Dev loop"
 role: "solo-operator-and-authorized-agent"
 action: "review one offer, publish its theme under the existing claim, confirm the provider quote, and fulfill against the settlement receipt"
 outcome: "one reviewable merchant launch pack, human-operated workspaces and a tested draft-to-settlement mechanism; actual demand and payment remain evidence-gated"
@@ -117,6 +117,15 @@ new model calls, wallet funding, social outreach, multi-device automatic sync an
 | EC-06 | A 390 px browser works offline after cache installation; Graph is optional navigation; no draft/payment network writes occur. `scripts/local-first-release/check.mjs`. |
 | EC-07 | Existing domain, unit, real Worker/SQLite, browser, ADLC and dry-bundle checks run; evidence gaps remain failures. `npm run check:integration`, `npm run check`. |
 | EC-08 | Release consumes the browser producer's exact required checks and candidate identity; incomplete, duplicate-filled or mismatched proofs fail. `scripts/local-first-release/browser-proof.mjs`, `test/local-first/browser-proof.test.mjs`. |
+
+**Experience acceptance (EC-08).** Shopper browse, category/availability filtering, name sorting,
+pagination, keyboard-accessible offer details and a retained checkout confirmation; vendor live
+preview, catalog inspection and searchable proposal states; admin navigation, registry filtering,
+pagination and safe detail views. Initial catalog browse must not invoke agent discovery. All controls
+use existing runtime contracts. `test/browser/commerce-experience.spec.ts` owns these behaviors;
+`merchant-workspace.spec.ts` and the Dev paid loop retain authority and idempotency checks.
+[Mercur comparison and explicit gaps](mercur-experience-parity.md) define UI/UX coverage. Inventory,
+shipping, payouts, customer accounts and a multi-item cart are outside the current backend contract.
 
 ## TAD
 
@@ -202,6 +211,14 @@ publish. Conditional theme writes bind the reviewed previous digest into the per
 store transaction. Browser credentials remain transient and proposal storage remains local.
 [Native source, reference pins and validation](native-commerce-workspaces.md) describe the exact
 scope; no external framework, agent SDK, prompt or code is copied into the implementation.
+
+**EC-A5 — native experience patterns with contract-backed actions (accepted).** Use Mercur only
+as a reference for information hierarchy, browse/filter/detail flows and role navigation. Implement
+with semantic HTML, CSS, native dialogs and shared browser actions. Worker Text assets keep the
+shopper/merchant implementations lazy-composed at their asset routes and within the 500 kB chunk
+cap. No framework, reference assets or reference source are imported. UI counts are derived from
+loaded records; local proposal counts are labelled local. Never display hypothetical revenue,
+inventory, provider connectivity or sales as measured facts.
 
 ## MVP
 

@@ -1,5 +1,4 @@
 import { expect, test, type Browser, type Page } from '@playwright/test'
-import { STOREFRONT_CLIENT_MODULE } from '../../src/edge/client/browser-module.ts'
 import { consoleResponse } from '../../src/edge/dashboard.ts'
 import { THEME_MANIFEST_DEFAULTS } from '../../src/shared/theme-manifest.ts'
 
@@ -75,7 +74,10 @@ test('mobile canvas navigation opens a separate workspace without eager loading'
   await popup.close()
 })
 
-test('shipped WebMCP registration has explicit count and two-second bounds', () => {
+test('shipped WebMCP registration has explicit count and two-second bounds', async ({ request }) => {
+  const asset = await request.get('/assets/storefront.js')
+  expect(asset.ok()).toBe(true)
+  const STOREFRONT_CLIENT_MODULE = await asset.text()
   expect(STOREFRONT_CLIENT_MODULE).toContain('const MAXIMUM_REGISTERED_TOOLS = 16;')
   expect(STOREFRONT_CLIENT_MODULE).toContain('const WEBMCP_REGISTRATION_LIMIT_MS = 2000;')
   expect(STOREFRONT_CLIENT_MODULE).toContain('await Promise.race([')
@@ -147,6 +149,8 @@ test('visual checkout requires explicit human confirmation and never persists it
   const csrfToken = crypto.randomUUID().repeat(2)
   const digest = 'a'.repeat(64)
   const confirmations: Array<Readonly<Record<string, unknown>>> = []
+  let finishConfirmation = () => {}
+  const confirmationGate = new Promise<void>(resolve => { finishConfirmation = resolve })
   await page.route('**/v1/public/agents?**', async (route) => route.fulfill({
     status: 200,
     contentType: 'application/json',
@@ -198,6 +202,7 @@ test('visual checkout requires explicit human confirmation and never persists it
   await page.route('**/v1/human/checkouts/*/confirm', async (route) => {
     confirmations.push(JSON.parse(route.request().postData() ?? '{}') as Readonly<Record<string, unknown>>)
     expect(route.request().headers()['x-human-confirmation-csrf']).toBe(csrfToken)
+    await confirmationGate
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -215,8 +220,15 @@ test('visual checkout requires explicit human confirmation and never persists it
   expect(confirmations).toHaveLength(0)
 
   await page.getByRole('button', { name: 'Confirm checkout after reviewing the total' }).click()
-  await expect.poll(() => confirmations.length).toBe(1)
+  try {
+    await expect.poll(() => confirmations.length).toBe(1)
+    await expect(page.getByRole('button', { name: 'Search catalog' })).toBeDisabled()
+    await expect(page.getByRole('button', { name: /Select offer offer-browser-human/u })).toBeDisabled()
+    await expect(page.locator('#confirmation-total')).toContainText('12.50')
+  } finally { finishConfirmation() }
   await expect(page.locator('#checkout-confirmation-summary')).toHaveText('Checkout confirmed.')
+  await expect(page.locator('#confirmation-reference')).toContainText(String(confirmations[0]?.checkoutId))
+  await expect(page.locator('#confirmation-total')).toContainText('12.50')
   const persisted = await pendingChangePayloads(page)
   expect(JSON.stringify(persisted)).not.toContain(csrfToken)
   expect(confirmations[0]).not.toHaveProperty('confirmationToken')
