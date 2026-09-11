@@ -30,6 +30,7 @@ test('static serving strips credentials, restricts paths, and scopes the offline
   const response = await worker.fetch(input, env);
   assert.equal(response.headers.get('service-worker-allowed'), '/agentic-commerce-os/');
   assert.equal(response.headers.get('etag'), null);
+  assert.equal(response.headers.get('cache-control'), 'no-store, no-transform');
   assert.equal(await response.text(), `const release="${revision}";`);
   const head = await worker.fetch(request('/agentic-commerce-os/sw.js', 'HEAD'), env);
   assert.equal(await head.text(), '');

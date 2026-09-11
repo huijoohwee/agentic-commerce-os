@@ -12,7 +12,7 @@ fs.mkdirSync(output, { recursive: true });
 const remote = process.argv.find(arg => arg.startsWith('--base-url='))?.slice(11);
 const revision = process.env.CANDIDATE_SHA || execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
 let runtime, browser;
-const checks = [];
+const checks = [], requests = [];
 const record = name => { checks.push(name); console.log(`PASS ${name}`); };
 async function freePort() {
   const server = net.createServer(); server.listen(0, '127.0.0.1'); await once(server, 'listening');
@@ -49,10 +49,11 @@ try {
   record('exact production scope and server mutation refusal');
   browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, acceptDownloads: true });
-  const page = await context.newPage(), failures = [], requests = [];
+  const page = await context.newPage(), failures = [];
   page.on('pageerror', error => failures.push(error.message));
   context.on('request', request => requests.push({ url: request.url(), method: request.method() }));
-  await page.goto(url);
+  const documentResponse = await page.goto(url);
+  assert.match(documentResponse.headers()['cache-control'], /(?:^|,\s*)no-transform(?:,|$)/);
   await page.getByText('Offline access is ready.', { exact: false }).waitFor();
   await page.evaluate(() => navigator.serviceWorker.ready);
   await page.getByLabel('What are you creating?').fill('My first offer');
@@ -88,6 +89,7 @@ try {
   const downloadPromise = page.waitForEvent('download'); await page.getByRole('button', { name: 'Export drafts' }).click();
   const download = await downloadPromise, exported = fs.readFileSync(await download.path());
   const fresh = await browser.newContext({ viewport: { width: 390, height: 844 } }), imported = await fresh.newPage();
+  fresh.on('request', request => requests.push({ url: request.url(), method: request.method() }));
   await imported.goto(url); await imported.locator('#import').setInputFiles({ name: 'drafts.json', mimeType: 'application/json', buffer: exported });
   await imported.getByText('Imported 1 draft.', { exact: false }).waitFor();
   await imported.locator('#draft-list button').first().click();
@@ -111,6 +113,7 @@ try {
   fs.writeFileSync(path.join(output, 'browser-proof.json'), JSON.stringify(proof, null, 2) + '\n');
   console.log(JSON.stringify(proof));
 } finally {
+  fs.writeFileSync(path.join(output, 'network-observation.json'), JSON.stringify({ sourceRevision: revision, requests }, null, 2) + '\n');
   await browser?.close();
   if (runtime && runtime.exitCode === null) {
     try { process.kill(-runtime.pid, 'SIGTERM'); } catch { /* already exited */ }

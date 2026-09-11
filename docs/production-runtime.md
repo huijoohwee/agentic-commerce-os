@@ -31,6 +31,15 @@ retains a sealed completion only after live browser and version/route checks pas
 An ambiguous mutation is preserved rather than replayed; an exactly observed failed
 bootstrap can remove its own new route while retaining the uploaded Worker.
 
+The local-first responses use `Cache-Control: no-store, no-transform` to preserve the
+authored HTML and prevent automatic CDN script injection. Browser verification keeps
+the same-origin GET-only requirement and retains request diagnostics on failure.
+After a restored bootstrap, `retained_baseline` can select the exact prior deployment,
+version, source and failed run IDs. Preparation verifies the authenticated failed run
+and its successful owner-approval step; deployment rechecks the exact provider identity,
+asset-only bindings and absent route before replacing that retained version. This input
+is an expected-state assertion, not proof of provider state. A changed baseline fails closed.
+
 All subsequent sections describe the deferred **full Commerce** runtime. Their
 provider, payment and independent-evaluator conditions still apply to that profile.
 

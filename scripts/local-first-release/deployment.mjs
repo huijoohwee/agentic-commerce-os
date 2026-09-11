@@ -1,13 +1,22 @@
 import { CONFIG, WORKER } from './artifact.mjs';
 import { validateProductionRouteAuthorityProof } from '../production-release/route-authority.ts';
+import { parseRetainedBaseline } from './retained-baseline.mjs';
 
 const same = (left, right) => JSON.stringify(left) === JSON.stringify(right);
-export async function observeBefore(provider, authority) {
+export async function observeBefore(provider, authority, retainedInput = null) {
+  const retained = parseRetainedBaseline(retainedInput);
   const before = { active: await provider.active(), route: await provider.route(authority.pattern) };
   validateProductionRouteAuthorityProof(authority, before.route, 'before');
-  if (authority.mode === 'bootstrap' && before.active !== null) throw Error('Bootstrap Worker already exists; inspect retained version before selecting a new release');
+  if (retained) {
+    if (authority.mode !== 'bootstrap' || !same(before.active, {
+      deploymentId: retained.deploymentId, versionId: retained.versionId,
+    })) throw Error('Retained deployment changed; preserve the current provider state');
+    await provider.version(retained.versionId, retained.sourceRevision);
+  } else if (authority.mode === 'bootstrap' && before.active !== null) {
+    throw Error('Bootstrap Worker already exists; inspect retained version before selecting a new release');
+  }
   if (authority.mode === 'steady-state' && before.active === null) throw Error('Steady-state Worker is absent');
-  if (before.active) await provider.version(before.active.versionId);
+  if (before.active && !retained) await provider.version(before.active.versionId);
   return before;
 }
 
