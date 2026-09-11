@@ -3,6 +3,30 @@
 See [Commerce and Graph runtime composition](commerce-graph-runtime.md) for the
 canonical URLs, canvas reuse, shared verification setup, and current live gaps.
 
+## Current local-first release profile
+
+The operator's 2026-09-11 scope decision selects the free local-first MVP in the
+[1.1.0 sprint amendment](prd-tad-adr-mvp-gtm-20260909T1320Z-solopreneur-mvp-gtm.md).
+`wrangler.local-first.jsonc` serves browser-only offer drafts, JSON backup/transfer,
+offline loading and explicit Graph navigation through the existing Commerce route.
+Checkout, orders, publication, supplier execution and all server mutations are deferred.
+The profile requires no core/sandbox/provider service, human-presence signer or remote draft database.
+It does not claim any of the full platform's 100 independent task verdicts or a payment result.
+
+Run `npm run check:local-first` and `node scripts/local-first-release/artifact.mjs`.
+The protected source Integration Gate includes the local-first unit and browser checks. The separate
+`Local-first Production Release` workflow verifies the exact current main, builds
+asset identity, and repeats the real browser checks before production approval.
+The existing production reviewer policy, including prevention of self-review,
+remains enforced through the shared authorization verifier. Its approved job verifies
+provider state and deploys the asset-only Worker. Bootstrap verifies the private Worker before binding the exact route; an existing local-first route activates on deployment. The job
+retains a sealed completion only after live browser and version/route checks pass.
+An ambiguous mutation is preserved rather than replayed; an exactly observed failed
+bootstrap can remove its own new route while retaining the uploaded Worker.
+
+All subsequent sections describe the deferred **full Commerce** runtime. Their
+provider, payment and independent-evaluator conditions still apply to that profile.
+
 ## Readiness result
 
 This repository is a fail-closed production candidate, not a currently verified
