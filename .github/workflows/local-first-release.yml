@@ -24,7 +24,7 @@ jobs:
     timeout-minutes: 15
     env:
       CANDIDATE_SHA: ${{ inputs.candidate_sha }}
-      LOCAL_FIRST_EVIDENCE_DIR: ${{ runner.temp }}/commerce-local-first
+      LOCAL_FIRST_EVIDENCE_DIR: ${{ github.workspace }}/node_modules/.cache/local-first-verification
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -56,7 +56,7 @@ jobs:
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: local-first-prepared-${{ github.run_id }}
-          path: ${{ runner.temp }}/commerce-local-first
+          path: ${{ env.LOCAL_FIRST_EVIDENCE_DIR }}
           if-no-files-found: error
           retention-days: 90
 
@@ -68,7 +68,7 @@ jobs:
     environment: production
     env:
       CANDIDATE_SHA: ${{ inputs.candidate_sha }}
-      LOCAL_FIRST_EVIDENCE_DIR: ${{ runner.temp }}/commerce-local-first
+      LOCAL_FIRST_EVIDENCE_DIR: ${{ github.workspace }}/node_modules/.cache/local-first-verification
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -84,7 +84,7 @@ jobs:
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
         with:
           name: local-first-prepared-${{ github.run_id }}
-          path: ${{ runner.temp }}/commerce-local-first
+          path: ${{ env.LOCAL_FIRST_EVIDENCE_DIR }}
       - name: Verify existing production reviewer policy and actual run approval
         env:
           GH_TOKEN: ${{ github.token }}
@@ -105,6 +105,6 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: local-first-result-${{ github.run_id }}
-          path: ${{ runner.temp }}/commerce-local-first
+          path: ${{ env.LOCAL_FIRST_EVIDENCE_DIR }}
           if-no-files-found: error
           retention-days: 90
