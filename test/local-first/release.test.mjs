@@ -55,7 +55,7 @@ test('provider readback refuses foreign source tags and any additional binding',
   assert.equal((await provider.version('version', revision)).sourceRevision, revision);
   await assert.rejects(provider.version('version', 'd'.repeat(40)), /source mismatch/);
   result = { ...result, resources: { bindings: [...bindings, { name: 'CORE', type: 'service' }] } };
-  await assert.rejects(provider.version('version'), /asset-only/);
+  await assert.rejects(provider.version('version'), /local-first profile/);
 });
 
 function fixture(mode = 'bootstrap', options = {}) {
@@ -68,7 +68,7 @@ function fixture(mode = 'bootstrap', options = {}) {
     bindRoute: async () => { calls.push('bind'); route = bound; if (options.lostRouteResponse) throw Error('route response lost'); },
     removeRoute: async () => { calls.push('remove'); route = absent; },
   };
-  return { provider, journal, revision, calls, routeAuthority: { ...authority, mode, routeId: mode === 'bootstrap' ? null : routeId },
+  return { provider, journal, revision, calls, secretsFile: '/fixture/secrets.json', routeAuthority: { ...authority, mode, routeId: mode === 'bootstrap' ? null : routeId },
     checkMain() { calls.push('source-check'); }, record(stage) { calls.push(stage); },
     wrangler(args) {
       calls.push(args[0]);
@@ -116,7 +116,7 @@ test('lost provider responses, foreign versions and peer deployments are preserv
 test('bootstrap cannot reuse an existing Worker and steady state cannot adopt a full-provider Worker', async () => {
   const input = fixture('steady-state');
   await assert.rejects(observeBefore({ ...input.provider, route: async () => absent }, authority), /Bootstrap Worker already exists/);
-  await assert.rejects(observeBefore({ ...input.provider, version: async () => { throw Error('asset-only profile required'); } }, input.routeAuthority), /asset-only/);
+  await assert.rejects(observeBefore({ ...input.provider, version: async () => { throw Error('owned local-first profile required'); } }, input.routeAuthority), /local-first profile/);
 });
 
 function ownerApprovalFixture() {
@@ -208,4 +208,19 @@ test('a retained bootstrap still refuses absent, moved, foreign or already route
     { version: async () => { throw Error('foreign source or service binding'); } }, { route: async () => bound }]) {
     await assert.rejects(observeBefore({ ...provider, ...override }, authority, retained));
   }
+});
+test('candidate readback requires both sandbox secrets and never accepts the deferred predecessor as the new version', async t => {
+  const legacy = [{ name: 'ASSETS', type: 'assets' }, { name: 'CF_VERSION_METADATA', type: 'version_metadata' },
+    { name: 'RELEASE_CANDIDATE_SHA', type: 'plain_text', text: revision }];
+  let bindings = legacy;
+  t.mock.method(globalThis, 'fetch', async () => Response.json({ success: true,
+    result: { resources: { bindings }, annotations: { 'workers/tag': revision } } }));
+  const provider = createProvider({ accountId: zoneId, zoneId, token: 'fixture-only' });
+  await assert.rejects(provider.version('version', revision, 'sandbox'), /Sandbox profile required/);
+  bindings = [...legacy, { name: 'CHECKOUT_MODE', type: 'plain_text', text: 'sandbox' },
+    { name: 'STOREFRONT_SESSION_SECRET', type: 'secret_text' }, { name: 'STRIPE_TEST_SECRET_KEY', type: 'secret_text' }];
+  await provider.version('version', revision, 'sandbox');
+  bindings[3].text = 'live'; await assert.rejects(provider.version('version', revision, 'sandbox'));
+  bindings[3].text = 'sandbox'; bindings[5] = { name: 'PAYMENTS', type: 'service' };
+  await assert.rejects(provider.version('version', revision, 'sandbox'));
 });

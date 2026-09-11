@@ -2,11 +2,11 @@
 title: "Edge Commerce Agent — Grounded First-Dollar Loop"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "edge-commerce-agent-mvp"
-revision: "0.4.0"
-version: "0.4.0"
-prd_revision: "0.4.0"
-tad_revision: "0.4.0"
-adr_revision: "0.4.0"
+revision: "0.5.0"
+version: "0.5.0"
+prd_revision: "0.5.0"
+tad_revision: "0.5.0"
+adr_revision: "0.5.0"
 date: "2026-09-12"
 lang: "en-US"
 frontmatter_contract: "required"
@@ -19,40 +19,40 @@ load_policy: "on-demand"
 runtime_readiness_policy: "fail-closed"
 lifecycle_status: "implemented-candidate"
 demand_status: "unvalidated"
-worktree_id: "agent/device-0232231d4a19/live-commerce-experience"
+worktree_id: "agent/device-0232231d4a19/hosted-checkout"
 agent_id: "codex-edge-commerce-mvp"
-source_revision: "addf6afb3821c61b33f44d1b0a4e82afb7e139fa"
+source_revision: "bfc4318784e15c3e7e7d0fc09e84ee3828e9da94"
 related_continuity_id: "PRD-TAD-ADR-COMMERCE-MVP-GTM-001"
 ---
 
 # Edge Commerce Agent — grounded first-dollar loop
 
 This combined PRD/TAD/ADR/MVP/GTM is the implementation owner for
-`edge-commerce-agent-mvp@0.4.0`. All five sections consume this exact identity.
+`edge-commerce-agent-mvp@0.5.0`. All five sections consume this exact identity.
 The supplied private, untracked `joohwee/prd-tad-ard/prd-tad-adr-mvp-gtm-edge-commerce-agent.md`
 at SHA-256 `fc833b05a1ab59520a45fb6b1f0149d298341a62c248cb118629535aae5223bf`
 is preserved as the 0.1.0 input, rather than treated as an existing runtime or duplicated
 implementation owner. This revision replaces its greenfield architecture assumptions.
 
-The user selected **implement the first-dollar commerce loop; keep deployment separately gated**
-on 2026-09-12. The [existing local-first release amendment][prior] continues to describe the
-asset-only deployment profile. This increment connects that authoring surface to the full Commerce
-profile through a reviewed launch pack. It neither enables payment on the asset-only Worker nor
-changes the protected production route automatically.
+The latest user direction on 2026-09-12 is **enable and autonomously complete checkout,
+using sandbox payment, not actual payment**. This supersedes the earlier live-payment plan for
+this sprint. The public local-first profile now has a explicitly labeled Stripe test-mode loop:
+review an example offer → continue to Stripe test checkout → explicitly submit a test payment → receive a test
+receipt → download sample materials on success. Stripe receives only test-mode requests; live keys and live sessions are refused.
 
-The subsequent public-URL correction targets the actual local-first deployment source. Its native
-shopper preview, vendor and admin views reuse the same private drafts and exact human launch
-review. [Delivery-profile coverage and limits](mercur-experience-parity.md#public-route-correction)
-separate that public artifact from the full Edge runtime. A successful PR is not live verification;
-the release workflow must observe the deployed source/version and exercise the role UI at the URL.
+The shopper, vendor and admin surfaces continue to share existing private drafts and launch
+review. Their original full Commerce integration remains available in the separate Edge profile;
+its production provider/trust gates are not relaxed by this sandbox amendment. A protected merge
+is not evidence of deployment. Release completion requires the exact public source/version and
+all eleven browser check groups, including Stripe test identity, cancellation, pending delivery refusal and offline safety.
 
 ```yaml
 context: "Existing Commerce has offline drafts, merchant themes, discovery, guarded checkout and derived revenue; the source input incorrectly assumes no codebase"
 intent: "Help a solo operator take one specific buyer outcome through review into the existing first-sale flow with no new dependencies or infrastructure"
-directive: "Reuse the draft store and theme/checkout owners, implement bounded launch economics, native role workspaces with catalog browsing, preview, searchable registry/review views and shared shopper/merchant agent actions, then verify the native Dev loop"
+directive: "Reuse the private draft and release owners; expose a lazy native sandbox checkout with explicit review, nonfinancial receipts and sample delivery; preserve all full-runtime payment gates"
 role: "solo-operator-and-authorized-agent"
-action: "review one offer, publish its theme under the existing claim, confirm the provider quote, and fulfill against the settlement receipt"
-outcome: "one reviewable merchant launch pack, human-operated workspaces and a tested draft-to-settlement mechanism; actual demand and payment remain evidence-gated"
+action: "review one example offer, explicitly confirm its sandbox scenario, inspect a nonfinancial receipt, and obtain the sample deliverable"
+outcome: "one complete public Stripe test purchase loop alongside offline workspaces; real payment, demand and willingness to pay remain unproven"
 subject: "solo-operator"
 verb: "launch"
 object: "one-reviewed-commerce-offer"
@@ -65,7 +65,7 @@ Inspected canonical revisions are context pins, not claims of live deployment:
 | Owner | Revision | Responsibility |
 |---|---|---|
 | agentic-os | `08afe0e775b3a65bf7c9e6f21c0b19d9c2a6b2d3` | ADLC, lane admission, invocation dictionaries, shared contracts |
-| agentic-commerce-os | `addf6afb3821c61b33f44d1b0a4e82afb7e139fa` | Drafts, merchant launch, storefront, checkout coordination, derived revenue |
+| agentic-commerce-os | `bfc4318784e15c3e7e7d0fc09e84ee3828e9da94` | Drafts, merchant launch, storefront, checkout coordination, derived revenue |
 | agentic-graph | `ddfb165472ce20a2fe4ebca9b799d32c86cb052d` | Discovery/payment providers, canvas, Dev → generated mirror → Cloudflare orchestration |
 | agentic-canvas-os | `821415e48c59de96f7184a2b32d1597727698558` | Application/admission contracts |
 | huijoohwee.github.io | `c83b43bd7fd018e0ac41629787e0e713db9a1e13` | Shared guidelines and semantic schemas |
@@ -92,6 +92,58 @@ Inspected canonical revisions are context pins, not claims of live deployment:
 Shared memory was refreshed from the private source at
 `9f910e4db51c25bde7c6be867d8ceff229e05c8e`, with OS config
 `08afe0e775b3a65bf7c9e6f21c0b19d9c2a6b2d3`. It supplied routing context only.
+
+## Current public sandbox contract (PRD / TAD / ADR / MVP / GTM)
+
+This section owns the 0.5.0 increment under the shared CID, RAO and SVO above. The latest user
+explicitly requests Stripe MCP and the existing Stripe sandbox. No actual payment is authorized.
+
+- **Buyer pain / MVP:** demonstrate a real provider checkout before connecting money. The example
+  education offer is SGD 8 in Stripe test mode; real charge is zero. Private draft prices never
+  enter checkout. Sample content is original and openly readable in this repository.
+- **Stripe grounding:** dashboard WebMCP reported `acct_1TKGGUGzH0w0k4VU`, `livemode:false`;
+  official Stripe MCP independently returned the same account and an empty test price inventory.
+  MCP created test price `price_1UEcrJGzH0w0k4VU6HbApj39`, product `prod_VF75VTaUhifetp`, SGD 800
+  minor units, one-time, `livemode:false`, lookup key `airvio_commerce_sandbox_education_v1`.
+  The MCP integration planner selected browser-hosted Checkout. No code or dependency was copied.
+- **TAD:** `src/local-first/checkout.ts` owns browser session and CSRF validation;
+  `stripe-checkout.ts` is a thin test-only HTTP adapter to Stripe's existing order/payment ledger.
+  Both reuse `src/shared/http.ts` bounded JSON readers. `checkout-offer.ts` owns the reviewed price
+  and UI template. The browser module loads only on `#checkout`. Card details are entered on Stripe.
+- **State / identity:** a signed Secure/HttpOnly/SameSite cookie identifies the test checkout for
+  seven days. High-entropy intent IDs form stable Stripe idempotency keys. Unused intents cannot
+  create after 23 hours, before Stripe's minimum 24-hour key retention. Account and test price are
+  checked before create. Every returned session must be `cs_test_*`, `livemode:false`, exact offer,
+  nonce, amount, currency and payment mode. Only `complete` + `paid` unlocks sample delivery.
+- **Human control:** review the offer before creating hosted checkout, then explicitly submit test
+  payment on Stripe. Same-origin CSRF checks protect create/cancel/reset. Cancel expires the
+  provider's open session; closing or returning from Stripe does not imply cancellation or payment.
+  Refresh reads the provider; it never retries a charge or marks a redirect as successful.
+- **Delivery / privacy:** receipt/download endpoints and the sample file are excluded from offline
+  caching and public asset routes. Provider customer details never enter the browser receipt.
+  The sample remains openly available in GitHub; this is a delivery exercise, not copy protection.
+  `commerce.stripe-test-receipt/v1` states `realMoney:false`, `chargeMinor:0` and test amount separately.
+- **ADR:** keep Graph's actual `agentic-payment` deployment unchanged. It is live-configured;
+  routing test traffic there would cross the user's boundary. Stripe remains the payment state
+  owner. A narrow test-only HTTP adapter avoids a new Worker, database, ledger or dependency.
+  The native deterministic simulation was replaced; fixtures exist only in the local test entrypoint.
+- **Release:** exact config permits assets, source/version metadata, `CHECKOUT_MODE=sandbox`,
+  session-signing secret and a separately named `STRIPE_TEST_SECRET_KEY`. The controller rejects
+  live keys; service/D1/DO bindings remain forbidden. v2 artifact/authorization/browser contracts
+  require `checkout:sandbox`. Wrangler includes the secrets atomically with the reviewed version;
+  secret files stay outside retained artifacts. Readback accepts the legacy predecessor for rollback
+  and requires the exact six sandbox bindings on the new version. No old authorization is reused.
+- **Validation / GTM:** local tests cover success, unpaid/expired delivery refusal, cancellation,
+  idempotency, identity/amount mismatch, live-key refusal, CSRF, cookie tampering and bounded input.
+  Local browser fixtures verify receipt/download; the protected public browser probe creates and
+  expires one real Stripe test session without submitting payment. A separately retained manual
+  hosted test confirms the provider payment end to end. These are test transactions, not revenue,
+  demand or willingness-to-pay evidence. Existing full integration and offline role checks remain.
+
+Stripe references: [MCP](https://docs.stripe.com/mcp),
+[Checkout](https://docs.stripe.com/api/checkout/sessions/create),
+[test cards](https://docs.stripe.com/testing). These describe APIs; the account/price evidence above
+comes from authenticated test-mode observations, not documentation assumptions.
 
 ## PRD
 

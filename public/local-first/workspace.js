@@ -1,7 +1,7 @@
 import { listDrafts } from './drafts.js';
 
 const $ = selector => document.querySelector(selector);
-const views = new Set(['shop', 'vendor', 'vendor-editor', 'vendor-preview', 'admin', 'admin-reviews', 'admin-data']);
+const views = new Set(['shop', 'checkout', 'vendor', 'vendor-editor', 'vendor-preview', 'admin', 'admin-reviews', 'admin-data']);
 const channel = typeof BroadcastChannel === 'function' ? new BroadcastChannel('commerce-local-drafts') : null;
 let drafts = [], launch, editor, editorPromise, generation = 0, navigation = 0, shopPage = 0, detailId = null;
 const tablePages = { vendor: 0, admin: 0 };
@@ -134,11 +134,12 @@ async function route() {
   const revision = ++navigation, hash = location.hash.slice(1), view = views.has(hash) ? hash : 'shop', role = view.split('-')[0];
   document.querySelectorAll('[data-role-panel]').forEach(panel => { panel.hidden = panel.dataset.rolePanel !== role; });
   document.querySelectorAll('[data-view-panel]').forEach(panel => { panel.hidden = panel.dataset.viewPanel !== view; });
-  document.querySelectorAll('[data-role]').forEach(link => { if (link.dataset.role === role) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current'); });
+  document.querySelectorAll('[data-role]').forEach(link => { if (link.dataset.role === (role === 'checkout' ? 'shop' : role)) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current'); });
   document.querySelectorAll('[data-view]').forEach(link => { if (link.dataset.view === view) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current'); });
-  document.title = `${role === 'shop' ? 'Shopper preview' : role === 'vendor' ? 'Vendor workspace' : 'Admin workspace'} · Airvio`;
+  document.title = `${role === 'checkout' ? 'Checkout' : role === 'shop' ? 'Shopper' : role === 'vendor' ? 'Vendor workspace' : 'Admin workspace'} · Airvio`;
   if (view === 'vendor-editor' || view === 'admin-data') await loadEditor();
   if (revision !== navigation) return;
+  if (view === 'checkout') await (await import('./checkout.js')).openCheckout();
   renderCurrent();
   if (hash !== 'collection' && hash !== 'main') document.querySelector(`#${role} [data-view-panel="${view}"] h1, #${role}-heading`)?.focus({ preventScroll: true });
 }

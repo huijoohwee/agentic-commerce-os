@@ -22,7 +22,7 @@ export async function observeBefore(provider, authority, retainedInput = null) {
 
 // Context, candidate, preparation and human-review guards run in execute.mjs before this sequence.
 export async function deployLocalFirst({ provider, routeAuthority, before, journal, revision,
-  checkMain, record, wrangler, verifyLive }) {
+  checkMain, record, wrangler, verifyLive, secretsFile }) {
   const { pattern, mode } = routeAuthority;
   let ownedVersion = false;
   try {
@@ -30,13 +30,14 @@ export async function deployLocalFirst({ provider, routeAuthority, before, journ
     if (!same(await provider.active(), before.active) || !same(await provider.route(pattern), before.route)) {
       throw Error('Provider state changed before upload');
     }
-    record('deploy-asset-only-worker');
+    if (!secretsFile) throw Error('Sandbox signing secret file required');
+    record('deploy-sandbox-worker');
     // Bootstrap is unrouted. An existing local-first route activates immediately on deploy.
-    wrangler(['deploy', '-c', CONFIG, '--minify', '--tag', revision, '--message', 'Reviewed local-first Commerce MVP',
-      '--var', `RELEASE_CANDIDATE_SHA:${revision}`]);
+    wrangler(['deploy', '-c', CONFIG, '--minify', '--tag', revision, '--message', 'Reviewed native sandbox checkout; no real payments',
+      '--var', `RELEASE_CANDIDATE_SHA:${revision}`, '--secrets-file', secretsFile]);
     journal.active = await provider.active();
     if (!journal.active) throw Error('Candidate deployment absent');
-    await provider.version(journal.active.versionId, revision);
+    await provider.version(journal.active.versionId, revision, 'sandbox');
     ownedVersion = true;
     const exposure = await provider.exposure();
     if (exposure.enabled !== false || exposure.previews_enabled !== false) throw Error('Unexpected public subdomain exposure');

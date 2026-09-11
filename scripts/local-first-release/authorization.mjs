@@ -4,13 +4,13 @@ import { fileURLToPath } from 'node:url';
 import { validateHumanAuthorization, parseHumanAuthorizationReceipt, fetchGitHubJson } from '../production-release/human-authorization.ts';
 import { CONFIG, assertLocalFirstConfig, sourceManifest } from './artifact.mjs';
 
-const SCHEMA = 'commerce.local-first-owner-authorization/v1';
+const SCHEMA = 'commerce.local-first-owner-authorization/v2';
 const REPOSITORY = 'huijoohwee/agentic-commerce-os';
 const keys = (value, expected) => assert.deepEqual(Object.keys(value).sort(), expected.sort(), 'Authorization shape mismatch');
 
 export function parseLocalFirstAuthorization(value, expected) {
   keys(value, ['schema', 'profile', 'checkout', 'repository', 'owner', 'artifactDigest', 'approval']);
-  assert(value.schema === SCHEMA && value.profile === 'local-first' && value.checkout === 'deferred', 'Local-first authorization required');
+  assert(value.schema === SCHEMA && value.profile === 'local-first' && value.checkout === 'sandbox', 'Local-first authorization required');
   assert.equal(value.repository, REPOSITORY);
   assert.match(value.artifactDigest, /^[a-f0-9]{64}$/);
   assert.equal(value.artifactDigest, expected.artifactDigest, 'Authorization artifact mismatch');
@@ -34,7 +34,7 @@ export function validateLocalFirstAuthorization(reviews, environment, run, confi
     assert(actor.type === 'User' && actor.id === owner.id && actor.login === owner.login, 'Owner workflow initiation required');
   }
   const approval = validateHumanAuthorization(reviews, environment, { ...expected, allowOwnerSelfReview: true });
-  return parseLocalFirstAuthorization({ schema: SCHEMA, profile: 'local-first', checkout: 'deferred',
+  return parseLocalFirstAuthorization({ schema: SCHEMA, profile: 'local-first', checkout: 'sandbox',
     repository: REPOSITORY, owner: { login: owner.login, id: owner.id, type: owner.type },
     artifactDigest: expected.artifactDigest, approval }, expected);
 }

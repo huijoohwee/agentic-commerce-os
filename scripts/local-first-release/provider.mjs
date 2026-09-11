@@ -30,16 +30,20 @@ export function createProvider({ accountId, zoneId, token }) {
     return match ? { id: match.id, pattern, script: match.script, state: 'bound' }
       : { id: null, pattern, script: null, state: 'absent' };
   }
-  async function version(versionId, revision) {
+  async function version(versionId, revision, expectedCheckout) {
     const value = await api(script + '/versions/' + encodeURIComponent(versionId));
     const bindings = value.resources?.bindings;
     const allowed = { ASSETS: 'assets', CF_VERSION_METADATA: 'version_metadata', RELEASE_CANDIDATE_SHA: 'plain_text' };
-    if (!Array.isArray(bindings) || bindings.length !== 3
+    const sandbox = Array.isArray(bindings) && bindings.length === 6;
+    if (sandbox) { allowed.CHECKOUT_MODE = 'plain_text'; allowed.STOREFRONT_SESSION_SECRET = 'secret_text'; allowed.STRIPE_TEST_SECRET_KEY = 'secret_text'; }
+    if (!Array.isArray(bindings) || ![3, 6].includes(bindings.length)
       || bindings.some(binding => allowed[binding.name] !== binding.type)
-      || new Set(bindings.map(binding => binding.name)).size !== 3
+      || new Set(bindings.map(binding => binding.name)).size !== bindings.length
       || !/^[0-9a-f]{40}$/.test(bindings.find(binding => binding.name === 'RELEASE_CANDIDATE_SHA')?.text)) {
-      throw Error('Existing Worker is not the asset-only local-first profile');
+      throw Error('Existing Worker is not the owned local-first profile');
     }
+    if (sandbox && bindings.find(binding => binding.name === 'CHECKOUT_MODE')?.text !== 'sandbox'
+      || expectedCheckout === 'sandbox' && !sandbox) throw Error('Sandbox profile required');
     const source = bindings.find(binding => binding.name === 'RELEASE_CANDIDATE_SHA').text;
     if (revision && (source !== revision || value.annotations?.['workers/tag'] !== revision)) throw Error('Uploaded version source mismatch');
     return { versionId, sourceRevision: source, bindingNames: bindings.map(binding => binding.name).sort() };

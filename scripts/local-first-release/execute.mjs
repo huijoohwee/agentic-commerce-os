@@ -1,3 +1,5 @@
+import os from 'node:os';
+import { stripeTestKey } from '../../src/local-first/stripe-checkout.ts';
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -35,8 +37,8 @@ const provider = createProvider({ accountId: env.CLOUDFLARE_ACCOUNT_ID, zoneId: 
 const retainedBaseline = await verifyRetainedBaseline(env.LOCAL_FIRST_RETAINED_BASELINE, env.GH_TOKEN);
 if (JSON.stringify(read('retained-baseline.json')) !== JSON.stringify(retainedBaseline)) throw Error('Retained baseline changed after preparation');
 const before = await observeBefore(provider, routeAuthority, retainedBaseline);
-const plan = { schema: 'commerce.local-first-release-plan/v1', sourceRevision: revision,
-  artifactDigest: artifact.artifactDigest, runId, profile: 'local-first', checkout: 'deferred',
+const plan = { schema: 'commerce.local-first-release-plan/v2', sourceRevision: revision,
+  artifactDigest: artifact.artifactDigest, runId, profile: 'local-first', checkout: 'sandbox',
   before, retainedBaseline, routeAuthority, authorization, createdAt: new Date().toISOString() };
 write('plan.json', plan);
 const journal = { schema: 'commerce.local-first-release-journal/v1', planDigest: digest(JSON.stringify(plan)),
@@ -58,10 +60,17 @@ const verifyLive = async active => {
     throw Error('Live source/version identity mismatch');
   }
 };
-await deployLocalFirst({ provider, routeAuthority, before, journal, revision, checkMain, record, wrangler, verifyLive });
+if (typeof env.STOREFRONT_SESSION_SECRET !== 'string' || env.STOREFRONT_SESSION_SECRET.length < 32) throw Error('Sandbox session signing secret required');
+if (!stripeTestKey(env.STRIPE_TEST_SECRET_KEY)) throw Error('Stripe test key required; live credentials forbidden');
+const secretDir = fs.mkdtempSync(path.join(os.tmpdir(), 'commerce-sandbox-release-'));
+const secretsFile = path.join(secretDir, 'secrets.json');
+try {
+  fs.writeFileSync(secretsFile, JSON.stringify({ STOREFRONT_SESSION_SECRET: env.STOREFRONT_SESSION_SECRET, STRIPE_TEST_SECRET_KEY: env.STRIPE_TEST_SECRET_KEY }), { mode: 0o600, flag: 'wx' });
+  await deployLocalFirst({ provider, routeAuthority, before, journal, revision, checkMain, record, wrangler, verifyLive, secretsFile });
+} finally { fs.rmSync(secretDir, { recursive: true }); }
 journal.outcome = 'production-complete'; record('complete');
-const body = { schema: 'commerce.local-first-production-completion/v1', status: 'production-complete',
-  profile: 'local-first', checkout: 'deferred', sourceRevision: revision, artifactDigest: artifact.artifactDigest,
+const body = { schema: 'commerce.local-first-production-completion/v2', status: 'production-complete',
+  profile: 'local-first', checkout: 'sandbox', sourceRevision: revision, artifactDigest: artifact.artifactDigest,
   runId, worker: WORKER, deployment: journal.active, route: journal.route,
   completedAt: new Date().toISOString(), browserProofDigest: digest(fs.readFileSync(path.join(output, 'live/browser-proof.json'))) };
 write('completion.json', { ...body, receiptDigest: digest(JSON.stringify(body)) });
