@@ -17,9 +17,16 @@ Run `npm run check:local-first` and `node scripts/local-first-release/artifact.m
 The protected source Integration Gate includes the local-first unit and browser checks. The separate
 `Local-first Production Release` workflow verifies the exact current main, builds
 asset identity, and repeats the real browser checks before production approval.
-The existing production reviewer policy, including prevention of self-review,
-remains enforced through the shared authorization verifier. Its approved job verifies
-provider state and deploys the asset-only Worker. Bootstrap verifies the private Worker before binding the exact route; an existing local-first route activates on deployment. The job
+The operator authorized owner self-review for this checkout-deferred MVP on 2026-09-11.
+Required production approval and the main-only environment branch policy remain enabled.
+The local-first verifier observes the actual GitHub run and approval, requires the repository
+owner to initiate and approve the first attempt, and binds a distinct profile receipt to the
+exact source and artifact. Other actors, workflows, profiles and reruns are rejected.
+The full Commerce verifier still requires `prevent_self_review: true`; while the environment
+allows owner self-review, full-provider releases fail closed. Restore that policy before
+resuming the deferred full profile. The approved MVP job verifies provider state and deploys
+the asset-only Worker. Bootstrap verifies the private Worker before binding the exact route;
+an existing local-first route activates on deployment. The job
 retains a sealed completion only after live browser and version/route checks pass.
 An ambiguous mutation is preserved rather than replayed; an exactly observed failed
 bootstrap can remove its own new route while retaining the uploaded Worker.
