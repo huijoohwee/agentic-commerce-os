@@ -47,6 +47,20 @@ test('real runaway code is stopped and its exact container removed', async () =>
   assert.equal(result.containerRemoved, true)
 })
 
+test('cancellation during provisioning cannot race container startup or leak the host slot', { timeout: 15_000 }, async () => {
+  const abort = new AbortController()
+  // Queued before synchronous provisioning: delivered at the first asynchronous boundary.
+  const timer = setTimeout(() => abort.abort(), 1)
+  try {
+    const result = await runIsolatedProcess({ ...config, timeoutMs: 30_000, signal: abort.signal,
+      files: { 'probe.mjs': 'while (true) {}' } })
+    // Early cancellation can leave an engine exit code of zero before input arrives.
+    // The executor requires !timedOut for success; cancellation and cleanup own this outcome.
+    assert.equal(result.timedOut, true)
+    assert.equal(result.containerRemoved, true)
+  } finally { clearTimeout(timer) }
+})
+
 test('real output flooding is bounded, terminated and never reported as success', async () => {
   const result = await runIsolatedProcess({ ...config, timeoutMs: 5000, maxOutputBytes: 4096,
     files: { 'probe.mjs': 'while (true) process.stdout.write("x".repeat(65536))' } })

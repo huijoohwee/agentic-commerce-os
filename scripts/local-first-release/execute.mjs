@@ -7,6 +7,7 @@ import { parseLocalFirstAuthorization } from './authorization.mjs';
 import { parseProductionRouteAuthority } from '../production-release/route-authority.ts';
 import { observeBefore, deployLocalFirst } from './deployment.mjs';
 import { verifyRetainedBaseline } from './retained-baseline.mjs';
+import { assertBrowserProof } from './browser-proof.mjs';
 
 const env = process.env, revision = env.CANDIDATE_SHA, runId = Number(env.GITHUB_RUN_ID);
 if (env.GITHUB_ACTIONS !== 'true' || env.GITHUB_REPOSITORY !== 'huijoohwee/agentic-commerce-os'
@@ -23,9 +24,7 @@ const checkMain = () => {
 checkMain();
 const artifact = sourceManifest(revision);
 if (JSON.stringify(read('artifact.json')) !== JSON.stringify(artifact)) throw Error('Prepared artifact changed');
-const browser = read('browser-proof.json');
-if (browser.ok !== true || browser.sourceRevision !== revision || browser.checkout !== 'deferred'
-  || browser.schema !== 'commerce.local-first-browser-proof/v1' || browser.checks?.length !== 6) throw Error('Candidate browser proof missing');
+assertBrowserProof(read('browser-proof.json'), revision);
 const routeAuthority = parseProductionRouteAuthority(JSON.parse(env.PRODUCTION_ROUTE_AUTHORITY_JSON || '{}'));
 const mode = routeAuthority.mode;
 const authorization = parseLocalFirstAuthorization(read('human-authorization.json'), {

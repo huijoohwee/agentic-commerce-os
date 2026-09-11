@@ -3,7 +3,7 @@ import {
   DEV_REGISTRATION_CLIENT_TIMEOUT_MS, devRuntimeEnvironment, registrationInput, registryClaim, registryClaimHeaders,
 } from './dev-runtime.ts'
 
-test('empty Dev registry reaches one visually confirmed settlement and one markup line', async ({ page, request }) => {
+test('reviewed merchant offer reaches one visually confirmed settlement and one markup line', async ({ page, request }) => {
   const runtime = devRuntimeEnvironment()
   const agentHeaders = { authorization: `Bearer ${runtime.agentToken}` }
   const claim = registryClaim(runtime.runId)
@@ -67,7 +67,54 @@ test('empty Dev registry reaches one visually confirmed settlement and one marku
     }
   }
 
-  await page.goto('/', { waitUntil: 'domcontentloaded' })
+  // Consume the actual local-first launch contract through the existing operator boundary.
+  // Review data itself never grants a publication permit or settlement authority.
+  const launchModule = '../../public/local-first/launch.js'
+  const { reviewLaunch, exportLaunchPack } = await import(launchModule)
+  const draft = { id: '12345678-1234-1234-1234-123456789abc', revision: 1, title: 'Solo pilot',
+    description: 'Private customer notes', price: '', createdAt: 1, updatedAt: 1,
+    launch: { merchantId: 'solo-pilot', agentId: 'dev-e2e-flight', audience: 'Solo founders with a travel task',
+      outcome: 'One reviewed itinerary', currency: 'USD', priceMinor: 12_500, deliveryCostMinor: 4_000,
+      providerFeeMinor: 500, agentCostMinor: 100, acquisitionCostMinor: 900, fixedCostMinor: 10_000 } }
+  const pack = await exportLaunchPack(draft, await reviewLaunch(draft))
+  const themePath = '/v1/operator/merchants/solo-pilot/theme'
+  expect((await request.get('/s/solo-pilot')).status()).toBe(404)
+  expect((await request.post(themePath, { headers: agentHeaders, data: pack.themeManifest })).status()).toBe(401)
+  await page.goto('/vendor')
+  await page.locator('#launch-import').setInputFiles({ name: 'launch.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(pack)) })
+  await expect(page.getByLabel('Buyer outcome')).toHaveValue('One reviewed itinerary')
+  await page.getByRole('button', { name: 'Stage for review' }).click()
+  await expect(page.locator('#merchant-proposals')).toContainText('pending')
+  expect((await request.get('/s/solo-pilot')).status()).toBe(404)
+  await page.getByRole('link', { name: 'Admin', exact: true }).click()
+  await page.getByLabel('Operator credential').fill(runtime.operatorToken)
+  await page.getByRole('button', { name: 'Connect', exact: true }).click()
+  await expect(page.locator('#operator-overview')).toContainText('2 registered agents')
+  const publication = page.waitForResponse(response => response.url().endsWith(themePath))
+  await page.getByRole('button', { name: 'Approve and publish' }).click()
+  const published = await publication
+  expect(published.status(), await published.text()).toBe(200)
+  expect(await published.json()).toMatchObject({ ok: true, merchantId: 'solo-pilot', resolvedCatalogScope: ['dev-e2e-flight'] })
+  await expect(page.locator('#merchant-proposals')).toContainText('applied')
+  // A later human edit takes a new lease and binds the previously published version.
+  const firstVersion = (await published.json()).manifestDigest
+  await page.goto('/vendor')
+  const changedPack = { ...pack, themeManifest: { ...pack.themeManifest,
+    copy: { ...pack.themeManifest.copy, brand: 'Solo pilot updated' } } }
+  await page.locator('#launch-import').setInputFiles({ name: 'updated.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(changedPack)) })
+  await page.getByRole('button', { name: 'Stage for review' }).click()
+  await expect(page.locator('#merchant-proposals')).toContainText('Solo pilot updated')
+  await page.goto('/admin')
+  await page.getByLabel('Operator credential').fill(runtime.operatorToken)
+  await page.getByRole('button', { name: 'Connect', exact: true }).click()
+  const updateResponse = page.waitForResponse(response => response.url().endsWith(themePath))
+  await page.getByRole('button', { name: 'Approve and publish' }).click()
+  const updated = await updateResponse
+  expect(updated.request().postDataJSON().expectedPreviousManifestDigest).toBe(firstVersion)
+  expect(updated.status(), await updated.text()).toBe(200)
+  await expect(page.locator('#merchant-proposals .listing').filter({ hasText: 'solo-pilot' }).filter({ hasText: 'dev-e2e-flight' }).getByText('applied', { exact: true })).toHaveCount(2)
+  await page.goto(pack.checkout.path, { waitUntil: 'domcontentloaded' })
+  await expect(page.getByRole('heading', { name: 'One reviewed itinerary' })).toBeVisible()
   await page.locator('#catalog-query').fill('flight')
   const discoveryResponse = page.waitForResponse(response => response.url().endsWith('/v1/intents/route'))
   await page.getByRole('button', { name: 'Search catalog' }).click()
@@ -81,7 +128,7 @@ test('empty Dev registry reaches one visually confirmed settlement and one marku
 
   await page.getByRole('button', { name: /Select offer offer-1/u }).click()
   const preparationResponse = page.waitForResponse(response => /\/v1\/checkouts\/[^/]+\/prepare$/u.test(response.url()))
-  await page.getByRole('button', { name: 'Initiate guarded checkout' }).click()
+  await page.getByRole('button', { name: 'Review checkout' }).click()
   const preparation = await preparationResponse
   expect(preparation.status()).toBe(200)
   const prepared = await preparation.json()

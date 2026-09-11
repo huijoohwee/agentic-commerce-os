@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest'
 
 describe('commerce edge invalid Production configuration', () => {
   it('keeps the read-only browser console available for diagnosis', async () => {
-    const dashboard = await SELF.fetch('https://edge.test/')
+    const dashboard = await SELF.fetch('https://edge.test/admin')
     expect(dashboard.status).toBe(200)
-    await expect(dashboard.text()).resolves.toContain('Operational routes remain bearer-protected.')
+    await expect(dashboard.text()).resolves.toContain('Release identity')
   })
 
   it('fails readiness and blocks every operational transport', async () => {

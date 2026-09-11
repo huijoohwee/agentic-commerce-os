@@ -29,6 +29,7 @@ export type DeploymentResult =
   | Readonly<{ ok: false; code: 'theme_scope_agent_not_registered'; agentIds: readonly string[] }>
   | Readonly<{ ok: false; code: 'theme_asset_unreachable'; failures: readonly AssetFetchFailure[] }>
   | Readonly<{ ok: false; code: 'theme_activation_failed' }>
+  | Readonly<{ ok: false; code: 'theme_review_invalid' | 'theme_review_stale' }>
   | FencedMutationRefusal
 
 type RegistryClient = Readonly<{ list: AgentRegistry['list'] }>
@@ -37,7 +38,7 @@ type DeploymentClient = Readonly<{
   current: ThemeDeployment['current']
 }>
 
-export type PreparedThemeDeployment = Readonly<{ ok: true; record: ActivatedTheme }>
+export type PreparedThemeDeployment = Readonly<{ ok: true; record: ActivatedTheme; expectedPreviousManifestDigest?: string | null }>
   | Exclude<DeploymentResult, { ok: true }>
 
 const ASSET_ATTEMPT_TIMEOUT_MS = 9_000
@@ -47,6 +48,17 @@ export async function prepareThemeDeployment(
   merchantId: string,
   value: unknown,
 ): Promise<PreparedThemeDeployment> {
+  let expectedPreviousManifestDigest: string | null | undefined
+  if (value && typeof value === 'object' && 'manifest' in value) {
+    const envelope = value as Record<string, unknown>
+    const expected = envelope.expectedPreviousManifestDigest
+    if (Object.keys(envelope).sort().join(',') !== 'expectedPreviousManifestDigest,manifest'
+      || (expected !== null && (typeof expected !== 'string' || !/^[0-9a-f]{64}$/u.test(expected)))) {
+      return Object.freeze({ ok: false, code: 'theme_review_invalid' })
+    }
+    expectedPreviousManifestDigest = expected as string | null
+    value = envelope.manifest
+  }
   const verdict = await validateThemeManifest(value)
   if (!verdict.ok) return Object.freeze({ ok: false, code: 'theme_manifest_invalid', violations: verdict.violations })
   if (verdict.manifest.merchantId !== merchantId) {
@@ -75,7 +87,9 @@ export async function prepareThemeDeployment(
     deployedAtMs,
     deployedAt: new Date(deployedAtMs).toISOString(),
   })
-  return Object.freeze({ ok: true, record })
+  return Object.freeze({ ok: true, record,
+    ...(expectedPreviousManifestDigest !== undefined ? { expectedPreviousManifestDigest } : {}),
+  })
 }
 
 export async function activatePreparedTheme(
@@ -85,8 +99,11 @@ export async function activatePreparedTheme(
 ): Promise<DeploymentResult> {
   const { record } = prepared
   const store = env.THEME_DEPLOYMENT.getByName(record.merchantId) as unknown as DeploymentClient
-  const activation = await store.activate(record, permit)
+  const activation = await store.activate(record, permit, prepared.expectedPreviousManifestDigest)
   if (isFencedMutationRefusal(activation)) return activation
+  if (activation && typeof activation === 'object' && 'code' in activation && activation.code === 'theme_review_stale') {
+    return Object.freeze({ ok: false, code: 'theme_review_stale' })
+  }
   if (!isActivation(activation, record.merchantId, record.manifestDigest)) {
     return Object.freeze({ ok: false, code: 'theme_activation_failed' })
   }
@@ -108,7 +125,7 @@ function isFencedMutationRefusal(value: unknown): value is FencedMutationRefusal
     && 'ok' in value
     && value.ok === false
     && 'code' in value
-    && ['claim_malformed', 'mutation_out_of_write_set', 'lease_expired', 'fence_stale'].includes(String(value.code))
+    && ['claim_malformed', 'mutation_out_of_write_set', 'mutation_request_mismatch', 'lease_expired', 'fence_stale'].includes(String(value.code))
     && 'holdingClaimId' in value
     && (value.holdingClaimId === null || typeof value.holdingClaimId === 'string')
     && 'holdingLeaseEpoch' in value

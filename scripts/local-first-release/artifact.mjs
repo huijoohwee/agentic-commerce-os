@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 export const CONFIG = 'wrangler.local-first.jsonc';
 export const WORKER = 'agentic-commerce-edge-production';
-export const FILES = Object.freeze(['index.html', 'app.js', 'drafts.js', 'style.css', 'sw.js']);
+export const FILES = Object.freeze(['index.html', 'workspace.js', 'app.js', 'drafts.js', 'launch.js', 'style.css', 'sw.js']);
 export const digest = value => createHash('sha256').update(value).digest('hex');
 export const git = (...args) => execFileSync('git', args, { encoding: 'utf8', timeout: 20000 }).trim();
 export function assertLocalFirstConfig(config) {

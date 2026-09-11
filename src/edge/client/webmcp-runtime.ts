@@ -1,5 +1,5 @@
 /** Exact browser runtime also embedded in the isolated WebMCP proof target. */
-export const WEBMCP_CLIENT_RUNTIME_SHA256 = '5e71a34f97d6eb7ddb2a712a8e4609b752c874bb08f44b1ca5f9335dea133d17'
+export const WEBMCP_CLIENT_RUNTIME_SHA256 = '4df39701a1341f306d60a61a0909a655fe831689c51dca10922d3eac1915c562'
 
 export const WEBMCP_CLIENT_RUNTIME = String.raw`
 const canonical = value => {
@@ -16,32 +16,32 @@ const digest = async value => {
 };
 
 const schema = (properties, required) => ({ type: 'object', properties, required, additionalProperties: false });
-const definitions = Object.freeze([
+const definitions = typeof nativeToolDefinitions === 'undefined' ? Object.freeze([
   Object.freeze({
     name: 'commerce.catalog.search', title: 'Search storefront catalog',
     description: 'Search the current storefront catalog with a bounded shopper query.',
     inputSchema: schema({ query: { type: 'string', maxLength: 280 }, limit: { type: 'integer', minimum: 1, maximum: 100 } }, ['query', 'limit']),
     outputSchema: schema({ ok: { const: true }, query: { type: 'string' }, limit: { type: 'integer' }, listings: { type: 'array' } }, ['ok', 'query', 'limit', 'listings']),
-    annotations: { readOnlyHint: true, untrustedContentHint: true },
-    execute: input => actions.searchCatalog(input)
+    annotations: { readOnlyHint: true, untrustedContentHint: true, consequentialHint: false },
+    execute: (input, options) => actions.searchCatalog(input, options)
   }),
   Object.freeze({
     name: 'commerce.offer.select', title: 'Select one storefront offer',
     description: 'Select one offer previously returned by the current storefront catalog.',
     inputSchema: schema({ listingId: { type: 'string', maxLength: 128 }, offerId: { type: 'string', maxLength: 128 } }, ['listingId', 'offerId']),
     outputSchema: schema({ ok: { type: 'boolean' }, listingId: { type: 'string' }, offerId: { type: 'string' }, amountMinor: { type: 'integer' }, currency: { type: 'string' }, code: { type: 'string' } }, ['ok']),
-    annotations: { readOnlyHint: false, untrustedContentHint: true },
-    execute: input => actions.selectOffer(input)
+    annotations: { readOnlyHint: false, untrustedContentHint: true, consequentialHint: false },
+    execute: (input, options) => actions.selectOffer(input, options)
   }),
   Object.freeze({
     name: 'commerce.checkout.initiate', title: 'Initiate a guarded checkout',
     description: 'Prepare the selected offer for a separate human-confirmation step; this tool cannot settle.',
     inputSchema: schema({ offerId: { type: 'string', maxLength: 128 }, amountMinor: { type: 'integer', minimum: 1 }, currency: { type: 'string', pattern: '^[A-Z]{3}$' } }, ['offerId', 'amountMinor', 'currency']),
     outputSchema: schema({ ok: { type: 'boolean' }, checkoutId: { type: 'string' }, state: { const: 'awaiting-human-confirmation' }, code: { type: 'string' } }, ['ok']),
-    annotations: { readOnlyHint: false, untrustedContentHint: true },
-    execute: input => actions.initiateCheckout(input)
+    annotations: { readOnlyHint: false, untrustedContentHint: true, consequentialHint: false },
+    execute: (input, options) => actions.initiateCheckout(input, options)
   })
-]);
+]) : nativeToolDefinitions;
 
 const MAXIMUM_REGISTERED_TOOLS = 16;
 const WEBMCP_REGISTRATION_LIMIT_MS = 2000;
@@ -69,6 +69,7 @@ const registerWebMcp = async () => {
   const metadata = definitions.map(({ name, inputSchema, outputSchema }) => ({ name, inputSchema, outputSchema }));
   const recordedDigest = await digest({ tools: metadata.slice().sort((left, right) => left.name.localeCompare(right.name)), toolCount: metadata.length });
   const registrationController = new AbortController();
+  globalThis.addEventListener?.('pagehide', () => registrationController.abort(), { once: true });
   let registrationTimeout;
   try {
     const liveTools = await Promise.race([
@@ -88,7 +89,7 @@ const registerWebMcp = async () => {
             return refusal;
           }
           if (options.signal.aborted) throw options.signal.reason;
-          return definition.execute(input);
+          return definition.execute(input, options);
         }
       }, { signal: registrationController.signal }))).then(() => document.modelContext.getTools()),
       new Promise((_, reject) => {

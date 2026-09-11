@@ -7,6 +7,9 @@ import assert from 'node:assert/strict';
 import { once } from 'node:events';
 import { waitForReadiness } from './readiness.mjs';
 import { waitForAssets } from './availability.mjs';
+import { checkRoleWorkspace } from '../../test/local-first/workspace-browser.mjs';
+import { checkMerchantLaunch } from '../../test/local-first/merchant-browser.mjs';
+import { BROWSER_CHECKS, BROWSER_PROOF_SCHEMA, completeBrowserChecks, assertBrowserProof } from './browser-proof.mjs';
 
 const root = process.cwd();
 const output = path.resolve(process.env.LOCAL_FIRST_EVIDENCE_DIR || 'node_modules/.cache/local-first-verification');
@@ -63,12 +66,12 @@ try {
     const result = await fetch(url + route, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
     assert.equal(result.status, 501); assert.equal((await result.json()).code, 'checkout_deferred');
   }
-  record('exact production scope and server mutation refusal');
+  record(BROWSER_CHECKS.scope);
   browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, acceptDownloads: true });
   observeContext(context);
   const page = await context.newPage();
-  const documentResponse = await page.goto(url);
+  const documentResponse = await page.goto(url + '#vendor-editor');
   assert.match(documentResponse.headers()['cache-control'], /(?:^|,\s*)no-transform(?:,|$)/);
   await page.getByText('Offline access is ready.', { exact: false }).waitFor();
   await page.evaluate(() => navigator.serviceWorker.ready);
@@ -82,7 +85,7 @@ try {
   await page.screenshot({ path: path.join(output, 'mobile.png'), fullPage: true });
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.screenshot({ path: path.join(output, 'desktop.png'), fullPage: true });
-  record('mobile draft creation, safe canvas link and responsive layout');
+  record(BROWSER_CHECKS.mobile);
   await context.setOffline(true); await page.reload();
   await page.locator('#draft-list button').first().click();
   await expect(page.getByLabel('The idea')).toHaveValue('A useful idea, kept only on this device.');
@@ -91,9 +94,9 @@ try {
   await page.getByText('Saved privately on this device.', { exact: true }).waitFor();
   await page.reload(); await page.locator('#draft-list button').first().click();
   await expect(page.getByLabel('The idea')).toHaveValue('Updated without a connection');
-  record('offline navigation, editing and durable reload');
+  record(BROWSER_CHECKS.offline);
   await context.setOffline(false);
-  const peer = await context.newPage(); await peer.goto(url); await peer.locator('#draft-list button').first().click();
+  const peer = await context.newPage(); await peer.goto(url + '#vendor-editor'); await peer.locator('#draft-list button').first().click();
   await peer.getByLabel('The idea').fill('A stale editor must not overwrite');
   await page.getByLabel('The idea').fill('The first writer wins');
   await page.getByRole('button', { name: 'Save on this device' }).click();
@@ -101,37 +104,41 @@ try {
   await peer.getByRole('button', { name: 'Save on this device' }).click();
   await peer.getByText('This draft changed in another tab.', { exact: false }).waitFor();
   assert.equal(await peer.getByLabel('The idea').inputValue(), 'A stale editor must not overwrite');
-  record('concurrent tabs reject stale overwrites and retain editor text');
+  record(BROWSER_CHECKS.concurrency);
+  await page.goto(url + '#admin-data');
   const downloadPromise = page.waitForEvent('download'); await page.getByRole('button', { name: 'Export drafts' }).click();
   const download = await downloadPromise, exported = fs.readFileSync(await download.path());
   const fresh = await browser.newContext({ viewport: { width: 390, height: 844 } });
   observeContext(fresh);
   const imported = await fresh.newPage();
-  await imported.goto(url); await imported.locator('#import').setInputFiles({ name: 'drafts.json', mimeType: 'application/json', buffer: exported });
+  await imported.goto(url + '#admin-data'); await expect(imported.locator('#import')).toBeEnabled(); await imported.locator('#import').setInputFiles({ name: 'drafts.json', mimeType: 'application/json', buffer: exported });
   await imported.getByText('Imported 1 draft.', { exact: false }).waitFor();
-  await imported.locator('#draft-list button').first().click();
+  await imported.goto(url + '#vendor-editor'); await imported.locator('#draft-list button').first().click();
   await expect(imported.getByLabel('The idea')).toHaveValue('The first writer wins');
+  await imported.goto(url + '#admin-data');
   const conflict = JSON.parse(exported); conflict.drafts[0].title = 'Conflicting import';
   await imported.locator('#import').setInputFiles({ name: 'conflict.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(conflict)) });
   await imported.getByText('An imported draft conflicts', { exact: false }).waitFor();
   assert.equal(await imported.locator('#draft-count').textContent(), '1');
-  record('portable JSON roundtrip and atomic import conflict preservation');
+  record(BROWSER_CHECKS.portability);
   const payload = JSON.parse(exported); payload.drafts[0].id = '12345678-1234-1234-1234-123456789abc';
   payload.drafts[0].title = '<img src=x onerror="window.injected=true">';
   await imported.locator('#import').setInputFiles({ name: 'plain-text.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(payload)) });
   await imported.getByText('Imported 1 draft.', { exact: false }).waitFor();
   assert.equal(await imported.locator('#draft-list img').count(), 0);
   assert.equal(await imported.evaluate(() => window.injected), undefined);
+  await checkRoleWorkspace({ browser, url, output, observeContext, record });
+  await checkMerchantLaunch({ browser, url, output, observeContext, record });
   assert.deepEqual(failures.filter(failure => failure.type === 'page'), []);
   assert(requests.every(request => request.method === 'GET' && new URL(request.url).origin === origin));
-  record('imported text cannot inject markup; no draft or checkout network writes');
-  const proof = { schema: 'commerce.local-first-browser-proof/v1', ok: true, sourceRevision: revision,
-    origin, checkout: 'deferred', checks, verifiedAt: new Date().toISOString() };
+  record(BROWSER_CHECKS.privacy);
+  const proof = assertBrowserProof({ schema: BROWSER_PROOF_SCHEMA, ok: true, sourceRevision: revision,
+    origin, checkout: 'deferred', checks, verifiedAt: new Date().toISOString() }, revision);
   fs.writeFileSync(path.join(output, 'browser-proof.json'), JSON.stringify(proof, null, 2) + '\n');
   console.log(JSON.stringify(proof));
 } finally {
   fs.writeFileSync(path.join(output, 'asset-observation.json'), JSON.stringify({ sourceRevision: revision, observations: assetObservations }, null, 2) + '\n');
-  if (checks.length !== 6) {
+  if (!completeBrowserChecks(checks)) {
     const state = await Promise.all(pages.filter(page => !page.isClosed()).map(async (page, index) => {
       try { await page.screenshot({ path: path.join(output, 'failure-page-' + index + '.png'), fullPage: true, timeout: 5000 });
         return { url: page.url(), text: await page.locator('body').innerText({ timeout: 5000 }) }; }

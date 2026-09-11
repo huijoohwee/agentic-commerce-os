@@ -1,10 +1,5 @@
+import { installModelContextHarness, type WebMcpHarness } from './model-context'
 import { expect, test, type Page } from '@playwright/test'
-
-type WebMcpHarness = {
-  completedAt: number | null
-  definitions: Array<Readonly<Record<string, unknown>>>
-  live: Array<Readonly<{ name: string; inputSchema: unknown }>>
-}
 
 test('capable Chromium contract registers the bounded tool set and refuses drift', async ({ browser, page }) => {
   expect(browser.browserType().name()).toBe('chromium')
@@ -37,6 +32,9 @@ test('capable Chromium contract registers the bounded tool set and refuses drift
   expect(proof.toolCount).toBeLessThanOrEqual(16)
   expect(Math.max(0, proof.completedAt - proof.loadAt)).toBeLessThan(2_000)
 
+  await expect(page.locator('#catalog-results')).toHaveAttribute('aria-busy', 'false')
+  const callsBeforeRefusal = catalogCalls
+  expect(callsBeforeRefusal).toBe(1) // The initial read-only catalog browse has completed.
   const refusal = await page.evaluate(async () => {
     const harness = Reflect.get(globalThis, '__webMcpHarness') as WebMcpHarness | undefined
     if (!harness) throw new Error('webmcp_harness_missing')
@@ -46,7 +44,7 @@ test('capable Chromium contract registers the bounded tool set and refuses drift
     return await execute({ query: '', limit: 10 }, { signal: new AbortController().signal })
   })
   expect(refusal).toMatchObject({ ok: false, code: 'webmcp_registration_drift' })
-  expect(catalogCalls).toBe(0)
+  expect(catalogCalls).toBe(callsBeforeRefusal)
   await expect.poll(() => pendingEventTypes(page)).toContain('webmcp_registration_drift')
 })
 
@@ -107,7 +105,7 @@ test('incapable Chromium keeps the complete visual preparation flow silent and o
 
   await page.getByRole('button', { name: 'Search catalog' }).click()
   await page.getByRole('button', { name: /offer-incapable-engine/u }).click()
-  await page.getByRole('button', { name: 'Initiate guarded checkout' }).click()
+  await page.getByRole('button', { name: 'Review checkout' }).click()
   await expect(page.getByRole('heading', { name: 'Review and confirm' })).toBeVisible()
   await expect(page.locator('#confirmation-offer')).toHaveText('offer-incapable-engine')
 })
@@ -134,29 +132,6 @@ test('two incapable tabs atomically preserve the shared 500-change ceiling', asy
   expect((await pendingEventTypes(left)).filter((type) => type === 'webmcp_surface_unavailable')).toHaveLength(1)
   await context.close()
 })
-
-async function installModelContextHarness(page: Page): Promise<void> {
-  await page.addInitScript(() => {
-    const harness = {
-      completedAt: null as number | null,
-      definitions: [] as Array<Readonly<Record<string, unknown>>>,
-      live: [] as Array<Readonly<{ name: string; inputSchema: unknown }>>,
-    }
-    Reflect.set(globalThis, '__webMcpHarness', harness)
-    Object.defineProperty(Reflect.get(globalThis, 'document'), 'modelContext', {
-      configurable: true,
-      value: {
-        async registerTool(definition: Readonly<Record<string, unknown>>, options?: { signal?: AbortSignal }) {
-          if (options?.signal?.aborted) throw options.signal.reason
-          harness.definitions.push(definition)
-          harness.live.push({ name: String(definition.name), inputSchema: definition.inputSchema })
-          harness.completedAt = performance.now()
-        },
-        async getTools() { return harness.live },
-      },
-    })
-  })
-}
 
 async function pendingEventTypes(page: Page): Promise<string[]> {
   return await page.evaluate(async () => {

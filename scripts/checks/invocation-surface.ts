@@ -12,6 +12,7 @@ const merchantCatalog = map?.find(({ capabilityAction }) => capabilityAction ===
 const syncMerge = map?.find(({ capabilityAction }) => capabilityAction === 'sync.merge')
 const demandEvidence = map?.find(({ capabilityAction }) => capabilityAction === 'revenue.demand-evidence.read')
 const edgeSource = source('src/edge/index.ts')
+const routeSource = source('src/edge/core-routes.ts')
 const capabilitySource = source('src/invocation/capability-map.ts')
 const readinessSource = source('src/core/core-readiness.ts')
 const assertions: Assertion[] = [
@@ -33,11 +34,11 @@ const assertions: Assertion[] = [
     detail: 'merchant catalog projection uses the public edge route contract',
   },
   {
-    condition: routeMatchesEdgeSource(syncMerge?.httpRoute, 'POST', edgeSource),
+    condition: routeMatchesEdgeSource(syncMerge?.httpRoute, 'POST', routeSource),
     detail: 'sync merge projection matches the implemented POST edge route',
   },
   {
-    condition: routeMatchesEdgeSource(demandEvidence?.httpRoute, 'GET', edgeSource),
+    condition: routeMatchesEdgeSource(demandEvidence?.httpRoute, 'GET', routeSource),
     detail: 'demand-evidence projection matches the implemented GET edge route',
   },
   { condition: !capabilitySource.includes('/tool.route'), detail: 'capability reader contains no duplicated token dictionary values' },

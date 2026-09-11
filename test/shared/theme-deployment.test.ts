@@ -1,11 +1,16 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { currentTheme, deployTheme } from '../../src/core/theme-deployment'
+import { currentTheme, deployTheme, prepareThemeDeployment } from '../../src/core/theme-deployment'
 import type { ActivatedTheme } from '../../src/core/theme-deployment-store'
 import { themeMutationPermit } from '../fixtures/authoring.js'
 
 describe('theme deployment response projection', () => {
   afterEach(() => vi.restoreAllMocks())
+
+  it.each([{ manifest: {} }, { manifest: {}, expectedPreviousManifestDigest: '' },
+    { manifest: {}, expectedPreviousManifestDigest: null, extra: true }])('rejects malformed conditional envelopes before reaching bindings', async value => {
+    expect(await prepareThemeDeployment({} as CoreEnv, 'merchant', value)).toEqual({ ok: false, code: 'theme_review_invalid' })
+  })
 
   it('returns the persisted record byte-for-byte on an idempotent activation', async () => {
     vi.spyOn(Date, 'now').mockReturnValueOnce(1_777_777_777_000).mockReturnValueOnce(1_888_888_888_000)
