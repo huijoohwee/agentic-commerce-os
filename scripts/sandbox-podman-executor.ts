@@ -14,8 +14,8 @@ export function createPodmanSandboxExecutor(config: Readonly<{
     execute(input, timeoutMs) {
       // Disconnect may arrive while the executable digest is still being checked.
       // This is cancellation before provisioning, not unproven executor cleanup.
-      if (abort.signal.aborted) return Promise.reject(new Error('isolated_process_aborted'))
       if (used) return Promise.reject(new Error('podman_executor_already_used'))
+      if (abort.signal.aborted) return Promise.reject(new Error('isolated_process_aborted'))
       used = true
       active = (async () => {
         const result = await runIsolatedProcess({ ...config, timeoutMs, signal: abort.signal,
