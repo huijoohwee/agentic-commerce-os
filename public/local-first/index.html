@@ -12,7 +12,7 @@
 <body>
   <header class="topbar"><a class="brand" href="./">airvio<span> / commerce</span></a><span id="connection" class="badge">Local workspace</span></header>
   <main>
-    <section class="intro"><p class="eyebrow">FROM IDEA TO OFFER</p><h1>A little space<br>for your next thing.</h1><p>Shape an offer, keep your notes, and pick up where you left off. Your drafts stay in this browser.</p></section>
+    <section class="intro"><p class="eyebrow">FROM IDEA TO FIRST SALE</p><h1>One useful offer.<br>Your first customer.</h1><p>Shape an offer, check what each sale could earn, and review it for your storefront. Your private notes stay in this browser.</p></section>
     <div class="workspace">
       <aside class="panel draft-panel" aria-labelledby="draft-heading">
         <div class="panel-heading"><h2 id="draft-heading">Your drafts <span id="draft-count">0</span></h2><button id="new-draft" class="small" type="button">+ New</button></div>
@@ -27,15 +27,39 @@
           <label for="title">What are you creating?</label><input id="title" name="title" maxlength="120" required placeholder="An offer, a product, a service…" autocomplete="off">
           <label for="description">The idea</label><textarea id="description" name="description" maxlength="10000" rows="9" placeholder="Who is it for? What would make it useful? What would you like to try?"></textarea>
           <label for="price">Price notes <span class="optional">optional</span></label><input id="price" name="price" maxlength="120" placeholder="A starting price, a range, or a question" autocomplete="off">
-          <div class="editor-actions"><button id="save" type="submit">Save on this device <span aria-hidden="true">↗</span></button><span id="save-state" class="muted">Not saved yet</span></div>
+          <details id="launch-fields"><summary>Prepare for a first sale</summary>
+            <p class="muted">Start with one buyer and one outcome. Enter your estimated costs explicitly, including zero. No provider fee or demand is assumed.</p>
+            <label for="audience">Who has this problem?</label><input id="audience" maxlength="280" placeholder="A buyer you can reach and the problem they need solved">
+            <label for="outcome">What will you deliver?</label><input id="outcome" maxlength="280" placeholder="One clear result for the buyer">
+            <div class="terms-grid">
+              <div><label for="merchant-id">Merchant ID</label><input id="merchant-id" maxlength="128" placeholder="your-store" autocapitalize="none"></div>
+              <div><label for="agent-id">Registered discovery agent ID</label><input id="agent-id" maxlength="128" placeholder="your-shopping-agent" autocapitalize="none"></div>
+              <div><label for="currency">Currency</label><input id="currency" maxlength="3" placeholder="USD, SGD, JPY…" autocapitalize="characters"></div>
+              <div><label for="sale-price">Planned price</label><input id="sale-price" inputmode="decimal" placeholder="125.00"></div>
+              <div><label for="delivery-cost">Delivery cost per sale</label><input id="delivery-cost" inputmode="decimal" placeholder="Include your time"></div>
+              <div><label for="provider-fee">Payment fee per sale</label><input id="provider-fee" inputmode="decimal" placeholder="Your provider's estimate"></div>
+              <div><label for="agent-cost">Agent cost per sale</label><input id="agent-cost" inputmode="decimal" placeholder="Tokens and tools"></div>
+              <div><label for="acquisition-cost">Acquisition cost per sale</label><input id="acquisition-cost" inputmode="decimal" placeholder="Reaching the buyer"></div>
+              <div><label for="fixed-cost">One-time setup cost</label><input id="fixed-cost" inputmode="decimal" placeholder="Your setup estimate"></div>
+            </div>
+            <p class="footnote">The registered agent supplies the live offer and price at checkout. These estimates do not change its prices or prove a customer will pay.</p>
+          </details>
+          <div class="editor-actions"><button id="save" type="submit">Save on this device <span aria-hidden="true">↗</span></button><button id="review-launch" type="button" class="secondary">Review launch</button><span id="save-state" class="muted">Not saved yet</span></div>
         </form>
+        <section id="launch-review" class="launch-review" aria-labelledby="review-heading" hidden>
+          <h2 id="review-heading">Review your offer</h2><p id="review-offer"></p><dl id="economics"></dl>
+          <p class="footnote">Estimates only. Demand is unvalidated. Private idea and price notes are excluded from the launch pack.</p>
+          <label class="review-approval"><input id="approve-launch" type="checkbox">I reviewed this offer and its estimated costs.</label>
+          <button id="export-launch" type="button" disabled>Export reviewed launch pack</button>
+          <p class="footnote">Your operator can use this pack with the existing merchant storefront. Publishing still requires authorization and a current claim. Buyers review the live quote before payment.</p>
+        </section>
         <p id="status" role="status" aria-live="polite"></p>
       </section>
     </div>
     <section class="next-steps" aria-label="Workspace capabilities">
       <article><span class="step-number">01</span><div><h2>Work at your own pace</h2><p id="offline-ready">Preparing offline access. Keep this page open until it is ready.</p></div></article>
       <article><span class="step-number">02</span><div><h2>See the bigger picture</h2><p>Arrange your ideas in the Graph canvas. Drafts are not automatically shared.</p><a href="https://airvio.co/agentic-graph/?openEditorWorkspace=1" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Open canvas <span aria-hidden="true">↗</span><span class="sr-only"> (new tab, requires connection)</span></a></div></article>
-      <article><span class="step-number">03</span><div><h2>Checkout is deferred</h2><p>This release is for planning. It does not publish offers, accept orders, or collect payments.</p></div></article>
+      <article><span class="step-number">03</span><div><h2>Take one offer to market</h2><p>Review and export a launch pack for the Commerce storefront. This private workspace does not publish offers or collect payments. Fulfill only after a verified payment receipt.</p></div></article>
     </section>
   </main>
   <footer><span>Small beginnings. Yours to build.</span><span>Local-first · No account needed</span></footer>

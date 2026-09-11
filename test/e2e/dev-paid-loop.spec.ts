@@ -3,7 +3,7 @@ import {
   DEV_REGISTRATION_CLIENT_TIMEOUT_MS, devRuntimeEnvironment, registrationInput, registryClaim, registryClaimHeaders,
 } from './dev-runtime.ts'
 
-test('empty Dev registry reaches one visually confirmed settlement and one markup line', async ({ page, request }) => {
+test('reviewed merchant offer reaches one visually confirmed settlement and one markup line', async ({ page, request }) => {
   const runtime = devRuntimeEnvironment()
   const agentHeaders = { authorization: `Bearer ${runtime.agentToken}` }
   const claim = registryClaim(runtime.runId)
@@ -67,7 +67,40 @@ test('empty Dev registry reaches one visually confirmed settlement and one marku
     }
   }
 
-  await page.goto('/', { waitUntil: 'domcontentloaded' })
+  // Consume the actual local-first launch contract through the existing operator boundary.
+  // Review data itself never grants a publication permit or settlement authority.
+  const launchModule = '../../public/local-first/launch.js'
+  const { reviewLaunch, exportLaunchPack } = await import(launchModule)
+  const draft = { id: '12345678-1234-1234-1234-123456789abc', revision: 1, title: 'Solo pilot',
+    description: 'Private customer notes', price: '', createdAt: 1, updatedAt: 1,
+    launch: { merchantId: 'solo-pilot', agentId: 'dev-e2e-flight', audience: 'Solo founders with a travel task',
+      outcome: 'One reviewed itinerary', currency: 'USD', priceMinor: 12_500, deliveryCostMinor: 4_000,
+      providerFeeMinor: 500, agentCostMinor: 100, acquisitionCostMinor: 900, fixedCostMinor: 10_000 } }
+  const pack = await exportLaunchPack(draft, await reviewLaunch(draft))
+  const merchantScope = 'merchant-theme:solo-pilot'
+  const merchantClaim = { ...registryClaim(runtime.runId), claimId: `merchant-${runtime.runId}`,
+    semanticScope: merchantScope, declaredWriteSet: [merchantScope] }
+  const merchantHeaders = { authorization: `Bearer ${runtime.operatorToken}`, ...registryClaimHeaders(merchantClaim) }
+  const themePath = '/v1/operator/merchants/solo-pilot/theme'
+  const beforePublish = await request.get('/s/solo-pilot')
+  expect(beforePublish.status()).toBe(404)
+  const agentPublish = await request.post(themePath, { headers: agentHeaders, data: pack.themeManifest })
+  expect(agentPublish.status()).toBe(401)
+  const admitted = await request.post('/v1/operator/claims/acquire', { headers: merchantHeaders, data: merchantClaim })
+  expect(admitted.status()).toBe(200)
+  try {
+    const published = await request.post(themePath, { headers: merchantHeaders, data: pack.nextAction.arguments.manifest })
+    expect(published.status(), await published.text()).toBe(200)
+    expect(await published.json()).toMatchObject({ ok: true, merchantId: 'solo-pilot', resolvedCatalogScope: ['dev-e2e-flight'] })
+  } finally {
+    const released = await request.post('/v1/operator/claims/release', { headers: merchantHeaders, data: {
+      semanticScope: merchantScope, claimId: merchantClaim.claimId, leaseEpoch: merchantClaim.leaseEpoch,
+      fenceRevision: merchantClaim.fenceRevision,
+    } })
+    expect(released.status(), await released.text()).toBe(200)
+  }
+  await page.goto(pack.checkout.path, { waitUntil: 'domcontentloaded' })
+  await expect(page.getByRole('heading', { name: 'One reviewed itinerary' })).toBeVisible()
   await page.locator('#catalog-query').fill('flight')
   const discoveryResponse = page.waitForResponse(response => response.url().endsWith('/v1/intents/route'))
   await page.getByRole('button', { name: 'Search catalog' }).click()

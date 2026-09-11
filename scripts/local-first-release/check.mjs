@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import { once } from 'node:events';
 import { waitForReadiness } from './readiness.mjs';
 import { waitForAssets } from './availability.mjs';
+import { checkMerchantLaunch } from '../../test/local-first/merchant-browser.mjs';
 
 const root = process.cwd();
 const output = path.resolve(process.env.LOCAL_FIRST_EVIDENCE_DIR || 'node_modules/.cache/local-first-verification');
@@ -122,6 +123,7 @@ try {
   await imported.getByText('Imported 1 draft.', { exact: false }).waitFor();
   assert.equal(await imported.locator('#draft-list img').count(), 0);
   assert.equal(await imported.evaluate(() => window.injected), undefined);
+  await checkMerchantLaunch({ browser, url, output, observeContext, record });
   assert.deepEqual(failures.filter(failure => failure.type === 'page'), []);
   assert(requests.every(request => request.method === 'GET' && new URL(request.url).origin === origin));
   record('imported text cannot inject markup; no draft or checkout network writes');
@@ -131,7 +133,7 @@ try {
   console.log(JSON.stringify(proof));
 } finally {
   fs.writeFileSync(path.join(output, 'asset-observation.json'), JSON.stringify({ sourceRevision: revision, observations: assetObservations }, null, 2) + '\n');
-  if (checks.length !== 6) {
+  if (checks.length !== 9) {
     const state = await Promise.all(pages.filter(page => !page.isClosed()).map(async (page, index) => {
       try { await page.screenshot({ path: path.join(output, 'failure-page-' + index + '.png'), fullPage: true, timeout: 5000 });
         return { url: page.url(), text: await page.locator('body').innerText({ timeout: 5000 }) }; }

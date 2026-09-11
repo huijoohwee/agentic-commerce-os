@@ -1,7 +1,7 @@
 const CACHE_PREFIX = 'agentic-commerce-local-first-';
 const CACHE = CACHE_PREFIX + '__RELEASE__';
 const SCOPE = new URL(self.registration.scope);
-const FILES = ['', 'app.js', 'drafts.js', 'style.css'];
+const FILES = ['', 'app.js', 'drafts.js', 'launch.js', 'style.css'];
 const PATHS = new Set(FILES.map(file => new URL(file, SCOPE).pathname));
 self.addEventListener('install', event => event.waitUntil((async () => {
   const cache = await caches.open(CACHE);

@@ -16,6 +16,15 @@ document were deliberately excluded from the implementation baseline. The
 bounded solopreneur MVP-to-GTM sprint over this source is specified in
 [docs/prd-tad-adr-mvp-gtm-20260909T1320Z-solopreneur-mvp-gtm.md](docs/prd-tad-adr-mvp-gtm-20260909T1320Z-solopreneur-mvp-gtm.md).
 
+The [grounded first-dollar increment](docs/prd-tad-adr-mvp-gtm-edge-commerce-agent.md)
+connects the offline offer workspace to that existing merchant/checkout loop. Save buyer,
+outcome and estimated costs, review the exact offer, then export its native merchant launch
+pack. The authorized operator consumes the existing `commerce.theme.deploy` arguments;
+the registered provider supplies the live quote and the human confirms payment. Local
+review grants no publication/payment authority, and the asset-only release still cannot
+collect payments. [Validation and remaining gates](docs/edge-commerce-mvp-handoff.md)
+keep Dev evidence separate from a collected dollar or production release.
+
 ## Runtime shape
 
 ```text
