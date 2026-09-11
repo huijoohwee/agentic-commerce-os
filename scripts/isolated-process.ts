@@ -76,6 +76,12 @@ export async function runIsolatedProcess(input: IsolatedProcessInput): Promise<I
     containerId = command(args)
     if (!/^[0-9a-f]{64}$/u.test(containerId)) throw new Error('isolated_process_container_identity_invalid')
     assertOwned(command, containerId, executionId, expectedImage)
+    // Complete the start mutation before cancellation can race it. The bootstrap
+    // waits for stdin; candidate bytes are sent only after the running state is proven.
+    command(['start', containerId])
+    if (assertOwned(command, containerId, executionId, expectedImage).State?.Running !== true) {
+      throw new Error('isolated_process_start_unproven')
+    }
     const result = await attach(executable, containerId, environment, input, command)
     const state = assertOwned(command, containerId, executionId, expectedImage).State
     if (state?.Running !== false || !Number.isInteger(state.ExitCode)) {
@@ -128,7 +134,7 @@ function assertOwned(command: (args: string[]) => string, id: string, executionI
 function attach(executable: string, id: string, environment: NodeJS.ProcessEnv,
   input: IsolatedProcessInput, command: (args: string[]) => string) {
   return new Promise<{ stdout: string; stderr: string; timedOut: boolean; outputTruncated: boolean }>((resolve, reject) => {
-    const child = spawn(executable, ['start', '--attach', '--interactive', id], { env: environment, stdio: ['pipe', 'pipe', 'pipe'] })
+    const child = spawn(executable, ['attach', '--sig-proxy=false', id], { env: environment, stdio: ['pipe', 'pipe', 'pipe'] })
     const chunks: Record<'stdout' | 'stderr', Buffer[]> = { stdout: [], stderr: [] }
     const maximum = input.maxOutputBytes ?? 1_048_576
     let bytes = 0, timedOut = false, outputTruncated = false, stopped = false, failure: Error | null = null

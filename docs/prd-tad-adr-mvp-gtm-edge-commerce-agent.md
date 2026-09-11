@@ -19,7 +19,7 @@ load_policy: "on-demand"
 runtime_readiness_policy: "fail-closed"
 lifecycle_status: "implemented-candidate"
 demand_status: "unvalidated"
-worktree_id: "agent/device-0232231d4a19/edge-commerce-mvp"
+worktree_id: "agent/device-0232231d4a19/edge-commerce-mvp-release"
 agent_id: "codex-edge-commerce-mvp"
 source_revision: "addf6afb3821c61b33f44d1b0a4e82afb7e139fa"
 related_continuity_id: "PRD-TAD-ADR-COMMERCE-MVP-GTM-001"
@@ -116,6 +116,7 @@ new model calls, wallet funding, social outreach, multi-device automatic sync an
 | EC-05 | No merchant storefront exists before activation; an agent credential cannot publish; current operator claim publishes the generated manifest; merchant-scoped discovery reaches one visually confirmed Dev settlement and one revenue row; replay adds neither. `test/e2e/dev-paid-loop.spec.ts`. |
 | EC-06 | A 390 px browser works offline after cache installation; Graph is optional navigation; no draft/payment network writes occur. `scripts/local-first-release/check.mjs`. |
 | EC-07 | Existing domain, unit, real Worker/SQLite, browser, ADLC and dry-bundle checks run; evidence gaps remain failures. `npm run check:integration`, `npm run check`. |
+| EC-08 | Release consumes the browser producer's exact required checks and candidate identity; incomplete, duplicate-filled or mismatched proofs fail. `scripts/local-first-release/browser-proof.mjs`, `test/local-first/browser-proof.test.mjs`. |
 
 ## TAD
 
@@ -146,6 +147,8 @@ flowchart LR
 | Estimates, review digest and native launch contract | `public/local-first/launch.js`; `test/local-first/merchant-launch.test.mjs` |
 | Merchant editor and human review controls | `public/local-first/app.js`, `index.html`, `style.css`; `merchant-browser.mjs` |
 | Offline/asset delivery | `sw.js`, `src/local-first/worker.ts`, release artifact inventory; existing route/integrity checks |
+| Browser proof completeness | `scripts/local-first-release/browser-proof.mjs`; shared by check and release, without changing external release authority |
+| Device executor cancellation | `scripts/isolated-process.ts`; startup completes before attach/cancel, exact-container cleanup remains mandatory; real isolation and local-host checks |
 | Live merchant catalog scope and storefront | `src/core/theme-deployment.ts`, `theme-deployment-store.ts`, `merchant-catalog.ts`, `src/edge/index.ts` |
 | Guarded payment and revenue idempotency | `src/core/checkout-session.ts`, `checkout-markup.ts`, `src/edge/human-confirmation.ts`; existing Worker tests and strengthened Dev E2E |
 

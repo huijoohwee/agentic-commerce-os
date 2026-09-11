@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import assert from 'node:assert/strict';
 import { expect } from '@playwright/test';
+import { BROWSER_CHECKS } from '../../scripts/local-first-release/browser-proof.mjs';
 
 export async function checkMerchantLaunch({ browser, url, output, observeContext, record }) {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, acceptDownloads: true });
@@ -37,7 +38,7 @@ export async function checkMerchantLaunch({ browser, url, output, observeContext
   assert.equal(JSON.stringify(pack).includes('PRIVATE'), false);
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   await page.screenshot({ path: path.join(output, 'merchant-mobile.png'), fullPage: true });
-  record('offline merchant review, exact economics and private-note-free native launch export');
+  record(BROWSER_CHECKS.launch);
 
   await page.getByLabel('What will you deliver?').fill('A revised outcome');
   await expect(page.locator('#launch-review')).toBeHidden();
@@ -56,7 +57,7 @@ export async function checkMerchantLaunch({ browser, url, output, observeContext
   });
   await page.getByRole('button', { name: 'Export reviewed launch pack' }).click();
   await expect(page.locator('#status')).toContainText('This offer changed.');
-  record('unsaved and concurrently changed offers require fresh merchant review');
+  record(BROWSER_CHECKS.review);
 
   await page.reload(); await page.locator('#draft-list button').first().click();
   await expect(page.getByLabel('Planned price', { exact: true })).toHaveValue('125.00');
@@ -66,6 +67,6 @@ export async function checkMerchantLaunch({ browser, url, output, observeContext
   await page.getByRole('button', { name: 'Review launch', exact: true }).click();
   await expect(page.locator('#status')).toContainText('Estimated revenue must exceed');
   await expect(page.locator('#launch-review')).toBeHidden();
-  record('launch terms survive offline reload and loss-making estimates fail review');
+  record(BROWSER_CHECKS.economics);
   await context.close();
 }

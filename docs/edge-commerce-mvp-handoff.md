@@ -33,6 +33,17 @@ before activation and an agent token cannot publish, acquires a current operator
 activates the generated theme, then discovers and confirms one provider offer. It checks
 one settlement, one markup entry and exact replay without duplication.
 
+The browser producer and release consumer share an exact required-check catalog. The release
+gate rejects old six-check proofs, omissions, unknown checks and duplicate-filled results;
+it still requires the exact source revision, deferred checkout and existing release authority.
+
+Hosted verification exposed a pre-existing cancellation race in `scripts/isolated-process.ts`:
+an early disconnect could kill while `podman start --attach` was still starting the container,
+leaving termination unproven and the local host unavailable. A direct probe and the real local-host
+test reproduced the failure. Startup now completes before attaching stdin and processing
+cancellation; the bootstrap waits for input, and all ownership/exit/removal checks remain.
+The new real-container regression and the existing disconnect test pass.
+
 ## Checks observed
 
 | Owner check | Result |
@@ -42,23 +53,24 @@ one settlement, one markup entry and exact replay without duplication.
 | Domain suite | 91 passed |
 | Unit suite | 275 passed in 56 files |
 | Real Worker / SQLite suite | 59 passed in 19 files |
-| Local-first contracts | 37 passed, including 5 new launch-contract cases |
+| Local-first contracts | 40 passed, including 5 launch-contract and 3 release-proof cases |
 | Local-first real-browser script | 9 scenarios passed: offline/reload, concurrency, review, exact economics, privacy, import and responsive layout |
 | Full-browser contracts + strengthened Dev settlement loop | 12 + 1 passed; exact owned-proxy removal and Podman lock release verified |
+| Direct Podman isolation + local-host operational checks | 7 + 4 passed, including cancellation during startup and disconnected-client recovery |
 | Named source checks, authored limits and terminology | Passed; changed files remain below 600 lines |
 | Dev and Production dry bundles | Passed; Production core 197,070 bytes, edge 489,138 bytes, cap 500,000 |
 | `git diff --check` | Passed |
+| Full local `check:integration` | Passed as one complete command after the runtime and release-proof fixes |
 | Terminal `check:evidence` | **Blocked:** `evidence_runtime_context_incomplete`; zero enrolled independent dispatch issuers |
 
-Local `check:integration` reached its browser gate after the other source stages passed.
-Initial host prerequisite failures were missing workerd selection and the default Podman
-machine name. The remaining browser stage passed with `AGENTIC_PODMAN_MACHINE=agentic-dev`
-and the checksum-verified Darwin ARM64 runtime from
+Full local `check:integration` passed with `AGENTIC_PODMAN_MACHINE=agentic-dev` and the
+checksum-verified Darwin ARM64 runtime from
 [workerd build 649aa72a](https://github.com/huijoohwee/workerd/releases/tag/podman-649aa72a91e4).
 Its binary SHA-256 is `0d9f91f3eb904c8a857867bd114f3224006235f51490b8c83c5ba669a6529ec3`.
-Dry-bundle stages passed separately afterward. This is a completed set of local integration
-components, not a claim that the initial composite command exited green. Protected CI must
-bind its own verdict to the exact published candidate.
+The existing Podman machine was stopped after verification. The earlier published candidate's
+[CI run](https://github.com/huijoohwee/agentic-commerce-os/actions/runs/34621452823)
+exposed the cancellation race described above; its immutable ref is preserved by an in-place
+successor. Protected CI must bind its own verdict to the corrected published candidate.
 
 The local-first browser owner writes screenshots and JSON observations under
 `node_modules/.cache/local-first-verification/`. Logs and the reviewed mobile image are also
