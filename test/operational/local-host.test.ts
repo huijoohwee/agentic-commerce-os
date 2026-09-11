@@ -76,12 +76,15 @@ import { Buffer } from 'node:buffer'; export async function executeTool() {
       abort.abort()
       assert.equal(await running, 'aborted')
       let recovered = false
+      let lastProbe: unknown
       // Socket close aborts the executor immediately; allow Podman kill/rm to settle.
       for (let count = 0; count < 50 && !recovered; count += 1) {
         await delay(100)
-        recovered = (await fetch(`${ready.origin}/readyz`, { headers })).status === 200
+        const probe = await fetch(`${ready.origin}/readyz`, { headers })
+        recovered = probe.status === 200
+        lastProbe = await probe.json()
       }
-      assert(recovered, 'cancelled job did not release its container and host slot')
+      assert(recovered, `cancelled job did not release its container and host slot: ${JSON.stringify(lastProbe)}`)
     })
     await t.test('shutdown closes the listener', async () => {
       child.kill('SIGTERM')

@@ -12,7 +12,10 @@ export function createPodmanSandboxExecutor(config: Readonly<{
   let used = false
   return Object.freeze({
     execute(input, timeoutMs) {
-      if (used || abort.signal.aborted) return Promise.reject(new Error('podman_executor_already_used'))
+      // Disconnect may arrive while the executable digest is still being checked.
+      // This is cancellation before provisioning, not unproven executor cleanup.
+      if (used) return Promise.reject(new Error('podman_executor_already_used'))
+      if (abort.signal.aborted) return Promise.reject(new Error('isolated_process_aborted'))
       used = true
       active = (async () => {
         const result = await runIsolatedProcess({ ...config, timeoutMs, signal: abort.signal,
