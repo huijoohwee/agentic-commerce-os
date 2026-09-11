@@ -5,6 +5,7 @@ import { spawn, execFileSync } from 'node:child_process';
 import { chromium, expect } from '@playwright/test';
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
+import { waitForReadiness } from './readiness.mjs';
 
 const root = process.cwd();
 const output = path.resolve(process.env.LOCAL_FIRST_EVIDENCE_DIR || 'node_modules/.cache/local-first-verification');
@@ -12,7 +13,7 @@ fs.mkdirSync(output, { recursive: true });
 const remote = process.argv.find(arg => arg.startsWith('--base-url='))?.slice(11);
 const revision = process.env.CANDIDATE_SHA || execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
 let runtime, browser;
-const checks = [], requests = [];
+const checks = [], requests = [], readinessObservations = [];
 const record = name => { checks.push(name); console.log(`PASS ${name}`); };
 async function freePort() {
   const server = net.createServer(); server.listen(0, '127.0.0.1'); await once(server, 'listening');
@@ -38,8 +39,10 @@ try {
   }
   const origin = new URL(base).origin, url = origin + '/agentic-commerce-os/';
   assert(['http:', 'https:'].includes(new URL(origin).protocol));
-  const ready = await fetch(url + 'readyz'), readiness = await ready.json();
-  assert.equal(ready.status, 200); assert.equal(readiness.profile, 'local-first');
+  const readiness = await waitForReadiness({ url: url + 'readyz', revision,
+    versionId: process.env.LOCAL_FIRST_EXPECTED_VERSION,
+    observe: observation => readinessObservations.push(observation) });
+  assert.equal(readiness.profile, 'local-first');
   assert.equal(readiness.sourceRevision, revision); assert.equal(readiness.checkout, 'deferred');
   assert.equal((await fetch(origin + '/agentic-commerce-os')).url, url);
   for (const route of ['v1/checkouts/confirm', 'mcp', 'mcp/operator', 'v1/session', 'v1/sync/merge']) {
@@ -113,6 +116,7 @@ try {
   fs.writeFileSync(path.join(output, 'browser-proof.json'), JSON.stringify(proof, null, 2) + '\n');
   console.log(JSON.stringify(proof));
 } finally {
+  fs.writeFileSync(path.join(output, 'readiness-observation.json'), JSON.stringify({ sourceRevision: revision, observations: readinessObservations }, null, 2) + '\n');
   fs.writeFileSync(path.join(output, 'network-observation.json'), JSON.stringify({ sourceRevision: revision, requests }, null, 2) + '\n');
   await browser?.close();
   if (runtime && runtime.exitCode === null) {

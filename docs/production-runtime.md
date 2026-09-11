@@ -34,6 +34,12 @@ bootstrap can remove its own new route while retaining the uploaded Worker.
 The local-first responses use `Cache-Control: no-store, no-transform` to preserve the
 authored HTML and prevent automatic CDN script injection. Browser verification keeps
 the same-origin GET-only requirement and retains request diagnostics on failure.
+Before browser checks, public readiness may converge for at most 45 seconds to the
+exact candidate and active Worker version. Only unavailable (404/503), transport,
+or stale local-first identity observations are retried; authorization errors and
+invalid successful responses fail immediately. Every HTTP status, content type,
+body digest and observed identity is retained, including on failure. This bounded
+read never repeats deployment or route writes.
 After a restored bootstrap, `retained_baseline` can select the exact prior deployment,
 version, source and failed run IDs. Preparation verifies the authenticated failed run
 and its successful owner-approval step; deployment rechecks the exact provider identity,

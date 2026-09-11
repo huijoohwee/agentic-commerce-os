@@ -50,7 +50,8 @@ function wrangler(args) {
 }
 const verifyLive = async active => {
   execFileSync(process.execPath, ['scripts/local-first-release/check.mjs', '--base-url=https://airvio.co'], {
-    stdio: 'inherit', timeout: 180000, env: { ...env, LOCAL_FIRST_EVIDENCE_DIR: path.join(output, 'live') },
+    stdio: 'inherit', timeout: 180000, env: { ...env, LOCAL_FIRST_EVIDENCE_DIR: path.join(output, 'live'),
+      LOCAL_FIRST_EXPECTED_VERSION: active.versionId },
   });
   const ready = await fetch('https://airvio.co/agentic-commerce-os/readyz', { signal: AbortSignal.timeout(20000) });
   const identity = await ready.json();
