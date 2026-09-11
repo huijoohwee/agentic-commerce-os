@@ -19,7 +19,7 @@ load_policy: "on-demand"
 runtime_readiness_policy: "fail-closed"
 lifecycle_status: "implemented-candidate"
 demand_status: "unvalidated"
-worktree_id: "agent/device-0232231d4a19/mercur-experience"
+worktree_id: "agent/device-0232231d4a19/live-commerce-experience"
 agent_id: "codex-edge-commerce-mvp"
 source_revision: "addf6afb3821c61b33f44d1b0a4e82afb7e139fa"
 related_continuity_id: "PRD-TAD-ADR-COMMERCE-MVP-GTM-001"
@@ -39,6 +39,12 @@ on 2026-09-12. The [existing local-first release amendment][prior] continues to 
 asset-only deployment profile. This increment connects that authoring surface to the full Commerce
 profile through a reviewed launch pack. It neither enables payment on the asset-only Worker nor
 changes the protected production route automatically.
+
+The subsequent public-URL correction targets the actual local-first deployment source. Its native
+shopper preview, vendor and admin views reuse the same private drafts and exact human launch
+review. [Delivery-profile coverage and limits](mercur-experience-parity.md#public-route-correction)
+separate that public artifact from the full Edge runtime. A successful PR is not live verification;
+the release workflow must observe the deployed source/version and exercise the role UI at the URL.
 
 ```yaml
 context: "Existing Commerce has offline drafts, merchant themes, discovery, guarded checkout and derived revenue; the source input incorrectly assumes no codebase"

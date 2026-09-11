@@ -6,7 +6,7 @@ let reviewed = null;
 const textFields = { merchantId: '#merchant-id', agentId: '#agent-id', audience: '#audience', outcome: '#outcome', currency: '#currency' };
 const moneyFields = { priceMinor: '#sale-price', deliveryCostMinor: '#delivery-cost', providerFeeMinor: '#provider-fee',
   agentCostMinor: '#agent-cost', acquisitionCostMinor: '#acquisition-cost', fixedCostMinor: '#fixed-cost' };
-const channel = typeof BroadcastChannel === 'function' ? new BroadcastChannel('commerce-local-drafts') : null;
+function changed() { document.dispatchEvent(new Event('commerce:drafts-updated')); }
 function message(text, error = false) { $('#status').textContent = text; $('#status').dataset.error = String(error); }
 function invalidateReview() { reviewed = null; $('#launch-review').hidden = true; $('#approve-launch').checked = false; $('#export-launch').disabled = true; }
 function edited() { dirty = true; $('#save-state').textContent = 'Unsaved changes'; invalidateReview(); }
@@ -47,13 +47,14 @@ async function refresh() {
     $('#draft-list').append(button);
   }
 }
+function controls() { return document.querySelectorAll('[data-view-panel="vendor-editor"] button, [data-view-panel="vendor-editor"] input, [data-view-panel="vendor-editor"] textarea, [data-view-panel="admin-data"] button, [data-view-panel="admin-data"] input'); }
 async function run(operation) {
   if (busy) return;
   busy = true;
-  for (const element of document.querySelectorAll('button, input, textarea')) element.disabled = true;
+  for (const element of controls()) element.disabled = true;
   try { await operation(); } catch (error) { message(error.message || 'Could not complete this action.', true); }
   finally {
-    busy = false; for (const element of document.querySelectorAll('button, input, textarea')) element.disabled = false;
+    busy = false; for (const element of controls()) element.disabled = false;
     $('#export-launch').disabled = !reviewed || !$('#approve-launch').checked;
   }
 }
@@ -71,7 +72,7 @@ $('#draft-form').addEventListener('submit', event => {
       for (const [key, selector] of Object.entries(moneyFields)) input.launch[key] = parseMoney($(selector).value.trim(), input.launch.currency);
     } else input.launch = null;
     const saved = await saveDraft(input, selected?.revision ?? null);
-    show(saved); await refresh(); message('Saved privately on this device.'); channel?.postMessage('changed');
+    show(saved); await refresh(); message('Saved privately on this device.'); changed();
   });
 });
 $('#review-launch').addEventListener('click', () => void run(async () => {
@@ -110,8 +111,7 @@ function downloadJson(text, filename) {
   document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 $('#new-draft').addEventListener('click', () => {
-  if (busy || !mayLeave()) return;
-  show(null); void refresh().catch(error => message(error.message, true)); $('#title').focus();
+  if (newDraft()) $('#title').focus();
 });
 $('#export').addEventListener('click', () => void run(async () => {
   const text = await exportDrafts();
@@ -124,21 +124,23 @@ $('#import').addEventListener('change', event => {
   void run(async () => {
     if (file.size > LIMITS.transferBytes) throw Error('Import exceeds 8 MB.');
     const count = await importDrafts(await file.text()); await refresh();
-    message(`Imported ${count} draft${count === 1 ? '' : 's'}. Existing drafts were preserved.`); channel?.postMessage('changed');
+    message(`Imported ${count} draft${count === 1 ? '' : 's'}. Existing drafts were preserved.`); changed();
   });
 });
-if (channel) channel.onmessage = () => {
-  invalidateReview();
-  void refresh().then(() => { if (selected) message('Saved drafts changed in another tab. Reopen a draft to load its latest version.'); })
-    .catch(error => message(error.message, true));
-};
+export async function externalChange() {
+  invalidateReview(); await refresh();
+  if (selected) message('Saved drafts changed in another tab. Reopen a draft to load its latest version.');
+}
+export async function openSavedDraft(id) {
+  if (busy || !mayLeave()) return false;
+  const current = (await listDrafts()).find(draft => draft.id === id);
+  if (!current) throw Error('Draft no longer available.');
+  show(current); await refresh(); return true;
+}
+export function newDraft() {
+  if (busy || !mayLeave()) return false;
+  show(null); void refresh().catch(error => message(error.message, true)); return true;
+}
 window.addEventListener('beforeunload', event => { if (dirty) { event.preventDefault(); event.returnValue = ''; } });
-function connection() { $('#connection').textContent = navigator.onLine ? 'Local workspace · Online' : 'Offline · Drafts available'; }
-window.addEventListener('online', connection); window.addEventListener('offline', connection); connection();
 void refresh().catch(error => message(error.message, true));
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js', { scope: './', updateViaCache: 'none' })
-    .then(() => navigator.serviceWorker.ready)
-    .then(() => { $('#offline-ready').textContent = 'Offline access is ready. You can return to this workspace without a connection.'; })
-    .catch(() => { $('#offline-ready').textContent = 'Offline page loading is unavailable in this browser. Saved drafts still stay on this device.'; });
-} else $('#offline-ready').textContent = 'This browser needs a connection to open the page. Your saved drafts stay on this device.';
+$('#editor-fields').disabled = false; $('#import').disabled = false; $('#export').disabled = false;

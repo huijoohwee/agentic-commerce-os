@@ -5,7 +5,7 @@ const pause = milliseconds => new Promise(resolve => setTimeout(resolve, millise
 export function authoredAssets(revision) {
   return FILES.map(file => {
     let bytes = fs.readFileSync('public/local-first/' + file);
-    if (file === 'sw.js') bytes = Buffer.from(bytes.toString().replace('__RELEASE__', revision));
+    if (file === 'sw.js' || file === 'index.html') bytes = Buffer.from(bytes.toString().replaceAll('__RELEASE__', revision));
     return { path: file === 'index.html' ? '' : file, bytes: bytes.length, digest: digest(bytes),
       contentType: file.endsWith('.js') ? /(?:application|text)\/javascript/ : file.endsWith('.css') ? /text\/css/ : /text\/html/ };
   });

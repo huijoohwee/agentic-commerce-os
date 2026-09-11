@@ -31,7 +31,30 @@ No reference code, CSS, images, icons, templates or dependencies were imported. 
 uses existing Workers, native browser modules, semantic HTML, CSS, dialog focus management and the
 same WebMCP/manual action functions. Category art is native typography, not product photography.
 
-## Coverage
+## Public route correction
+
+The live URL was inspected on 2026-09-12: `x-commerce-profile: local-first`,
+`x-commerce-source: 4886615a31dd69a1e2c7424cbd04e01c7331fa53`. It served the older draft editor.
+The Edge role workspaces below were not the deployed asset profile. PR completion alone did not
+change the public site. The [local-first Worker](../src/local-first/worker.ts),
+[HTML](../public/local-first/index.html), [CSS](../public/local-first/style.css) and
+[lazy workspace module](../public/local-first/workspace.js) now own the public-profile correction.
+
+| Public-profile view | Working native flow | Explicit limit |
+|---|---|---|
+| Shopper | Editorial landing, 12-card catalog, store/search/name filters, pagination, native details with Escape/focus restore | Preview of locally saved launch terms; no public listing, cart or payment. Private notes/costs excluded. |
+| Vendor | Offer table, state/search filters, 10 rows/page, responsive cards, editor, storefront preview | Existing 100-draft IndexedDB store; no new product schema, tenant identity or inventory authority. |
+| Admin | Store/review/attention counts derived from drafts, review queue, exact existing human launch review, portable import/export | No invented sales metrics or production credentials; role navigation is not RBAC. |
+| Offline/update | Every role reloads offline. Release-scoped module/style URLs bypass legacy cache-first asset keys | One release cache; old unversioned asset paths retained for upgrade compatibility. |
+
+The public release requires [these browser behaviors](../test/local-first/workspace-browser.mjs)
+through the shared [browser proof](../scripts/local-first-release/browser-proof.mjs), alongside
+existing concurrency, import, exact review and server-mutation refusal checks. The
+[release workflow](../.github/workflows/local-first-release.yml) verifies the same artifact both
+before deployment and at the live URL. The protected production environment still requires its
+actual owner approval. Full marketplace feature parity is **not** claimed by this UI correction.
+
+## Full Commerce runtime coverage
 
 | Experience pattern | Native behavior and evidence | Boundary |
 |---|---|---|

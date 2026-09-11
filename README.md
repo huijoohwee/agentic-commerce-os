@@ -31,6 +31,10 @@ with the human UI. Merchant agents can stage proposals; operator review and an a
 check precede publication. Credentials stay in tab memory, and no new dependencies were added.
 [Mercur experience coverage](docs/mercur-experience-parity.md) maps the native catalog, vendor preview
 and admin tables to verified workflows and identifies the remaining backend gaps.
+The public `/agentic-commerce-os/` route uses the local-first artifact: shopper preview,
+vendor offers/editor and admin launch/data workspaces. It preserves browser drafts and review;
+live sales remain separately gated. The release workflow checks this exact delivery profile,
+including versioned assets so existing offline caches cannot retain the old interface.
 
 ## Runtime shape
 

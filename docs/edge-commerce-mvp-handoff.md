@@ -19,7 +19,33 @@ load_policy: "on-demand"
 The supplied private 0.1.0 draft remains byte-identical at its original untracked path;
 the executable product's grounded successor lives here with its source owner.
 
-## Current experience increment
+## Public URL correction
+
+The user reported that the public URL did not match the implemented experience. Live HTTP and
+browser inspection confirmed the older local-first draft editor at source
+`4886615a31dd69a1e2c7424cbd04e01c7331fa53`; PR47's Edge UI had not been merged/deployed and was
+not the public asset profile. The correction now changes the actual source-owned local-first
+artifact: shopper preview, vendor offer/catalog/editor, admin overview/review/data views. All
+views reuse existing drafts and launch review; no parallel ledger, product schema or dependency.
+The full comparison and limits are in [Mercur coverage](mercur-experience-parity.md).
+
+Release-scoped static URLs also fix mixed new-HTML/old-CSS/JS behavior with the previously
+installed cache-first service worker. Existing drafts remain in the same database/version;
+unversioned asset endpoints remain only for upgrade compatibility. Editor/import controls remain
+disabled until their lazy handler loads. Server writes still fail closed in this release profile.
+
+Candidate validation: 41 local-first contract tests and all 10 required browser groups passed,
+including all role views at 360px and 1440px, search/pagination/details, private projection,
+shared review and offline reload. Typecheck and authored limits passed. Public assets total under
+70 kB. The full local Integration Gate passed: 91 domain, 278 unit, 60 Worker tests, all public-profile
+checks, 18 Edge browser checks and the real Dev paid loop. Production dry chunks remain within
+500,000 bytes (largest 485,731). The Podman machine was stopped afterward. Hosted integration
+and protected release observations belong to the final candidate/run; local checks are not a
+deployed receipt. Canonical tooling was restored to its existing lockfile pin before publication;
+canonical and worktree doctor checks now pass. Production requires actual owner approval
+for the exact release run. Full Commerce still has the independent runtime-evidence boundary below.
+
+## Retained Edge experience increment
 
 [Mercur experience coverage](mercur-experience-parity.md) grounds the 0.4.0 update on the pinned
 reference and Commerce's existing contracts. Shopper catalog browsing, filters, pagination,

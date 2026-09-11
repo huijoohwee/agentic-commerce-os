@@ -8,7 +8,7 @@ export async function checkMerchantLaunch({ browser, url, output, observeContext
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, acceptDownloads: true });
   observeContext(context);
   const page = await context.newPage();
-  await page.goto(url);
+  await page.goto(url + '#vendor-editor');
   await page.getByText('Offline access is ready.', { exact: false }).waitFor();
   await context.setOffline(true); await page.reload();
   await page.getByLabel('What are you creating?').fill('Solo pilot');
@@ -51,7 +51,8 @@ export async function checkMerchantLaunch({ browser, url, output, observeContext
   await page.getByLabel('I reviewed this offer and its estimated costs.').check();
   // A writer without BroadcastChannel still cannot export an earlier review.
   await page.evaluate(async () => {
-    const { listDrafts, saveDraft } = await import('./drafts.js');
+    const bootstrap = document.querySelector('script[type=module]').src;
+    const { listDrafts, saveDraft } = await import(new URL('drafts.js', bootstrap).href);
     const draft = (await listDrafts())[0];
     await saveDraft({ ...draft, title: 'Changed in another tab' }, draft.revision);
   });

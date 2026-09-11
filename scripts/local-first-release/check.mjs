@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import { once } from 'node:events';
 import { waitForReadiness } from './readiness.mjs';
 import { waitForAssets } from './availability.mjs';
+import { checkRoleWorkspace } from '../../test/local-first/workspace-browser.mjs';
 import { checkMerchantLaunch } from '../../test/local-first/merchant-browser.mjs';
 import { BROWSER_CHECKS, BROWSER_PROOF_SCHEMA, completeBrowserChecks, assertBrowserProof } from './browser-proof.mjs';
 
@@ -70,7 +71,7 @@ try {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, acceptDownloads: true });
   observeContext(context);
   const page = await context.newPage();
-  const documentResponse = await page.goto(url);
+  const documentResponse = await page.goto(url + '#vendor-editor');
   assert.match(documentResponse.headers()['cache-control'], /(?:^|,\s*)no-transform(?:,|$)/);
   await page.getByText('Offline access is ready.', { exact: false }).waitFor();
   await page.evaluate(() => navigator.serviceWorker.ready);
@@ -95,7 +96,7 @@ try {
   await expect(page.getByLabel('The idea')).toHaveValue('Updated without a connection');
   record(BROWSER_CHECKS.offline);
   await context.setOffline(false);
-  const peer = await context.newPage(); await peer.goto(url); await peer.locator('#draft-list button').first().click();
+  const peer = await context.newPage(); await peer.goto(url + '#vendor-editor'); await peer.locator('#draft-list button').first().click();
   await peer.getByLabel('The idea').fill('A stale editor must not overwrite');
   await page.getByLabel('The idea').fill('The first writer wins');
   await page.getByRole('button', { name: 'Save on this device' }).click();
@@ -104,15 +105,17 @@ try {
   await peer.getByText('This draft changed in another tab.', { exact: false }).waitFor();
   assert.equal(await peer.getByLabel('The idea').inputValue(), 'A stale editor must not overwrite');
   record(BROWSER_CHECKS.concurrency);
+  await page.goto(url + '#admin-data');
   const downloadPromise = page.waitForEvent('download'); await page.getByRole('button', { name: 'Export drafts' }).click();
   const download = await downloadPromise, exported = fs.readFileSync(await download.path());
   const fresh = await browser.newContext({ viewport: { width: 390, height: 844 } });
   observeContext(fresh);
   const imported = await fresh.newPage();
-  await imported.goto(url); await imported.locator('#import').setInputFiles({ name: 'drafts.json', mimeType: 'application/json', buffer: exported });
+  await imported.goto(url + '#admin-data'); await expect(imported.locator('#import')).toBeEnabled(); await imported.locator('#import').setInputFiles({ name: 'drafts.json', mimeType: 'application/json', buffer: exported });
   await imported.getByText('Imported 1 draft.', { exact: false }).waitFor();
-  await imported.locator('#draft-list button').first().click();
+  await imported.goto(url + '#vendor-editor'); await imported.locator('#draft-list button').first().click();
   await expect(imported.getByLabel('The idea')).toHaveValue('The first writer wins');
+  await imported.goto(url + '#admin-data');
   const conflict = JSON.parse(exported); conflict.drafts[0].title = 'Conflicting import';
   await imported.locator('#import').setInputFiles({ name: 'conflict.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(conflict)) });
   await imported.getByText('An imported draft conflicts', { exact: false }).waitFor();
@@ -124,6 +127,7 @@ try {
   await imported.getByText('Imported 1 draft.', { exact: false }).waitFor();
   assert.equal(await imported.locator('#draft-list img').count(), 0);
   assert.equal(await imported.evaluate(() => window.injected), undefined);
+  await checkRoleWorkspace({ browser, url, output, observeContext, record });
   await checkMerchantLaunch({ browser, url, output, observeContext, record });
   assert.deepEqual(failures.filter(failure => failure.type === 'page'), []);
   assert(requests.every(request => request.method === 'GET' && new URL(request.url).origin === origin));

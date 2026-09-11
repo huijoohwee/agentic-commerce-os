@@ -1,29 +1,48 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#122d26">
-  <meta name="description" content="A private, local-first workspace for shaping your next offer.">
-  <title>Commerce workspace · Airvio</title>
-  <link rel="stylesheet" href="./style.css">
-  <script type="module" src="./app.js"></script>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f8f8f6">
+  <meta name="description" content="Build your independent business. Preview offers, prepare your storefront, and review your next launch.">
+  <title>Commerce · Airvio</title>
+  <link rel="stylesheet" href="./assets/__RELEASE__/style.css"><script type="module" src="./assets/__RELEASE__/workspace.js"></script>
 </head>
 <body>
-  <header class="topbar"><a class="brand" href="./">airvio<span> / commerce</span></a><span id="connection" class="badge">Local workspace</span></header>
-  <main>
-    <section class="intro"><p class="eyebrow">FROM IDEA TO FIRST SALE</p><h1>One useful offer.<br>Your first customer.</h1><p>Shape an offer, check what each sale could earn, and review it for your storefront. Your private notes stay in this browser.</p></section>
-    <div class="workspace">
-      <aside class="panel draft-panel" aria-labelledby="draft-heading">
-        <div class="panel-heading"><h2 id="draft-heading">Your drafts <span id="draft-count">0</span></h2><button id="new-draft" class="small" type="button">+ New</button></div>
-        <div id="draft-list" aria-label="Saved drafts"></div>
-        <p id="empty-state" class="muted">No drafts yet. Start with one idea.</p>
-        <div class="transfer"><button id="export" type="button" class="secondary">Export drafts</button><label class="button secondary" for="import">Import JSON</label><input id="import" class="file-input" type="file" accept="application/json,.json"></div>
-        <p class="footnote">Export a backup or move drafts to another device. Clearing browser data removes local drafts.</p>
-      </aside>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="announcement">Your business, taking shape. <span>Private workspace · Saved on this device</span></div>
+  <header class="topbar">
+    <a class="brand" href="#shop" aria-label="Airvio Commerce home">airvio<span>commerce</span></a>
+    <nav class="role-nav" aria-label="Workspace"><a href="#shop" data-role="shop" aria-current="page">Shopper</a><a href="#vendor" data-role="vendor">Vendor</a><a href="#admin" data-role="admin">Admin</a></nav>
+    <span id="connection" class="badge">Local workspace</span>
+  </header>
+  <main id="main" tabindex="-1">
+    <p id="status" class="global-status" role="status" aria-live="polite"></p>
+    <section id="shop" data-role-panel="shop" aria-labelledby="shop-heading">
+      <div class="shop-hero"><div><p class="eyebrow">INDEPENDENT BY DESIGN</p><h1 id="shop-heading" tabindex="-1">Good ideas.<br>Ready to take shape.</h1><p>Explore your offers through a customer’s eyes. One clear outcome. One thoughtful next step.</p><a class="button" href="#collection">Explore offers <span aria-hidden="true">↗</span></a></div><div class="hero-object" aria-hidden="true"><div class="paper paper-back"></div><div class="paper paper-front"><span>AIRVIO / INDEPENDENT</span><strong>Made<br>with purpose.</strong><span>YOUR NEXT CHAPTER &nbsp; ↗</span></div><span class="object-caption">A small start. A world of possibility.</span></div></div>
+      <div class="benefits"><span>01 &nbsp; Your offers, your terms</span><span>02 &nbsp; Human review before launch</span><span>03 &nbsp; Private and portable</span></div>
+      <section id="collection" class="collection" aria-labelledby="collection-heading">
+        <div class="section-heading"><div><p class="eyebrow">THE COLLECTION</p><h2 id="collection-heading">Your storefront preview</h2></div><span class="badge quiet">Preview · Only on this device</span></div>
+        <p class="muted">Saved offers with complete launch terms appear here. Prices are estimates; this preview does not accept orders or payments.</p>
+        <form id="shop-search" class="catalog-toolbar" role="search"><label class="search-field"><span class="sr-only">Search preview offers</span><input id="shop-query" type="search" placeholder="Search offers or stores" maxlength="120"></label><label>Store<select id="shop-store"><option value="">All stores</option></select></label><label>Sort by<select id="shop-sort"><option value="recent">Recently updated</option><option value="name">Name, A–Z</option></select></label></form>
+        <div class="results-heading"><p id="shop-count" role="status"></p><a href="#vendor-editor">Create an offer ↗</a></div>
+        <div id="shop-grid" class="product-grid"></div>
+        <div id="shop-empty" class="empty-state"><span class="empty-mark" aria-hidden="true">＋</span><h3>Your collection starts with one offer.</h3><p>Create an offer and complete its launch terms to see your storefront take shape.</p><a class="button" href="#vendor-editor">Create your first offer</a></div>
+        <div class="pagination" id="shop-pagination" hidden><button id="shop-previous" type="button" class="secondary">Previous</button><span id="shop-page"></span><button id="shop-next" type="button" class="secondary">Next</button></div>
+      </section>
+    </section>
+    <section id="vendor" data-role-panel="vendor" hidden>
+      <div class="workspace-shell">
+        <aside class="sidebar"><p class="eyebrow">VENDOR WORKSPACE</p><a href="#vendor" data-view="vendor">Offers</a><a href="#vendor-editor" data-view="vendor-editor">Offer editor</a><a href="#vendor-preview" data-view="vendor-preview">Storefront preview</a><div class="sidebar-note"><strong>One offer to first sale</strong><p>Define your buyer, check your costs, and review the launch.</p><a href="#admin-data">Back up your work ↗</a></div></aside>
+        <div class="workspace-content">
+          <section data-view-panel="vendor"><div class="section-heading"><div><p class="eyebrow">YOUR BUSINESS</p><h1 tabindex="-1">Offers</h1><p class="muted">Manage your catalog, from first draft to launch review.</p></div><a class="button" id="create-offer" href="#vendor-editor">＋ Create offer</a></div>
+            <div class="metrics"><article><span>Saved offers</span><strong id="vendor-total">0</strong></article><article><span>Terms complete</span><strong id="vendor-complete">0</strong></article><article><span>Sales channel</span><strong class="metric-text">Not connected</strong><small>Offers are private drafts</small></article></div>
+            <div class="panel"><div class="table-tools"><label class="search-field"><span class="sr-only">Search vendor offers</span><input id="vendor-query" type="search" placeholder="Search your offers" maxlength="120"></label><label>Status<select id="vendor-state"><option value="">All offers</option><option value="draft">Draft</option><option value="reviewable">Ready for review</option><option value="revise">Revise costs</option></select></label></div><div id="vendor-table"></div><p id="vendor-count" class="footnote"></p></div>
+          </section>
+          <section data-view-panel="vendor-editor" hidden><div class="section-heading"><div><p class="eyebrow">OFFER DETAILS</p><h1 tabindex="-1">Make it useful. Make it yours.</h1></div><a href="#vendor">Back to offers</a></div>
+            <div class="editor-layout"><aside class="panel draft-panel" aria-labelledby="draft-heading"><div class="panel-heading"><h2 id="draft-heading">Your drafts <span id="draft-count">0</span></h2><button id="new-draft" class="small" type="button">+ New</button></div><div id="draft-list" aria-label="Saved drafts"></div><p id="empty-state" class="muted">No drafts yet. Start with one idea.</p></aside>
       <section class="panel editor" aria-labelledby="editor-heading">
         <div class="panel-heading"><h2 id="editor-heading">New offer draft</h2><span class="badge quiet">Private draft</span></div>
-        <form id="draft-form">
+        <form id="draft-form"><fieldset id="editor-fields" disabled>
           <label for="title">What are you creating?</label><input id="title" name="title" maxlength="120" required placeholder="An offer, a product, a service…" autocomplete="off">
           <label for="description">The idea</label><textarea id="description" name="description" maxlength="10000" rows="9" placeholder="Who is it for? What would make it useful? What would you like to try?"></textarea>
           <label for="price">Price notes <span class="optional">optional</span></label><input id="price" name="price" maxlength="120" placeholder="A starting price, a range, or a question" autocomplete="off">
@@ -45,7 +64,7 @@
             <p class="footnote">The registered agent supplies the live offer and price at checkout. These estimates do not change its prices or prove a customer will pay.</p>
           </details>
           <div class="editor-actions"><button id="save" type="submit">Save on this device <span aria-hidden="true">↗</span></button><button id="review-launch" type="button" class="secondary">Review launch</button><span id="save-state" class="muted">Not saved yet</span></div>
-        </form>
+        </fieldset></form>
         <section id="launch-review" class="launch-review" aria-labelledby="review-heading" hidden>
           <h2 id="review-heading">Review your offer</h2><p id="review-offer"></p><dl id="economics"></dl>
           <p class="footnote">Estimates only. Demand is unvalidated. Private idea and price notes are excluded from the launch pack.</p>
@@ -53,15 +72,29 @@
           <button id="export-launch" type="button" disabled>Export reviewed launch pack</button>
           <p class="footnote">Your operator can use this pack with the existing merchant storefront. Publishing still requires authorization and a current claim. Buyers review the live quote before payment.</p>
         </section>
-        <p id="status" role="status" aria-live="polite"></p>
       </section>
-    </div>
-    <section class="next-steps" aria-label="Workspace capabilities">
-      <article><span class="step-number">01</span><div><h2>Work at your own pace</h2><p id="offline-ready">Preparing offline access. Keep this page open until it is ready.</p></div></article>
-      <article><span class="step-number">02</span><div><h2>See the bigger picture</h2><p>Arrange your ideas in the Graph canvas. Drafts are not automatically shared.</p><a href="https://airvio.co/agentic-graph/?openEditorWorkspace=1" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Open canvas <span aria-hidden="true">↗</span><span class="sr-only"> (new tab, requires connection)</span></a></div></article>
-      <article><span class="step-number">03</span><div><h2>Take one offer to market</h2><p>Review and export a launch pack for the Commerce storefront. This private workspace does not publish offers or collect payments. Fulfill only after a verified payment receipt.</p></div></article>
+            </div>
+          </section>
+          <section data-view-panel="vendor-preview" hidden><div class="section-heading"><div><p class="eyebrow">STOREFRONT</p><h1 tabindex="-1">See what your customer sees.</h1></div></div><div class="panel preview-explainer"><h2>Clear offers build confidence.</h2><p>Your shopper preview shows the offer title, outcome, audience, store and planned price. Private idea notes, price notes and cost estimates stay in the vendor workspace.</p><a class="button" href="#shop">Open shopper preview ↗</a><p class="footnote">Previewing is local. A reviewed launch pack is the next step toward an authorized storefront.</p></div></section>
+        </div>
+      </div>
     </section>
+    <section id="admin" data-role-panel="admin" hidden>
+      <div class="workspace-shell">
+        <aside class="sidebar"><p class="eyebrow">ADMIN WORKSPACE</p><a href="#admin" data-view="admin">Overview</a><a href="#admin-reviews" data-view="admin-reviews">Launch reviews</a><a href="#admin-data" data-view="admin-data">Data &amp; portability</a><div class="sidebar-note"><strong>Your workspace</strong><p>Manage the offers saved in this browser. These role views do not create accounts or grant publishing access.</p></div></aside>
+        <div class="workspace-content">
+          <section data-view-panel="admin"><div class="section-heading"><div><p class="eyebrow">THE BIG PICTURE</p><h1 tabindex="-1">A good place to grow.</h1><p class="muted">See what is ready, what needs work, and what comes next.</p></div><a class="button secondary" href="#admin-reviews">Review offers ↗</a></div>
+            <div class="metrics"><article><span>Stores in drafts</span><strong id="admin-stores">0</strong></article><article><span>Ready for review</span><strong id="admin-reviewable">0</strong></article><article><span>Need attention</span><strong id="admin-attention">0</strong></article></div>
+            <div class="admin-grid"><section class="panel"><div class="section-heading"><h2>Launch checklist</h2><span class="badge quiet">This device</span></div><ol class="checklist"><li><strong>Create a useful offer</strong><p>Start with a buyer you can reach and one outcome they value.</p><a href="#vendor-editor">Create or edit an offer ↗</a></li><li><strong>Review the economics</strong><p>Confirm that the planned price covers delivery, payment, agent and acquisition costs.</p><a href="#admin-reviews">Review your offers ↗</a></li><li><strong>Take it to your storefront</strong><p>Export a reviewed launch pack. Publishing and live sales need the authorized commerce runtime.</p></li></ol></section><section class="panel"><h2>Sales readiness</h2><dl class="readiness"><dt>Offer preparation</dt><dd class="positive">Available</dd><dt>Human launch review</dt><dd class="positive">Available</dd><dt>Storefront publishing</dt><dd>Not connected</dd><dt>Orders &amp; payments</dt><dd>Not connected</dd><dt>Inventory &amp; payouts</dt><dd>Not connected</dd></dl><p class="footnote">This workspace does not record sales, take payments, or fulfill orders.</p></section></div>
+          </section>
+          <section data-view-panel="admin-reviews" hidden><div class="section-heading"><div><p class="eyebrow">HUMAN IN THE LOOP</p><h1 tabindex="-1">Launch reviews</h1><p class="muted">Check the current saved terms before exporting a launch pack.</p></div></div><div class="panel"><div class="table-tools"><label class="search-field"><span class="sr-only">Search launch reviews</span><input id="admin-query" type="search" placeholder="Search offers or stores" maxlength="120"></label><label>Review status<select id="admin-state"><option value="">All offers</option><option value="reviewable">Ready for review</option><option value="revise">Revise costs</option><option value="draft">Draft</option></select></label></div><div id="admin-table"></div><p id="admin-count" class="footnote"></p></div></section>
+          <section data-view-panel="admin-data" hidden><div class="section-heading"><div><p class="eyebrow">DATA &amp; PORTABILITY</p><h1 tabindex="-1">Your work goes with you.</h1></div></div><div class="panel preview-explainer"><h2>Back up or move your offers</h2><p>Exports include your private notes. Keep your backup somewhere safe. Imports preserve existing drafts and refuse conflicting records.</p><div class="transfer"><button id="export" type="button" disabled>Export drafts</button><label class="button secondary" for="import">Import JSON</label><input id="import" disabled class="file-input" type="file" accept="application/json,.json"></div><p class="footnote">Clearing browser data removes local drafts. No account or cloud sync is connected.</p></div></section>
+        </div>
+      </div>
+    </section>
+    <dialog id="offer-detail" aria-labelledby="detail-heading"><div class="dialog-top"><span class="eyebrow">OFFER PREVIEW</span><button id="close-detail" class="secondary" type="button" autofocus aria-label="Close offer details">✕</button></div><div id="detail-content"></div></dialog>
+    <noscript><p class="panel">Enable JavaScript to open your private offers. Saved drafts remain in this browser.</p></noscript>
   </main>
-  <footer><span>Small beginnings. Yours to build.</span><span>Local-first · No account needed</span></footer>
+  <footer><div><a class="brand" href="#shop">airvio<span>commerce</span></a><p>Independent businesses. Thoughtful beginnings.</p></div><div><p id="offline-ready">Preparing offline access. Keep this page open until it is ready.</p><a href="https://airvio.co/agentic-graph/?openEditorWorkspace=1" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Open Graph canvas ↗</a></div></footer>
 </body>
 </html>

@@ -44,3 +44,24 @@ test('import rejects malformed, duplicate, oversized and prototype-shaped record
   for (const value of ['{}', encode([draft, draft]), encode([{ ...draft, revision: -1 }]), encode([{ ...draft, title: 'x'.repeat(121) }]),
     encode([{ ...draft, extra: true }]), 'x'.repeat(8000001)]) assert.throws(() => parseImport(value));
 });
+
+test('release-scoped browser modules bypass old caches and role entry links stay in scope', async () => {
+  const seen = [];
+  const env = { RELEASE_CANDIDATE_SHA: revision, ASSETS: { async fetch(req) {
+    seen.push(new URL(req.url).pathname);
+    return new Response('<link href="./assets/__RELEASE__/style.css"><script src="./assets/__RELEASE__/workspace.js"></script>');
+  } } };
+  const html = await (await worker.fetch(request('/agentic-commerce-os/'), env)).text();
+  assert.equal(html.includes('__RELEASE__'), false);
+  assert.equal(html.match(new RegExp(revision, 'g')).length, 2);
+  assert.equal((await worker.fetch(request(`/agentic-commerce-os/assets/${revision}/workspace.js`), env)).status, 200);
+  assert.equal(seen.at(-1), '/workspace.js');
+  const count = seen.length;
+  assert.equal((await worker.fetch(request(`/agentic-commerce-os/assets/${'b'.repeat(40)}/workspace.js`), env)).status, 404);
+  assert.equal(seen.length, count);
+  for (const role of ['vendor', 'admin']) {
+    const response = await worker.fetch(request('/agentic-commerce-os/' + role), env);
+    assert.equal(response.status, 308);
+    assert.equal(response.headers.get('location'), 'https://airvio.co/agentic-commerce-os/#' + role);
+  }
+});

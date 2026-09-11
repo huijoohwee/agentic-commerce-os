@@ -9,6 +9,7 @@ export const BROWSER_CHECKS = Object.freeze({
   launch: 'offline merchant review, exact economics and private-note-free native launch export',
   review: 'unsaved and concurrently changed offers require fresh merchant review',
   economics: 'launch terms survive offline reload and loss-making estimates fail review',
+  roles: 'shopper, vendor and admin views use durable drafts, private projections, human review and offline mobile navigation',
   privacy: 'imported text cannot inject markup; no draft or checkout network writes',
 });
 const required = Object.values(BROWSER_CHECKS);

@@ -1,13 +1,15 @@
 const CACHE_PREFIX = 'agentic-commerce-local-first-';
-const CACHE = CACHE_PREFIX + '__RELEASE__';
+const RELEASE = '__RELEASE__';
+const CACHE = CACHE_PREFIX + RELEASE;
 const SCOPE = new URL(self.registration.scope);
-const FILES = ['', 'app.js', 'drafts.js', 'launch.js', 'style.css'];
-const PATHS = new Set(FILES.map(file => new URL(file, SCOPE).pathname));
+const FILES = ['', 'workspace.js', 'app.js', 'drafts.js', 'launch.js', 'style.css'];
+const assetUrl = file => new URL(file ? `assets/${RELEASE}/${file}` : '', SCOPE);
+const PATHS = new Set(FILES.map(file => assetUrl(file).pathname));
 self.addEventListener('install', event => event.waitUntil((async () => {
   const cache = await caches.open(CACHE);
   // A failed asset refuses this installation and keeps the previous offline shell.
   for (const file of FILES) {
-    const url = new URL(file, SCOPE);
+    const url = assetUrl(file);
     const response = await fetch(new Request(url, { cache: 'reload', credentials: 'omit', signal: AbortSignal.timeout(15000) }));
     if (!response.ok) throw Error('offline_asset_unavailable');
     await cache.put(url.href, response);
