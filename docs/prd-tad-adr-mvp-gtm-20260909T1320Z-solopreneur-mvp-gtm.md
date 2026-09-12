@@ -1,7 +1,7 @@
 ---
 title: "Reference Implementation — Agentic Commerce OS Solopreneur MVP-to-GTM Sprint"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "1.2.0"
+version: "1.2.1"
 date: "2026-09-12"
 lang: "en-US"
 frontmatter_contract: "required"
@@ -23,12 +23,12 @@ parent_source_revision: "1acbbcc3b06534f9712f5b05b781010f749fa842"
 related_continuity_id: "TAD-COMPOSE-ARCH-001"
 pipeline_continuity_id: "PRD-TAD-ADR-ADLC-PIPELINE-001"
 source_revision: "50cc1d7e1a81af4ca89c2c4584bc50aee89ec55f"
-guideline_revision: "2.6.0"
-guideline_source_revision: "c83b43bd7fd018e0ac41629787e0e713db9a1e13"
+guideline_revision: "2.7.0"
+guideline_source_revision: "e8d2a10a8d3e5735c43edf350a22523df05fdf91"
 demand_status: "unvalidated"
 sprint_clock: "40 operator hours within 10 working days; set at first dispatch"
-worktree_id: "agent/device-0232231d4a19/commerce-planning-alignment"
-agent_id: "codex-commerce-planning-alignment"
+worktree_id: "katrinas-macbook-pro.local--planning-v27"
+agent_id: "codex-01a0940a"
 verification_scope: "first-dollar sprint criteria remain unproven; deployed sandbox capability is owned by edge-commerce-agent-mvp@0.6.0"
 revision: "1.2.0"
 mvp_revision: "1.2.0"
@@ -36,6 +36,7 @@ gtm_revision: "1.2.0"
 agenticOsCanvasRenderMode: "2d"
 agenticOsCanvas2dRenderer: "d3"
 surfaces: ["2D Renderer: D3 Graph"]
+reviewed_source_revision: "37d1e2a2e3a0efa4f9c5f44c457efa3234d86ad9"
 ---
 
 # Reference implementation — Agentic Commerce OS solopreneur MVP-to-GTM sprint
@@ -527,3 +528,9 @@ implementation owner's alignment record.
 [dbr]: ./deploy-boundary-register.json
 
 [guideline]: https://github.com/huijoohwee/huijoohwee.github.io/blob/c83b43bd7fd018e0ac41629787e0e713db9a1e13/guidelines/prd-tad-adr-mvp-gtm-guidelines.md
+
+## Experience assessment — reference implementation
+
+This assessment consumes `PRD-TAD-ADR-COMMERCE-MVP-GTM-001@1.2.0` and the unchanged criterion and evidence scopes above. Core Requirements & Functionality, Innovation & Theme Alignment, Technical Execution & Integration, and Usefulness & Agentic Experience are **unassessed**: no criterion-scored user observation is attached to this planning revision. Existing sandbox and authoring receipts retain their recorded source, environment and expiry; this assessment neither renews them nor changes their readiness scope.
+
+The document owner must capture one timed pilot in the buyer’s existing workspace, record the four observations using the shared maturity rubric, and measure accepted outcome, actual payment, repeat use and delivery/support cost separately. A successful sandbox checkout proves its declared mechanism only; it cannot establish willingness to pay, a commercial winner or collected customer revenue. Append the learn-loop result as a successor Context through the shared planning owner.
