@@ -1,0 +1,189 @@
+{
+  "schema": "agentic-os/repository-validation-policy/v1",
+  "repository": "github.com/huijoohwee/agentic-commerce-os",
+  "broadInputs": [
+    "wrangler.core.jsonc",
+    "wrangler.edge.jsonc",
+    "wrangler.local-first.jsonc",
+    "vitest.config.ts",
+    "vitest.worker.config.ts",
+    "tsconfig.json",
+    ".github/"
+  ],
+  "always": [
+    "adlc",
+    "evidence-contract"
+  ],
+  "fallback": [
+    "implementation"
+  ],
+  "checks": [
+    {
+      "id": "adlc",
+      "command": [
+        "npm",
+        "run",
+        "check:adlc"
+      ],
+      "inputs": [],
+      "requires": [],
+      "reuse": "never",
+      "timeoutMs": 900000
+    },
+    {
+      "id": "evidence-contract",
+      "command": [
+        "npm",
+        "run",
+        "check:evidence-contract"
+      ],
+      "inputs": [],
+      "requires": [],
+      "reuse": "never",
+      "timeoutMs": 900000
+    },
+    {
+      "id": "types",
+      "command": [
+        "npm",
+        "run",
+        "types:check"
+      ],
+      "inputs": [
+        "src/generated/"
+      ],
+      "requires": [],
+      "reuse": "never",
+      "timeoutMs": 900000
+    },
+    {
+      "id": "typecheck",
+      "command": [
+        "npm",
+        "run",
+        "typecheck"
+      ],
+      "inputs": [
+        "src/",
+        "scripts/",
+        "test/"
+      ],
+      "requires": [],
+      "reuse": "never",
+      "timeoutMs": 900000
+    },
+    {
+      "id": "domain",
+      "command": [
+        "npm",
+        "run",
+        "test:domain"
+      ],
+      "inputs": [
+        "src/",
+        "scripts/",
+        "test/domain/",
+        "config/"
+      ],
+      "requires": [],
+      "reuse": "never",
+      "timeoutMs": 900000
+    },
+    {
+      "id": "unit",
+      "command": [
+        "npm",
+        "run",
+        "test:unit"
+      ],
+      "inputs": [
+        "src/",
+        "test/invocation/",
+        "test/shared/"
+      ],
+      "requires": [],
+      "reuse": "never",
+      "timeoutMs": 900000
+    },
+    {
+      "id": "workers",
+      "command": [
+        "npm",
+        "run",
+        "test:workers"
+      ],
+      "inputs": [
+        "src/",
+        "test/workers/",
+        "config/"
+      ],
+      "requires": [],
+      "reuse": "never",
+      "timeoutMs": 900000
+    },
+    {
+      "id": "named",
+      "command": [
+        "npm",
+        "run",
+        "check:named"
+      ],
+      "inputs": [
+        "src/",
+        "scripts/",
+        "test/",
+        "docs/",
+        ".kiro/",
+        "config/",
+        "public/"
+      ],
+      "requires": [],
+      "reuse": "never",
+      "timeoutMs": 900000
+    },
+    {
+      "id": "dev-dry-run",
+      "command": [
+        "npm",
+        "run",
+        "deploy:dev:dry"
+      ],
+      "inputs": [
+        "src/",
+        "scripts/",
+        "config/"
+      ],
+      "requires": [],
+      "reuse": "never",
+      "timeoutMs": 900000
+    },
+    {
+      "id": "production-dry-run",
+      "command": [
+        "npm",
+        "run",
+        "deploy:production:dry"
+      ],
+      "inputs": [
+        "src/",
+        "scripts/",
+        "config/"
+      ],
+      "requires": [],
+      "reuse": "never",
+      "timeoutMs": 900000
+    },
+    {
+      "id": "implementation",
+      "command": [
+        "npm",
+        "run",
+        "check:implementation"
+      ],
+      "inputs": [],
+      "requires": [],
+      "reuse": "never",
+      "timeoutMs": 900000
+    }
+  ]
+}

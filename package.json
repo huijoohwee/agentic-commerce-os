@@ -59,12 +59,16 @@
     "check:named": "npm run check:terminology && npm run check:convergence && npm run check:take-rate && npm run check:template-pack && npm run check:deploy-boundary && npm run check:invocation-surface && npm run check:webmcp && npm run check:routing && npm run check:local-first && npm run check:offer-watch && npm run check:sandbox:source && npm run check:merge-agent && npm run check:authored-limits && npm run check:task-bounds -- --tasks=.kiro/specs/agentic-graph-commerce-platform/tasks.md --snapshot=config/task-bounds.snapshot.json && npm run check:browser",
     "check:implementation": "npm run types:check && npm run typecheck && npm run test && npm run test:workers && npm run check:named && npm run deploy:dev:dry && npm run deploy:production:dry",
     "check:adlc": "npm --prefix node_modules/agentic-os run evals",
-    "check:integration": "npm run check:adlc && npm run check:evidence-contract && npm run check:implementation",
+    "check:integration": "node node_modules/agentic-os/bin/agentic-os-validation.mjs run",
     "check": "npm run check:integration && npm run check:evidence",
     "check:isolated-process": "node --test test/operational/isolated-process.test.ts",
     "build:local-host": "node scripts/local-host/build.ts",
     "start:local-host": "node node_modules/.cache/commerce-local-host/commerce-local-host.mjs",
-    "check:local-host": "node --test test/operational/local-host.test.ts"
+    "check:local-host": "node --test test/operational/local-host.test.ts",
+    "check:integration:source": "npm run check:adlc && npm run check:evidence-contract && npm run check:implementation",
+    "check:plan": "node node_modules/agentic-os/bin/agentic-os-validation.mjs plan",
+    "check:ci": "node node_modules/agentic-os/bin/agentic-os-validation.mjs ci",
+    "check:integration:all": "node node_modules/agentic-os/bin/agentic-os-validation.mjs run --all --fresh"
   },
   "dependencies": {
     "@cloudflare/sandbox": "0.12.9",
@@ -76,7 +80,7 @@
     "@cloudflare/workers-types": "5.20260829.1",
     "@playwright/test": "1.62.1",
     "@types/node": "26.3.0",
-    "agentic-os": "https://codeload.github.com/huijoohwee/agentic-os/tar.gz/13c3839aba7fc64bf94f93aa29b1239ab929840d",
+    "agentic-os": "https://codeload.github.com/huijoohwee/agentic-os/tar.gz/9f5973dbd85d861c8346a885254efdf1a69669bc",
     "fast-check": "4.9.0",
     "typescript": "5.9.3",
     "vitest": "4.1.11",
