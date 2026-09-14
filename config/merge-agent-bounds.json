@@ -41,7 +41,7 @@
         "identity": "Integration Gate",
         "script": "check:integration",
         "args": [],
-        "closureSha256": "417910ade31c51a86ec65fde6e23d2d1bb8991abcc5a57aa95b986445e0ebf4d"
+        "closureSha256": "6db1b78bc7020d481c0a593500bc404856f8271d2a45e08cd54edd52b394d4f2"
       }
     ]
   },

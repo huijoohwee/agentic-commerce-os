@@ -35,7 +35,7 @@ test('package scripts and dependency pin the exact governing runtime', async () 
   const pkg = JSON.parse(await readFile(new URL('package.json', root), 'utf8'));
 
   assert.equal(pkg.devDependencies['agentic-os'],
-    'https://codeload.github.com/huijoohwee/agentic-os/tar.gz/13c3839aba7fc64bf94f93aa29b1239ab929840d');
+    'https://codeload.github.com/huijoohwee/agentic-os/tar.gz/9f5973dbd85d861c8346a885254efdf1a69669bc');
   assert.deepEqual({
     setup: pkg.scripts.setup,
     doctor: pkg.scripts.doctor,
@@ -63,7 +63,13 @@ test('protected integration runs shared ADLC evaluations before product checks',
 
   assert.equal(pkg.scripts['check:adlc'], 'npm --prefix node_modules/agentic-os run evals');
   assert.equal(pkg.scripts['check:integration'],
+    'node node_modules/agentic-os/bin/agentic-os-validation.mjs run');
+  assert.equal(pkg.scripts['check:integration:source'],
     'npm run check:adlc && npm run check:evidence-contract && npm run check:implementation');
+  const policy = JSON.parse(await readFile(new URL('.agentic-os-validation.json', root), 'utf8'));
+  assert.deepEqual(policy.always, ['adlc', 'evidence-contract']);
+  assert.deepEqual(policy.fallback, ['implementation']);
+  assert.ok(!policy.checks.some(check => check.command.includes('check:evidence')));
   assert.match(workflow, /^\s+run: npm run check:integration$/m);
   assert.equal(pkg.scripts.check, 'npm run check:integration && npm run check:evidence');
 });
