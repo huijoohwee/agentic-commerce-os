@@ -7,7 +7,7 @@ import { WORKER, sourceManifest, assertCleanCandidate, git, digest } from './art
 import { createProvider } from './provider.mjs';
 import { parseLocalFirstAuthorization } from './authorization.mjs';
 import { parseProductionRouteAuthority } from '../production-release/route-authority.ts';
-import { observeBefore, deployLocalFirst } from './deployment.mjs';
+import { observeBefore, deployLocalFirst, rehearseLocalFirstRollback } from './deployment.mjs';
 import { verifyRetainedBaseline } from './retained-baseline.mjs';
 import { assertBrowserProof } from './browser-proof.mjs';
 import { readFulfillmentRelease, verifyFulfillmentRelease } from './fulfillment.mjs';
@@ -40,6 +40,9 @@ const retainedBaseline = await verifyRetainedBaseline(env.LOCAL_FIRST_RETAINED_B
 if (JSON.stringify(read('retained-baseline.json')) !== JSON.stringify(retainedBaseline)) throw Error('Retained baseline changed after preparation');
 const before = await observeBefore(provider, routeAuthority, retainedBaseline);
 const fulfillment = readFulfillmentRelease();
+const rehearsal = env.LOCAL_FIRST_ROLLBACK_REHEARSAL === 'true';
+if (!['true', 'false', undefined].includes(env.LOCAL_FIRST_ROLLBACK_REHEARSAL)) throw Error('Invalid rollback rehearsal selection');
+if (rehearsal && !fulfillment) throw Error('Rollback rehearsal requires the retained reader and authenticated fulfillment host');
 const verifyHost = () => verifyFulfillmentRelease(fulfillment, { provider, routeAuthority,
   token: env.GH_TOKEN, bearer: env.LISTING_HOST_BEARER });
 const fulfillmentProof = await verifyHost();
@@ -91,6 +94,19 @@ try {
     ...(fulfillment ? { LISTING_HOST_BEARER: env.LISTING_HOST_BEARER } : {}) }), { mode: 0o600, flag: 'wx' });
   await deployLocalFirst({ provider, routeAuthority, before, journal, revision, checkMain, record, wrangler, verifyLive, secretsFile, fulfillment });
 } finally { fs.rmSync(secretDir, { recursive: true }); }
+if (rehearsal) {
+  const { createRollbackBrowserObservation } = await import('./rollback-browser.mjs');
+  const observation = await createRollbackBrowserObservation({ output });
+  try {
+    const proof = await rehearseLocalFirstRollback({ provider, routeAuthority, candidate: journal.active,
+      reader: fulfillment.reader, revision, pins: fulfillment.pins, checkMain, record, wrangler, observation, journal });
+    journal.active = proof.restoredDeployment;
+    write('fulfillment-rollback-proof.json', proof);
+    await verifyLive(journal.active);
+  } catch (error) {
+    journal.outcome = 'preserve-required'; journal.error = error.message; record('rollback-rehearsal-failed'); throw error;
+  } finally { await observation.close(); }
+}
 journal.outcome = 'production-complete'; record('complete');
 const body = { schema: 'commerce.local-first-production-completion/v2', status: 'production-complete',
   profile: 'local-first', checkout: 'sandbox', sourceRevision: revision, artifactDigest: artifact.artifactDigest,

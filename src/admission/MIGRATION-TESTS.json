@@ -1,0 +1,105 @@
+{
+  "schema": "agentic-commerce/native-test-migration/v1",
+  "continuityId": "DURABLE-AGENT-WORKFLOWS-001",
+  "sourceRepository": "github.com/huijoohwee/agentic-canvas-os",
+  "sourceRevision": "8460fc01c7dbd8af6880d346a71829e20887c44e",
+  "phase": "source-transfer-before-retirement",
+  "records": [
+    {
+      "source": "__tests__/function-execution-receipts.test.mjs",
+      "sourceSha256": "1c0bf9821545bcbe8f46838e59acc666ae96c074b961350bca93f6ac68400e0d",
+      "destination": "test/admission/function-execution-receipts.test.mjs",
+      "destinationSha256": "edd89cad9a98fde01604ddb3e151e672989578035ca396ac13a374c798648473",
+      "tests": [
+        "reuses one durable idempotency key after an uncertain mutating result and replays the completed receipt",
+        "allows one execution claimant and rejects call-identity payload drift",
+        "gateway persists review authorization before mutation and replays a fresh-isolate completion"
+      ],
+      "transformation": "Original test cases and assertions retained. Existing Commerce namespace fixture exercises the Commerce AgentState subclass; generic operations import exact OS package exports."
+    },
+    {
+      "source": "__tests__/native-skill-harness-draft-store.test.mjs",
+      "sourceSha256": "0b42babd3a7b65f34c5ab129a4ad71c3eb1c489cbabbad86de99164b2cef7747",
+      "destination": "test/admission/native-skill-harness-draft-store.test.mjs",
+      "destinationSha256": "0a78023d430e21404da432c7159a1962141d872ac3cb2e8c7a3b48866da62610",
+      "tests": [
+        "the draft store writes and peeks one record per draft id",
+        "an already-expired draft fails closed at write and a missing draft reads absent",
+        "markConsumed is the only mutation the gate needs and is single-shot",
+        "the adapter index appends uniquely and rejects beyond 64 entries",
+        "the draft TTL ceiling matches the Durable Object 30-day cap and reports zero bindings added",
+        "a draft record must arrive with status proposed and consumed false"
+      ],
+      "transformation": "Original test cases and assertions retained. Existing Commerce namespace fixture exercises the Commerce AgentState subclass; generic operations import exact OS package exports."
+    },
+    {
+      "source": "__tests__/native-skill-harness-structure.test.mjs",
+      "sourceSha256": "d109521ccfff6b67bd069733122953f2d5060a8a6405474a26b1f404b7a8c0bb",
+      "destination": "test/admission/durable-store-namespace-isolation.test.mjs",
+      "destinationSha256": "3b3ef63eb3fb8081a3c3325e23a49f5e1778e9ef67467c36fdd67b37c0d77191",
+      "selection": {
+        "testTitle": "every durable-object state store scope prefix is unique per factory"
+      }
+    },
+    {
+      "source": "__tests__/commerce-admission-provider.test.mjs",
+      "sourceSha256": "6e7aab6b01aed3c8d5222c0c273041d404bcedee8fce0ed3f80ba3466c89039e",
+      "destination": "test/admission/commerce-admission-provider.test.mjs",
+      "destinationSha256": "ba72c9c8bbdb3c6bb9f9f819cfdcbc1e77f2e0e4c0ffba3c7a448fb4b49707c3",
+      "tests": [
+        "readyz is exact and the private route is not reachable through a public hostname",
+        "HMAC authentication gates readiness and rejects a forged high-epoch permit before durable writes",
+        "the Worker entrypoint wires the configured private service-binding route",
+        "the authority and unavailable runtime fail closed without broadening authority",
+        "invalid Graph authority rejects an authenticated admission before JSON projection or durable writes",
+        "the Durable Object rejects an authority projection that is not bound to the exact write",
+        "malformed and oversized bodies reject deterministically without durable writes",
+        "every omitted or corrupt authoring header rejects without echo or writes",
+        "digest and admission-input mismatches make zero durable writes",
+        "scope, target, and first-use expiry reject while an exact durable replay survives expiry",
+        "A/A and A/B/A return the byte-identical durable receipt",
+        "a new Worker identity replays the immutable writer receipt with its current serving identity",
+        "an exact A outcome replays after a higher-sequence B outcome advances the fence",
+        "replaying an older exact receipt preserves the latest durable projection",
+        "a conflicting allowlist entry cannot poison durable admission across stale isolates or restart",
+        "a lower lease epoch is fenced without changing durable state",
+        "concurrent exact requests commit once and rehydrate after an isolate restart",
+        "projection failure leaves one durable outcome and retry projects it"
+      ],
+      "transformation": "Original assertions retained; imports target the Commerce-owned Worker composition and admission contracts. Warm-isolate setup reuses the existing Commerce durable namespace fixture."
+    },
+    {
+      "source": "__tests__/commerce-admission-warm-isolate.test.mjs",
+      "sourceSha256": "9dd4af377ec61c7a52499677b7543b2cb4e7081ff24346f5a928373af38f9b74",
+      "destination": "test/admission/commerce-admission-warm-isolate.test.mjs",
+      "destinationSha256": "da8443f3fc4d5aa62213930a97b90e926411e35716b7e65833a4b6369d451876",
+      "tests": [
+        "a warm isolate refreshes its public definition projection when another isolate commits"
+      ],
+      "transformation": "Original assertions retained; imports target the Commerce-owned Worker composition and admission contracts. Warm-isolate setup reuses the existing Commerce durable namespace fixture."
+    },
+    {
+      "source": "__tests__/commerce-release-proof.test.mjs",
+      "sourceSha256": "9d1a2d3972c7d31bb9e412f2cbbec265fa5ed21550ff90727350d2744de196f4",
+      "destination": "test/admission/commerce-release-proof.test.mjs",
+      "destinationSha256": "4741ec8976479601a825ba7d7d836a2ddffdd70908a079564373a1e4b4e208df",
+      "tests": [
+        "the exact current provider, identity, and Graph authority envelope is accepted",
+        "release proof authenticates before the HMAC service-bound readyz call",
+        "unconfigured, oversized, or drifted loopback evidence fails closed",
+        "public proof delegates only to the same-Worker export and public /ready stays non-authoritative"
+      ],
+      "transformation": "Original assertions retained; imports target the Commerce-owned Worker composition and admission contracts. Warm-isolate setup reuses the existing Commerce durable namespace fixture."
+    },
+    {
+      "source": "worker/index.js",
+      "sourceSha256": "08dd9389118c65aa51712aa8b90957ba9fd2855839c573f8ef8b463ae5fbc826",
+      "destination": "src/admission/worker.js",
+      "destinationSha256": "f2fa7ad8dd40dc122f38308cea89d6fb4ed2cbb2e147286c6f5c41236f8afa11",
+      "selection": {
+        "kind": "product-composition"
+      },
+      "transformation": "Product Worker composition uses OS factories and native Commerce admission. Generic runtime remains OS-owned; this source transfer grants no deployment or namespace transition."
+    }
+  ]
+}

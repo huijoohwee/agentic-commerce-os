@@ -7,6 +7,11 @@ on:
         description: Exact protected main for the local-first MVP; native sandbox checkout; no real payment
         required: true
         type: string
+      rehearse_rollback:
+        description: Rehearse the retained reader and restore the exact candidate around one actual listing job; no payment
+        required: false
+        default: false
+        type: boolean
       retained_baseline:
         description: Optional exact retained deployment, version, source and failed run IDs for a restored bootstrap
         required: false
@@ -29,6 +34,7 @@ jobs:
     timeout-minutes: 15
     env:
       CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+      LOCAL_FIRST_ROLLBACK_REHEARSAL: ${{ inputs.rehearse_rollback }}
       LOCAL_FIRST_RETAINED_BASELINE: ${{ inputs.retained_baseline }}
       LOCAL_FIRST_EVIDENCE_DIR: ${{ github.workspace }}/node_modules/.cache/local-first-verification
     steps:
@@ -78,6 +84,7 @@ jobs:
     environment: production
     env:
       CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+      LOCAL_FIRST_ROLLBACK_REHEARSAL: ${{ inputs.rehearse_rollback }}
       LOCAL_FIRST_RETAINED_BASELINE: ${{ inputs.retained_baseline }}
       LOCAL_FIRST_EVIDENCE_DIR: ${{ github.workspace }}/node_modules/.cache/local-first-verification
     steps:
