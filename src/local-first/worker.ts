@@ -2,6 +2,8 @@ import { handleCheckout, checkoutConfigured, type CheckoutEnv } from './checkout
 import type { PaymentFetch } from './stripe-checkout.ts'
 import { renderStorefrontTemplate } from './checkout-offer.ts'
 import { PRODUCTION_STOREFRONT_PREFIX } from '../edge/production-prefix.ts'
+import { handleFulfillment } from './fulfillment.ts'
+import type { FulfillmentRuntime } from './fulfillment-contract.ts'
 
 export type LocalFirstEnv = Readonly<CheckoutEnv & {
   RELEASE_CANDIDATE_SHA: string
@@ -11,6 +13,7 @@ const ASSET_PATHS = new Map([
   ['/', '/index.html'], ['/app.js', '/app.js'], ['/drafts.js', '/drafts.js'],
   ['/checkout.js', '/checkout.js'], ['/launch.js', '/launch.js'], ['/workspace.js', '/workspace.js'],
   ['/style.css', '/style.css'], ['/sw.js', '/sw.js'],
+  ['/workflow.js', '/workflow.js'],
 ])
 const CSP = "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; worker-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
 
@@ -27,14 +30,17 @@ function secured(response: Response, source: string, head: boolean): Response {
   return new Response(head ? null : response.body, { status: response.status, headers })
 }
 
-export async function fetchLocalFirst(request: Request, env: LocalFirstEnv, transport?: PaymentFetch): Promise<Response> {
+export async function fetchLocalFirst(request: Request, env: LocalFirstEnv, transport?: PaymentFetch,
+  runtime?: FulfillmentRuntime): Promise<Response> {
     const url = new URL(request.url), prefix = PRODUCTION_STOREFRONT_PREFIX
     const head = request.method === 'HEAD'
     const finish = (response: Response) => secured(response, env.RELEASE_CANDIDATE_SHA, head)
     if (url.pathname !== prefix && !url.pathname.startsWith(`${prefix}/`)) {
       return finish(Response.json({ ok: false, code: 'not_found' }, { status: 404 }))
     }
-    const checkout = await handleCheckout(request, env, transport)
+    const fulfillment = await handleFulfillment(request, env.STOREFRONT_SESSION_SECRET, runtime)
+    if (fulfillment) return finish(fulfillment)
+    const checkout = await handleCheckout(request, env, transport, runtime)
     if (checkout) return finish(checkout)
     if (!['GET', 'HEAD'].includes(request.method)) {
       return finish(Response.json({ ok: false, code: 'checkout_deferred', profile: 'local-first',

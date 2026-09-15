@@ -4,9 +4,25 @@ const TERMS_KEYS = ['acquisitionCostMinor', 'agentCostMinor', 'agentId', 'audien
   'deliveryCostMinor', 'fixedCostMinor', 'merchantId', 'outcome', 'priceMinor', 'providerFeeMinor'];
 const MONEY_KEYS = ['priceMinor', 'deliveryCostMinor', 'providerFeeMinor', 'agentCostMinor', 'acquisitionCostMinor', 'fixedCostMinor'];
 const DATABASE = 'agentic-commerce-local-drafts';
-const SCHEMA = 'commerce.local-drafts/v2';
+const SCHEMA = 'commerce.local-drafts/v3';
 const LEGACY_KEYS = ['createdAt', 'description', 'id', 'price', 'revision', 'title', 'updatedAt'];
-const KEYS = [...LEGACY_KEYS, 'launch'].sort();
+const V2_KEYS = [...LEGACY_KEYS, 'launch'].sort();
+const KEYS = [...V2_KEYS, 'workflow'].sort();
+const WORKFLOW_KEYS = 'description,inputRevision,outputDigest,reviewedDigest,runId,status,text,title';
+export function validWorkflow(value) {
+  const hash = v => typeof v === 'string' && /^[a-f0-9]{64}$/u.test(v);
+  return value && typeof value === 'object' && !Array.isArray(value)
+    && Object.keys(value).sort().join() === WORKFLOW_KEYS
+    && typeof value.title === 'string' && value.title.trim() && value.title.length <= 120
+    && typeof value.description === 'string' && value.description.length <= 10000
+    && Number.isSafeInteger(value.inputRevision) && value.inputRevision > 0
+    && (value.runId === null ? value.status === 'queued' : typeof value.runId === 'string' && /^listing-[a-f0-9]{64}$/u.test(value.runId))
+    && ['queued', 'planning', 'running', 'completed', 'blocked', 'canceled', 'pending', 'idle', 'reconciling', 'synthesizing'].includes(value.status)
+    && (value.status === 'completed' ? typeof value.text === 'string' && value.text.trim()
+      && new TextEncoder().encode(value.text).byteLength <= 16000 && hash(value.outputDigest)
+      : value.text === null && value.outputDigest === null)
+    && (value.reviewedDigest === null || value.status === 'completed' && value.reviewedDigest === value.outputDigest);
+}
 
 export function validLaunchTerms(value) {
   return value && typeof value === 'object' && !Array.isArray(value)
@@ -21,8 +37,11 @@ export function validLaunchTerms(value) {
 
 export function validDraft(value, legacy = false) {
   return value && typeof value === 'object' && !Array.isArray(value)
-    && Object.keys(value).sort().join() === (legacy ? LEGACY_KEYS : KEYS).join()
+    && (legacy ? Object.keys(value).sort().join() === LEGACY_KEYS.join()
+      : [V2_KEYS.join(), KEYS.join()].includes(Object.keys(value).sort().join()))
     && (legacy || value.launch === null || validLaunchTerms(value.launch))
+    && (!Object.hasOwn(value, 'workflow') || value.workflow === null || validWorkflow(value.workflow)
+      && value.workflow.inputRevision <= value.revision)
     && typeof value.id === 'string' && /^[0-9a-f-]{36}$/.test(value.id)
     && ['title', 'description', 'price'].every(key => typeof value[key] === 'string' && value[key].length <= LIMITS[key])
     && value.title.trim().length > 0
@@ -35,14 +54,16 @@ export function parseImport(text) {
   if (new TextEncoder().encode(text).length > LIMITS.transferBytes) throw Error('Import exceeds 8 MB.');
   let value;
   try { value = JSON.parse(text); } catch { throw Error('Choose a valid draft JSON export.'); }
-  const legacy = value?.schema === 'commerce.local-drafts/v1';
-  if (!value || Object.keys(value).sort().join() !== 'drafts,schema' || (!legacy && value.schema !== SCHEMA)
+  const legacy = value?.schema === 'commerce.local-drafts/v1', v2 = value?.schema === 'commerce.local-drafts/v2';
+  if (!value || Object.keys(value).sort().join() !== 'drafts,schema' || (!legacy && !v2 && value.schema !== SCHEMA)
     || !Array.isArray(value.drafts) || value.drafts.length > LIMITS.count
-    || !value.drafts.every(draft => validDraft(draft, legacy))
+    || !value.drafts.every(draft => validDraft(draft, legacy)
+      && Object.keys(draft).sort().join() === (legacy ? LEGACY_KEYS : v2 ? V2_KEYS : KEYS).join())
     || new Set(value.drafts.map(draft => draft.id)).size !== value.drafts.length) {
     throw Error('This file is not a supported draft export. Existing drafts were kept.');
   }
-  return value.drafts.map(normalizeStored);
+  return value.drafts.map(normalizeStored).map(draft => draft.workflow
+    ? { ...draft, workflow: { ...draft.workflow, reviewedDigest: null } } : draft);
 }
 
 function database() {
@@ -95,8 +116,13 @@ export function saveDraft(input, expectedRevision = null) {
         const now = Date.now();
         const draft = { id, title: input.title.trim(), description: input.description, price: input.price,
           launch: input.launch === undefined ? previous?.launch ?? null : input.launch,
+          workflow: input.workflow === undefined ? previous?.workflow ?? null : input.workflow,
           revision: (previous?.revision ?? 0) + 1, createdAt: previous?.createdAt ?? now,
           updatedAt: Math.max(now, previous?.updatedAt ?? 0) };
+        if (draft.workflow && (draft.title !== draft.workflow.title || draft.description !== draft.workflow.description))
+          draft.workflow = { ...draft.workflow, reviewedDigest: null };
+        // Keep ordinary drafts readable by retained v2 clients until a job is explicitly prepared.
+        if (draft.workflow === null) delete draft.workflow;
         if (!validDraft(draft)) { fail(Error('Add a title and keep each field within its limit.')); return; }
         store.put(draft); done(draft);
       };
@@ -127,11 +153,14 @@ export function importDrafts(text) {
 }
 
 function normalizeStored(draft) {
-  if (validDraft(draft, true)) return { ...draft, launch: null };
+  if (validDraft(draft, true)) return { ...draft, launch: null, workflow: null };
   if (!validDraft(draft)) throw Error('Saved draft is malformed. Preserve your backup before continuing.');
-  return { ...draft, launch: draft.launch === null ? null : Object.fromEntries(TERMS_KEYS.map(key => [key, draft.launch[key]])) };
+  return { ...draft, workflow: draft.workflow ?? null,
+    launch: draft.launch === null ? null : Object.fromEntries(TERMS_KEYS.map(key => [key, draft.launch[key]])) };
 }
 
 export async function exportDrafts() {
-  return JSON.stringify({ schema: SCHEMA, drafts: await listDrafts() }, null, 2);
+  const drafts = await listDrafts(), workflows = drafts.some(draft => draft.workflow !== null);
+  return JSON.stringify({ schema: workflows ? SCHEMA : 'commerce.local-drafts/v2',
+    drafts: workflows ? drafts : drafts.map(({ workflow: _workflow, ...draft }) => draft) }, null, 2);
 }

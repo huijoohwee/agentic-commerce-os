@@ -9,3 +9,5 @@ dialog{border:1px solid var(--line);border-radius:8px;width:min(570px,calc(100% 
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
 
 .live-offer{display:flex;align-items:center;justify-content:space-between;gap:2rem}.live-offer h3{font-size:1.6rem}.live-offer>div:last-child{min-width:12rem}#checkout .panel>button,#checkout .panel>a.button{margin:.4rem .4rem .4rem 0}#checkout-status{min-height:3rem}#checkout li{margin:.6rem 0}#checkout-order{overflow-wrap:anywhere}@media(max-width:600px){.live-offer{display:block}.live-offer>div:last-child{margin-top:1.5rem}}
+
+#listing-output,#listing-dialog h3{overflow-wrap:anywhere}

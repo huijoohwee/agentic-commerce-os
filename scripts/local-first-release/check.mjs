@@ -141,6 +141,8 @@ try {
   assert(requests.every(request => request.method === 'GET' && new URL(request.url).origin === origin));
   record(BROWSER_CHECKS.privacy);
   await checkSandboxCheckout({ browser, url, output, record, remote: !!remote });
+  if (!remote) await (await import('../../test/local-first/fulfillment-browser.mjs'))
+    .checkDurableFulfillment({ browser, url, output, revision });
   const proof = assertBrowserProof({ schema: BROWSER_PROOF_SCHEMA, ok: true, sourceRevision: revision,
     origin, checkout: 'sandbox', checks, verifiedAt: new Date().toISOString() }, revision);
   fs.writeFileSync(path.join(output, 'browser-proof.json'), JSON.stringify(proof, null, 2) + '\n');

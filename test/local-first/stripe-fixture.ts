@@ -17,7 +17,9 @@ export function stripeFixture() {
       const id = 'cs_test_' + crypto.randomUUID().replaceAll('-', '');
       const session = { id, object: 'checkout.session', mode: 'payment', livemode: false, amount_total: 800, currency: 'sgd',
         status: 'open', payment_status: 'unpaid', client_reference_id: params.get('client_reference_id'),
-        metadata: { offer_id: params.get('metadata[offer_id]'), owner: params.get('metadata[owner]') },
+        metadata: { offer_id: params.get('metadata[offer_id]'), owner: params.get('metadata[owner]'),
+          ...(params.has('metadata[fulfillment_run]') ? { fulfillment_run: params.get('metadata[fulfillment_run]'),
+            fulfillment_digest: params.get('metadata[fulfillment_digest]') } : {}) },
         url: 'https://checkout.stripe.com/c/pay/' + id, customer_details: { email: 'private@example.test' } };
       sessions.set(id, session); byKey.set(key, id); return Response.json(session);
     }
