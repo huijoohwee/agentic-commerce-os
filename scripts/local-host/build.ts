@@ -10,20 +10,23 @@ const require = createRequire(new URL('../../package.json', import.meta.url))
 const wranglerRequire = createRequire(require.resolve('wrangler/package.json'))
 const esbuild: typeof import('esbuild') = wranglerRequire('esbuild')
 
-export async function buildLocalHost(directory: string): Promise<string> {
+export async function buildLocalHost(directory: string, profile: 'sandbox' | 'listing' = 'sandbox'): Promise<string> {
+  if (!['sandbox', 'listing'].includes(profile)) throw new Error('local_host_profile_invalid')
+  const entry = profile === 'listing' ? 'scripts/durable-fulfillment/main.mjs' : 'scripts/local-host/main.ts'
   fs.mkdirSync(directory, { recursive: true })
   directory = fs.realpathSync(directory)
-  const outfile = path.join(directory, 'commerce-local-host.mjs')
+  const outfile = path.join(directory, profile === 'listing' ? 'commerce-listing-host.mjs' : 'commerce-local-host.mjs')
   await generateFile({ destination: outfile, receipt: path.join(directory, 'build-receipt.json'),
     maxOutputBytes: 499999, timeoutMs: 30000,
     inputs: () => ({ source: generationManifest(root, {
-      paths: ['scripts/local-host', 'scripts/sandbox-podman-executor.ts', 'scripts/isolated-process.ts',
+      paths: ['scripts/local-host', ...(profile === 'listing' ? ['scripts/durable-fulfillment'] : []),
+        'scripts/sandbox-podman-executor.ts', 'scripts/isolated-process.ts',
         'src', 'package.json', 'package-lock.json', 'tsconfig.json'],
       maxEntries: 2000, maxBytes: 16 * 1024 * 1024,
-    }).digest, esbuild: esbuild.version }),
+    }).digest, esbuild: esbuild.version, profile }),
     produce: async ({ signal }) => {
       const context = await esbuild.context({ absWorkingDir: root,
-        entryPoints: ['scripts/local-host/main.ts'], outfile, write: false,
+        entryPoints: [entry], outfile, write: false,
         bundle: true, platform: 'node', format: 'esm', target: 'node22', minify: true, legalComments: 'none',
       })
       const cancel = () => { void context.cancel() }
@@ -39,7 +42,9 @@ export async function buildLocalHost(directory: string): Promise<string> {
   return outfile
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const file = await buildLocalHost(path.join(root, 'node_modules/.cache/commerce-local-host'))
+  if (process.argv.slice(2).some((arg, index) => arg !== '--listing' || index !== 0)) throw new Error('local_host_build_argument_invalid')
+  const profile = process.argv[2] === '--listing' ? 'listing' : 'sandbox'
+  const file = await buildLocalHost(path.join(root, 'node_modules/.cache/' + (profile === 'listing' ? 'commerce-listing-host' : 'commerce-local-host')), profile)
   const bytes = fs.readFileSync(file)
   process.stdout.write(`${JSON.stringify({ file, bytes: bytes.byteLength,
     sha256: createHash('sha256').update(bytes).digest('hex') })}\n`)

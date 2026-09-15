@@ -1,6 +1,11 @@
 const $ = selector => document.querySelector(selector);
 const base = '/agentic-commerce-os/checkout';
-let intent, busy = false;
+let intent, busy = false, fulfillment = null, fulfillmentTitle = '';
+export function selectFulfillment(binding, title) {
+  if (!binding || !/^listing-[a-f0-9]{64}$/u.test(binding.runId) || !/^[a-f0-9]{64}$/u.test(binding.outputDigest))
+    throw Error('Review a completed listing before checkout.');
+  fulfillment = { runId: binding.runId, outputDigest: binding.outputDigest }; fulfillmentTitle = String(title).slice(0, 120);
+}
 function message(text) { $('#checkout-status').textContent = text; }
 function enabled() {
   const offline = !navigator.onLine;
@@ -45,7 +50,7 @@ export async function openCheckout() {
   try { intent = await api();
     $('#checkout-title').textContent = intent.offer.title;
     $('#checkout-price').textContent = new Intl.NumberFormat('en-SG', { style: 'currency', currency: intent.offer.currency, currencyDisplay: 'code' }).format(intent.offer.amountMinor / 100) + ' · Test mode';
-    $('#checkout-description').textContent = intent.offer.description; render();
+    $('#checkout-description').textContent = intent.offer.description + (fulfillment ? ` Includes your reviewed listing: ${fulfillmentTitle}.` : ''); render();
   } catch (error) { message(error.message); }
   finally { busy = false; enabled(); }
 }
@@ -53,7 +58,8 @@ async function mutate(path) {
   if (busy || !intent || !navigator.onLine || path === '/start' && !$('#checkout-confirm').checked) return;
   busy = true; enabled();
   try {
-    const write = () => api(path, { confirmed: true, offerId: intent.offer.id });
+    const write = () => api(path, { confirmed: true, offerId: intent.offer.id,
+      ...(path === '/start' && fulfillment ? { fulfillment, reviewed: true } : {}) });
     const value = navigator.locks ? await navigator.locks.request('airvio-stripe-test-checkout', write) : await write();
     if (path === '/reset') await openCheckout();
     else { intent.order = value.order; render(); }

@@ -56,7 +56,7 @@
     "check:bundle-size": "node scripts/checks/bundle-size.ts",
     "check:task-bounds": "node scripts/validate-task-bounds.ts",
     "check:browser": "node scripts/checks/browser.ts",
-    "check:named": "npm run check:terminology && npm run check:convergence && npm run check:take-rate && npm run check:template-pack && npm run check:deploy-boundary && npm run check:invocation-surface && npm run check:webmcp && npm run check:routing && npm run check:local-first && npm run check:offer-watch && npm run check:sandbox:source && npm run check:merge-agent && npm run check:authored-limits && npm run check:task-bounds -- --tasks=.kiro/specs/agentic-graph-commerce-platform/tasks.md --snapshot=config/task-bounds.snapshot.json && npm run check:browser",
+    "check:named": "npm run check:terminology && npm run check:convergence && npm run check:take-rate && npm run check:template-pack && npm run check:deploy-boundary && npm run check:invocation-surface && npm run check:webmcp && npm run check:routing && npm run check:admission && npm run check:local-first && npm run check:offer-watch && npm run check:sandbox:source && npm run check:merge-agent && npm run check:authored-limits && npm run check:task-bounds -- --tasks=.kiro/specs/agentic-graph-commerce-platform/tasks.md --snapshot=config/task-bounds.snapshot.json && npm run check:browser",
     "check:implementation": "npm run types:check && npm run typecheck && npm run test && npm run test:workers && npm run check:named && npm run deploy:dev:dry && npm run deploy:production:dry",
     "check:adlc": "npm --prefix node_modules/agentic-os run evals",
     "check:integration": "node node_modules/agentic-os/bin/agentic-os-validation.mjs run",
@@ -68,7 +68,10 @@
     "check:integration:source": "npm run check:adlc && npm run check:evidence-contract && npm run check:implementation",
     "check:plan": "node node_modules/agentic-os/bin/agentic-os-validation.mjs plan",
     "check:ci": "node node_modules/agentic-os/bin/agentic-os-validation.mjs ci",
-    "check:integration:all": "node node_modules/agentic-os/bin/agentic-os-validation.mjs run --all --fresh"
+    "check:integration:all": "node node_modules/agentic-os/bin/agentic-os-validation.mjs run --all --fresh",
+    "build:durable-host": "node scripts/local-host/build.ts --listing",
+    "start:durable-host": "node node_modules/.cache/commerce-listing-host/commerce-listing-host.mjs",
+    "check:admission": "node --test test/admission/*.test.mjs"
   },
   "dependencies": {
     "@cloudflare/sandbox": "0.12.9",
@@ -80,10 +83,25 @@
     "@cloudflare/workers-types": "5.20260829.1",
     "@playwright/test": "1.62.1",
     "@types/node": "26.3.0",
-    "agentic-os": "https://codeload.github.com/huijoohwee/agentic-os/tar.gz/9f5973dbd85d861c8346a885254efdf1a69669bc",
+    "agentic-os": "https://codeload.github.com/huijoohwee/agentic-os/tar.gz/69c869816885c754fb1ee3d131d2b45e63b9896b",
     "fast-check": "4.9.0",
     "typescript": "5.9.3",
     "vitest": "4.1.11",
     "wrangler": "4.127.1"
+  },
+  "exports": {
+    "./admission/worker-extension": "./src/admission/worker-extension.js",
+    "./admission/commerce-admission-authority": "./src/admission/commerce-admission-authority.js",
+    "./admission/commerce-admission-contract": "./src/admission/commerce-admission-contract.js",
+    "./admission/commerce-admission-provider": "./src/admission/commerce-admission-provider.js",
+    "./admission/commerce-deployment-identity": "./src/admission/commerce-deployment-identity.js",
+    "./admission/commerce-release-proof": "./src/admission/commerce-release-proof.js",
+    "./admission/durable-object-state-store": "./src/admission/durable-object-state-store.js",
+    "./admission/agent-state": "./src/admission/agent-state.js",
+    "./tests/admission/commerce-admission-auth": "./test/admission/commerce-admission-auth.test.mjs",
+    "./tests/admission/commerce-admission-authority": "./test/admission/commerce-admission-authority.test.mjs",
+    "./tests/admission/commerce-admission-contract-fixture": "./test/admission/commerce-admission-contract-fixture.test.mjs",
+    "./tests/admission/commerce-admission-durability": "./test/admission/commerce-admission-durability.test.mjs",
+    "./tests/admission/commerce-deployment-identity": "./test/admission/commerce-deployment-identity.test.mjs"
   }
 }

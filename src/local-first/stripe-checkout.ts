@@ -1,8 +1,10 @@
 import { CHECKOUT_OFFER, STRIPE_ACCOUNT } from './checkout-offer.ts';
 import { isHttpFailure, isRecord, readJsonResponse } from '../shared/http.ts';
+import type { FulfillmentBinding } from './fulfillment-contract.ts';
 export type PaymentFetch = (request: Request) => Promise<Response>;
 export type StripeSession = { id: string; url: string | null; status: 'open' | 'complete' | 'expired';
-  payment_status: 'paid' | 'unpaid' | 'no_payment_required'; amount_total: number; currency: string; livemode: false };
+  payment_status: 'paid' | 'unpaid' | 'no_payment_required'; amount_total: number; currency: string; livemode: false;
+  fulfillment?: FulfillmentBinding };
 export const stripeTestKey = (value: unknown): value is string => typeof value === 'string' && /^(?:sk|rk)_test_[A-Za-z0-9]{20,}$/u.test(value);
 export function hostedUrl(value: unknown, id: string): value is string {
   if (typeof value !== 'string' || value.length > 1800) return false;
@@ -24,20 +26,21 @@ export function stripeClient(secret: string, transport: PaymentFetch = fetch) {
     if (!response.ok || isHttpFailure(value) || !isRecord(value)) throw Error('stripe_test_unavailable');
     return value;
   }
-  function validate(value: Record<string, unknown>, nonce: string, id?: string): StripeSession {
+  function validate(value: Record<string, unknown>, nonce: string, id?: string, fulfillment?: FulfillmentBinding): StripeSession {
     if (typeof value.id !== 'string' || !/^cs_test_[A-Za-z0-9]{16,200}$/u.test(value.id) || id && value.id !== id
       || value.livemode !== false || value.mode !== 'payment' || value.client_reference_id !== nonce
       || !isRecord(value.metadata) || value.metadata.offer_id !== CHECKOUT_OFFER.id || value.metadata.owner !== 'agentic-commerce-os'
+      || value.metadata.fulfillment_run !== fulfillment?.runId || value.metadata.fulfillment_digest !== fulfillment?.outputDigest
       || value.amount_total !== CHECKOUT_OFFER.amountMinor || value.currency !== CHECKOUT_OFFER.currency
       || !['open', 'complete', 'expired'].includes(String(value.status))
       || !['paid', 'unpaid', 'no_payment_required'].includes(String(value.payment_status))
       || value.status === 'open' && !hostedUrl(value.url, value.id)) throw Error('stripe_test_identity_mismatch');
     return { id: value.id, livemode: false, amount_total: CHECKOUT_OFFER.amountMinor, currency: CHECKOUT_OFFER.currency,
       url: value.status === 'open' ? String(value.url) : null, status: value.status as StripeSession['status'],
-      payment_status: value.payment_status as StripeSession['payment_status'] };
+      payment_status: value.payment_status as StripeSession['payment_status'], ...(fulfillment ? { fulfillment } : {}) };
   }
   return {
-    async create(nonce: string, origin: string) {
+    async create(nonce: string, origin: string, fulfillment?: FulfillmentBinding) {
       // Account and Price readbacks prevent a wrong-account or changed-price test from being presented as this offer.
       const [account, price] = await Promise.all([request('account'), request('prices/' + CHECKOUT_OFFER.id)]);
       if (account.id !== STRIPE_ACCOUNT || price.id !== CHECKOUT_OFFER.id || price.livemode !== false || price.active !== true
@@ -48,11 +51,17 @@ export function stripeClient(secret: string, transport: PaymentFetch = fetch) {
         'adaptive_pricing[enabled]': 'false', success_url: back, cancel_url: back,
         client_reference_id: nonce, 'metadata[offer_id]': CHECKOUT_OFFER.id, 'metadata[owner]': 'agentic-commerce-os',
         'metadata[mode]': 'sandbox', 'custom_text[submit][message]': 'Sandbox only. Use Stripe test card details; no real money moves.' });
-      return validate(await request('checkout/sessions', form, 'commerce-test:' + nonce), nonce);
+      if (fulfillment) {
+        form.set('metadata[fulfillment_run]', fulfillment.runId);
+        form.set('metadata[fulfillment_digest]', fulfillment.outputDigest);
+      }
+      return validate(await request('checkout/sessions', form, 'commerce-test:' + nonce), nonce, undefined, fulfillment);
     },
-    async read(id: string, nonce: string) { return validate(await request('checkout/sessions/' + id), nonce, id); },
-    async expire(id: string, nonce: string) {
-      return validate(await request('checkout/sessions/' + id + '/expire', new URLSearchParams(), 'commerce-test-expire:' + nonce), nonce, id);
+    async read(id: string, nonce: string, fulfillment?: FulfillmentBinding) {
+      return validate(await request('checkout/sessions/' + id), nonce, id, fulfillment);
+    },
+    async expire(id: string, nonce: string, fulfillment?: FulfillmentBinding) {
+      return validate(await request('checkout/sessions/' + id + '/expire', new URLSearchParams(), 'commerce-test-expire:' + nonce), nonce, id, fulfillment);
     },
   };
 }

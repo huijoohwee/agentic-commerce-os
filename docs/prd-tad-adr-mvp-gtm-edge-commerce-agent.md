@@ -36,6 +36,10 @@ reviewed_source_revision: "37d1e2a2e3a0efa4f9c5f44c457efa3234d86ad9"
 
 # Reference implementation — Edge Commerce sandbox and first-dollar boundary
 
+The approved [durable listing fulfillment](durable-fulfillment.md) extension joins the existing draft,
+review and sandbox owners. Its candidate runtime and rollback gates have separate evidence; they do
+not inherit the production verification recorded below.
+
 `edge-commerce-agent-mvp@0.6.0` joins [PRD](#prd), [TAD](#tad), [ADR](#adr), [MVP](#mvp)
 and [GTM](#gtm). PRD owns criteria; TAD consumes that exact revision; ADR binds the design;
 MVP and GTM consume their checks and outcomes. This document describes concrete choices for

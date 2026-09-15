@@ -96,6 +96,13 @@ $('#review-launch').addEventListener('click', () => void run(async () => {
   }
   $('#launch-review').hidden = false; message('Review the saved offer and costs before exporting.');
 }));
+$('#prepare-listing').addEventListener('click', () => void run(async () => {
+  if (!selected || dirty) throw Error('Save this draft before preparing a listing.');
+  const current = (await listDrafts()).find(draft => draft.id === selected.id);
+  if (!current || current.revision !== selected.revision) throw Error('This draft changed. Reopen the saved version first.');
+  const { openWorkflow } = await import('./workflow.js');
+  await openWorkflow({ draft: current, onSaved: async saved => { selected = saved; invalidateReview(); await refresh(); changed(); } });
+}));
 $('#approve-launch').addEventListener('change', () => { $('#export-launch').disabled = busy || !reviewed || !$('#approve-launch').checked; });
 $('#export-launch').addEventListener('click', () => void run(async () => {
   if (!reviewed || dirty || !$('#approve-launch').checked) throw Error('Review and acknowledge this saved offer first.');
