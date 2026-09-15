@@ -49,7 +49,7 @@ export function createFulfillmentRelay(env: ListingRelayEnv, send: typeof fetch 
   return Object.freeze({
     async ready(signal: AbortSignal) {
       const response = await send(new Request(pins.origin + LISTING_HOST_READY_PATH, {
-        headers: listingHostHeaders(pins, token), redirect: 'error', cache: 'no-store',
+        headers: listingHostHeaders(pins, token), redirect: 'manual', cache: 'no-store',
         signal: AbortSignal.any([signal, AbortSignal.timeout(15000)]),
       }));
       if (response.status !== 200 || response.redirected || response.headers.get('cache-control') !== 'no-store'

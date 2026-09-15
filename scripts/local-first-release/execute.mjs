@@ -70,6 +70,10 @@ const verifyLive = async active => {
     const response = await fetch('https://airvio.co/agentic-commerce-os/fulfillment/session', {
       redirect: 'error', signal: AbortSignal.timeout(20000) });
     const session = await readJsonResponse(response, 4096);
+    write('fulfillment-session-observation.json', { sourceRevision: revision, versionId: active.versionId,
+      status: response.status, ok: session.ok === true, code: typeof session.code === 'string' ? session.code.slice(0, 120) : null,
+      csrfPresent: typeof session.csrfToken === 'string', cookiePresent: response.headers.has('set-cookie'),
+      observedAt: new Date().toISOString() });
     if (response.status !== 200 || session.ok !== true || typeof session.csrfToken !== 'string'
       || !response.headers.get('set-cookie')?.startsWith('__Host-airvio_sandbox=')) throw Error('Public fulfillment admission unavailable');
     write('fulfillment-readiness.json', { sourceRevision: revision, versionId: active.versionId,
