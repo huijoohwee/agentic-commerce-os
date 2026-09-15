@@ -35,7 +35,7 @@ test('relay configuration is closed, bound to the product image and disabled whe
 test('edge readiness verifies exact host pins and bounds failures before issuing browser sessions',async()=>{
   const identity=listingHostIdentity(pins);
   const relay=createFulfillmentRelay(env,async request=>{
-    assert.equal(request.url,pins.origin+LISTING_HOST_READY_PATH);assert.equal(request.redirect,'error');
+    assert.equal(request.url,pins.origin+LISTING_HOST_READY_PATH);assert.equal(request.redirect,'manual');
     assert.equal(request.headers.get('authorization'),'Bearer '+token);
     assert.equal(request.headers.has('cookie'),false);assert.equal(request.headers.has('x-commerce-principal-id'),false);
     return Response.json(identity,{headers:{'cache-control':'no-store'}});

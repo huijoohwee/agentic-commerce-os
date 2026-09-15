@@ -202,6 +202,14 @@ OS client owns redirects, byte/time limits and ambiguous-write reporting; there 
 Transport and capacity errors preserve the browser's saved state and require refreshing the same
 job. They cannot turn an uncertain accepted write into a terminal failed-job record.
 
+The edge uses manual redirect handling and rejects every redirect before following a location.
+The Worker runtime does not support the browser's `redirect: "error"` option. The actual-workerd
+regression test covers authenticated readiness, run invocation, and redirect refusal without a
+model call. [Release attempt 34987421041](https://github.com/huijoohwee/agentic-commerce-os/actions/runs/34987421041)
+passed storefront/browser checks but failed fulfillment admission and restored reader version
+`1c04f403-9cc1-4b45-9dbb-a83e5f3ce7b4`. Its redacted journal remains rollback evidence; it is not
+a completed fulfillment release. A fresh protected candidate must pass public admission again.
+
 Reuse the existing tunnel by routing `/api/agent-swarm/` and the exact
 `/agentic-commerce-os/fulfillment/host-ready` path to the listing host. Preserve the existing generic
 execution service and its credential. Source tests exercise real HTTP, SQLite restart, replay and
