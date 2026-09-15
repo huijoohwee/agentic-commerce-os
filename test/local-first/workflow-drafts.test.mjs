@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseImport, validWorkflow } from '../../public/local-first/drafts.js';
+import { importDrafts, parseImport, validWorkflow } from '../../public/local-first/drafts.js';
 
 const draft = { id: '12345678-1234-1234-1234-123456789abc', title: 'Ceramic mug', description: 'Blue, 300 ml',
   price: '', revision: 1, createdAt: 1, updatedAt: 1 };
@@ -26,4 +26,12 @@ test('v3 retains pending offline intent and bounded read models without importin
     { ...complete, text: '界'.repeat(5400) }, { ...intent, status: 'completed' }, { ...complete, inputRevision: 2 }]) {
     assert.throws(() => parseImport(encode(3, { ...value, workflow: invalid })));
   }
+});
+
+test('new v3 imports fail before storage when the execution host has not admitted workflow writes', async () => {
+  const text = encode(3, { ...draft, launch: null, workflow: intent });
+  await assert.rejects(importDrafts(text), /execution host must be available/);
+  await assert.rejects(importDrafts(text, async () => false), /execution host must be available/);
+  await assert.rejects(importDrafts(text, async () => { throw Error('host unavailable'); }), /host unavailable/);
+  assert.deepEqual(parseImport(text)[0].workflow, intent, 'reader and export recovery remain available');
 });

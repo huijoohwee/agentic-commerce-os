@@ -14,7 +14,7 @@ export async function checkDurableFulfillment({ browser, url, output, revision }
   const directory = fs.mkdtempSync(path.join(output, 'durable-browser-'));
   const store = await createAgentSwarmSqliteStore({ directory });
   const contexts = new Map(), stripe = stripeFixture(), errors = [];
-  let executions = 0, networkOffline = false;
+  let executions = 0, networkOffline = false, runtimeAvailable = false;
   const { runtime, product } = createListingRuntime({ stateStore: store,
     authorize: async call => ({ allowed: (contexts.get(call.principalId)?.principalExpiresAt ?? 0) > Date.now(),
       approvalId: 'browser-contract-fixture-only' }),
@@ -36,11 +36,11 @@ export async function checkDurableFulfillment({ browser, url, output, revision }
     if (networkOffline) { await route.abort('internetdisconnected'); return; }
     const incoming = route.request(), method = incoming.method();
     const response = await fetchLocalFirst(new Request(incoming.url(), { method, headers: await incoming.allHeaders(),
-      ...(['GET', 'HEAD'].includes(method) ? {} : { body: incoming.postData() }) }), env, stripe.transport, {
+      ...(['GET', 'HEAD'].includes(method) ? {} : { body: incoming.postData() }) }), env, stripe.transport, runtimeAvailable ? {
       invoke(operation, input, principal, signal) {
         contexts.set(principal.principalId, principal); return product.invoke(operation, input, principal, signal);
       },
-    });
+    } : undefined);
     await route.fulfill({ status: response.status, headers: Object.fromEntries(response.headers), body: await response.text() });
   });
   try {
@@ -48,6 +48,26 @@ export async function checkDurableFulfillment({ browser, url, output, revision }
     await page.goto(url + '#vendor-editor'); await expect(page.locator('#offline-ready')).toContainText('Offline access is ready');
     await page.locator('#title').fill('Ceramic mug'); await page.locator('#description').fill('Blue, 300 ml.');
     await page.locator('#save').click(); await expect(page.locator('#save-state')).toHaveText('Saved on this device');
+    const backup = () => page.evaluate(async () => {
+      const source = document.querySelector('script[type="module"]').src;
+      const drafts = await import(new URL('drafts.js', source).href);
+      return JSON.parse(await drafts.exportDrafts());
+    });
+    const baseline = await backup();
+    assert.equal(baseline.schema, 'commerce.local-drafts/v2');
+    await page.locator('#prepare-listing').click();
+    await expect(page.locator('#listing-status')).toContainText('unavailable');
+    assert.deepEqual(await backup(), baseline, 'unavailable preparation cannot create v3 or change a draft revision');
+    await page.locator('#listing-dialog').getByRole('button', { name: 'Close', exact: true }).click();
+    const incoming = { ...baseline.drafts[0], id: '12345678-1234-1234-1234-123456789abc',
+      workflow: { runId: null, inputRevision: baseline.drafts[0].revision,
+        title: baseline.drafts[0].title, description: baseline.drafts[0].description,
+        status: 'queued', text: null, outputDigest: null, reviewedDigest: null } };
+    await page.locator('#import').setInputFiles({ name: 'workflow-backup.json', mimeType: 'application/json',
+      buffer: Buffer.from(JSON.stringify({ schema: 'commerce.local-drafts/v3', drafts: [incoming] })) });
+    await expect(page.locator('#status')).toContainText('unavailable');
+    assert.deepEqual(await backup(), baseline, 'reader-only import refusal preserves v2 rollback compatibility');
+    runtimeAvailable = true;
     await page.locator('#prepare-listing').click(); await expect(page.locator('#listing-status')).toContainText('Job accepted');
     const handle = await page.evaluate(async () => {
       const { listDrafts } = await import('./assets/' + document.querySelector('script[type="module"]').src.split('/assets/')[1].split('/')[0] + '/drafts.js');
@@ -93,6 +113,14 @@ export async function checkDurableFulfillment({ browser, url, output, revision }
     await page.reload(); await expect(page.locator('#checkout-status')).toContainText('test payment verified');
     await page.locator('#checkout-refresh').click();
     assert.equal(stripe.sessions.size, 1); assert.equal(executions, 1); assert.deepEqual(errors, []);
+    const completedBackup = await backup();
+    assert.equal(completedBackup.schema, 'commerce.local-drafts/v3');
+    runtimeAvailable = false;
+    await page.goto(url + '#vendor-editor');
+    await page.locator('#draft-list button').first().click(); await page.locator('#prepare-listing').click();
+    await expect(page.locator('#listing-status')).toContainText('unavailable');
+    await expect(page.locator('#listing-output')).toContainText('Ceramic mug');
+    assert.deepEqual(await backup(), completedBackup, 'disabled execution retains readable and exportable v3 results');
     const cached = await page.evaluate(async () => (await Promise.all((await caches.keys()).map(async key =>
       (await (await caches.open(key)).keys()).map(request => request.url)))).flat());
     assert(cached.every(value => !/\/(?:checkout|fulfillment)\//u.test(new URL(value).pathname)));
@@ -100,6 +128,8 @@ export async function checkDurableFulfillment({ browser, url, output, revision }
       productionProof: false, providerAuthority: false, sourceRevision: revision, sourceState: 'candidate-override',
       transport: 'Playwright route to actual product handler', executor: 'deterministic-fixture', payment: 'local-stripe-contract-fixture',
       width: 390, offlineReopen: true, closedBeforeExecution: true, executions, paymentSessions: stripe.sessions.size,
+      readerBaseline: { unavailablePreparationPreservesV2: true, unavailableImportPreservesV2: true,
+        existingV3ReadableAndExportable: true },
       runId: handle, outputDigest: receipt.fulfillment.outputDigest, realMoney: false, humanReview: 'automated-checkbox-contract-test',
       actualHumanReview: false, hostedPaymentSubmitted: false, observedAt: new Date().toISOString() }, null, 2) + '\n');
     console.log('PASS local durable listing offline/review/receipt contract');

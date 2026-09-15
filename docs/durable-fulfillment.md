@@ -97,6 +97,9 @@ This reasoning joins the approved Constraints ↔ Argumentation ↔ Outranking d
 Draft schema v3 adds one optional workflow read model to the existing IndexedDB store. v1/v2 backups
 are accepted without altering their text or terms; malformed or conflicting imports fail atomically.
 Ordinary drafts retain their v2 stored/exported shape until a job is explicitly prepared.
+Creating the first workflow or importing a workflow backup requires a successful session response
+from the configured execution host. A reader-only release refuses those writes before changing storage.
+Existing v3 drafts remain readable and exportable when that host is unavailable; v1/v2 imports stay offline.
 An edit invalidates result review. Import clears the review acknowledgement while preserving the result.
 Imported review fields grant no server or payment authority: checkout
 still authenticates and validates the retained completed output.
