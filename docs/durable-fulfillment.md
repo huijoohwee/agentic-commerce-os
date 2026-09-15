@@ -107,8 +107,12 @@ still authenticates and validates the retained completed output.
 **Rollback dependency:** a v2-only frontend cannot read a stored v3 draft. Before enabling public
 fulfillment, retain a protected release with this v3 reader as the rollback baseline, with execution
 disabled. Rehearse rollback to that compatible reader while preserving all draft and OS state. Do not
-roll back to a v2-only bundle after any v3 record exists; preserve a v3 export for recovery. This gate
-is pending and must be incorporated into the existing release controller before activation.
+roll back to a v2-only bundle after any v3 record exists; preserve a v3 export for recovery.
+The compatible reader is deployed at `38662008dae8b3fc20905c7fb09d67036c878611`,
+Worker version `1c04f403-9cc1-4b45-9dbb-a83e5f3ce7b4`, verified by
+[production run 34976120904](https://github.com/huijoohwee/agentic-commerce-os/actions/runs/34976120904).
+The committed fulfillment release configuration retains that source/version/run as its fallback.
+Public activation and a rollback rehearsal over an actual retained job remain separate proofs.
 
 The listing revision is the SHA-256 of its immutable model/image pins, instructions and token cap.
 `fulfillment-definition.ts` owns that product definition; `scripts/durable-fulfillment/executor.mjs`
@@ -168,9 +172,19 @@ This is the existing device-session availability policy, not an always-on availa
 The optional `fulfillment-relay` composes the existing OS run client with server-derived session
 identity. Its two operator bindings are `LISTING_HOST_PINS_JSON` and `LISTING_HOST_BEARER`.
 Neither binding configured means reader-only operation. Partial or invalid configuration keeps
-the application readable and rejects job admission. These bindings are not enabled by the current
-release controller; production activation still requires the compatible reader baseline and
-reviewed controller integration.
+the application readable and rejects job admission. The existing protected release controller
+loads `deployment/local-first-fulfillment.json` on demand and includes its exact bytes in the
+reviewed artifact. Without that file it publishes a reader. With it, release requires the
+retained reader's successful owner-approved run, exact source-tagged six-binding version,
+and an authenticated live host whose source, bundle, image, definition and model match the pins.
+The independent bearer comes only from the protected production environment secret.
+
+The controller verifies all eight relay bindings after upload, the public fulfillment session,
+the host again and the existing eleven production browser groups. A known late failure restores
+the previous owned version only while the route and active candidate still match; uncertain
+writes or peer changes remain preserved. These checks prove admission and release identity;
+actual model quality, a reviewed listing, restart/rollback continuity and checkout need their
+own runtime observations. Never substitute an admission response for completed fulfillment.
 
 The pin object has exactly `origin`, `bundleSha256`, `imageId` and `sourceRevision`. Origin is an
 exact HTTPS origin; `imageId` is the immutable product image digest without its `sha256:` prefix.

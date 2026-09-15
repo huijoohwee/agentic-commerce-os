@@ -3,6 +3,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import { FULFILLMENT_CONFIG, readFulfillmentRelease } from './fulfillment.mjs';
 
 export const CONFIG = 'wrangler.local-first.jsonc';
 export const WORKER = 'agentic-commerce-edge-production';
@@ -28,6 +29,7 @@ export function sourceManifest(revision) {
     ...['checkout', 'session', 'fulfillment-contract', 'fulfillment-definition', 'fulfillment', 'fulfillment-relay', 'stripe-checkout', 'checkout-offer'].map(file => `src/local-first/${file}.ts`),
     'src/sandbox/device-host.ts', 'package.json', 'package-lock.json',
     ...[...FILES, ...PRIVATE_FILES].map(file => 'public/local-first/' + file)];
+  if (readFulfillmentRelease()) paths.push(FULFILLMENT_CONFIG);
   const entries = paths.sort().map(file => {
     const stat = fs.lstatSync(file); if (!stat.isFile() || stat.isSymbolicLink()) throw Error('Non-regular artifact source');
     const bytes = fs.readFileSync(file); if (bytes.length >= 500000) throw Error('Artifact file exceeds 500 kB');
