@@ -130,7 +130,8 @@ $('#import').addEventListener('change', event => {
   if (!file) return;
   void run(async () => {
     if (file.size > LIMITS.transferBytes) throw Error('Import exceeds 8 MB.');
-    const count = await importDrafts(await file.text()); await refresh();
+    const count = await importDrafts(await file.text(),
+      () => import('./workflow.js').then(module => module.authorizeWorkflowImport())); await refresh();
     message(`Imported ${count} draft${count === 1 ? '' : 's'}. Existing drafts were preserved.`); changed();
   });
 });

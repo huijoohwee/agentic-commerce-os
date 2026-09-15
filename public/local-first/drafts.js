@@ -98,7 +98,7 @@ export function listDrafts() {
   });
 }
 
-export function saveDraft(input, expectedRevision = null) {
+export function saveDraft(input, expectedRevision = null, { allowNewWorkflow = false } = {}) {
   if (!input || !['title', 'description', 'price'].every(key => typeof input[key] === 'string')) {
     throw Error('Add a title and keep each field within its limit.');
   }
@@ -109,6 +109,9 @@ export function saveDraft(input, expectedRevision = null) {
       try { previous = read.result ? normalizeStored(read.result) : null; } catch (error) { fail(error); return; }
       if ((previous?.revision ?? null) !== expectedRevision) {
         fail(Error('This draft changed in another tab. Export or copy your edits, then reopen the saved draft.')); return;
+      }
+      if (input.workflow && !previous?.workflow && allowNewWorkflow !== true) {
+        fail(Error('Reconnect to the execution host before preparing a new listing. Your draft was kept.')); return;
       }
       const count = store.count();
       count.onsuccess = () => {
@@ -130,8 +133,12 @@ export function saveDraft(input, expectedRevision = null) {
   });
 }
 
-export function importDrafts(text) {
+export async function importDrafts(text, authorizeWorkflow = null) {
   const incoming = parseImport(text);
+  if (incoming.some(draft => draft.workflow) &&
+    !(typeof authorizeWorkflow === 'function' && await authorizeWorkflow() === true)) {
+    throw Error('The execution host must be available before importing listing jobs. Existing drafts were kept.');
+  }
   return transaction('readwrite', (store, done, fail) => {
     const request = store.getAll();
     request.onsuccess = () => {

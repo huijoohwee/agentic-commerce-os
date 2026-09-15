@@ -21,9 +21,9 @@ function render() {
   elements.new.hidden = !flow;
   if (flow && !matches()) message('This result belongs to an earlier draft. Review its text or prepare a new listing from the saved draft.');
 }
-async function persist(workflow) {
+async function persist(workflow, allowNewWorkflow = false) {
   if (!validWorkflow(workflow)) throw Error('The saved job response could not be verified. Refresh before retrying.');
-  current = await saveDraft({ ...current, workflow }, current.revision);
+  current = await saveDraft({ ...current, workflow }, current.revision, { allowNewWorkflow });
   await saved(current); render();
 }
 async function request(path, body, token) {
@@ -38,9 +38,16 @@ async function request(path, body, token) {
     : 'The execution host is unavailable or refused this operation. Your saved job remains; refresh before retrying.');
   return value;
 }
-async function refresh(operation = 'status') {
+async function workflowSession() {
+  if (!navigator.onLine) throw Error('Reconnect to the execution host before preparing or importing a listing job. Your drafts were kept.');
+  return request('/fulfillment/session');
+}
+export async function authorizeWorkflowImport() {
+  await workflowSession(); return true;
+}
+async function refresh(operation = 'status', authorizedSession) {
   if (!navigator.onLine) { message('Saved on this device. Reconnect and choose Resume to submit or check the job.'); return; }
-  const session = await request('/fulfillment/session');
+  const session = authorizedSession ?? await workflowSession();
   const flow = current.workflow;
   const body = !flow.runId ? { draftId: current.id, revision: flow.inputRevision, title: flow.title, description: flow.description }
     : { runId: flow.runId, ...(operation === 'retry' ? { operationId: crypto.randomUUID() } : {}) };
@@ -64,9 +71,11 @@ async function run(operation) {
   finally { busy = false; render(); }
 }
 async function prepare() {
+  // A reader-only release must not create v3 records while its rollback target is still v2.
+  const session = await workflowSession();
   await persist({ runId: null, inputRevision: current.revision, title: current.title, description: current.description,
-    status: 'queued', text: null, outputDigest: null, reviewedDigest: null });
-  await refresh();
+    status: 'queued', text: null, outputDigest: null, reviewedDigest: null }, true);
+  await refresh('status', session);
 }
 function createDialog() {
   dialog = node('dialog'); dialog.id = 'listing-dialog'; dialog.className = 'panel';
@@ -84,7 +93,7 @@ function createDialog() {
   }); });
   const buttons = node('div'); buttons.className = 'editor-actions';
   for (const [key, label, action] of [
-    ['resume', 'Resume / refresh', () => refresh()], ['cancel', 'Cancel job', () => refresh('cancel')],
+    ['resume', 'Resume / refresh', () => current.workflow ? refresh() : prepare()], ['cancel', 'Cancel job', () => refresh('cancel')],
     ['retry', 'Retry stopped job', () => refresh('retry')], ['new', 'Prepare new listing', prepare],
     ['checkout', 'Use in sandbox checkout', async () => {
       if (!matches() || current.workflow.reviewedDigest !== current.workflow.outputDigest) throw Error('Review the listing first.');
