@@ -10,6 +10,8 @@ import { parseProductionRouteAuthority } from '../production-release/route-autho
 import { observeBefore, deployLocalFirst } from './deployment.mjs';
 import { verifyRetainedBaseline } from './retained-baseline.mjs';
 import { assertBrowserProof } from './browser-proof.mjs';
+import { readFulfillmentRelease, verifyFulfillmentRelease } from './fulfillment.mjs';
+import { readJsonResponse } from '../../src/shared/http.ts';
 
 const env = process.env, revision = env.CANDIDATE_SHA, runId = Number(env.GITHUB_RUN_ID);
 if (env.GITHUB_ACTIONS !== 'true' || env.GITHUB_REPOSITORY !== 'huijoohwee/agentic-commerce-os'
@@ -37,9 +39,13 @@ const provider = createProvider({ accountId: env.CLOUDFLARE_ACCOUNT_ID, zoneId: 
 const retainedBaseline = await verifyRetainedBaseline(env.LOCAL_FIRST_RETAINED_BASELINE, env.GH_TOKEN);
 if (JSON.stringify(read('retained-baseline.json')) !== JSON.stringify(retainedBaseline)) throw Error('Retained baseline changed after preparation');
 const before = await observeBefore(provider, routeAuthority, retainedBaseline);
+const fulfillment = readFulfillmentRelease();
+const verifyHost = () => verifyFulfillmentRelease(fulfillment, { provider, routeAuthority,
+  token: env.GH_TOKEN, bearer: env.LISTING_HOST_BEARER });
+const fulfillmentProof = await verifyHost();
 const plan = { schema: 'commerce.local-first-release-plan/v2', sourceRevision: revision,
   artifactDigest: artifact.artifactDigest, runId, profile: 'local-first', checkout: 'sandbox',
-  before, retainedBaseline, routeAuthority, authorization, createdAt: new Date().toISOString() };
+  before, retainedBaseline, routeAuthority, authorization, fulfillmentProof, createdAt: new Date().toISOString() };
 write('plan.json', plan);
 const journal = { schema: 'commerce.local-first-release-journal/v1', planDigest: digest(JSON.stringify(plan)),
   stage: 'prepared', outcome: 'pending', active: null, route: null };
@@ -59,19 +65,32 @@ const verifyLive = async active => {
   if (!ready.ok || identity.sourceRevision !== revision || identity.workerVersionId !== active.versionId) {
     throw Error('Live source/version identity mismatch');
   }
+  if (fulfillment) {
+    await verifyHost();
+    const response = await fetch('https://airvio.co/agentic-commerce-os/fulfillment/session', {
+      redirect: 'error', signal: AbortSignal.timeout(20000) });
+    const session = await readJsonResponse(response, 4096);
+    if (response.status !== 200 || session.ok !== true || typeof session.csrfToken !== 'string'
+      || !response.headers.get('set-cookie')?.startsWith('__Host-airvio_sandbox=')) throw Error('Public fulfillment admission unavailable');
+    write('fulfillment-readiness.json', { sourceRevision: revision, versionId: active.versionId,
+      host: fulfillmentProof.host, publicSessionVerified: true, verifiedAt: new Date().toISOString() });
+  }
 };
 if (typeof env.STOREFRONT_SESSION_SECRET !== 'string' || env.STOREFRONT_SESSION_SECRET.length < 32) throw Error('Sandbox session signing secret required');
 if (!stripeTestKey(env.STRIPE_TEST_SECRET_KEY)) throw Error('Stripe test key required; live credentials forbidden');
 const secretDir = fs.mkdtempSync(path.join(os.tmpdir(), 'commerce-sandbox-release-'));
 const secretsFile = path.join(secretDir, 'secrets.json');
 try {
-  fs.writeFileSync(secretsFile, JSON.stringify({ STOREFRONT_SESSION_SECRET: env.STOREFRONT_SESSION_SECRET, STRIPE_TEST_SECRET_KEY: env.STRIPE_TEST_SECRET_KEY }), { mode: 0o600, flag: 'wx' });
-  await deployLocalFirst({ provider, routeAuthority, before, journal, revision, checkMain, record, wrangler, verifyLive, secretsFile });
+  if (fulfillment && [env.STOREFRONT_SESSION_SECRET, env.STRIPE_TEST_SECRET_KEY].includes(env.LISTING_HOST_BEARER)) throw Error('Listing credentials must be independent');
+  fs.writeFileSync(secretsFile, JSON.stringify({ STOREFRONT_SESSION_SECRET: env.STOREFRONT_SESSION_SECRET,
+    STRIPE_TEST_SECRET_KEY: env.STRIPE_TEST_SECRET_KEY,
+    ...(fulfillment ? { LISTING_HOST_BEARER: env.LISTING_HOST_BEARER } : {}) }), { mode: 0o600, flag: 'wx' });
+  await deployLocalFirst({ provider, routeAuthority, before, journal, revision, checkMain, record, wrangler, verifyLive, secretsFile, fulfillment });
 } finally { fs.rmSync(secretDir, { recursive: true }); }
 journal.outcome = 'production-complete'; record('complete');
 const body = { schema: 'commerce.local-first-production-completion/v2', status: 'production-complete',
   profile: 'local-first', checkout: 'sandbox', sourceRevision: revision, artifactDigest: artifact.artifactDigest,
-  runId, worker: WORKER, deployment: journal.active, route: journal.route,
+  runId, worker: WORKER, deployment: journal.active, route: journal.route, fulfillment: fulfillmentProof,
   completedAt: new Date().toISOString(), browserProofDigest: digest(fs.readFileSync(path.join(output, 'live/browser-proof.json'))) };
 write('completion.json', { ...body, receiptDigest: digest(JSON.stringify(body)) });
 console.log(JSON.stringify({ status: body.status, sourceRevision: revision, profile: body.profile, checkout: body.checkout }));

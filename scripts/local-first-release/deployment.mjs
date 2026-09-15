@@ -22,7 +22,7 @@ export async function observeBefore(provider, authority, retainedInput = null) {
 
 // Context, candidate, preparation and human-review guards run in execute.mjs before this sequence.
 export async function deployLocalFirst({ provider, routeAuthority, before, journal, revision,
-  checkMain, record, wrangler, verifyLive, secretsFile }) {
+  checkMain, record, wrangler, verifyLive, secretsFile, fulfillment = null }) {
   const { pattern, mode } = routeAuthority;
   let ownedVersion = false;
   try {
@@ -34,10 +34,11 @@ export async function deployLocalFirst({ provider, routeAuthority, before, journ
     record('deploy-sandbox-worker');
     // Bootstrap is unrouted. An existing local-first route activates immediately on deploy.
     wrangler(['deploy', '-c', CONFIG, '--minify', '--tag', revision, '--message', 'Reviewed native sandbox checkout; no real payments',
-      '--var', `RELEASE_CANDIDATE_SHA:${revision}`, '--secrets-file', secretsFile]);
+      '--var', `RELEASE_CANDIDATE_SHA:${revision}`, '--secrets-file', secretsFile,
+      ...(fulfillment ? ['--var', `LISTING_HOST_PINS_JSON:${JSON.stringify(fulfillment.pins)}`] : [])]);
     journal.active = await provider.active();
     if (!journal.active) throw Error('Candidate deployment absent');
-    await provider.version(journal.active.versionId, revision, 'sandbox');
+    await provider.version(journal.active.versionId, revision, 'sandbox', fulfillment?.pins ?? null);
     ownedVersion = true;
     const exposure = await provider.exposure();
     if (exposure.enabled !== false || exposure.previews_enabled !== false) throw Error('Unexpected public subdomain exposure');
