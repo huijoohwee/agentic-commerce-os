@@ -71,7 +71,7 @@ export async function deployLocalFirst({ provider, routeAuthority, before, journ
           if ((await provider.route(pattern)).state !== 'absent') throw Error('Route restoration unconfirmed');
           journal.outcome = 'failed-route-restored-worker-retained';
         } else if (mode === 'steady-state' && same(currentRoute, before.route)) {
-          wrangler(['versions', 'deploy', `${before.active.versionId}@100%`, '-c', CONFIG, '--yes']);
+          await activateLocalFirstVersion(wrangler, before.active.versionId);
           if ((await provider.active())?.versionId !== before.active.versionId) throw Error('Version restoration unconfirmed');
           journal.outcome = 'failed-previous-version-restored';
         }
@@ -80,4 +80,83 @@ export async function deployLocalFirst({ provider, routeAuthority, before, journ
     record('failed');
     throw error;
   }
+}
+
+async function activateLocalFirstVersion(wrangler, versionId) {
+  await wrangler(['versions', 'deploy', versionId + '@100%', '-c', CONFIG, '--yes']);
+}
+
+/** Exact restoration shared by failure recovery and the explicit rehearsal.
+ * Call only after the existing protected release context and authority checks. */
+export async function restoreLocalFirstVersion({ provider, pattern, route, expected, target,
+  checkMain, record, wrangler }) {
+  checkMain();
+  await provider.version(target.versionId, target.sourceRevision, target.checkout, target.pins);
+  const unchanged = async () => {
+    if (!same(await provider.active(), expected) || !same(await provider.route(pattern), route))
+      throw Error('Provider state changed before version restoration');
+  };
+  await unchanged();
+  checkMain();
+  record('restore-exact-version');
+  // No retry: an ambiguous provider write must be reconciled by its owner.
+  try {
+    await activateLocalFirstVersion(wrangler, target.versionId);
+    const active = await provider.active();
+    if (active?.versionId !== target.versionId || !same(await provider.route(pattern), route))
+      throw Error('Version restoration unconfirmed');
+    return active;
+  } catch (error) { error.writeResultUnknown = true; throw error; }
+}
+
+/** Rehearse one retained reader and return to the exact candidate. The browser
+ * retains one actual job; no fixture result can establish provider continuity. */
+export async function rehearseLocalFirstRollback({ provider, routeAuthority, candidate, reader,
+  revision, pins, checkMain, record, wrangler, observation, journal }) {
+  if (routeAuthority.mode !== 'steady-state' || candidate.versionId === reader.versionId)
+    throw Error('Rollback rehearsal requires distinct deployed candidate and reader versions');
+  const pattern = routeAuthority.pattern, route = await provider.route(pattern);
+  if (route.state !== 'bound' || route.script !== routeAuthority.script
+    || route.id !== routeAuthority.routeId) throw Error('Rollback rehearsal route mismatch');
+  await provider.version(candidate.versionId, revision, 'sandbox', pins);
+  await provider.version(reader.versionId, reader.sourceRevision, 'sandbox', null);
+  if (!same(await provider.active(), candidate)) throw Error('Rollback rehearsal candidate changed');
+  const proof = { schema: 'commerce.fulfillment-provider-rollback/v1', status: 'pending',
+    sourceRevision: revision, candidate, reader, retainedJob: null, readerDeployment: null,
+    restoredDeployment: null, readerVerified: false, restoredVerified: false,
+    writeResultUnknown: false, realMoney: false };
+  journal.rollback = proof;
+  let failure;
+  try {
+    proof.retainedJob = await observation.prepare({ revision, versionId: candidate.versionId });
+    record('rollback-job-retained');
+    proof.readerDeployment = await restoreLocalFirstVersion({ provider, pattern, route, expected: candidate,
+      target: { ...reader, checkout: 'sandbox', pins: null }, checkMain, record, wrangler });
+    journal.active = proof.readerDeployment;
+    record('rollback-reader-active');
+    await observation.reader(reader);
+    proof.readerVerified = true;
+    record('rollback-reader-verified');
+  } catch (error) { failure = error; }
+  if (proof.readerDeployment) {
+    try {
+      proof.restoredDeployment = await restoreLocalFirstVersion({ provider, pattern, route,
+        expected: proof.readerDeployment, target: { versionId: candidate.versionId, sourceRevision: revision,
+          checkout: 'sandbox', pins }, checkMain, record, wrangler });
+      journal.active = proof.restoredDeployment;
+      record('rollback-candidate-restored');
+      await observation.restored({ revision, versionId: candidate.versionId });
+      proof.restoredVerified = true;
+    } catch (error) {
+      proof.restorationError = error.message;
+      proof.writeResultUnknown ||= error.writeResultUnknown === true;
+      failure ??= error;
+    }
+  }
+  proof.status = !failure && proof.readerVerified && proof.restoredVerified ? 'complete' : 'preserve-required';
+  proof.completedAt = new Date().toISOString();
+  if (failure) { proof.error = failure.message; proof.writeResultUnknown ||= failure.writeResultUnknown === true; }
+  record('rollback-rehearsal-' + proof.status);
+  if (failure) throw failure;
+  return proof;
 }

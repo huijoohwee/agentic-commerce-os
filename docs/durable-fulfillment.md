@@ -17,7 +17,7 @@ frontmatter_contract: "required"
 load_policy: "on-demand"
 local_rung: "documented"
 delivered_rung: "undocumented"
-readiness_scope: "Candidate product source; protected OS runtime pin and actual local restart proof; application-host pin verified, public release and rollback pending"
+readiness_scope: "Protected public listing release verified; admission source transfer and actual provider rollback proof pending"
 lane: "authoring"
 universal_scope: false
 worktree_id: "device-0232231d4a19--durable-fulfillment"
@@ -53,14 +53,14 @@ not a price validation for generated listings.
 | DF-02 / AC-D06–07 | Session/CSRF checks own admission; tool JSON cannot choose principal, definition, endpoint or credentials | `src/local-first/{session,fulfillment-contract,fulfillment}.ts`; `fulfillment.test.mjs` |
 | DF-03 / AC-D07 | A mobile browser closes before work, reopens offline and resumes the saved handle after reconnecting | `public/local-first/{drafts,workflow}.js`; `fulfillment-browser.mjs` |
 | DF-04 / AC-D07 | Explicit review binds the completed output digest to one test checkout and receipt | `src/local-first/{checkout,stripe-checkout}.ts`; `fulfillment.test.mjs` |
-| DF-05 / AC-D08 | Installed pins, authenticated execution, compatible rollback and protected release agree | Existing local-first release controller; pending, no production claim |
+| DF-05 / AC-D08 | Installed pins, authenticated execution, compatible rollback and protected release agree | Existing local-first release controller; public source verified, retained-job provider rollback pending |
 
 ## TAD — reuse the current owners
 
 `agentic-os` owns scheduling, retries, leases, SQLite and optional execution. Commerce owns the fixed
 listing composition, browser session, draft read model, review and payment semantics. The composition
 requires injected current authorization and a host-selected executor; import performs no execution.
-The current production Worker has no fulfillment runtime configured and returns 503 for its job routes.
+The public Worker now has an authenticated listing relay. [Release 34998738855](https://github.com/huijoohwee/agentic-commerce-os/actions/runs/34998738855) verified source 033bcb56e9d6d3839fef29e65962f34ceccc3c4a, its deployed version and eleven browser groups. This does not complete retained-job rollback proof.
 
 Flow: save draft → persist local intent → authenticate → admit OS job → close/reopen browser → read
 completed output → review exact text → confirm existing sandbox offer → provider readback → receipt/download.
@@ -147,9 +147,9 @@ they do not attest model quality, a human review, hosted payment submission or p
 | `node --test test/local-first/*.test.mjs` | 71 tests passed with the installed protected OS runtime at `4d13403ef17cf20e2946c478e029edc8d96c07f2`; subsequent host boundary changes have focused coverage |
 | `npm run check:admission` | Transferred admission ownership, authority, persistence and deployment-identity tests pass in Commerce; Canvas consumer cutover pending |
 | `scripts/local-first-release/check.mjs` | Eleven existing browser groups and the separate durable mobile contract passed locally |
-| OS full suite | Protected [OS #167](https://github.com/huijoohwee/agentic-os/pull/167) passed 147 checks and 1,400 tests; Commerce pins `69c869816885c754fb1ee3d131d2b45e63b9896b` with archive integrity |
+| OS full suite | Protected [OS #176](https://github.com/huijoohwee/agentic-os/pull/176) passed 1,696 tests across 209 suites; this candidate pins `3663442db70b0e75c5eba487a86e7b444e9e7029` with archive integrity |
 | Actual local host/browser | Mobile browser disconnected/reopened offline, then resumed an actual pinned-model job; host termination/restart replayed the same completed job; another browser was denied |
-| Protected public release and rollback | Pending |
+| Protected public release and rollback | Public source/version/route and eleven browser groups verified in release 34998738855; provider rollback rehearsal remains pending |
 
 The process test kills the worker after a persisted delayed retry, starts a fresh process over the same
 SQLite store, and observes one completed listing and one replayed test receipt. The browser test routes
@@ -252,3 +252,31 @@ Start with one solo service seller and one real draft. Measure active preparatio
 duplicate effects, review corrections and known execution usage. Unknown cost stays unknown. The next
 commercial evidence is a reviewed deliverable and independently evidenced willingness to pay; the
 sandbox receipt is a technical checkpoint. No outreach, real checkout, revenue or ROI is claimed here.
+
+### Retained-job provider rollback rehearsal
+
+The existing protected Local-first Production Release accepts explicit `rehearse_rollback` input.
+It retains the same exact-candidate owner approval, source and route guards. After normal publication
+and live checks, the native deployment owner creates one actual listing job in a mobile browser,
+activates the verified reader from the committed fulfillment configuration, verifies the existing v3
+draft remains readable, then restores the exact candidate version and reads the same run and output
+digest. It submits no checkout and makes no human-review, model-quality or payer claim.
+
+One named deployment owner performs at most two version activations. Before each it checks the exact
+active deployment, route, source and retained version bindings. A peer change or ambiguous provider
+response stops further effects and records preserve-required state. A failed reader observation may
+restore the known owned candidate; it still cannot report the rehearsal complete. Existing failure
+recovery retains its original behavior and shares the same version-activation call.
+
+The rehearsal uses a fresh 390-pixel browser and actual public HTTP without route interception. It
+blocks service workers for network source attribution; the separate offline contract remains the
+offline proof. The listing completion wait is bounded to 120 seconds, with explicit five-second status
+checks during the rehearsal. Provider/source/browser receipts and screenshots remain release artifacts.
+Run `node --test test/local-first/rollback.test.mjs test/local-first/release.test.mjs` before publication;
+the source tests use injected providers and do not establish a live rollback.
+
+The optional admission Worker entry and six original persistence/provider suites transfer into their
+Commerce owner under `src/admission/MIGRATION-TESTS.json`. The source and assertion inventory remains
+distinct from activating that private service or minting its admission authority. This batch pins
+the protected OS package at `3663442db70b0e75c5eba487a86e7b444e9e7029`; the already verified device host keeps its own
+immutable source/bundle/model pins. No new dependency, public route or always-loaded module is added.

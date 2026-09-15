@@ -83,7 +83,7 @@
     "@cloudflare/workers-types": "5.20260829.1",
     "@playwright/test": "1.62.1",
     "@types/node": "26.3.0",
-    "agentic-os": "https://codeload.github.com/huijoohwee/agentic-os/tar.gz/57c8c66b58bf46469c23416e10e43aacdfe174fd",
+    "agentic-os": "https://codeload.github.com/huijoohwee/agentic-os/tar.gz/3663442db70b0e75c5eba487a86e7b444e9e7029",
     "fast-check": "4.9.0",
     "typescript": "5.9.3",
     "vitest": "4.1.11",
