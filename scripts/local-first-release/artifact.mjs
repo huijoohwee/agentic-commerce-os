@@ -25,7 +25,8 @@ export function sourceManifest(revision) {
   assertLocalFirstConfig(JSON.parse(fs.readFileSync(CONFIG, 'utf8')));
   if (fs.readdirSync('public/local-first').sort().join() !== [...FILES, ...PRIVATE_FILES].sort().join()) throw Error('Unexpected static asset inventory');
   const paths = [CONFIG, 'src/local-first/worker.ts', 'src/edge/production-prefix.ts', 'src/shared/http.ts',
-    ...['checkout', 'session', 'fulfillment-contract', 'fulfillment-definition', 'fulfillment', 'stripe-checkout', 'checkout-offer'].map(file => `src/local-first/${file}.ts`),
+    ...['checkout', 'session', 'fulfillment-contract', 'fulfillment-definition', 'fulfillment', 'fulfillment-relay', 'stripe-checkout', 'checkout-offer'].map(file => `src/local-first/${file}.ts`),
+    'src/sandbox/device-host.ts', 'package.json', 'package-lock.json',
     ...[...FILES, ...PRIVATE_FILES].map(file => 'public/local-first/' + file)];
   const entries = paths.sort().map(file => {
     const stat = fs.lstatSync(file); if (!stat.isFile() || stat.isSymbolicLink()) throw Error('Non-regular artifact source');

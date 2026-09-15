@@ -4,8 +4,9 @@ import { renderStorefrontTemplate } from './checkout-offer.ts'
 import { PRODUCTION_STOREFRONT_PREFIX } from '../edge/production-prefix.ts'
 import { handleFulfillment } from './fulfillment.ts'
 import type { FulfillmentRuntime } from './fulfillment-contract.ts'
+import { createFulfillmentRelay, type ListingRelayEnv } from './fulfillment-relay.ts'
 
-export type LocalFirstEnv = Readonly<CheckoutEnv & {
+export type LocalFirstEnv = Readonly<CheckoutEnv & ListingRelayEnv & {
   RELEASE_CANDIDATE_SHA: string
   CF_VERSION_METADATA?: { id?: string }
 }>
@@ -78,4 +79,12 @@ export async function fetchLocalFirst(request: Request, env: LocalFirstEnv, tran
     }
     return finish(response)
 }
-export default { fetch: (request: Request, env: LocalFirstEnv) => fetchLocalFirst(request, env) }
+const unavailableRuntime: FulfillmentRuntime = Object.freeze({
+  async ready() { throw Error('fulfillment_unavailable') },
+  async invoke() { throw Error('fulfillment_unavailable') },
+})
+export default { fetch: (request: Request, env: LocalFirstEnv) => {
+  let runtime: FulfillmentRuntime | undefined
+  try { runtime = createFulfillmentRelay(env) } catch { runtime = unavailableRuntime }
+  return fetchLocalFirst(request, env, undefined, runtime)
+} }

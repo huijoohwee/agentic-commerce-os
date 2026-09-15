@@ -9,6 +9,7 @@ import {readSession,csrf,sealRunContext,readRunContext} from '../../src/local-fi
 import {fulfillmentContext} from '../../src/local-first/fulfillment.ts';
 import {createListingRuntime} from './runtime.mjs';
 import {createListingExecutor} from './executor.mjs';
+import {createListingHostRelay} from './relay.mjs';
 
 const defaultAssets=fileURLToPath(new URL('../../public/local-first/',import.meta.url));
 const mime={'.html':'text/html; charset=utf-8','.js':'application/javascript; charset=utf-8',
@@ -32,7 +33,7 @@ function assets(directory){return {async fetch(request){
  * tests; the CLI always uses the installed OS host and actual pinned model verifier. */
 export async function startListingHost({directory,sessionSecret,model,port=5192,
   sourceRevision='local-unreleased',assetDirectory=defaultAssets,stripeTestKey,
-  paymentFetch,modelVerifier,hostAdapter=startLocalAgentHost,onEvent=()=>{}}={}){
+  paymentFetch,modelVerifier,hostAdapter=startLocalAgentHost,onEvent=()=>{},relay:relayConfig}={}){
   if(typeof directory!=='string'||typeof sessionSecret!=='string'||sessionSecret.length<32
     ||!Number.isSafeInteger(port)||port<0||port>65535
     ||!/^(?:[a-f0-9]{40}|local-unreleased)$/u.test(sourceRevision)
@@ -42,6 +43,9 @@ export async function startListingHost({directory,sessionSecret,model,port=5192,
   await verifier.verifyArtifacts({signal:AbortSignal.timeout(15000)});
   const headers=await verifier.getHeaders();
   if(headers.authorization==='Bearer '+sessionSecret||sessionSecret===stripeTestKey)throw Error('listing_host_credentials_reused');
+  if(relayConfig&&relayConfig.token===stripeTestKey)throw Error('listing_host_credentials_reused');
+  const relay=createListingHostRelay(relayConfig,{sourceRevision,sessionSecret,
+    modelAuthorization:headers.authorization,verifyArtifacts:verifier.verifyArtifacts});
   const assetRoot=await realpath(assetDirectory),stateStore=await createAgentSwarmSqliteStore({directory});
   let host;
   try{
@@ -59,6 +63,7 @@ export async function startListingHost({directory,sessionSecret,model,port=5192,
     host=await hostAdapter({runtime,stateStore,port,concurrency:1,maxRequests:4,
       resolveContext:principalId=>readRunContext(principalId,sessionSecret),onEvent,
       authenticate:async({headers})=>{
+        if(relay?.applies(headers))return relay.authenticate(headers);
         const bearer=headers.authorization?.startsWith('Bearer ')&&!headers.origin?headers.authorization.slice(7):null;
         const request=new Request('http://127.0.0.1/',{headers:{cookie:bearer?'__Host-airvio_sandbox='+bearer:headers.cookie??''}});
         const session=await readSession(request,sessionSecret);
@@ -66,7 +71,7 @@ export async function startListingHost({directory,sessionSecret,model,port=5192,
         return sealRunContext(await fulfillmentContext(session),sessionSecret);
       },
       application:{prefix:'/agentic-commerce-os',maxInputBytes:16384,maxOutputBytes:499999,
-        fetch:request=>fetchLocalFirst(request,env,paymentFetch,boundProduct)},
+        fetch:async request=>(await relay?.ready(request))??fetchLocalFirst(request,env,paymentFetch,boundProduct)},
     });
     const origin=new URL(host.endpoint).origin;
     // An older OS package must fail startup rather than silently discard the application seam.
