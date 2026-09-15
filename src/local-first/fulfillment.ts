@@ -42,6 +42,8 @@ export async function handleFulfillment(request: Request, secret: string | undef
     if (request.method !== 'GET' || url.search) return fail(400, 'fulfillment_session_invalid');
     if (request.headers.get('sec-fetch-site') === 'cross-site'
       || request.headers.has('origin') && request.headers.get('origin') !== url.origin) return fail(403, 'fulfillment_session_invalid');
+    try { await runtime.ready?.(AbortSignal.timeout(15000)); }
+    catch { return fail(503, 'fulfillment_unavailable'); }
     const session = await readSession(request, secret) ?? newSession();
     return Response.json({ ok: true, csrfToken: await csrf(session, secret) },
       { headers: { 'set-cookie': await cookie(session, secret), 'cache-control': 'no-store' } });

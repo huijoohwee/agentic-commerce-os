@@ -4,6 +4,7 @@ export { FULFILLMENT_AGENT } from './fulfillment-definition.ts';
 export type FulfillmentBinding = Readonly<{ runId: string; outputDigest: string }>;
 export type RunContext = Readonly<{ principalId: string; principalExpiresAt: number }>;
 export type FulfillmentRuntime = Readonly<{
+  ready?(signal: AbortSignal): Promise<unknown>;
   invoke(operation: 'start' | 'status' | 'cancel' | 'retry', input: Record<string, unknown>,
     context: RunContext, signal: AbortSignal): Promise<unknown>;
 }>;

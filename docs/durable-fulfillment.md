@@ -163,6 +163,37 @@ leave listing preparation available and return an explicit checkout-unavailable 
 SIGINT/SIGTERM drain the host. Stopping the host preserves the SQLite directory and browser drafts.
 This is the existing device-session availability policy, not an always-on availability claim.
 
+### Authenticated edge connection
+
+The optional `fulfillment-relay` composes the existing OS run client with server-derived session
+identity. Its two operator bindings are `LISTING_HOST_PINS_JSON` and `LISTING_HOST_BEARER`.
+Neither binding configured means reader-only operation. Partial or invalid configuration keeps
+the application readable and rejects job admission. These bindings are not enabled by the current
+release controller; production activation still requires the compatible reader baseline and
+reviewed controller integration.
+
+The pin object has exactly `origin`, `bundleSha256`, `imageId` and `sourceRevision`. Origin is an
+exact HTTPS origin; `imageId` is the immutable product image digest without its `sha256:` prefix.
+The built host checks its own bundle hash before startup. Its private configuration can add
+`relay: { pins, token }`, using a dedicated nonzero 64-character hex token, distinct from session,
+payment and model credentials. Pins, the exact definition and the model digest bind each readiness
+response. No credential is included in browser output or evidence.
+
+Before issuing a fulfillment session, the edge performs one bounded authenticated host probe.
+The host rechecks the pinned model artifacts; an offline or changed executor prevents new workflow
+writes. Each run request carries its own server-derived principal and expiry over the authenticated
+connection. The host seals that context with its retained local secret, so restart preserves job
+ownership. Browser JSON cannot choose identity, endpoints, definitions or credentials. The existing
+OS client owns redirects, byte/time limits and ambiguous-write reporting; there is no second queue.
+Transport and capacity errors preserve the browser's saved state and require refreshing the same
+job. They cannot turn an uncertain accepted write into a terminal failed-job record.
+
+Reuse the existing tunnel by routing `/api/agent-swarm/` and the exact
+`/agentic-commerce-os/fulfillment/host-ready` path to the listing host. Preserve the existing generic
+execution service and its credential. Source tests exercise real HTTP, SQLite restart, replay and
+wrong-browser refusal with a deterministic model fixture; they are not public deployment, model
+quality or payment proof. Device sleep or a disconnected tunnel leaves execution unavailable.
+
 ## Product admission ownership
 
 `src/admission/` owns the transferred Commerce registration authority, admission contract/provider,
