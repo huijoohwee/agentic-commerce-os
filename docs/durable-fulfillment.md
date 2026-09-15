@@ -95,6 +95,13 @@ unchanged for interrupted pre-upgrade requests. Pending or unpaid orders cannot 
 Provider records and the previous receipt remain distinct from the newly confirmed order.
 Validation: `checkout-binding.test.mjs` and the returning-seller browser flow.
 
+Separate orders use the authenticated OS ledger's immutable first `run_planned` event to bound
+creation and uncertain-response replay to 23 hours. Returning sellers keep their seven-day job
+identity; observing a result cannot renew that payment window. Missing, future or stale timestamps
+fail closed. Already recorded orders remain readable after the creation window. First-order
+keys and their original session-age guard stay compatible with interrupted older checkouts.
+No cookie schema or payment store changes are required.
+
 ## ADR — native composition and migration
 
 Constraints: free core, independent product/session authority, bounded work, no new payment ledger,

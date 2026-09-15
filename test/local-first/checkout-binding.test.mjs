@@ -15,9 +15,10 @@ async function fixture() {
   const stripe = stripeFixture(), principals = new Set();
   const binding = { runId: 'listing-' + 'a'.repeat(64), outputDigest: await digest(text) };
   let cookie = '', token, loseResponse = false;
+  const events = [{ sequence: 1, type: 'run_planned', at: new Date().toISOString() }];
   const runtime = { async invoke(operation, input, context) {
     assert.equal(operation, 'status'); principals.add(context.principalId);
-    return { runId: input.runId, status: 'completed', agent: FULFILLMENT_AGENT, output: { text } };
+    return { runId: input.runId, status: 'completed', agent: FULFILLMENT_AGENT, output: { text }, events };
   } };
   const transport = async request => {
     const response = await stripe.transport(request);
@@ -35,7 +36,9 @@ async function fixture() {
     return { status: response.status, value };
   }
   await call('/checkout');
-  return { call, stripe, binding, principals, lose() { loseResponse = true; } };
+  // Admission follows session issuance, including on a slow test runner.
+  events[0].at = new Date(Date.now()).toISOString();
+  return { call, stripe, binding, principals, events, lose() { loseResponse = true; } };
 }
 test('a reviewed listing replaces a completed generic test order without losing the job principal or duplicating a payment', async () => {
   const f = await fixture(), previous = (await f.call('/checkout/start', terms)).value.order;
@@ -80,4 +83,53 @@ test('expired orders may be replaced only by an explicitly reviewed different li
   assert.equal(next.status, 200); assert.notEqual(next.value.order.orderId, previous.orderId);
   assert.equal(f.stripe.sessions.get(previous.orderId).status, 'expired');
   assert.equal(f.stripe.sessions.size, 2);
+});
+
+test('a new listing in an older signed session gets its own bounded checkout window', async t => {
+  let now = Date.now(); t.mock.method(Date, 'now', () => now);
+  const f = await fixture(), previous = (await f.call('/checkout/start', terms)).value.order;
+  f.stripe.complete(previous.orderId);
+  await f.call('/fulfillment/status', { runId: f.binding.runId });
+  now += 2 * 86400000; f.events[0].at = new Date(now).toISOString();
+  const body = { ...terms, fulfillment: f.binding, reviewed: true };
+  f.lose();
+  assert.equal((await f.call('/checkout/start', body)).status, 503);
+  now += 3600000;
+  const next = await f.call('/checkout/start', body);
+  assert.equal(next.status, 200); assert.equal(f.stripe.sessions.size, 2);
+  f.stripe.complete(next.value.order.orderId);
+  now += 24 * 3600000;
+  assert.deepEqual((await f.call('/checkout/start', body)).value.order.fulfillment,
+    { ...f.binding, status: 'available' });
+  assert.equal((await f.call('/checkout/receipt')).value.orderId, next.value.order.orderId);
+  assert.equal(f.principals.size, 1); assert.equal(f.stripe.sessions.size, 2);
+});
+
+test('an uncertain separate order cannot create another after its fixed replay window', async t => {
+  let now = Date.now(); t.mock.method(Date, 'now', () => now);
+  const f = await fixture(), previous = (await f.call('/checkout/start', terms)).value.order;
+  f.stripe.complete(previous.orderId);
+  now += 2 * 86400000; f.events[0].at = new Date(now).toISOString();
+  const body = { ...terms, fulfillment: f.binding, reviewed: true };
+  f.lose();
+  assert.equal((await f.call('/checkout/start', body)).status, 503);
+  const calls = f.stripe.calls.length;
+  now += 23 * 3600000;
+  assert.equal((await f.call('/checkout/start', body)).value.code, 'checkout_session_expired');
+  assert.equal(f.stripe.sessions.size, 2);
+  assert.equal(f.stripe.calls.slice(calls).filter(c => c.method === 'POST').length, 0);
+});
+
+test('missing, future, stale or replaced planning events cannot extend the payment window', async t => {
+  const now = Date.now(); t.mock.method(Date, 'now', () => now);
+  const f = await fixture(), previous = (await f.call('/checkout/start', terms)).value.order;
+  f.stripe.complete(previous.orderId);
+  for (const event of [undefined, { sequence: 2, type: 'run_planned', at: new Date(now).toISOString() },
+    { sequence: 1, type: 'run_planned', at: new Date(now + 1).toISOString() },
+    { sequence: 1, type: 'run_planned', at: new Date(now - 23 * 3600000).toISOString() },
+    { sequence: 1, type: 'task_completed', at: new Date(now).toISOString() }]) {
+    f.events.splice(0, f.events.length, ...(event ? [event] : []));
+    const result = await f.call('/checkout/start', { ...terms, fulfillment: f.binding, reviewed: true });
+    assert.equal(result.value.code, 'checkout_session_expired'); assert.equal(f.stripe.sessions.size, 1);
+  }
 });

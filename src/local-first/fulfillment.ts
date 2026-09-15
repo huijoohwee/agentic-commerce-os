@@ -4,33 +4,44 @@ import { digest, FULFILLMENT_AGENT, FulfillmentFailure, validRunId, type Fulfill
 
 const PREFIX = '/agentic-commerce-os/fulfillment/';
 const STATES = new Set(['planning', 'running', 'completed', 'blocked', 'canceled', 'pending', 'idle', 'reconciling', 'synthesizing']);
+type FulfillmentResult = { runId: string; status: string; text?: string; outputDigest?: string;
+  reviewRequired?: boolean; plannedAt?: number };
 const fail = (status: number, code: string) => Response.json({ ok: false, code }, { status });
 export const fulfillmentContext = async (session: Session) => ({
   principalId: 'commerce-' + await digest(session.nonce), principalExpiresAt: session.issuedAt + 7 * 86400000,
 });
 async function invoke(runtime: FulfillmentRuntime | undefined, session: Session,
-  operation: 'start' | 'status' | 'cancel' | 'retry', input: Record<string, unknown>) {
+  operation: 'start' | 'status' | 'cancel' | 'retry', input: Record<string, unknown>,
+  includePlannedAt = false): Promise<FulfillmentResult> {
   if (!runtime) throw new FulfillmentFailure(503, 'fulfillment_unavailable');
   const value = await runtime.invoke(operation, input, await fulfillmentContext(session), AbortSignal.timeout(55000));
   if (!isRecord(value) || value.runId !== input.runId || !STATES.has(String(value.status)))
     throw new FulfillmentFailure(503, 'fulfillment_identity_mismatch');
+  const runId = String(input.runId), status = String(value.status);
   if (['run_forbidden', 'principal_expired'].includes(String(value.reasonCode)))
     throw new FulfillmentFailure(value.reasonCode === 'run_forbidden' ? 403 : 401, 'fulfillment_access_denied');
-  if (value.status === 'blocked') return { runId: input.runId, status: 'blocked' };
-  if (!value.agent && ['planning', 'canceled'].includes(String(value.status))) return { runId: input.runId, status: value.status };
+  if (value.status === 'blocked') return { runId, status };
+  if (!value.agent && ['planning', 'canceled'].includes(status)) return { runId, status };
   if (!isRecord(value.agent) || value.agent.agentId !== FULFILLMENT_AGENT.agentId || value.agent.revision !== FULFILLMENT_AGENT.revision)
     throw new FulfillmentFailure(503, 'fulfillment_definition_mismatch');
-  if (value.status !== 'completed') return { runId: input.runId, status: value.status };
+  if (value.status !== 'completed') return { runId, status };
   if (!isRecord(value.output) || typeof value.output.text !== 'string' || !value.output.text.trim()
     || new TextEncoder().encode(value.output.text).byteLength > 16000 || /\x00/u.test(value.output.text))
     throw new FulfillmentFailure(503, 'fulfillment_output_invalid');
   const text = value.output.text;
+  const first = Array.isArray(value.events) ? value.events[0] : undefined;
+  // The OS ledger retains its first event even when later tracing is capped.
+  // This fixed server timestamp bounds separate-order creation; it never enters the public read model.
+  const plannedAt = includePlannedAt && isRecord(first) && first.sequence === 1
+    && first.type === 'run_planned' && typeof first.at === 'string' ? Date.parse(first.at) : NaN;
   // Product readback excludes intermediate prompts, task context and arbitrary provider fields.
-  return { runId: input.runId, status: 'completed', text, outputDigest: await digest(text), reviewRequired: true };
+  return { runId, status, text, outputDigest: await digest(text), reviewRequired: true,
+    ...(includePlannedAt ? { plannedAt } : {}) };
 }
-export async function readFulfillment(runtime: FulfillmentRuntime | undefined, session: Session, runId: string) {
+export async function readFulfillment(runtime: FulfillmentRuntime | undefined, session: Session, runId: string,
+  includePlannedAt = false) {
   if (!validRunId(runId)) throw new FulfillmentFailure(400, 'fulfillment_run_invalid');
-  return invoke(runtime, session, 'status', { runId });
+  return invoke(runtime, session, 'status', { runId }, includePlannedAt);
 }
 export async function handleFulfillment(request: Request, secret: string | undefined,
   runtime?: FulfillmentRuntime): Promise<Response | null> {

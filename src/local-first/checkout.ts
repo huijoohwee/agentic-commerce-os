@@ -69,11 +69,14 @@ export async function handleCheckout(request: Request, env: CheckoutEnv, transpo
           || payment!.status === 'complete' && payment!.payment_status === 'paid')))
           return fail(409, 'checkout_fulfillment_mismatch');
         if (!payment || separateOrder) {
-          if (Date.now() - session.issuedAt >= 23 * 3600000) return fail(409, 'checkout_session_expired');
+          if (!separateOrder && Date.now() - session.issuedAt >= 23 * 3600000) return fail(409, 'checkout_session_expired');
           if (fulfillment) {
-            const result = await readFulfillment(runtime, session, fulfillment.runId);
+            const result = await readFulfillment(runtime, session, fulfillment.runId, separateOrder);
             if (result.status !== 'completed' || result.outputDigest !== fulfillment.outputDigest)
               return fail(409, 'fulfillment_review_stale');
+            if (separateOrder && (typeof result.plannedAt !== 'number' || !Number.isSafeInteger(result.plannedAt)
+              || result.plannedAt < session.issuedAt || result.plannedAt > Date.now()
+              || Date.now() - result.plannedAt >= 23 * 3600000)) return fail(409, 'checkout_session_expired');
           }
           payment = await stripe.create(session.nonce, url.origin, fulfillment, separateOrder);
           session = { ...session, paymentId: payment.id, ...(fulfillment ? { fulfillment } : {}) };
