@@ -87,6 +87,14 @@ A changed binding cannot reuse an existing payment. Unknown create outcome retri
 idempotency key. The combined receipt uses that one payment ID; no real money moves. Downloads recheck the
 retained output and digest, so an unavailable host or expired record fails closed.
 
+A returning seller may explicitly confirm a different reviewed listing after the earlier test order
+is paid or expired. The UI labels its previous receipt and withholds the new listing's download until
+its own payment readback succeeds. The new order retains the job principal and uses a separate
+run-and-output-bound idempotency key; lost responses replay that key. Original first-order keys remain
+unchanged for interrupted pre-upgrade requests. Pending or unpaid orders cannot be replaced.
+Provider records and the previous receipt remain distinct from the newly confirmed order.
+Validation: `checkout-binding.test.mjs` and the returning-seller browser flow.
+
 ## ADR — native composition and migration
 
 Constraints: free core, independent product/session authority, bounded work, no new payment ledger,

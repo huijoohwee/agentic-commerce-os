@@ -40,7 +40,8 @@ export function stripeClient(secret: string, transport: PaymentFetch = fetch) {
       payment_status: value.payment_status as StripeSession['payment_status'], ...(fulfillment ? { fulfillment } : {}) };
   }
   return {
-    async create(nonce: string, origin: string, fulfillment?: FulfillmentBinding) {
+    async create(nonce: string, origin: string, fulfillment?: FulfillmentBinding, separateOrder = false) {
+      if (separateOrder && !fulfillment) throw Error('separate_order_requires_fulfillment');
       // Account and Price readbacks prevent a wrong-account or changed-price test from being presented as this offer.
       const [account, price] = await Promise.all([request('account'), request('prices/' + CHECKOUT_OFFER.id)]);
       if (account.id !== STRIPE_ACCOUNT || price.id !== CHECKOUT_OFFER.id || price.livemode !== false || price.active !== true
@@ -55,7 +56,11 @@ export function stripeClient(secret: string, transport: PaymentFetch = fetch) {
         form.set('metadata[fulfillment_run]', fulfillment.runId);
         form.set('metadata[fulfillment_digest]', fulfillment.outputDigest);
       }
-      return validate(await request('checkout/sessions', form, 'commerce-test:' + nonce), nonce, undefined, fulfillment);
+      // Keep the original key for first orders and interrupted pre-upgrade requests.
+      // Replacing a verified terminal order uses the reviewed job as a stable key;
+      // a lost response replays it while retaining the browser's job principal.
+      const suffix = separateOrder ? ':' + fulfillment!.runId + ':' + fulfillment!.outputDigest : '';
+      return validate(await request('checkout/sessions', form, 'commerce-test:' + nonce + suffix), nonce, undefined, fulfillment);
     },
     async read(id: string, nonce: string, fulfillment?: FulfillmentBinding) {
       return validate(await request('checkout/sessions/' + id), nonce, id, fulfillment);

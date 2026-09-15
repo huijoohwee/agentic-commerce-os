@@ -113,6 +113,28 @@ export async function checkDurableFulfillment({ browser, url, output, revision }
     await page.reload(); await expect(page.locator('#checkout-status')).toContainText('test payment verified');
     await page.locator('#checkout-refresh').click();
     assert.equal(stripe.sessions.size, 1); assert.equal(executions, 1); assert.deepEqual(errors, []);
+    // A returning seller must not mistake an earlier receipt for a new listing.
+    await page.goto(url + '#vendor-editor');
+    await page.locator('#draft-list button').first().click();
+    await page.locator('#description').fill('Blue, 300 ml. New listing revision.');
+    await page.locator('#save').click(); await expect(page.locator('#save-state')).toHaveText('Saved on this device');
+    await page.locator('#prepare-listing').click();
+    await page.locator('#listing-new').click(); await expect(page.locator('#listing-status')).toContainText('Job accepted');
+    await worker.tick(); await worker.tick();
+    await page.locator('#listing-resume').click(); await expect(page.locator('#listing-output')).toContainText('Ceramic mug');
+    await page.locator('#listing-review').check(); await page.locator('#listing-checkout').click();
+    await expect(page.locator('#checkout-status')).toContainText('previous test receipt belongs to a different order');
+    await expect(page.locator('#checkout-download')).toBeHidden();
+    await expect(page.locator('#checkout-receipt')).toHaveText('Download previous Stripe test receipt ↓');
+    await expect(page.locator('#checkout-start')).toBeDisabled();
+    await page.locator('#checkout-confirm').check(); await expect(page.locator('#checkout-start')).toBeEnabled();
+    await page.locator('#checkout-start').click(); await expect(page.locator('#checkout-status')).toContainText('Continue to Stripe');
+    assert.equal(stripe.sessions.size, 2);
+    const nextOrderId = [...stripe.sessions.keys()].find(id => id !== orderId); stripe.complete(nextOrderId);
+    await page.locator('#checkout-refresh').click(); await expect(page.locator('#checkout-status')).toContainText('test payment verified');
+    const nextReceipt = await page.evaluate(async () => (await fetch('./checkout/receipt')).json());
+    assert.notEqual(nextReceipt.fulfillment.runId, handle);
+    assert.equal(nextReceipt.orderId, nextOrderId); assert.equal(executions, 2);
     const completedBackup = await backup();
     assert.equal(completedBackup.schema, 'commerce.local-drafts/v3');
     runtimeAvailable = false;

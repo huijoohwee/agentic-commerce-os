@@ -7,9 +7,14 @@ export function selectFulfillment(binding, title) {
   fulfillment = { runId: binding.runId, outputDigest: binding.outputDigest }; fulfillmentTitle = String(title).slice(0, 120);
 }
 function message(text) { $('#checkout-status').textContent = text; }
+function differentOrder() {
+  const binding = intent?.order?.fulfillment;
+  return !!intent?.order && !!fulfillment && (binding?.runId !== fulfillment.runId || binding?.outputDigest !== fulfillment.outputDigest);
+}
 function enabled() {
   const offline = !navigator.onLine;
-  $('#checkout-start').disabled = busy || !intent || !!intent.order || !$('#checkout-confirm').checked || offline;
+  const existingBlocks = !!intent?.order && (!differentOrder() || intent.order.status === 'pending');
+  $('#checkout-start').disabled = busy || !intent || existingBlocks || !$('#checkout-confirm').checked || offline;
   for (const id of ['checkout-cancel', 'checkout-reset', 'checkout-refresh']) $('#' + id).disabled = busy || offline;
 }
 async function api(path = '', body) {
@@ -25,19 +30,23 @@ async function api(path = '', body) {
   return value;
 }
 function render() {
-  const order = intent?.order, state = order?.status;
+  const order = intent?.order, state = order?.status, different = differentOrder();
   $('#checkout-order').textContent = order ? 'Stripe test session ' + order.orderId : '';
-  $('#checkout-download').hidden = !order?.downloadReady;
+  $('#checkout-download').hidden = different || !order?.downloadReady;
   $('#checkout-receipt').hidden = !order || state === 'pending';
-  $('#checkout-reset').hidden = state !== 'expired';
+  $('#checkout-receipt').textContent = different ? 'Download previous Stripe test receipt ↓' : 'Download Stripe test receipt ↓';
+  $('#checkout-reset').hidden = different || state !== 'expired';
   $('#checkout-cancel').hidden = state !== 'pending';
   const link = $('#checkout-continue'); link.hidden = true; link.removeAttribute('href');
-  if (state === 'pending' && order.checkoutUrl) {
+  if (!different && state === 'pending' && order.checkoutUrl) {
     const target = new URL(order.checkoutUrl);
     if (target.origin !== 'https://checkout.stripe.com' || !/^\/(?:c|g)\/pay\/cs_test_[A-Za-z0-9]+$/u.test(target.pathname)) throw Error('Invalid Stripe test destination.');
     link.href = target.href; link.hidden = false;
   }
-  message(({ succeeded: 'Stripe test payment verified. No real money moved. Your sample download and test receipt are ready.',
+  message(different ? state === 'pending'
+    ? 'A different test order is still pending. Check its status or cancel it before preparing checkout for this listing.'
+    : 'The previous test receipt belongs to a different order. Save it below, then confirm a separate test checkout for this listing.'
+    : ({ succeeded: 'Stripe test payment verified. No real money moved. Your sample download and test receipt are ready.',
     pending: 'Test checkout is ready. Continue to Stripe and use test card details. Return here to verify payment.',
     expired: 'Stripe test checkout expired or was cancelled. No real money moved. You can start a new test.' })[state]
     || 'Review the example offer, then continue to Stripe test checkout. No real money will move.');
