@@ -3,7 +3,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { createHash } from 'node:crypto';
 import { chromium, expect } from '@playwright/test';
-import { waitForReadiness } from './readiness.mjs';
+import { waitForReadiness, waitForBrowserDocument } from './readiness.mjs';
 
 const base = 'https://airvio.co/agentic-commerce-os/';
 const sha = value => createHash('sha256').update(value).digest('hex');
@@ -13,17 +13,20 @@ export async function createRollbackBrowserObservation({ output }) {
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ viewport: { width: 390, height: 844 },
     serviceWorkers: 'block', acceptDownloads: true });
-  let page, retained, expectedRevision;
-  const errors = [], assets = [];
-  context.on('page', value => {
-    value.on('pageerror', error => errors.push(error.message));
+  let page, retained, requestedRevision;
+  const pages = [], documents = [];
+  function observePage(value, expectedRevision) {
+    const observation = { expectedRevision, accepted: false, errors: [], assets: [] };
+    pages.push(observation);
+    value.on('pageerror', error => observation.errors.push(error.message));
     value.on('response', response => {
       const url = new URL(response.url());
       if (url.origin === new URL(base).origin && url.pathname.includes('/assets/'))
-        assets.push({ url: url.pathname, status: response.status(),
+        observation.assets.push({ url: url.pathname, status: response.status(),
           sourceRevision: response.headers()['x-commerce-source'], expectedRevision });
     });
-  });
+    return observation;
+  }
   async function backup() {
     return page.evaluate(async () => {
       const source = document.querySelector('script[type="module"]').src;
@@ -31,14 +34,22 @@ export async function createRollbackBrowserObservation({ output }) {
     });
   }
   async function open(identity) {
-    expectedRevision = identity.revision ?? identity.sourceRevision;
+    const expectedRevision = identity.revision ?? identity.sourceRevision;
+    const previousRevision = requestedRevision ?? null;
+    requestedRevision = expectedRevision;
     await waitForReadiness({ url: base + 'readyz', revision: expectedRevision, versionId: identity.versionId });
-    await page?.close();
-    page = await context.newPage();
-    page.setDefaultTimeout(15000);
-    const response = await page.goto(base + '#vendor-editor');
-    assert.equal(response.status(), 200);
-    assert.equal(response.headers()['x-commerce-source'], expectedRevision);
+    let observation;
+    await waitForBrowserDocument({ url: base + '#vendor-editor', revision: expectedRevision, previousRevision,
+      navigate: async (url, options) => {
+        await page?.close();
+        page = await context.newPage();
+        page.setDefaultTimeout(15000);
+        observation = observePage(page, expectedRevision);
+        return page.goto(url, { ...options, waitUntil: 'domcontentloaded' });
+      }, observe: value => {
+        if (observation) observation.accepted = value.matched === true;
+        documents.push(value);
+      } });
     const module = await page.locator('script[type="module"]').getAttribute('src');
     assert(module.includes('/assets/' + expectedRevision + '/'));
   }
@@ -64,11 +75,15 @@ export async function createRollbackBrowserObservation({ output }) {
     }
   }
   function assertAssets() {
-    assert(assets.length > 0);
-    for (const asset of assets) {
-      assert.equal(asset.status, 200); assert.equal(asset.sourceRevision, asset.expectedRevision);
+    const accepted = pages.filter(value => value.accepted);
+    assert(accepted.length > 0);
+    for (const value of accepted) {
+      assert(value.assets.length > 0);
+      for (const asset of value.assets) {
+        assert.equal(asset.status, 200); assert.equal(asset.sourceRevision, value.expectedRevision);
+      }
+      assert.deepEqual(value.errors, []);
     }
-    assert.deepEqual(errors, []);
   }
   return {
     async prepare(identity) {
@@ -106,10 +121,9 @@ export async function createRollbackBrowserObservation({ output }) {
     },
     async close() {
       fs.writeFileSync(path.join(output, 'rollback-browser-assets.json'), JSON.stringify({
-        assets, errors, requestInterception: false, observedAt: new Date().toISOString(),
+        pages, documents, requestInterception: false, observedAt: new Date().toISOString(),
       }, null, 2) + '\n');
       await context.close(); await browser.close();
     },
   };
 }
-

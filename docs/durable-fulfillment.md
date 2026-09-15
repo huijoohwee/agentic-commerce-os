@@ -275,6 +275,17 @@ checks during the rehearsal. Provider/source/browser receipts and screenshots re
 Run `node --test test/local-first/rollback.test.mjs test/local-first/release.test.mjs` before publication;
 the source tests use injected providers and do not establish a live rollback.
 
+[Release 35035059530](https://github.com/huijoohwee/agentic-commerce-os/actions/runs/35035059530)
+created an actual retained listing job and activated the reader, but the browser still received the
+candidate document while the separate readiness request reported the reader. The controller restored
+candidate version `0ac35693-e43e-4770-968e-66401bb912b2`; the rehearsal remains unproven. Its journal
+retains the exact run/output digests, both provider transitions and the failed browser observation.
+The browser now waits up to 45 seconds for its own exact document source. Only the known predecessor,
+temporary unavailability and navigation transport errors may be polled; foreign sources, redirects
+and authorization failures stop immediately. Each page attempt binds its own asset/error observations,
+including rejected attempts, so a late response cannot inherit the next page's expected revision.
+This polling performs document reads only and never repeats a provider activation or job submission.
+
 The optional admission Worker entry and six original persistence/provider suites transfer into their
 Commerce owner under `src/admission/MIGRATION-TESTS.json`. The source and assertion inventory remains
 distinct from activating that private service or minting its admission authority. This batch pins
