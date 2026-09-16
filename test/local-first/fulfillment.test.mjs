@@ -135,3 +135,23 @@ test('wrong definition, malformed output and unconfigured production composition
   const response = await fetchLocalFirst(new Request(base + '/fulfillment/start', { method: 'POST' }), env);
   assert.equal(response.status, 503);
 });
+
+test('observation endpoints preserve native envelopes, reject forged inputs and bound response bytes', async () => {
+  let calls=0, result={schema:'agent-toolkit-query/v1',status:'completed',items:[]};
+  const runtime={async invoke(){calls++;return result;}},c=client(runtime);
+  await c.call('/fulfillment/session');
+  const query=await c.call('/fulfillment/query',{});
+  assert.equal(query.status,200);assert.deepEqual(query.value,result);assert.equal(query.value.ok,undefined);
+  for(const body of [{principalId:'peer'},{limit:33},{signal:{}},{context:{}}])
+    assert.equal((await c.call('/fulfillment/query',body)).status,400);
+  assert.equal(calls,1);
+  assert.equal((await c.call('/fulfillment/query',{}, {'x-commerce-csrf':'forged'})).status,403);
+  assert.equal(calls,1);
+  result={status:'blocked',reasonCode:'principal_expired'};
+  assert.equal((await c.call('/fulfillment/query',{})).status,401);
+  result={status:'blocked',reasonCode:'run_forbidden'};
+  assert.equal((await c.call('/fulfillment/query',{})).status,403);
+  result={schema:'agent-toolkit-query/v1',status:'completed',items:['x'.repeat(256*1024)]};
+  const oversized=await c.call('/fulfillment/query',{});
+  assert.equal(oversized.status,503);assert.equal(oversized.value.code,'fulfillment_observation_too_large');
+});

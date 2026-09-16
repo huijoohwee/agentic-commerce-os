@@ -1,12 +1,14 @@
+import { validateRunInput } from 'agentic-os/agents/invocation';
 import { isHttpFailure, isRecord, readJsonObject } from '../shared/http.ts';
 import { readSession, csrf, newSession, cookie, type Session } from './session.ts';
-import { digest, FULFILLMENT_AGENT, FulfillmentFailure, validRunId, type FulfillmentRuntime } from './fulfillment-contract.ts';
+import { digest, FULFILLMENT_AGENT, FULFILLMENT_GOAL, FulfillmentFailure, validRunId, type FulfillmentRuntime } from './fulfillment-contract.ts';
 
 const PREFIX = '/agentic-commerce-os/fulfillment/';
 const STATES = new Set(['planning', 'running', 'completed', 'blocked', 'canceled', 'pending', 'idle', 'reconciling', 'synthesizing']);
 type FulfillmentResult = { runId: string; status: string; text?: string; outputDigest?: string;
   reviewRequired?: boolean; plannedAt?: number };
-const fail = (status: number, code: string) => Response.json({ ok: false, code }, { status });
+const observationHeaders = { 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' };
+const fail = (status: number, code: string) => Response.json({ ok: false, code }, { status, headers: observationHeaders });
 export const fulfillmentContext = async (session: Session) => ({
   principalId: 'commerce-' + await digest(session.nonce), principalExpiresAt: session.issuedAt + 7 * 86400000,
 });
@@ -59,7 +61,7 @@ export async function handleFulfillment(request: Request, secret: string | undef
     return Response.json({ ok: true, csrfToken: await csrf(session, secret) },
       { headers: { 'set-cookie': await cookie(session, secret), 'cache-control': 'no-store' } });
   }
-  if (!['start', 'status', 'cancel', 'retry'].includes(operation)) return fail(404, 'not_found');
+  if (!['start', 'status', 'cancel', 'retry', 'query', 'trace', 'evaluate', 'compare'].includes(operation)) return fail(404, 'not_found');
   if (request.method !== 'POST') return fail(405, 'post_required');
   if (url.search) return fail(400, 'unexpected_query');
   if (!secret || secret.length < 32 || !runtime) return fail(503, 'fulfillment_unavailable');
@@ -71,6 +73,26 @@ export async function handleFulfillment(request: Request, secret: string | undef
   const body = await readJsonObject(request, 16384);
   if (isHttpFailure(body)) return fail(body.code === 'body_too_large' ? 413 : 400, body.code);
   try {
+    if (['query', 'trace', 'evaluate', 'compare'].includes(operation)) {
+      const observationOperation = operation as 'query' | 'trace' | 'evaluate' | 'compare';
+      let observation: Record<string, unknown>;
+      try { observation = validateRunInput(observationOperation, body); }
+      catch { return fail(400, 'fulfillment_observation_invalid'); }
+      const value = await runtime.invoke(observationOperation, observation,
+        await fulfillmentContext(session), AbortSignal.any([request.signal, AbortSignal.timeout(55000)]));
+      if (!isRecord(value)) return fail(503, 'fulfillment_observation_unavailable');
+      if (['run_forbidden', 'principal_expired'].includes(String(value.reasonCode)))
+        return fail(value.reasonCode === 'run_forbidden' ? 403 : 401, 'fulfillment_access_denied');
+      // The source runtime owns redaction and evidence schema. Preserve its native envelope.
+      const status = value.status === 'blocked' ? 409 : 200;
+      const streaming = status === 200 && ['query', 'trace'].includes(operation)
+        && request.headers.get('accept')?.includes('text/event-stream');
+      const json = JSON.stringify(value), text = streaming ? 'data: ' + json + '\n\ndata: [DONE]\n\n' : json;
+      const bytes = new TextEncoder().encode(text);
+      if (bytes.byteLength > 256 * 1024) return fail(503, 'fulfillment_observation_too_large');
+      return new Response(bytes, { status, headers: { ...observationHeaders,
+        'content-type': streaming ? 'text/event-stream; charset=utf-8' : 'application/json; charset=utf-8' } });
+    }
     let input: Record<string, unknown>;
     if (operation === 'start') {
       if (Object.keys(body).sort().join() !== 'description,draftId,revision,title'
@@ -82,7 +104,7 @@ export async function handleFulfillment(request: Request, secret: string | undef
       const draft = { draftId: body.draftId, revision: body.revision, title: body.title, description: body.description };
       const runId = 'listing-' + await digest(JSON.stringify([session.nonce, FULFILLMENT_AGENT, draft]));
       input = { runId, conversationId: body.draftId, agent: FULFILLMENT_AGENT,
-        goal: 'Prepare a factual listing for human review using only the supplied draft.', input: draft, maxParallel: 1 };
+        goal: FULFILLMENT_GOAL, input: draft, maxParallel: 1 };
     } else {
       if (!validRunId(body.runId)) return fail(400, 'fulfillment_run_invalid');
       if (operation === 'retry') {

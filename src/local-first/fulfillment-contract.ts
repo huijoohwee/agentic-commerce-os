@@ -1,11 +1,12 @@
 import { isRecord } from '../shared/http.ts';
 
 export { FULFILLMENT_AGENT } from './fulfillment-definition.ts';
+export const FULFILLMENT_GOAL = 'Prepare a factual listing for human review using only the supplied draft.';
 export type FulfillmentBinding = Readonly<{ runId: string; outputDigest: string }>;
 export type RunContext = Readonly<{ principalId: string; principalExpiresAt: number }>;
 export type FulfillmentRuntime = Readonly<{
   ready?(signal: AbortSignal): Promise<unknown>;
-  invoke(operation: 'start' | 'status' | 'cancel' | 'retry', input: Record<string, unknown>,
+  invoke(operation: 'start' | 'status' | 'cancel' | 'retry' | 'query' | 'trace' | 'evaluate' | 'compare', input: Record<string, unknown>,
     context: RunContext, signal: AbortSignal): Promise<unknown>;
 }>;
 export const validRunId = (value: unknown): value is string => typeof value === 'string' && /^listing-[a-f0-9]{64}$/u.test(value);

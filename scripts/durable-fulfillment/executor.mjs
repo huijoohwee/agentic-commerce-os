@@ -9,7 +9,7 @@ export function createListingExecutor({ endpoint, getHeaders, verifyArtifacts, f
     throw new TypeError('Listing execution requires host-owned credentials and current artifact verification.');
   const execute = createLocalModelExecutor({ endpoint, getHeaders, fetchImpl,
     modelDigest: LISTING_DEFINITION.modelSha256, imageDigest: LISTING_DEFINITION.imageDigest,
-    maxTokens: LISTING_DEFINITION.maxTokens,
+    maxTokens: LISTING_DEFINITION.maxTokens, inputTokenLimit: 2048,
   });
   const refuse = code => { throw new AgentSwarmFailure(code, { kind: 'permanent', effectState: 'absent' }); };
   return async call => {
@@ -27,6 +27,10 @@ export function createListingExecutor({ endpoint, getHeaders, verifyArtifacts, f
       instructions: LISTING_DEFINITION.instructions,
       draft: { title: draft.title, description: draft.description },
     } });
-    return { ...result, output: { ...result.output, definitionDigest: LISTING_DEFINITION_SHA256 } };
+    const usage = result.output?.usage;
+    // This verifier pins a local FOSS model. Provider spend is zero; machine cost remains unknown.
+    const costLog = call.resourceBounds && usage ? { model: FULFILLMENT_AGENT.agentId,
+      prompt_tokens: usage.promptTokens, completion_tokens: usage.completionTokens, cache_hits: 0, estimated_cost_usd: 0 } : null;
+    return { ...result, ...(costLog ? { costLog } : {}), output: { ...result.output, definitionDigest: LISTING_DEFINITION_SHA256 } };
   };
 }

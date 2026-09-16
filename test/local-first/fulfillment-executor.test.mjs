@@ -54,3 +54,16 @@ test('changed definition, absent verification and artifact drift stop before inf
 test('host must supply credentials and an artifact verifier', () => {
   assert.throws(() => createListingExecutor({ endpoint: 'http://127.0.0.1:18765' }), /host-owned/);
 });
+
+test('admitted inference records measured local usage and missing usage stays unknown', async () => {
+  const resourceBounds = { inputTokens: 2048, outputTokens: 256, attempts: 1, elapsedMs: 55000 };
+  const fixture = setup();
+  const result = await fixture.execute({ ...call(), resourceBounds });
+  assert.equal(result.costLog.prompt_tokens, 50); assert.equal(result.costLog.completion_tokens, 15);
+  assert.equal(result.costLog.estimated_cost_usd, 0);
+  assert.equal(result.output.costUsd, null);
+  const unknown = setup({ fetchImpl: async () => Response.json({ model: 'sha256:' + LISTING_DEFINITION.modelSha256,
+    choices: [{ finish_reason: 'stop', message: { content: 'Listing' } }] }) });
+  const value = await unknown.execute({ ...call(), resourceBounds });
+  assert.equal(value.costLog, undefined); assert.equal(value.output.usage, null);
+});

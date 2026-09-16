@@ -3,37 +3,37 @@ title: "Reference implementation — Durable listing fulfillment"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "DURABLE-LISTING-FULFILLMENT-001"
 upstream_continuity_id: "DURABLE-AGENT-WORKFLOWS-001"
-upstream_revision: "0.1.0"
-version: "0.1.0"
-prd_revision: "0.1.0"
-tad_revision: "0.1.0"
-adr_revision: "0.1.0"
-mvp_revision: "0.1.0"
-gtm_revision: "0.1.0"
-date: "2026-09-15"
+upstream_revision: "0.2.0"
+version: "0.2.0"
+prd_revision: "0.2.0"
+tad_revision: "0.2.0"
+adr_revision: "0.2.0"
+mvp_revision: "0.2.0"
+gtm_revision: "0.2.0"
+date: "2026-09-16"
 lang: "en-US"
 owner: "agentic-commerce-os"
 frontmatter_contract: "required"
 load_policy: "on-demand"
 local_rung: "documented"
 delivered_rung: "undocumented"
-readiness_scope: "Protected public listing release verified; admission source transfer and actual provider rollback proof pending"
+readiness_scope: "v0.2.0 source implementation; historical public release unchanged; current runtime and rollback proof pending"
 lane: "authoring"
 universal_scope: false
-worktree_id: "device-0232231d4a19--durable-fulfillment"
-agent_id: "codex-01a0a3a3"
+worktree_id: "device-0232231d4a19--agent-economics-fulfillment"
+agent_id: "codex-01a0a823"
 guideline_revision: "2.7.0"
 guideline_source_revision: "e9675f27d1eb1e30ae6b8f82669ff7e546d85c65"
-reviewed_source_revision: "134c41f0d77af6ffd2fe401520bc3b1438df47e6"
+reviewed_source_revision: "0162872948dbf27d9811daea9e59ffc0b81f9cf3"
 ---
 
 # Durable listing fulfillment
 
 This product slice consumes the approved
-[DURABLE-AGENT-WORKFLOWS-001@0.1.0](https://github.com/huijoohwee/agentic-os/blob/6c10b9d8d921aac1503a427bb02aeedf71852a8f/guides/DURABLE-WORKFLOWS.md).
-Commerce owns `DURABLE-LISTING-FULFILLMENT-001@0.1.0`; its DF criteria below map to
+[DURABLE-AGENT-WORKFLOWS-001@0.2.0](https://github.com/huijoohwee/agentic-os/blob/672b21ebf583ff3d5918d5ddba7821cef2b098ee/guides/DURABLE-WORKFLOWS.md).
+Commerce owns `DURABLE-LISTING-FULFILLMENT-001@0.2.0`; its DF criteria below map to
 the shared runtime plan's AC-D criteria, whose source owner remains Agentic OS.
-The implementation approval was supplied on 2026-09-15. Historical proposal and protected release
+Implementation is authorized for this joined revision. Historical proposal and protected release
 observations retain their original scope. The existing [sandbox owner](prd-tad-adr-mvp-gtm-edge-commerce-agent.md)
 continues to own the offer, test payment and human confirmation.
 
@@ -53,6 +53,8 @@ not a price validation for generated listings.
 | DF-02 / AC-D06–07 | Session/CSRF checks own admission; tool JSON cannot choose principal, definition, endpoint or credentials | `src/local-first/{session,fulfillment-contract,fulfillment}.ts`; `fulfillment.test.mjs` |
 | DF-03 / AC-D07 | A mobile browser closes before work, reopens offline and resumes the saved handle after reconnecting | `public/local-first/{drafts,workflow}.js`; `fulfillment-browser.mjs` |
 | DF-04 / AC-D07 | Explicit review binds the completed output digest to one test checkout and receipt | `src/local-first/{checkout,stripe-checkout}.ts`; `fulfillment.test.mjs` |
+| DF-06 / AC-D09, AC-D10 | New jobs resolve an exact source plan and reserve project, agent and run limits before work; uncertain usage holds capacity across restart | `scripts/durable-fulfillment/{mission,runtime,executor}.mjs`; `fulfillment-mission.test.mjs` |
+| DF-07 / AC-D11–AC-D14 | Session-isolated observations and contract evaluations reuse Graph; source, draft and authoritative receipt references stay distinct | Existing fulfillment boundary and `fulfillment-{host,relay,browser}` checks |
 | DF-05 / AC-D08 | Installed pins, authenticated execution, compatible rollback and protected release agree | Existing local-first release controller; public source verified, retained-job provider rollback pending |
 
 ## TAD — reuse the current owners
@@ -147,7 +149,7 @@ they do not attest model quality, a human review, hosted payment submission or p
 | `node --test test/local-first/*.test.mjs` | 71 tests passed with the installed protected OS runtime at `4d13403ef17cf20e2946c478e029edc8d96c07f2`; subsequent host boundary changes have focused coverage |
 | `npm run check:admission` | Transferred admission ownership, authority, persistence and deployment-identity tests pass in Commerce; Canvas consumer cutover pending |
 | `scripts/local-first-release/check.mjs` | Eleven existing browser groups and the separate durable mobile contract passed locally |
-| OS full suite | Protected [OS #176](https://github.com/huijoohwee/agentic-os/pull/176) passed 1,696 tests across 209 suites; this candidate pins `3663442db70b0e75c5eba487a86e7b444e9e7029` with archive integrity |
+| OS full suite | Protected [OS #176](https://github.com/huijoohwee/agentic-os/pull/176) passed 1,696 tests across 209 suites; that historical candidate pinned `3663442db70b0e75c5eba487a86e7b444e9e7029` with archive integrity |
 | Actual local host/browser | Mobile browser disconnected/reopened offline, then resumed an actual pinned-model job; host termination/restart replayed the same completed job; another browser was denied |
 | Protected public release and rollback | Public source/version/route and eleven browser groups verified in release 34998738855; provider rollback rehearsal remains pending |
 
@@ -173,7 +175,8 @@ Configuration is a user-owned, single-link regular file with mode 0600, at most 
   after rotation to revoke prior browser sessions and background job authority.
 - `model`: exact `modelPath`, `modelSha256`, `apiKeyPath`, `imageDigest`, `containerId` and
   loopback `endpoint`; the model and image must match the product definition.
-- Optional `port` (5192), `assetDirectory`, `sourceRevision` and `stripeTestKey`.
+- `sourceRevision`: exact protected source of the built listing host; must match its compiled plan.
+- Optional `port` (5192), `assetDirectory` and `stripeTestKey`.
 
 The CLI loads credentials only from that private file. The host owns session admission, signs durable
 principal context and rechecks it after restart. Job identity and execution state remain OS-owned.
@@ -288,6 +291,67 @@ This polling performs document reads only and never repeats a provider activatio
 
 The optional admission Worker entry and six original persistence/provider suites transfer into their
 Commerce owner under `src/admission/MIGRATION-TESTS.json`. The source and assertion inventory remains
-distinct from activating that private service or minting its admission authority. This batch pins
+distinct from activating that private service or minting its admission authority. That historical batch pinned
 the protected OS package at `3663442db70b0e75c5eba487a86e7b444e9e7029`; the already verified device host keeps its own
 immutable source/bundle/model pins. No new dependency, public route or always-loaded module is added.
+
+## v0.2.0 context, resources and observation
+
+The current source consumes protected OS `047e7240b9cd31e7a78c708d998c02983144f0ea`.
+OS owns context validation, allocation reservations, tracing, evidence comparison and SQLite retention;
+Commerce supplies only the listing plan, fixed limits, contract evaluator and session adapter. Graph
+owns the dashboard and Editor Workspace JSON → Markdown → Viewer/Canvas projections. This revision
+adds no analytics app, background observer, provider dependency or payment ledger.
+
+`build:durable-host` requires a clean committed tree and compiles this document's exact Git revision,
+SHA-256 and five-role 0.2.0 join into the host. It rejects changed source before accepting generated
+bytes. CLI configuration cannot select another plan; sourceRevision must match the compiled reference.
+The server derives project `listing-workspace`, goal `reviewed-listing`, task/run and draft snapshot
+reference from the admitted request. Each phase resolves that reference against the persisted owned
+request before reserving resources. Missing, forged, mismatched or stale joins stop that run.
+
+| Resource | Project and agent per signed principal / UTC day | One run | One inference |
+| --- | --- | --- | --- |
+| Input tokens | 65,536 | 4,096 | 2,048 |
+| Output tokens | 8,192 | 512 | 256 |
+| Attempts | 96 | 8 | 1 |
+| Elapsed milliseconds | 1,800,000 | 112,000 | 55,000 |
+| Paid provider spend | 0 | 0 | 0 |
+
+Plan, synthesis and deterministic evaluation each reserve one attempt and 1,000 ms with zero model
+tokens. The model's verified local context limit is 2,048; observed usage is settled once. Missing
+usage, timeout or overrun holds uncertain capacity across restart and daily rollover. This product
+has no automatic refund/reconciliation control: an unresolved hold needs verified operator recovery
+through the OS owner. Zero provider spend does not imply zero device, energy or total cost.
+
+Existing contextless jobs keep their original scheduling policy through a lazy retained runtime;
+they are never retagged into a new allocation or represented as newly measured traces. New jobs must
+carry context. Jobs keep their existing one-day deadline plus seven-day retention; traces have a seven-day bound.
+The draft/output/payment binding remains unchanged.
+A rollback must use a reader compatible with v3 drafts and preserve both SQLite stores; an older
+executor must not dispatch jobs admitted under the new policy. Public activation needs updated actual
+host source/bundle pins and the protected candidate approval; historical deployment pins stay intact.
+
+The existing signed session and same-origin CSRF boundary serves bounded POST query, trace, evaluate
+and compare alongside start/status/cancel/retry. The native runtime redacts observations. Query/trace
+can return one finite SSE snapshot followed by completion, or the same JSON envelope; this is pull
+observation, not continuous push. Requests remain 16 KiB; responses including framing are at most
+256 KiB, no-store, and observations cancel on disconnect or the 55-second deadline. Graph retains
+its existing explicit refresh, opt-in Live, hidden/offline pause, cache expiry and memory-only views.
+Run handles stay out of URLs. The listing dialog exposes the existing run reference and Graph entry;
+its fulfillment/payment receipt remains the sole checkout authority.
+
+Evaluation measures **contract completeness**, not factual quality or buyer value. Its revision binds
+the exact listing definition and deterministic binary criterion: a completed run must retain the
+matching definition and nonempty output; a completed span must have measured duration. Exact subject,
+evaluator, dataset, metric and evidence digests bind the result. Evaluation uses the same allocation;
+replay cannot count again. Missing, stale or incompatible comparison evidence cannot authorize release,
+checkout, retry or a quality claim. Source-linked historical observations remain readable when allowed.
+
+Verification joins source/plan mismatch, forged context, owner isolation, known/unknown usage, restart,
+retained jobs, finite SSE and evaluator replay with the existing full mobile draft → offline resume →
+review → sandbox checkout → one receipt flow. Deterministic fixtures are not live model or revenue proof.
+Sprint budget: 120–180 active minutes, at most 12 product modules and 80 kB authored product delta;
+no new package or always-loaded observation service. Protected CI and production approval are external
+gates, not estimates. GTM still requires one real seller's reviewed draft, measured preparation time,
+corrections and independent willingness-to-pay evidence before pricing or ROI claims.

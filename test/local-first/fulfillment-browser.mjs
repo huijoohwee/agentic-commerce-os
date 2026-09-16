@@ -1,8 +1,9 @@
+import { listingPlanFixture, listingOutputFixture } from './fulfillment-fixture.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { expect } from '@playwright/test';
-import { createAgentSwarmSqliteStore } from 'agentic-os/agents/sqlite-store';
+import { createAgentSwarmSqliteStore, createAgentToolkitSqliteStore } from 'agentic-os/agents/sqlite-store';
 import { createAgentSwarmWorker } from 'agentic-os/agents/worker';
 import { createListingRuntime } from '../../scripts/durable-fulfillment/runtime.mjs';
 import { fetchLocalFirst } from '../../src/local-first/worker.ts';
@@ -13,14 +14,14 @@ import { stripeFixture } from './stripe-fixture.ts';
 export async function checkDurableFulfillment({ browser, url, output, revision }) {
   const directory = fs.mkdtempSync(path.join(output, 'durable-browser-'));
   const store = await createAgentSwarmSqliteStore({ directory });
+  const toolkitStore = await createAgentToolkitSqliteStore({ directory });
   const contexts = new Map(), stripe = stripeFixture(), errors = [];
   let executions = 0, networkOffline = false, runtimeAvailable = false;
-  const { runtime, product } = createListingRuntime({ stateStore: store,
+  const { runtime, product } = createListingRuntime({ stateStore: store, mission: { toolkitStore, plan: listingPlanFixture(revision) },
     authorize: async call => ({ allowed: (contexts.get(call.principalId)?.principalExpiresAt ?? 0) > Date.now(),
       approvalId: 'browser-contract-fixture-only' }),
     executeListing: async () => { executions++;
-      return { status: 'completed', effect: 'read-only', output: { text: 'Ceramic mug\n- Blue\n- 300 ml',
-        costUsd: null, executor: { type: 'deterministic-fixture' } } };
+      return listingOutputFixture();
     },
   });
   const worker = createAgentSwarmWorker({ runtime, stateStore: store, resolveContext: principalId => contexts.get(principalId) });
@@ -86,6 +87,24 @@ export async function checkDurableFulfillment({ browser, url, output, revision }
     networkOffline = false; await context.setOffline(false); await page.locator('#listing-resume').click();
     await expect(page.locator('#listing-output')).toContainText('Ceramic mug');
     await expect(page.locator('#listing-checkout')).toBeDisabled();
+    await expect(page.locator('#listing-run-reference')).toContainText(handle);
+    await expect(page.locator('#listing-inspect')).toHaveAttribute('href','/agentic-graph/');
+    const observation = await page.evaluate(async runId => {
+      const session = await (await fetch('./fulfillment/session')).json();
+      const send = (operation,body,stream=false) => fetch('./fulfillment/'+operation,{method:'POST',
+        headers:{'content-type':'application/json','x-commerce-csrf':session.csrfToken,
+          ...(stream?{accept:'text/event-stream'}:{})},body:JSON.stringify(body)});
+      const query = await (await send('query',{})).json();
+      const response = await send('trace',{runId},true),stream = await response.text();
+      const trace = JSON.parse(stream.split('\n\n')[0].slice(6));
+      const result = await (await send('evaluate',{runId,operationId:'browser-contract',subjectDigest:trace.subjectDigest,
+        evidence:{id:'listing-result',digest:trace.subjectDigest}})).json();
+      return { runId:query.items[0].runId,traceRun:trace.runId,stream,score:result.evaluation.score,
+        source:trace.context.plan.revision,usage:trace.profileSummary.tokenUsage };
+    },handle);
+    assert.equal(observation.runId,handle);assert.equal(observation.traceRun,handle);
+    assert.equal(observation.source,revision);assert.equal(observation.score,1);
+    assert.equal(observation.usage.promptTokens,10);assert.ok(observation.stream.endsWith('data: [DONE]\n\n'));
     await page.locator('#listing-review').check(); await expect(page.locator('#listing-checkout')).toBeEnabled();
     await page.screenshot({ path: path.join(output, 'durable-listing-mobile.png'), fullPage: true });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
@@ -149,7 +168,7 @@ export async function checkDurableFulfillment({ browser, url, output, revision }
     fs.writeFileSync(path.join(output, 'durable-browser-proof.json'), JSON.stringify({ schema: 'commerce.durable-browser-observation/v1',
       productionProof: false, providerAuthority: false, sourceRevision: revision, sourceState: 'candidate-override',
       transport: 'Playwright route to actual product handler', executor: 'deterministic-fixture', payment: 'local-stripe-contract-fixture',
-      width: 390, offlineReopen: true, closedBeforeExecution: true, executions, paymentSessions: stripe.sessions.size,
+      width: 390, offlineReopen: true, closedBeforeExecution: true, nativeObservationAndEvaluation: true, executions, paymentSessions: stripe.sessions.size,
       readerBaseline: { unavailablePreparationPreservesV2: true, unavailableImportPreservesV2: true,
         existingV3ReadableAndExportable: true },
       runId: handle, outputDigest: receipt.fulfillment.outputDigest, realMoney: false, humanReview: 'automated-checkbox-contract-test',
@@ -161,5 +180,5 @@ export async function checkDurableFulfillment({ browser, url, output, revision }
       fs.writeFileSync(path.join(output, 'durable-browser-failure.txt'), await page.locator('body').innerText().catch(() => 'unavailable'));
     }
     throw error;
-  } finally { await context.close(); store.close(); fs.rmSync(directory, { recursive: true, force: true }); }
+  } finally { await context.close(); toolkitStore.close(); store.close(); fs.rmSync(directory, { recursive: true, force: true }); }
 }

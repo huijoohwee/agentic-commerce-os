@@ -1,3 +1,4 @@
+import { listingPlanFixture } from './fulfillment-fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {randomBytes} from 'node:crypto';
@@ -114,7 +115,7 @@ test('real HTTP relay resumes one SQLite job after host restart and denies anoth
   });
   await new Promise(resolve=>model.listen(0,'127.0.0.1',resolve));
   t.after(async()=>{await host?.close();model.closeAllConnections();await new Promise(resolve=>model.close(resolve));});
-  const config={directory,sessionSecret:randomBytes(32).toString('hex'),port:0,sourceRevision:source,relay:{pins,token},
+  const config={directory,sessionSecret:randomBytes(32).toString('hex'),port:0,sourceRevision:source,plan:listingPlanFixture(source),relay:{pins,token},
     model:{endpoint:'http://127.0.0.1:'+model.address().port+'/v1/chat/completions'},
     modelVerifier:{async verifyArtifacts(){return {verified:true,modelSha256:LISTING_DEFINITION.modelSha256,imageDigest:LISTING_DEFINITION.imageDigest};},
       async getHeaders(){return {authorization:modelAuthorization};}}};
@@ -150,6 +151,14 @@ test('real HTTP relay resumes one SQLite job after host restart and denies anoth
   await host.close();host=null;host=await startListingHost(config);
   assert.deepEqual(await (await owner('status',{runId:accepted.runId})).json(),completed);
   assert.equal((await peer('status',{runId:accepted.runId})).status,403);
+  const query=await (await owner('query',{})).json();assert.equal(query.items[0].runId,accepted.runId);
+  assert.equal((await (await peer('query',{})).json()).items.length,0);
+  const trace=await (await owner('trace',{runId:accepted.runId})).json();
+  assert.equal(trace.context.plan.revision,source);assert.equal(trace.profileSummary.tokenUsage.promptTokens,10);
+  assert.equal((await peer('trace',{runId:accepted.runId})).status,409);
+  const evaluated=await (await owner('evaluate',{runId:accepted.runId,operationId:'relay-contract',
+    evidence:{id:'actual-listing',digest:trace.subjectDigest},subjectDigest:trace.subjectDigest})).json();
+  assert.equal(evaluated.evaluation.status,'reported');assert.equal(evaluated.evaluation.score,1);
   assert.equal((await (await owner('start',draft)).json()).runId,accepted.runId);assert.equal(executions,1);
   await host.close();host=null;
   const unavailable=await fetchLocalFirst(new Request(base+'session'),env,undefined,relay);

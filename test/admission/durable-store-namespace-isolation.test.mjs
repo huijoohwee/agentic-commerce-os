@@ -1,32 +1,40 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
+import * as product from "../../src/admission/durable-object-state-store.js";
+import * as agents from "agentic-os/agents/durable-object-store";
+import * as adapters from "agentic-os/agents/durable-object-state-store";
 
 test("every durable-object state store scope prefix is unique per factory", async () => {
-  const text = (await Promise.all([
-    fileURLToPath(new URL("../../src/admission/durable-object-state-store.js", import.meta.url)),
-    fileURLToPath(import.meta.resolve("agentic-os/agents/durable-object-store")),
-    fileURLToPath(import.meta.resolve("agentic-os/agents/durable-object-state-store")),
-  ].map((file) => readFile(file, "utf8")))).join("\n");
-  // Split the file into factory bodies so a prefix used twice inside one
-  // factory (the same namespace) does not read as a cross-factory collision.
-  const factoryBodies = text.split(/export function createDurableObject/).slice(1);
-  assert.ok(factoryBodies.length >= 7, `expected at least 7 store factories, found ${factoryBodies.length}`);
-  const prefixSets = factoryBodies.map((body) => {
-    const prefixes = [...body.matchAll(/`([a-z0-9-]+):\$\{/g)].map((match) => match[1]);
-    return new Set(prefixes);
-  });
-  const allPrefixes = prefixSets.flatMap((set) => [...set]);
-  assert.ok(allPrefixes.includes("skill-draft"), "the skill-draft prefix must be declared");
-  assert.ok(allPrefixes.includes("skill-draft-index"), "the skill-draft-index prefix must be declared");
-  const collisions = [];
-  for (let outer = 0; outer < prefixSets.length; outer += 1) {
-    for (let inner = outer + 1; inner < prefixSets.length; inner += 1) {
-      for (const prefix of prefixSets[outer]) {
-        if (prefixSets[inner].has(prefix)) collisions.push(prefix);
-      }
+  const factories = Object.fromEntries(Object.entries({ ...product, ...agents, ...adapters })
+    .filter(([name]) => name.startsWith("createDurableObject")));
+  const cases = {
+    createDurableObjectCommerceAdmissionStore: [["list"], ["commerce-admission:operator-registry"]],
+    createDurableObjectHumanReviewStore: [["take"], ["review:same-id"]],
+    createDurableObjectPausedTurnStore: [["get"], ["paused-turn:same-id"]],
+    createDurableObjectFunctionContinuationStore: [["get"], ["function-continuation:same-id"]],
+    createDurableObjectFunctionExecutionReceiptStore: [["get"], ["function-execution:same-id"]],
+    createDurableObjectSkillDraftStore: [["peek", "indexList"], ["skill-draft:same-id", "skill-draft-index:same-id"]],
+    createDurableObjectSwarmRunStore: [["get"], ["swarm-run:same-id"]],
+    createDurableObjectAgentToolkitStore: [["get"], ["agent-toolkit:same-id"]],
+  };
+  assert.deepEqual(Object.keys(factories).sort(), Object.keys(cases).sort(), "every exported factory needs namespace coverage");
+  const owners = new Map();
+  for (const [name, [methods, expected]] of Object.entries(cases)) {
+    const observed = [];
+    const namespace = {
+      idFromName(scope) { observed.push(scope); return scope; },
+      get(scope) {
+        assert.ok(observed.includes(scope));
+        return { fetch: async () => Response.json({ record: null, registrations: [], revision: "a".repeat(64) }) };
+      },
+    };
+    const store = factories[name]({ namespace });
+    for (const method of methods) await store[method]("same-id");
+    assert.deepEqual(observed, expected, name + " must retain its persistence namespace");
+    for (const scope of observed) {
+      const prefix = scope.split(":")[0];
+      assert.equal(owners.has(prefix), false, `${name} collides with ${owners.get(prefix)} at ${prefix}`);
+      owners.set(prefix, name);
     }
   }
-  assert.deepEqual(collisions, [], "no two store factories may share a scope prefix");
 });
