@@ -90,6 +90,8 @@ test('shipped WebMCP registration has explicit count and two-second bounds', asy
 
 test('an online event begins FIFO replay and deletes acknowledged IndexedDB changes', async ({ page }) => {
   const submitted: Array<Readonly<Record<string, unknown>>> = []
+  // Seed while offline so boot replay cannot snapshot the queue before this change.
+  await page.addInitScript(() => Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => false }))
   await page.route('**/v1/session', async (route) => route.fulfill({
     status: 201,
     contentType: 'application/json',
@@ -106,10 +108,14 @@ test('an online event begins FIFO replay and deletes acknowledged IndexedDB chan
     })
   })
   await page.goto('/', { waitUntil: 'domcontentloaded' })
+  await expect.poll(() => pendingChangeCount(page)).toBeGreaterThanOrEqual(1)
   await addPendingChange(page, { type: 'browser-replay-proof' })
 
   const startedAt = Date.now()
-  await page.evaluate(() => globalThis.dispatchEvent(new Event('online')))
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => true })
+    globalThis.dispatchEvent(new Event('online'))
+  })
   await expect.poll(() => submitted.length, { timeout: 5_000 }).toBeGreaterThan(0)
   expect(Date.now() - startedAt).toBeLessThan(5_000)
   await expect.poll(() => pendingChangeCount(page)).toBe(0)
