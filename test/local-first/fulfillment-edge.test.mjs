@@ -46,3 +46,35 @@ return Response.json({ok:true,value});}catch{return Response.json({ok:false},{st
     assert.equal(seen.length,4);assert(seen.every(request=>new URL(request.url).origin===pins.origin));
   }finally{await mf.dispose();}
 });
+
+test('actual Worker fulfillment boundary streams one bounded native observation with session and CSRF', async () => {
+  const source=`import {handleFulfillment} from './src/local-first/fulfillment.ts';
+export default {fetch(request){return handleFulfillment(request,'worker-observation-secret-longer-than-32-characters',{
+ async invoke(operation,input){return operation==='query'?{schema:'agent-toolkit-query/v1',status:'completed',items:[]}:
+ {schema:'agent-toolkit-run/v1',status:'completed',runId:input.runId,spans:[]};}})}};`;
+  const built=await build({stdin:{contents:source,resolveDir:root,loader:'ts'},bundle:true,
+    format:'esm',write:false,platform:'browser',target:'es2022'});
+  const mf=new Miniflare(convertV4MiniflareOptions({modules:true,script:built.outputFiles[0].text,
+    compatibilityDate:'2026-08-26'}));
+  try{
+    const origin='https://app.example.com',base=origin+'/agentic-commerce-os/fulfillment/';
+    const session=await mf.dispatchFetch(base+'session'),cookie=session.headers.get('set-cookie').split(';')[0];
+    const token=(await session.json()).csrfToken;
+    const send=(operation,body,extra={})=>mf.dispatchFetch(base+operation,{method:'POST',headers:{cookie,origin,
+      'content-type':'application/json','x-commerce-csrf':token,accept:'text/event-stream',...extra},body:JSON.stringify(body)});
+    const response=await send('query',{});assert.equal(response.status,200);
+    assert.match(response.headers.get('content-type'),/^text\/event-stream/);
+    assert.equal(response.headers.get('cache-control'),'no-store');
+    assert.equal(response.headers.get('x-content-type-options'),'nosniff');
+    const frames=(await response.text()).trim().split('\n\n');assert.equal(frames.length,2);
+    assert.deepEqual(JSON.parse(frames[0].slice(6)),{schema:'agent-toolkit-query/v1',status:'completed',items:[]});
+    assert.equal(frames[1],'data: [DONE]');
+    const json=await send('trace',{runId:'listing-'+'1'.repeat(64)},{accept:'application/json'});
+    assert.match(json.headers.get('content-type'),/^application\/json/);
+    assert.equal((await json.json()).runId,'listing-'+'1'.repeat(64));
+    assert.equal((await send('query',{principalId:'peer'})).status,400);
+    assert.equal((await send('trace',{runId:'listing-'+'1'.repeat(64)},{'x-commerce-csrf':'forged'})).status,403);
+    assert.equal((await send('query',{}, {cookie:''})).status,401);
+    assert.equal((await send('query',{cursor:'x'.repeat(17000)})).status,413);
+  }finally{await mf.dispose();}
+});

@@ -2,7 +2,7 @@ import {open,realpath} from 'node:fs/promises';
 import {constants} from 'node:fs';
 import {resolve,extname} from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {createAgentSwarmSqliteStore} from 'agentic-os/agents/sqlite-store';
+import {createAgentSwarmSqliteStore,createAgentToolkitSqliteStore} from 'agentic-os/agents/sqlite-store';
 import {startLocalAgentHost} from 'agentic-os/agents/local-host';
 import {fetchLocalFirst} from '../../src/local-first/worker.ts';
 import {readSession,csrf,sealRunContext,readRunContext} from '../../src/local-first/session.ts';
@@ -32,11 +32,11 @@ function assets(directory){return {async fetch(request){
 /** Explicit device-session composition. Dependency injection is for embedding and
  * tests; the CLI always uses the installed OS host and actual pinned model verifier. */
 export async function startListingHost({directory,sessionSecret,model,port=5192,
-  sourceRevision='local-unreleased',assetDirectory=defaultAssets,stripeTestKey,
+  sourceRevision,plan,assetDirectory=defaultAssets,stripeTestKey,
   paymentFetch,modelVerifier,hostAdapter=startLocalAgentHost,onEvent=()=>{},relay:relayConfig}={}){
   if(typeof directory!=='string'||typeof sessionSecret!=='string'||sessionSecret.length<32
     ||!Number.isSafeInteger(port)||port<0||port>65535
-    ||!/^(?:[a-f0-9]{40}|local-unreleased)$/u.test(sourceRevision)
+    ||!/^[a-f0-9]{40}$/u.test(sourceRevision)||plan?.revision!==sourceRevision
     ||stripeTestKey!==undefined&&!/^sk_test_[A-Za-z0-9]{16,}$/u.test(stripeTestKey))throw Error('listing_host_config_invalid');
   const verifier=modelVerifier??(await import('agentic-os/agents/podman-model')).createPodmanModelVerifier(model);
   if(typeof verifier.verifyArtifacts!=='function'||typeof verifier.getHeaders!=='function')throw Error('listing_host_verifier_invalid');
@@ -47,9 +47,11 @@ export async function startListingHost({directory,sessionSecret,model,port=5192,
   const relay=createListingHostRelay(relayConfig,{sourceRevision,sessionSecret,
     modelAuthorization:headers.authorization,verifyArtifacts:verifier.verifyArtifacts});
   const assetRoot=await realpath(assetDirectory),stateStore=await createAgentSwarmSqliteStore({directory});
-  let host;
+  let host,toolkitStore;
+  const close=async()=>{try{await host?.close();}finally{toolkitStore?.close();stateStore.close();}};
   try{
-    const {runtime,product}=createListingRuntime({stateStore,
+    toolkitStore=await createAgentToolkitSqliteStore({directory});
+    const {runtime,product}=createListingRuntime({stateStore,mission:{toolkitStore,plan},
       authorize:async call=>({allowed:await readRunContext(call.principalId,sessionSecret)!==null,
         approvalId:'signed-session-local-listing-v1'}),
       executeListing:createListingExecutor({endpoint:model.endpoint,getHeaders:verifier.getHeaders,
@@ -78,6 +80,6 @@ export async function startListingHost({directory,sessionSecret,model,port=5192,
     const probe=await fetch(origin+'/agentic-commerce-os/fulfillment/session',{signal:AbortSignal.timeout(5000)});
     if(probe.status!==200||(await probe.json()).ok!==true)throw Error('listing_host_application_unavailable');
     return Object.freeze({origin,endpoint:host.endpoint,availability:'device-session',
-      stats:host.stats,async close(){await host.close();stateStore.close();}});
-  }catch(error){await host?.close();stateStore.close();throw error;}
+      stats:host.stats,close});
+  }catch(error){await close();throw error;}
 }

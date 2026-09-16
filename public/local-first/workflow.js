@@ -9,6 +9,8 @@ function matches() { return current?.workflow?.title === current?.title && curre
 function render() {
   const flow = current?.workflow;
   elements.title.textContent = flow?.title || current?.title || 'Listing';
+  elements.runReference.textContent = flow?.runId ? 'Run: ' + flow.runId : '';
+  elements.inspection.hidden = !flow?.runId;
   elements.output.replaceChildren(...(flow?.text || '').split('\n').map(line => node('p', line)));
   elements.reviewLabel.hidden = flow?.status !== 'completed';
   if (!busy) elements.review.checked = !!flow?.reviewedDigest && matches();
@@ -82,6 +84,11 @@ function createDialog() {
   dialog.setAttribute('aria-labelledby', 'listing-heading');
   const heading = node('h2', 'Prepare and review your listing'); heading.id = 'listing-heading';
   elements.title = node('h3'); elements.message = node('p'); elements.message.id = 'listing-status'; elements.message.setAttribute('role', 'status');
+  elements.inspection = node('div');
+  elements.runReference = node('p'); elements.runReference.id = 'listing-run-reference';
+  elements.runReference.style.overflowWrap = 'anywhere';
+  const inspect = node('a', 'Inspect runs in Graph'); inspect.id = 'listing-inspect'; inspect.href = '/agentic-graph/';
+  elements.inspection.append(elements.runReference, inspect);
   elements.output = node('div'); elements.output.id = 'listing-output';
   elements.output.className = 'preview-explainer';
   elements.reviewLabel = node('label'); elements.reviewLabel.className = 'review-approval';
@@ -106,7 +113,7 @@ function createDialog() {
     button.addEventListener('click', () => void run(action)); elements[key] = button; buttons.append(button);
   }
   const close = node('button', 'Close'); close.type = 'button'; close.addEventListener('click', () => dialog.close());
-  dialog.append(heading, elements.title, elements.message, elements.output, elements.reviewLabel, buttons,
+  dialog.append(heading, elements.title, elements.message, elements.inspection, elements.output, elements.reviewLabel, buttons,
     node('p', 'Drafts and job handles stay on this device. Execution needs the operator’s host. No publishing or real payment occurs here.'), close);
   document.body.append(dialog);
   for (const name of ['online', 'offline']) window.addEventListener(name, () => {

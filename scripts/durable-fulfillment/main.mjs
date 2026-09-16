@@ -22,6 +22,8 @@ async function main(){
   if(!config||typeof config!=='object'||Array.isArray(config)
     ||Object.keys(config).some(key=>!['directory','sessionSecret','model','port','sourceRevision','assetDirectory','stripeTestKey','relay'].includes(key)))
     throw Error('configuration_fields_invalid');
+  const plan=typeof __COMMERCE_LISTING_PLAN__==='undefined'?null:__COMMERCE_LISTING_PLAN__;
+  if(!plan||config.sourceRevision!==plan.revision)throw Error('listing_source_plan_mismatch');
   if(config.relay!==undefined){
     const bundle=await open(fileURLToPath(import.meta.url),constants.O_RDONLY|constants.O_NOFOLLOW|constants.O_NONBLOCK);
     try{
@@ -31,8 +33,8 @@ async function main(){
         ||createHash('sha256').update(bytes).digest('hex')!==config.relay?.pins?.bundleSha256)throw Error('listing_bundle_mismatch');
     }finally{await bundle.close();}
   }
-  const host=await startListingHost(config);
-  console.log(JSON.stringify({origin:host.origin,availability:host.availability,sourceRevision:config.sourceRevision??'local-unreleased'}));
+  const host=await startListingHost({...config,plan});
+  console.log(JSON.stringify({origin:host.origin,availability:host.availability,sourceRevision:config.sourceRevision}));
   for(const signal of ['SIGINT','SIGTERM'])process.once(signal,()=>{void host.close().catch(()=>{process.exitCode=1;});});
 }
 main().catch(()=>{console.error('Listing host unavailable. Verify its private configuration, installed runtime and pinned local model.');process.exitCode=1;});

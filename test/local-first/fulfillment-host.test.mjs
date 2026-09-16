@@ -1,3 +1,4 @@
+import { listingPlanFixture } from './fulfillment-fixture.mjs';
 import test from 'node:test';import assert from 'node:assert/strict';
 import {mkdtempSync,rmSync} from 'node:fs';import {tmpdir} from 'node:os';import {join} from 'node:path';
 import {createServer} from 'node:http';
@@ -28,9 +29,10 @@ test('product host signs durable ownership, reauthorizes after restart and repla
     }catch{res.writeHead(500);res.end();}});
     return {endpoint:transport.origin+'/api/agent-swarm/',stats:()=>({fixture:true}),close:transport.close};
   };
-  const config={directory,sessionSecret:randomBytes(32).toString('hex'),port:0,model:{endpoint:modelServer.origin+'/v1/chat/completions'},hostAdapter,
+  const config={directory,sourceRevision:listingPlanFixture().revision,plan:listingPlanFixture(),sessionSecret:randomBytes(32).toString('hex'),port:0,model:{endpoint:modelServer.origin+'/v1/chat/completions'},hostAdapter,
     modelVerifier:{verifyArtifacts:async()=>({verified:true,modelSha256:LISTING_DEFINITION.modelSha256,imageDigest:LISTING_DEFINITION.imageDigest}),
       getHeaders:async()=>({authorization:modelAuthorization})}};
+  await assert.rejects(startListingHost({...config,sourceRevision:'b'.repeat(40)}),/listing_host_config_invalid/);
   let host=await startListingHost(config);t.after(async()=>{if(host)await host.close();});
   const sessionResponse=await fetch(host.origin+'/agentic-commerce-os/fulfillment/session');
   const cookie=sessionResponse.headers.get('set-cookie').split(';')[0],session=await sessionResponse.json();
@@ -47,5 +49,13 @@ test('product host signs durable ownership, reauthorizes after restart and repla
   assert.equal(completed.status,'completed');assert.match(completed.text,/Ceramic mug/);
   assert.equal((await (await send('start',draft)).json()).runId,accepted.runId);assert.equal(executions,1);
   assert.equal((await send('status',{runId:accepted.runId},'__Host-airvio_sandbox=forged')).status,401);
+  const query=await (await send('query',{})).json();assert.equal(query.schema,'agent-toolkit-query/v1');
+  assert.equal(query.items[0].runId,accepted.runId);
+  const trace=await (await send('trace',{runId:accepted.runId})).json();
+  assert.equal(trace.context.taskId,accepted.runId);assert.equal(trace.profileSummary.tokenUsage.promptTokens,10);
+  assert.equal(trace.resources.used.inputTokens,10);assert.equal(trace.resources.status,'known');
+  const evaluated=await (await send('evaluate',{runId:accepted.runId,operationId:'host-contract',
+    evidence:{id:'actual-listing',digest:trace.subjectDigest},subjectDigest:trace.subjectDigest})).json();
+  assert.equal(evaluated.evaluation.status,'reported');assert.equal(evaluated.evaluation.score,1);
   assert.equal((await fetch(host.origin+'/agentic-commerce-os/checkout')).status,503);
 });
