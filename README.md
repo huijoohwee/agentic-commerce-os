@@ -130,11 +130,18 @@ silently promoted to completion or deployment readiness.
 ## Repository lifecycle
 
 This repository consumes the universal ADLC contracts pinned from `agentic-os`.
-Use `npm run lane -- <intent>` to open isolated work, `npm run land` to publish
-its exact head for protected review, and `npm run reap` to classify exact
-integration. `npm run sync:canonical` only plans a guarded synchronization of a
-clean canonical checkout; applying that plan requires its printed authorization
-and exclusive-operation tokens.
+Prefer the human-facing path:
+
+```bash
+npm run release:common -- start <intent> --write=<paths>
+npm run release:common -- publish --message="<message>"
+npm run release:common -- finish --ref=<lane>
+```
+
+Use `npm run lane`, `npm run land`, and `npm run reap` as underlying primitives
+for diagnostics or bounded recovery. `npm run sync:canonical` only plans a
+guarded synchronization of a clean canonical checkout; applying that plan
+requires its printed authorization and exclusive-operation tokens.
 
 The repository profile permits owner-authenticated quarantine of only the exact
 worktree projection and its registration. A green check, merged pull request,
