@@ -135,7 +135,7 @@ Prefer the human-facing path:
 ```bash
 npm run release:common -- start <intent> --write=<paths>
 npm run release:common -- publish --message="<message>"
-npm run release:common -- finish --ref=<lane>
+npm run release:common -- complete --ref=<lane>
 ```
 
 Use `npm run lane`, `npm run land`, and `npm run reap` as underlying primitives
