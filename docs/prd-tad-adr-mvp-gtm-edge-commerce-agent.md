@@ -40,6 +40,10 @@ The approved [durable listing fulfillment](durable-fulfillment.md) extension joi
 review and sandbox owners. Its candidate runtime and rollback gates have separate evidence; they do
 not inherit the production verification recorded below.
 
+The proposed [native commerce transfer ecosystem](prd-tad-adr-mvp-gtm-native-commerce-transfer.md)
+at `NATIVE-COMMERCE-TRANSFER-001@0.1.0` specifies MainPanel, transfer and policy-evidence enhancements.
+It consumes this sandbox baseline and inherits no implementation, payment or deployment readiness.
+
 `edge-commerce-agent-mvp@0.6.0` joins [PRD](#prd), [TAD](#tad), [ADR](#adr), [MVP](#mvp)
 and [GTM](#gtm). PRD owns criteria; TAD consumes that exact revision; ADR binds the design;
 MVP and GTM consume their checks and outcomes. This document describes concrete choices for
