@@ -1,3 +1,8 @@
+import {
+  serializeInvocationCatalogForDigest,
+  serializeInvocationRoutingForDigest,
+} from "agentic-os/invocation";
+
 export const DOCS_INVOCATION_ENDPOINT =
   "https://airvio.co/agentic-os/control-plane/mcp";
 export const DOCS_INVOCATION_TOOL =
@@ -232,37 +237,13 @@ export const normalizeEntry = (value: unknown, sourceRevision: string): Invocati
   });
 };
 
-const digestText = (value: unknown): string => String(value ?? "").trim();
-
 export const serializeInvocationCatalog = (
   entries: readonly InvocationCatalogEntry[],
-): string => `${JSON.stringify(entries.map((entry) => ({
-  token: digestText(entry.token),
-  kind: digestText(entry.kind).toLowerCase(),
-  label: digestText(entry.label),
-  summary: digestText(entry.summary),
-  sourcePath: digestText(entry.sourcePath),
-})).sort((left, right) => left.token.localeCompare(right.token)))}\n`;
-
-const routingValues = (values: readonly string[] | undefined, sigil = ""): string[] => [
-  ...new Set((values ?? []).map(digestText).filter((value) => value && (!sigil || value.startsWith(sigil)))),
-];
+): string => serializeInvocationCatalogForDigest(entries);
 
 export const serializeInvocationRouting = (
   entries: readonly InvocationCatalogEntry[],
-): string => `${JSON.stringify({
-  schema: INVOCATION_ROUTING_SCHEMA,
-  routes: entries.map((entry) => ({
-    token: digestText(entry.token),
-    kind: digestText(entry.kind).toLowerCase(),
-    sourcePath: digestText(entry.sourcePath),
-    mcpTools: routingValues(entry.mcpTools !== undefined
-      ? entry.mcpTools
-      : entry.mcpTool ? [entry.mcpTool] : []),
-    semantics: routingValues(entry.semantics, "#"),
-    bindings: routingValues(entry.bindings, "@"),
-  })).sort((left, right) => left.token.localeCompare(right.token)),
-})}\n`;
+): string => serializeInvocationRoutingForDigest(entries, INVOCATION_ROUTING_SCHEMA);
 
 const sha256 = async (text: string): Promise<string> => {
   const subtle = globalThis.crypto?.subtle;
