@@ -2,18 +2,18 @@
 title: "Reference Implementation — Native Transfer Architecture and Evidence"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 artifact_role: "architecture-companion"
-version: "0.1.0"
-revision: "0.1.0"
+version: "0.2.0"
+revision: "0.2.0"
 date: "2026-09-23"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Commerce product architecture"
 continuity_id: "NATIVE-COMMERCE-TRANSFER-001"
-prd_revision: "0.1.0"
-tad_revision: "0.1.0"
-adr_revision: "0.1.0"
-mvp_revision: "0.1.0"
-gtm_revision: "0.1.0"
+prd_revision: "0.2.0"
+tad_revision: "0.2.0"
+adr_revision: "0.2.0"
+mvp_revision: "0.2.0"
+gtm_revision: "0.2.0"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -31,14 +31,17 @@ surfaces: ["2D Renderer: D3 Graph"]
 
 # Reference implementation — native transfer architecture and evidence
 
-This companion consumes PRD NT-01–09, ADR A1–A5, MVP R0–R4 and GTM from the
+This companion consumes PRD NT-01–13, ADR A1–A7, MVP R0–R4 and GTM from the
 [joined owner](prd-tad-adr-mvp-gtm-native-commerce-transfer.md) at
-`NATIVE-COMMERCE-TRANSFER-001@0.1.0`. It owns TAD detail and observations, not another roadmap.
+`NATIVE-COMMERCE-TRANSFER-001@0.2.0`. It owns TAD detail and observations, not another roadmap.
 Concrete repository/provider names describe this reference implementation. Readiness remains unclaimed.
+The [reuse companion](prd-tad-adr-mvp-gtm-native-commerce-shared-utils.md) owns U1–U7 source/export
+observations and NT-10–13 compatibility/surface cases within T7. No additional runtime owner is created.
 
 ## Source evidence — reference implementation
 
-Inspected 2026-09-23, using clean local source trees. Pins are observations, not dependency upgrades:
+Historical 0.1.0 baseline, inspected 2026-09-23 using clean local source trees. The reuse companion
+records later canonical invocation sources and the separate unmerged MainPanel candidate. Pins are observations, not dependency upgrades:
 Commerce `ee9805d9b159ff1d33cd083efb8602eb1ed68d48`; Graph `8f7c28578933bac4fc055dcda1965eac7d263a6c`;
 OS `95977c83e6e3dc9945ede40d2618e52befc8f532`. Refresh affected joins on drift before implementation.
 These rows select actual symbols and tests; they do not copy the shared grounding inventory.
@@ -69,7 +72,7 @@ Existing source mechanisms retain their own evidence; presence of code grants no
 | T4 runtime controls the external effect | S04–S05 → admitted adapter operation, same-key replay, scoped durable claim and readback; no browser provider secrets | NT-04,05,09 |
 | T5 receipts project verified outcome | S02,S05–S08 → immutable outcome reference, independent fulfillment/accounting status and recovery action | NT-05,07,09 |
 | T6 policy evaluates evidence | S05 admission/auth primitives → new pure policy evaluator in Graph payment owner, persisted decision reference in existing store | NT-03,06,07,09 |
-| T7 developer surfaces expose one contract | S01,S03,S09 → examples, errors, compatibility and conformance fixtures; reuse tools/readiness surface | NT-06,08 |
+| T7 developer surfaces expose one contract | S01,S03,S09 + U1–U7 → existing shared exports, examples, errors, compatibility and surface conformance; reuse tools/readiness owners | NT-06,08,10–13 |
 
 Build/release order: review shared contract extension → implement Graph runtime/store and tests →
 admit Commerce adapter/confirmation join → project Graph MainPanel/browser/tool views → cross-owner
@@ -161,6 +164,15 @@ Keep sensitive case evidence behind access control; product UI receives safe rea
 Retention, lawful processing basis, review roles and deletion/hold exceptions remain R3 prerequisites.
 R1 stores synthetic evidence only, supports clearing local fixtures and makes no legal claim.
 
+### Shared utility and invocation reuse
+
+Consume the reuse companion's U1–U7 decisions and exact pins before changing T7. OS owns portable
+invocation grammar/encoding and generic skill gates; Commerce owns checkout/admission; Graph owns
+payment semantics and MainPanel. Preserve the source dependency DAG separately from runtime calls.
+Use public package exports or the existing provider protocol; do not import another checkout's files.
+Its surface matrix binds MCP/WebMCP, `/`, `@`, `#`, skills and commands to current owners without
+inventing transfer routes. Its compatibility corpus and deletion/rollback plan govern R1a/R2.
+
 ### Developer and invocation contract
 
 Use S09's exact tool inventories; `/mcp` and `/mcp/operator` remain distinct Commerce surfaces.
@@ -187,7 +199,7 @@ outside the effect path, but is excluded from MVP and cannot authorize or determ
 
 ## Five flow diagrams — reference implementation
 
-Version 0.1.0; primary surface is the declared 2D graph for flowcharts; sequence is a secondary text
+Version 0.2.0; primary surface is the declared 2D graph for flowcharts; sequence is a secondary text
 view and does not project. Solid arrows state intended calls/transitions, not implemented readiness.
 Captions and inventory tables provide the accessible, mobile/offline reading alternative.
 
@@ -365,7 +377,7 @@ to edge/provider performance. Component time/byte caps are in the parent roadmap
 
 ## Validation and handoff evidence
 
-Diagram register at 0.1.0 (counts confirmed by the existing parse-only projection check):
+Diagram register at 0.2.0 (counts confirmed by the existing parse-only projection check):
 
 | Diagram | Class | Notation / surface | Projects | Nodes | Edges | Clusters |
 |---|---|---|---|---|---|---|
@@ -375,7 +387,7 @@ Diagram register at 0.1.0 (counts confirmed by the existing parse-only projectio
 | D4 | Orchestration / harness flow | flowchart LR / primary 2D | yes | 4 | 3 | 0 |
 | D5 | Runtime topology | flowchart TB / primary 2D | yes | 6 | 7 | 3 |
 
-Observed authoring and baseline checks, 2026-09-23:
+Historical authoring and baseline checks for 0.1.0, 2026-09-23 (not rerun evidence for 0.2.0):
 
 | Check / evaluator | Result / subject / limit |
 |---|---|
@@ -392,14 +404,15 @@ evidence-contract and named checks. The first uncommitted run passed the first t
 in the existing local-first build test with `listing_source_must_be_exact_and_clean` (108/109 tests
 passed). That is a clean-source prerequisite; commit the reviewed docs before rerunning. The final
 committed-source result belongs to the PR/check receipt, not a prediction in this document.
-All runtime/UI/fault/policy tests proposed for the enhancement remain **not run for new behavior**;
-no such behavior has been implemented. Existing baseline tests do not promote the proposal's readiness.
+At that historical handoff new behavior was unimplemented. The reuse companion now records the
+unmerged R1 candidate and current invocation checks; full financial/fault/policy VCCs and utility
+replacement remain unproved. Historical baseline tests do not promote the proposal's readiness.
 Paid/provider effects and deployment checks are excluded; external evidence is not synthesized.
 Authored addition is below 150 KB across 16 files; all changed files remain under 600 lines. Actual
 model tokens, total research bytes, billable tool cost and end-to-end authoring elapsed time are
 unmeasured; no paid resource/provider operation was enabled. New always-load bytes and runtime modules: 0.
 
-Known blockers: all new Must behavior is unimplemented; customer pain/TTV unvalidated; R3 provider,
+Known blockers: full Must acceptance and utility migration are unproved; customer pain/TTV unvalidated; R3 provider,
 identity/jurisdiction/retention/cost authority absent. Existing sandbox handoff is not transfer proof.
 Recheck on an implementation candidate or supplied prerequisite evidence, not an idle polling loop.
 No implementation, deployment, funds, external messages or cleanup effects were performed by R0.
