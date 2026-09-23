@@ -153,6 +153,18 @@ Observed local checks on the inspected commits above, 2026-09-23:
 | UC `npm run test:unit -- test/shared/invocation-resolution.property.test.ts test/shared/webmcp-tools.test.ts test/shared/webmcp-drift.property.test.ts` | PASS, 3 files / 7 tests; existing resolution and WebMCP contracts |
 | Direct UO/UC source probe | PASS, 6 serializer sample comparisons; 3 grammar differences confirmed in the table above. Full replacement equivalence unverified |
 
+Documentation validation passed the three-role-companion continuity audit (13 criteria, 7 ADRs),
+guideline/template digests, 27 exact source links, 35 reuse source paths, authored limits, terminology,
+and five-diagram parsing. Shared guideline candidate `6f568208d813e46bb1531b326d8a6c70ea9ee8ed`
+passed both required provider checks. These prove the authored contract, not the proposed utility migration.
+
+Commerce's affected local runner on `c847d0791c0c94623e719770ad126bfb5a0617e5` passed ADLC and
+evidence-contract groups. Named checks passed through local-first tests (109/109), local browser
+fixtures, source and budget checks, then stopped at full-browser preflight:
+`podman_workerd_override_required`. This machine lacks a configured verified platform-specific workerd
+override; the existing Linux CI owns that setup. No bundled-runtime substitution or paid resource was
+used. Final exact-candidate Integration Gate is required; recheck on its receipt or a verified local binary.
+
 The Graph R1 candidate [PR #1211](https://github.com/huijoohwee/agentic-graph/pull/1211) at
 `857891c214dc9785ea88a80b7fcbb602e8a75239` has focused local rehearsal evidence. It is unmerged;
 [Integration Gate run](https://github.com/huijoohwee/agentic-graph/actions/runs/35849432538) failed in

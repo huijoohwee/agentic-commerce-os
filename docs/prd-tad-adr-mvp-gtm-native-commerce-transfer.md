@@ -77,7 +77,7 @@ evidence was supplied. Rank P1/P2 jointly before P3 because they are closest to 
 this is a dependency/reuse hypothesis, not a commercial ranking based on observed demand.
 
 **0:** source-grounded opportunity with unvalidated demand. **1 (R1 target):** one merchant operator
-completes a local review → simulated submit → interrupted resume → receipt walkthrough within five
+completes a local review → simulated submit → interrupted resume → simulated activity walkthrough within five
 minutes, with zero external money effects. Observe five invited sessions over seven days only after
 outreach is separately authorized. First collected dollar and repeat demand remain different outcomes.
 
@@ -118,7 +118,7 @@ ROI for every tier is unmeasured; no financial expansion is justified by a gener
 |---|---|---|
 | TTV steps / elapsed | unmeasured | ≤5 stages / ≤5 min, clean browser rehearsal, R1 evaluation |
 | State comprehension | unmeasured | 4/5 invited operators correctly distinguish simulated, pending, paid and unavailable in seven-day study |
-| Money effects during R1 | proposed feature absent | zero, intercepted network plus adapter call log; every run |
+| Money effects during R1 | unmerged fixture candidate | zero, intercepted network plus adapter call log; every run |
 | Duplicate effects / incorrect paid labels | unmeasured for proposal | zero in fault matrix, before R2 acceptance |
 | Local / delivered rung | undocumented / undocumented | spec-complete only after gaps dispositioned; dev-proven only after implemented Must checks |
 | Model tokens / invocation | no new AI path | 0 for discovery, policy, payment and receipt; deterministic owners |
@@ -217,7 +217,6 @@ deployment is authorized by accepting this proposal. No new always-load modules;
 | R0 source-bound proposal / now | S01–S10 + shared rules; this joined plan / Commerce architect | Source links, five-role joins, diagrams, documented gaps; no runtime claim | 40 min target, 50 min cap, ≤16 files / 150 KB, 0 runtime modules, $0; stop at scope drift, preserve lane |
 | R1 understandable rehearsal / first build | MainPanel + buyer controller/queue; availability/review/activity projection + isolated fixture / Graph UI owner | NT-01–07 local fixture checks only; financial/multi-device proof deferred to R2/R3; no remote requests; obtain study authority separately | ≤2 developer-days, ≤10 changed modules / 80 KB, ≤2 new lazy modules, 0 model calls, $0; stop if a new runtime/store is needed; revert UI adapter |
 | R1a compatible utility reuse / next local increment | U1–U3; reuse installed OS export for Commerce catalog/routing serialization; preserve local declaration/error contracts / Commerce invocation owner | NT-10,11 and utility NT-13; exact export, differential corpus, type/bundle proof and deletion evidence; independent of provider wait | ≤1 developer-day, ≤6 modules / 30 KB, 0 new package/service/always-load module, 0 model calls, $0; stop on semantic mismatch; retain old pin/API adapter |
-
 | R2 existing collection integration / next | Existing Graph adapters and Commerce receipt/outbox; bind operation identity and stale-confirmation checks / payment + checkout owners | R1 accepted; current sandbox eligibility and no-spend evidence; NT-12,13 supported-surface matrix and fault cases pass with real test-provider readback | ≤2 days, ≤8 modules / 60 KB, 0 new service; provider wait: entitlement/cost proof, recheck when supplied; disable new entry and retain reconciliation |
 | R3 constrained transfer / conditional | Graph payment contract/store/adapter seam; one explicit asset/network/recipient model and policy gate / payment owner | Validated buyer need, exact provider transfer contract, jurisdiction review, cost/FOSS decision, confirmation/finality/reversal evidence, specific effect authority | Estimate only after prerequisites; execution blocked; recheck on evidence/authority change; no gas or fee expense granted |
 | R4 developer expansion / deferred | Existing discovery/tool schemas and support path / integration owner | ≥2 independent developers encounter same measured gap, R2 proof and demand evidence | Planning cap 1 day, ≤3 docs / 20 KB; no SDK/service allocation yet; stop if examples suffice |
@@ -233,7 +232,7 @@ Known deferred ideas remain Won't this increment as listed in PRD; no capability
 | Hook | 30 s | Open Commerce and explain available/simulated actions, NT-01–02 |
 | Probe | 45 s | Prepare recipient/amount and expose one unavailable policy case, NT-03,06 |
 | Reveal | 60 s | Change terms and show confirmation invalidation, NT-03 |
-| Review and resume | 120 s | Confirm simulation, disconnect/retry same operation, inspect receipt, NT-04–05,07 |
+| Review and resume | 120 s | Confirm simulation, disconnect/retry same operation, inspect simulated activity, local subset of NT-04–05,07 |
 | Close | 45 s | Show evidence mode and obtain usability feedback; no revenue claim |
 
 Total ≤300 s. The Reveal's VCC is exact-term binding, not a polished static screen. Four maturity
