@@ -2,18 +2,18 @@
 title: "Reference Implementation — Shared Utility and Invocation Reuse"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 artifact_role: "reuse-companion"
-version: "0.2.0"
-revision: "0.2.0"
+version: "0.2.1"
+revision: "0.2.1"
 date: "2026-09-23"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Commerce product architecture"
 continuity_id: "NATIVE-COMMERCE-TRANSFER-001"
-prd_revision: "0.2.0"
-tad_revision: "0.2.0"
-adr_revision: "0.2.0"
-mvp_revision: "0.2.0"
-gtm_revision: "0.2.0"
+prd_revision: "0.2.1"
+tad_revision: "0.2.1"
+adr_revision: "0.2.1"
+mvp_revision: "0.2.1"
+gtm_revision: "0.2.1"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -29,15 +29,15 @@ source_revision: "ee9805d9b159ff1d33cd083efb8602eb1ed68d48"
 # Reference implementation — shared utility and invocation reuse
 
 This companion extends T7 in [the joined plan](prd-tad-adr-mvp-gtm-native-commerce-transfer.md)
-at `NATIVE-COMMERCE-TRANSFER-001@0.2.0`. PRD NT-10–13, ADR A6–A7, MVP R1a/R2/R4 and GTM
+at `NATIVE-COMMERCE-TRANSFER-001@0.2.1`. PRD NT-10–13, ADR A6–A7, MVP R1a/R2/R4 and GTM
 remain owned there. The [architecture companion](prd-tad-adr-mvp-gtm-native-commerce-transfer-architecture.md)
 owns payment effects and five flows. This is a reuse map, not another runtime, catalog or roadmap.
 All repository/package/tool names below describe this reference implementation.
 
 ## Inspected sources and installed boundaries
 
-Read-only inspection on 2026-09-23. Source commits and installed package pins differ; inspecting an
-upstream export does not install it in a consumer. No dependency or lockfile changed in this amendment.
+Read-only inspection on 2026-09-23. Source commits and installed package pins differ. The installed
+Commerce OS pin exports both U2 serializers; this source change uses that pin without a lockfile update.
 
 | ID / repository | Exact inspected source | Declared and locked dependency revision |
 |---|---|---|
@@ -54,7 +54,7 @@ resolve at the selected consumer pin before migration. Refresh affected observat
 | ID / capability and criterion | Native source/export and current consumers | Decision / smallest delta and deliberate boundary | Check / replacement disposition |
 |---|---|---|---|
 | U1 invocation grammar and dictionaries / NT-10 | UO [src/invocation.mjs][invocation], export `agentic-os/invocation`, `catalog/dictionaries/DICTIONARY-{COMMAND,SEMANTIC,BINDING}.md`; UA `scripts/invocation-resolve.mjs`, `scripts/dictionary-catalog-contract.mjs`, `scripts/dictionary-projections.mjs`; UG `mcp/agentic-canvas-os-docs-contract.mjs` | **reuse** existing owner in Canvas/Graph; **retain-local** Commerce declaration validation until compatibility is decided. No second dictionary/regex copied into UI, skills or transport | OS invocation and Canvas consumer tests; one declaration per token. Preserve discovery classification separately from executable parsing |
-| U2 catalog/routing digest serialization / NT-10,11 | UO `serializeInvocationCatalogForDigest`, `serializeInvocationRoutingForDigest`; UG aliases already import both; UC [src/invocation/catalog.ts][catalog] locally implements `serializeInvocationCatalog`, `serializeInvocationRouting` | **extend-owner** only if admitted input-domain differences require it; otherwise direct reuse from installed public subpath with Commerce schema argument and typed local adapter. Preserve Commerce normalization, errors and cryptographic verification | Differential valid/invalid corpus before replacing the two local serializer bodies; retain public Commerce exports for callers. No copy or new shared package |
+| U2 catalog/routing digest serialization / NT-10,11 | UO `serializeInvocationCatalogForDigest`, `serializeInvocationRoutingForDigest`; UG aliases already import both; UC [src/invocation/catalog.ts][catalog] locally implements `serializeInvocationCatalog`, `serializeInvocationRouting` | **reuse implemented in the 0.2.1 source candidate** from installed public subpath with Commerce schema argument and a type-only declaration. Preserve Commerce grammar, errors and cryptographic verification; extend owner only if later evidence requires it | Former byte/digest goldens and focused client tests pass locally; both old serializer bodies are removed while public Commerce exports remain. Full corpus and protected integration remain the release gate |
 | U3 MCP contract helpers / NT-11 | UO `runtime/adapters/agentic-graph-mcp-contract-utils.js`, export `agentic-os/agents/agentic-graph-mcp-contract-utils`; UA `src/agentic-graph-mcp-contract-utils.js` re-exports bounded text, exact keys, hashes and stable encoding | **reuse** existing Canvas contract shim; **retain-local** UC `src/shared/digest.ts`, `src/shared/http.ts` pending semantic equivalence. Similar names do not prove identical ordering, null/error or object handling | Compare canonical bytes, unsupported values and error contracts before extraction. UO `runtime/json-contract.mjs` via `agentic-os/context/json` already serves UC durable-state transport; it is not automatically the payment digest owner |
 | U4 skill proposal, promotion and command admission / NT-12 | UO `runtime/adapters/skill-proposer.js`, `skill-registry-gate.js`, public `agentic-os/agents/*` exports; UA `agent-api/src/skill-proposer.js`, `skill-registry-gate.js` are compatibility exports; `scripts/native-skill-harness-invocation-register.mjs` checks token ownership | **reuse** runtime gates and existing command/tool identities. Skills reference typed commands and exact evidence; no new Commerce skill registry, planner or implicit promotion | OS native-skill-harness tests and Canvas register/import-graph checks; leave proven shims for named callers until consumers migrate and their retirement checks pass |
 | U5 Commerce admission / NT-12 | UC `src/admission/commerce-admission-{contract,authority,provider}.js` exported as `agentic-commerce-os/admission/*`; UA same-named `agent-api/src/` files re-export them | **reuse** Commerce domain owner; generic admission/state stays OS-owned. Canvas consumes the locked Commerce export; no Graph or UI dependency added to Commerce package | UC `test/admission/` and Canvas `commerce-admission-provider:check`; exact provider/effect authority remains necessary after shared validation |
@@ -71,7 +71,8 @@ Share business behavior only when it has the same domain meaning; retain an expl
 
 A bounded read-only probe compared empty, three-entry and reversed catalogs: all six catalog/routing
 serialization comparisons matched between UO and UC. This is not exhaustive equivalence. Existing
-property tests exercise current behavior, not the proposed import replacement. Required migration corpus:
+property tests at 0.2.0 exercised the former implementation. The 0.2.1 compatibility test now
+anchors its prior wire bytes and digest results. Remaining cross-runtime migration corpus:
 empty arrays, reordered entries, Unicode and whitespace, duplicate routes, empty `mcpTools` versus scalar
 fallback, missing/unknown fields, wrong types, limits and exact final newline. Retain error codes and
 reject-before-dispatch behavior. Hash both byte streams; never substitute a dictionary digest for a
@@ -124,9 +125,9 @@ Implementation follows the parent roadmap, with one release unit per affected so
 1. R1a: inspect U2 at the actual installed OS pin; establish differential corpus and its public type/runtime
    boundary. Existing OS export first; change OS only for a demonstrated missing contract. Record no-op
    if already equivalent. Do not upgrade unrelated pins or extract U3 on speculative similarity.
-2. R1a: replace UC's two serializer bodies with the proven owner export behind its existing public names;
-   pin/lock only if the selected compatible export is absent. Delete superseded bodies in the same diff.
-   Preserve UC grammar, metadata validation, network limits and `InvocationClientError` vocabulary.
+2. R1a source candidate: UC now calls the installed owner export behind its existing public names;
+   the superseded serializer bodies are deleted. The lock pin is unchanged. UC grammar, metadata
+   validation, network limits and `InvocationClientError` vocabulary remain locally owned.
 3. R2: after R1 acceptance and provider prerequisites, project admitted collection through existing U6/U7
    handlers. Exercise the same operation across supported transports, and refusals on unsupported ones.
    R1 demo state stays local, ephemeral and explicitly synthetic throughout.
@@ -173,10 +174,25 @@ the Commerce diff; no root-cause or production conclusion follows from that obse
 financial/multi-device invariants are not proved by this synthetic UI. Recheck on an exact corrected
 candidate; do not promote it or conflate it with the canonical UG source.
 
-This amendment implements documentation only. U2 migration, full cross-surface conformance, measured
-integration savings, buyer demand and paid/provider effects remain unproved. No runtime acceptance is
-advanced by the source tests above. Documentation checks and exact publication receipts belong to the
-review candidate. Runtime work requires the separate R1a/R2 handoff, not a claim that these tables ran it.
+The 0.2.1 R1a source candidate replaces both U2 serializer bodies with the installed public OS export.
+Commerce's existing API names and declaration validator remain; a local type declaration describes only
+the two JS exports. No dependency pin, lockfile, command registry or transfer/payment path changed.
+The old serializer bodies and their private normalization helper were removed. The declaration shim is
+required only while the installed OS package lacks public TypeScript declarations for this subpath;
+retire it after an owner-published declaration and a consumer typecheck.
+
+| R1a local check | Observed result / limit |
+|---|---|
+| `npm run typecheck`; `npm run check:invocation-surface` | PASS: Commerce public API types and 12 route assertions |
+| `npm run test:unit -- test/invocation/shared-serializer-compatibility.test.ts test/invocation/client.test.ts test/shared/invocation-resolution.property.test.ts` | PASS: 15 tests; prior catalog/routing bytes and both SHA-256 digests, ordering, validator differences and client refusal cases |
+| `npm run bundle:production` on clean canonical baseline and candidate | PASS: Core 197,886 → 198,955 bytes (+1,069); Edge 485,731 → 485,731; all chunks <500,000 bytes; dry-run only |
+| `git diff --check`, three-document continuity/digest/source audit | PASS before publication: 0.2.1 role joins, guideline/template digests, local links and source paths; exact PR receipt still required |
+
+These checks prove local serializer compatibility for the inspected inputs and compiled targets, not
+arbitrary provider effects or full future catalog variations. NT-10 and the U2 portion of NT-13 have
+local source evidence. NT-11 requires the exact protected Integration Gate and continued consumer
+compatibility; NT-12 and the remaining NT-13 surface/financial cases remain R2 work. Measured integration
+savings, buyer demand and paid/provider effects remain unproved. Recheck on the exact PR receipt.
 
 [invocation]: https://github.com/huijoohwee/agentic-os/blob/f6897811e1e92931e0f03b2737541aba1c4311a2/src/invocation.mjs
 [catalog]: https://github.com/huijoohwee/agentic-commerce-os/blob/ee9805d9b159ff1d33cd083efb8602eb1ed68d48/src/invocation/catalog.ts

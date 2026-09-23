@@ -2,18 +2,18 @@
 title: "Reference Implementation — Native Transfer Architecture and Evidence"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 artifact_role: "architecture-companion"
-version: "0.2.0"
-revision: "0.2.0"
+version: "0.2.1"
+revision: "0.2.1"
 date: "2026-09-23"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Commerce product architecture"
 continuity_id: "NATIVE-COMMERCE-TRANSFER-001"
-prd_revision: "0.2.0"
-tad_revision: "0.2.0"
-adr_revision: "0.2.0"
-mvp_revision: "0.2.0"
-gtm_revision: "0.2.0"
+prd_revision: "0.2.1"
+tad_revision: "0.2.1"
+adr_revision: "0.2.1"
+mvp_revision: "0.2.1"
+gtm_revision: "0.2.1"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -33,7 +33,7 @@ surfaces: ["2D Renderer: D3 Graph"]
 
 This companion consumes PRD NT-01–13, ADR A1–A7, MVP R0–R4 and GTM from the
 [joined owner](prd-tad-adr-mvp-gtm-native-commerce-transfer.md) at
-`NATIVE-COMMERCE-TRANSFER-001@0.2.0`. It owns TAD detail and observations, not another roadmap.
+`NATIVE-COMMERCE-TRANSFER-001@0.2.1`. It owns TAD detail and observations, not another roadmap.
 Concrete repository/provider names describe this reference implementation. Readiness remains unclaimed.
 The [reuse companion](prd-tad-adr-mvp-gtm-native-commerce-shared-utils.md) owns U1–U7 source/export
 observations and NT-10–13 compatibility/surface cases within T7. No additional runtime owner is created.
@@ -199,7 +199,7 @@ outside the effect path, but is excluded from MVP and cannot authorize or determ
 
 ## Five flow diagrams — reference implementation
 
-Version 0.2.0; primary surface is the declared 2D graph for flowcharts; sequence is a secondary text
+Version 0.2.1; primary surface is the declared 2D graph for flowcharts; sequence is a secondary text
 view and does not project. Solid arrows state intended calls/transitions, not implemented readiness.
 Captions and inventory tables provide the accessible, mobile/offline reading alternative.
 
@@ -377,7 +377,7 @@ to edge/provider performance. Component time/byte caps are in the parent roadmap
 
 ## Validation and handoff evidence
 
-Diagram register at 0.2.0 (counts confirmed by the existing parse-only projection check):
+Diagram register at 0.2.1 (counts confirmed by the existing parse-only projection check):
 
 | Diagram | Class | Notation / surface | Projects | Nodes | Edges | Clusters |
 |---|---|---|---|---|---|---|
@@ -387,7 +387,7 @@ Diagram register at 0.2.0 (counts confirmed by the existing parse-only projectio
 | D4 | Orchestration / harness flow | flowchart LR / primary 2D | yes | 4 | 3 | 0 |
 | D5 | Runtime topology | flowchart TB / primary 2D | yes | 6 | 7 | 3 |
 
-Historical authoring and baseline checks for 0.1.0, 2026-09-23 (not rerun evidence for 0.2.0):
+Historical authoring and baseline checks for 0.1.0, 2026-09-23 (historical evidence, separate from the 0.2.1 R1a source check):
 
 | Check / evaluator | Result / subject / limit |
 |---|---|
@@ -406,13 +406,14 @@ passed). That is a clean-source prerequisite; commit the reviewed docs before re
 committed-source result belongs to the PR/check receipt, not a prediction in this document.
 At that historical handoff new behavior was unimplemented. The reuse companion now records the
 unmerged R1 candidate and current invocation checks; full financial/fault/policy VCCs and utility
-replacement remain unproved. Historical baseline tests do not promote the proposal's readiness.
+replacement has local source checks in the reuse companion but no protected integration receipt.
+Historical baseline tests do not promote financial or provider readiness.
 Paid/provider effects and deployment checks are excluded; external evidence is not synthesized.
 Authored addition is below 150 KB across 16 files; all changed files remain under 600 lines. Actual
 model tokens, total research bytes, billable tool cost and end-to-end authoring elapsed time are
 unmeasured; no paid resource/provider operation was enabled. New always-load bytes and runtime modules: 0.
 
-Known blockers: full Must acceptance and utility migration are unproved; customer pain/TTV unvalidated; R3 provider,
+Known blockers: full Must acceptance and protected utility integration are unproved; customer pain/TTV unvalidated; R3 provider,
 identity/jurisdiction/retention/cost authority absent. Existing sandbox handoff is not transfer proof.
 Recheck on an implementation candidate or supplied prerequisite evidence, not an idle polling loop.
 No implementation, deployment, funds, external messages or cleanup effects were performed by R0.

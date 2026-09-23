@@ -1,18 +1,18 @@
 ---
 title: "Reference Implementation — Native Commerce Transfer Ecosystem"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.0"
-revision: "0.2.0"
+version: "0.2.1"
+revision: "0.2.1"
 date: "2026-09-23"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Commerce product architecture"
 continuity_id: "NATIVE-COMMERCE-TRANSFER-001"
-prd_revision: "0.2.0"
-tad_revision: "0.2.0"
-adr_revision: "0.2.0"
-mvp_revision: "0.2.0"
-gtm_revision: "0.2.0"
+prd_revision: "0.2.1"
+tad_revision: "0.2.1"
+adr_revision: "0.2.1"
+mvp_revision: "0.2.1"
+gtm_revision: "0.2.1"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
 readiness_scope: "Proposed enhancement; existing sandbox evidence is not inherited"
@@ -33,9 +33,10 @@ source_revision: "ee9805d9b159ff1d33cd083efb8602eb1ed68d48"
 
 # Reference implementation — native commerce transfer ecosystem
 
-One joined proposal, `NATIVE-COMMERCE-TRANSFER-001@0.2.0`, defines a bounded enhancement to
+One joined proposal, `NATIVE-COMMERCE-TRANSFER-001@0.2.1`, defines a bounded enhancement to
 existing commerce/payment owners and MainPanel Commerce. All concrete repository, provider and
-renderer names below describe this reference implementation. No runtime is implemented by this document.
+renderer names below describe this reference implementation. The 0.2.1 source candidate implements
+R1a serializer reuse; payment and transfer behavior remain subject to their own acceptance checks.
 The [architecture companion](prd-tad-adr-mvp-gtm-native-commerce-transfer-architecture.md) owns detailed
 interfaces, failure handling, five flows and source evidence at this same revision.
 The [reuse companion](prd-tad-adr-mvp-gtm-native-commerce-shared-utils.md) extends T7 with inspected
@@ -83,8 +84,8 @@ outreach is separately authorized. First collected dollar and repeat demand rema
 
 ### Acceptance and traceability
 
-All criteria below are proposed acceptance conditions. The reuse companion records bounded existing
-source tests and the unmerged R1 rehearsal candidate; neither establishes the full financial criteria. Each row is a Given/When/Then VCC; references close
+All criteria below are proposed acceptance conditions. The reuse companion records the R1a
+source candidate and its local checks; the unmerged R1 rehearsal and financial criteria remain separate. Each row is a Given/When/Then VCC; references close
 both directions through architecture elements T1–T7 and ADRs A1–A7. A named check is not a pass.
 
 | ID / priority | Given → when → then / VCC | Design / decision / prospective check |
@@ -132,7 +133,7 @@ effect, not documentation or fixture development. No regulatory thresholds are a
 
 ## TAD
 
-TAD consumes exactly NT-01–13 at `NATIVE-COMMERCE-TRANSFER-001@0.2.0`.
+TAD consumes exactly NT-01–13 at `NATIVE-COMMERCE-TRANSFER-001@0.2.1`.
 The companion defines T1 MainPanel projection, T2 capability/policy admission, T3 intent/confirmation,
 T4 effect/reconciliation, T5 receipt/fulfillment, T6 policy evidence, T7 developer surfaces and shared reuse U1–U7. Reuse decisions stay within those owners; they add no
 new generic utility package, skill registry or command dispatcher.
@@ -206,7 +207,8 @@ No evaluated feasible option needs a contested-choice agent pipeline; time-bound
 
 R1 targets the UI/fixture subset of NT-01–07 as a clearly labelled local rehearsal; it does not
 satisfy multi-device financial replay, provider finality or live policy acceptance. Its unmerged candidate
-and failed integration gate are recorded in the reuse companion. R1a targets NT-10,11 and utility NT-13. R2 may bind the admitted existing
+and failed integration gate are recorded in the reuse companion. R1a implements the U2 source
+replacement toward NT-10,11 and utility NT-13, subject to protected integration. R2 may bind the admitted existing
 sandbox collection path after exact cost/license/authority review. No endpoint, money operation or
 deployment is authorized by accepting this proposal. No new always-load modules; lazy-load all additions.
 
@@ -216,7 +218,7 @@ deployment is authorized by accepting this proposal. No new always-load modules;
 |---|---|---|---|
 | R0 source-bound proposal / now | S01–S10 + shared rules; this joined plan / Commerce architect | Source links, five-role joins, diagrams, documented gaps; no runtime claim | 40 min target, 50 min cap, ≤16 files / 150 KB, 0 runtime modules, $0; stop at scope drift, preserve lane |
 | R1 understandable rehearsal / first build | MainPanel + buyer controller/queue; availability/review/activity projection + isolated fixture / Graph UI owner | NT-01–07 local fixture checks only; financial/multi-device proof deferred to R2/R3; no remote requests; obtain study authority separately | ≤2 developer-days, ≤10 changed modules / 80 KB, ≤2 new lazy modules, 0 model calls, $0; stop if a new runtime/store is needed; revert UI adapter |
-| R1a compatible utility reuse / next local increment | U1–U3; reuse installed OS export for Commerce catalog/routing serialization; preserve local declaration/error contracts / Commerce invocation owner | NT-10,11 and utility NT-13; exact export, differential corpus, type/bundle proof and deletion evidence; independent of provider wait | ≤1 developer-day, ≤6 modules / 30 KB, 0 new package/service/always-load module, 0 model calls, $0; stop on semantic mismatch; retain old pin/API adapter |
+| R1a compatible utility reuse / next local increment | U1–U3; reuse installed OS export for Commerce catalog/routing serialization; preserve local declaration/error contracts / Commerce invocation owner | NT-10,11 and utility NT-13; exact export, differential corpus, type/bundle proof and deletion evidence; independent of provider wait | ≤1 developer-day, ≤6 modules / 30 KB, ≤1,500 new Core bundle bytes, <500 KB each chunk, 0 new package/service, 0 model calls, $0; stop on semantic mismatch; retain old pin/API adapter |
 | R2 existing collection integration / next | Existing Graph adapters and Commerce receipt/outbox; bind operation identity and stale-confirmation checks / payment + checkout owners | R1 accepted; current sandbox eligibility and no-spend evidence; NT-12,13 supported-surface matrix and fault cases pass with real test-provider readback | ≤2 days, ≤8 modules / 60 KB, 0 new service; provider wait: entitlement/cost proof, recheck when supplied; disable new entry and retain reconciliation |
 | R3 constrained transfer / conditional | Graph payment contract/store/adapter seam; one explicit asset/network/recipient model and policy gate / payment owner | Validated buyer need, exact provider transfer contract, jurisdiction review, cost/FOSS decision, confirmation/finality/reversal evidence, specific effect authority | Estimate only after prerequisites; execution blocked; recheck on evidence/authority change; no gas or fee expense granted |
 | R4 developer expansion / deferred | Existing discovery/tool schemas and support path / integration owner | ≥2 independent developers encounter same measured gap, R2 proof and demand evidence | Planning cap 1 day, ≤3 docs / 20 KB; no SDK/service allocation yet; stop if examples suffice |
@@ -302,8 +304,8 @@ The exact source revision and digests bind those reviewed bytes; no guideline co
 
 Authoring validation and release observations are recorded in the companion's final section. Existing
 payment/browser suites are prospective checks unless that section explicitly records their execution.
-Must behavior, buyer pain validation, clean-environment TTV and independent implementation evaluation
-remain open; therefore frontmatter stays `undocumented`, not prematurely `spec-complete` or runtime-ready.
+Full Must behavior, buyer pain validation, clean-environment TTV and independent implementation
+evaluation remain open; therefore frontmatter stays `undocumented`, not prematurely `spec-complete` or runtime-ready.
 Selected guideline coverage: ecosystem#1–9, roadmap#1–6 and shared-utilities-and-invocation-reuse#1–7
 = 22/22 linked by the ecosystem, T7 reuse, ADR, roadmap and evidence sections; advisory rules in those
 sections: 0. This is not whole-set conformance.
