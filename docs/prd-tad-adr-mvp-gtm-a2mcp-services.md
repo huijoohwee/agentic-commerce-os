@@ -1,20 +1,20 @@
 ---
 title: "Reference Implementation — Commerce A2MCP Services"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.4.0"
-revision: "0.4.0"
+version: "0.4.1"
+revision: "0.4.1"
 date: "2026-09-25"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Commerce product owner"
 continuity_id: "PRD-TAD-ADR-COMMERCE-A2MCP-001"
-prd_revision: "0.4.0"
-tad_revision: "0.4.0"
-adr_revision: "0.4.0"
-mvp_revision: "0.4.0"
-gtm_revision: "0.4.0"
-local_rung: "undocumented"
-delivered_rung: "undocumented"
+prd_revision: "0.4.1"
+tad_revision: "0.4.1"
+adr_revision: "0.4.1"
+mvp_revision: "0.4.1"
+gtm_revision: "0.4.1"
+local_rung: "dev-proven"
+delivered_rung: "dev-proven"
 lifecycle_status: "proposed"
 lane: "authoring"
 universal_scope: false
@@ -31,7 +31,7 @@ agenticOsCanvasRenderMode: "2d"
 agenticOsCanvas2dRenderer: "d3"
 surfaces: ["2D Renderer: D3 Graph", "Markdown Preview"]
 primary_surface: "2D Renderer: D3 Graph"
-projection_revision: "0.4.0"
+projection_revision: "0.4.1"
 ---
 
 # Reference implementation — Commerce A2MCP services
@@ -570,6 +570,20 @@ ADR A8: one service, four included outputs and reversible review fit the current
 MVP V10 checks extend the existing browser runner through `test/local-first/workspace-pack-browser.mjs`: real REST conversion, no pre-confirmation POST, focus containment/return, backdrop/Escape, edited/invalid/offline recovery, downloaded bytes/digests, 390px touch layout, ≥44px review controls, measured text/focus contrast, reduced motion and 200% computed-font reflow. Text reflow does not certify browser zoom preferences. Existing WebMCP lifecycle suite remains required. ER22: native browser V10 passes all five groups, including actual downloaded hashes. Drawer text/secondary/button/focus contrast = 14.74/6.47/10.09/10.09:1; controls are ≥44px. Eight existing lifecycle tests pass. Proof: `workspace-pack-browser-proof.json` in native check output; screenshots do not establish delivery. The source itself is not stored; offline conversion and unfinished-source reload persistence remain unsupported and disclosed.
 
 GTM and all three projections at J1 retain the same free offer and zero revenue. Measure sample completion time, review abandonment, successful file retrieval and repeat use in five consenting tasks without adding analytics; demand/WTP remain unvalidated. The request flow is not a sale. Slice budget: ≤35 active minutes, six authored files/two UI modules, joined record ≤80 KiB, $0; exact new source CI/public activation remain separate. Owner: Commerce product/engineering. Exit: V10 browser receipt, updated joined record, exact candidate publication and explicit delivery gaps.
+
+### Delivery evidence, revision 0.4.1 — reference implementation
+
+PRD: the free Workspace Program Pack now completes the public UI → reviewed request → four files → Canvas journey. REST, stateless MCP and browser WebMCP are live at `https://airvio.co/agentic-commerce-os/services/workspace-pack/`; actual public calls return identical four-file digest `b254cb2427dff5f1ac389f1155cfc16c215e799c59cd2e6049ae9ab27ceb8718`. Registration as an OKX A2MCP service is proved; marketplace discovery, OKX buyer invocation, first payment and repeat demand are not. The overall joined local/delivered rung is `dev-proven` because AC04/08 marketplace VCCs remain open, even though the narrower public production service has a production receipt.
+
+TAD: user-approved PR84 head `023a55bf03d3dde16e066e86af8dbf4f69e0e613` merged as `081de8b254985b09bd6e3d7367bf5d54484e44a3` after green protected Integration Gate run 36108501440. Authenticated owner approval of protected production run [36110766474](https://github.com/huijoohwee/agentic-commerce-os/actions/runs/36110766474) led to `production-complete`, Worker version `e92baae1-0de0-4f1c-a5ad-fde7ba76e717`, deployment `39fa26c5-9a2e-4d51-8ba9-30b3de1520dc`, bound route `airvio.co/agentic-commerce-os*`. Public page, REST and MCP returned 200; browser WebMCP, file hashes and Canvas were verified. MCP clients advertise `Accept: application/json, text/event-stream`. The optional listing host remains device-session dependent. Production CPU/headroom and continuous availability are unproved.
+
+ADR A9: OKX `agent activate` requires the `okx-a2a` companion even for this free A2MCP service. Its official npm package declares `SEE LICENSE IN LICENSE`, but published 0.2.16 and 0.1.9 archives omit `LICENSE`; no verifiable FOSS grant was found. The user reaffirmed FOSS-only. Retain registration without installing this helper, spoofing readiness or using an undocumented activation API. Revisit only when OKX provides an official FOSS license/source or a supported activation path. This is a dependency and authority boundary, not an inferred marketplace review failure.
+
+MVP: the public 24-second WebM video and `public-service-proof.json` in the retained workspace evidence show exact source entry, review, confirmation, four verified files and Canvas with 21 nodes/20 edges. OKX `agent create` succeeded for Airvio Commerce, Agent ID `13906`; authenticated `agent service-list` returned service ID `1726af08-a542-4d65-8e40-ab621dfcdca3`, `A2MCP`, fee `0`, endpoint `https://airvio.co/agentic-commerce-os/services/workspace-pack/mcp`. `agent activate` exited before listing submission because A2A communication was unavailable. Marketplace page/search did not show the agent. The service UI truthfully says it is not listed yet.
+
+GTM, pitch, business and financial projections remain at a free offer with zero recognized revenue. The public UI and MCP endpoint are working service/integration URLs; the OKX Agent ID is a registered identity, not an approved listing URL. The later $1 hypothesis requires observed tasks and willingness-to-pay evidence. No paid plan, overage, sale or new account is claimed. Next check: a compliant activation path → actual submission/review receipt → buyer invocation through OKX; external review has no ETA before submission.
+
+ER23: protected source/run receipts, public proof and real demo are retained at `.workspace/.artifacts/workspace-pack-journey-20260925/` outside the source tree; `deployment-review.md` and `okx-registration-proof.json` carry the effect and blocker evidence without wallet credentials. The first production run 36109606475 failed before Worker write on the existing offline device host; the host was restored before the fresh successful run. Native source completion proved 30 paths but stopped at canonical sync/authenticated cleanup; retain its clean worktree and recovery bytes. This documentation successor changes no serving code or marketplace state. Bound: one document, <600 lines, <86 KiB, $0; verify exact diff and doc conformance before publication.
 
 [assessment]: https://github.com/huijoohwee/agentic-commerce-os/blob/9671532ddeb7d049cace6112214465fde9ff15dd/docs/prd-tad-adr-mvp-gtm-handoff.md
 [guideline]: https://github.com/huijoohwee/huijoohwee.github.io/blob/ae3e4091d8ebef554e0ed416d7c62a11e7efb0ed/guidelines/prd-tad-adr-mvp-gtm-guidelines.md
