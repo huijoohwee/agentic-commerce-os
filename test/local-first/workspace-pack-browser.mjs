@@ -17,15 +17,19 @@ export async function checkWorkspacePack({ browser, url, output, revision }) {
   try {
     await page.addInitScript(() => {
       Object.defineProperty(document, 'modelContext', { configurable: true,
-        value: { registerTool(tool) { window.__workspacePackTool = tool; } } });
+        value: { registerTool(tool, options) {
+          window.__consoleTools ??= {}; window.__consoleTools[tool.name] = tool;
+          if (tool.name === 'commerce.workspace.program-pack.create') window.__workspacePackTool = tool;
+          options?.signal?.addEventListener('abort', () => { delete window.__consoleTools[tool.name]; });
+        } } });
     });
     await page.goto(url + 'services/workspace-pack/');
     const create = page.getByRole('button', { name: 'Review request', exact: true });
-    const dialog = page.getByRole('dialog'), confirm = page.getByRole('button', { name: 'Create free pack', exact: true });
+    const dialog = page.locator('#request-review'), confirm = page.getByRole('button', { name: 'Create free pack', exact: true });
     const source = page.locator('#source'), title = page.getByLabel('Pack name');
     await expect(create).toBeEnabled();
     const original = await source.inputValue();
-    const consoleToggle = page.getByRole('button', { name: 'Console', exact: true });
+    const consoleToggle = page.locator('#console-toggle');
     await expect(page.getByRole('complementary', { name: 'Console' })).toBeVisible();
     await expect(consoleToggle).toHaveAttribute('aria-expanded', 'true');
     const dock = await page.locator('#console-panel').boundingBox();
@@ -75,6 +79,76 @@ export async function checkWorkspacePack({ browser, url, output, revision }) {
     assert.equal(requests.filter(request => request.method === 'POST').length, 0);
     assert.equal(requests.filter(request => request.url.endsWith('/workspace-pack.simulation.js')).length, 1);
     record('five lazy-loaded scenario rehearsals, staged/reviewed recovery, stale-selection reset and offline replay leave live state and requests untouched');
+    const sheet = page.locator('#console-sheet');
+    const capabilities = page.locator('.capability-open');
+    await expect(page.locator('#console-tool-count')).toHaveText('6 browser tools');
+    await expect(page.locator('#capability-count')).toHaveText('3 available · 6 registered');
+    await capabilities.click(); await expect(sheet).toBeVisible();
+    await expect(sheet.locator('li')).toHaveCount(6);
+    await expect(sheet).toContainText('Run a rehearsal first');
+    await page.getByLabel('Find a capability or command').fill('Read diagnosis');
+    await expect(sheet.locator('li')).toHaveCount(1);
+    await page.getByLabel('Find a capability or command').fill('missing-capability');
+    await expect(page.locator('#console-sheet-empty')).toBeVisible();
+    await page.keyboard.press('Escape'); await expect(capabilities).toBeFocused();
+    await page.keyboard.press('Control+k'); await expect(sheet).toBeVisible();
+    await expect(page.locator('#console-sheet-heading')).toHaveText('Workspace commands');
+    await sheet.getByRole('button', { name: 'Focus Python source', exact: true }).click();
+    await expect(source).toBeFocused(); await expect(sheet).toBeHidden();
+    await page.keyboard.press('Meta+k'); await expect(sheet).toBeHidden();
+    await page.locator('#service-heading').click();
+    await page.keyboard.press('Control+j'); await expect(page.locator('#console-panel')).toBeHidden();
+    await page.keyboard.press('Control+j'); await expect(page.locator('#console-panel')).toBeVisible();
+    await scenario.selectOption('payment');
+    await page.getByRole('button', { name: 'Step through', exact: true }).click();
+    await expect(page.locator('#customer-banner')).toContainText('verified test payment');
+    await page.getByRole('button', { name: 'Next stage', exact: true }).click();
+    await expect(page.locator('#capability-count')).toHaveText('5 available · 6 registered');
+    await page.getByRole('button', { name: 'Next stage', exact: true }).click();
+    await expect(page.locator('#guide-status')).toContainText('Your decision is next');
+    await expect(page.locator('#capability-count')).toHaveText('6 available · 6 registered');
+    await page.getByRole('button', { name: 'Decline recovery', exact: true }).click();
+    await expect(page.locator('#simulation-status')).toHaveText('Payment · Recovery declined');
+    await expect(page.locator('#simulation-recover')).toBeDisabled();
+    await expect(page.locator('#preview-decision')).toContainText('unchanged');
+    await expect(page.locator('#capability-count')).toHaveText('5 available · 6 registered');
+    await scenario.selectOption('timeout');
+    await page.getByRole('button', { name: 'Play guide', exact: true }).click();
+    await page.getByRole('button', { name: 'Pause', exact: true }).click();
+    await page.waitForTimeout(1600);
+    await expect(stages.getByRole('button', { name: 'Triage', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await page.getByRole('button', { name: 'Resume', exact: true }).click();
+    await expect(page.locator('#guide-status')).toContainText('Your decision is next', { timeout: 6000 });
+    await expect(page.locator('#simulation-signal')).toHaveText('Fixture HTTP 504');
+    await expect(page.locator('#simulation-recover')).toBeEnabled();
+    await page.getByRole('button', { name: 'Stop guide', exact: true }).click();
+    await expect(page.locator('#guide-controls')).toBeHidden();
+    // Actual registered browser handlers enforce the same gates as visible controls.
+    const call = (key, input = {}) => page.evaluate(async ({ key, input }) => {
+      try { const result = await window.__consoleTools[`commerce.console.${key}`].execute(input); return { ok: true, value: JSON.parse(result.content[0].text) }; }
+      catch (error) { return { ok: false, error: error.message }; }
+    }, { key, input });
+    const started = await call('rehearse', { scenario: 'backlog' });
+    assert(started.ok); const runId = started.value.rehearsal.runId;
+    assert.equal((await call('diagnose', { runId })).ok, false);
+    assert.equal((await call('stage', { runId: runId - 1, stage: 'recovery' })).ok, false);
+    assert.equal((await call('stage', { runId, stage: 'recovery', approve: true })).ok, false);
+    assert((await call('stage', { runId, stage: 'recovery' })).ok);
+    const proposal = await call('propose', { runId });
+    assert.equal(proposal.value.applied, false);
+    await expect(page.locator('#simulation-signal')).toContainText('503');
+    const inspected = await call('inspect');
+    assert.equal(JSON.stringify(inspected).includes(original), false);
+    assert.equal(Object.keys(await page.evaluate(() => window.__consoleTools)).some(name => /approve|apply/.test(name)), false);
+    await page.getByRole('button', { name: 'Apply to simulation', exact: true }).click();
+    assert.equal((await call('propose', { runId })).ok, false);
+    await expect(page.locator('#customer-banner')).toContainText('accepted');
+    await page.getByRole('button', { name: 'Reset', exact: true }).click();
+    assert.equal((await call('stage', { runId, stage: 'diagnosis' })).ok, false);
+    await expect(page.locator('#rehearsal-preview')).toBeHidden();
+    await expect(source).toHaveValue(original);
+    assert.equal(requests.filter(request => request.method === 'POST').length, 0);
+    record('capability inspector and shortcuts; guided pause/decline; real registered Console handlers reject stale or forbidden input and never apply recovery');
     await page.screenshot({ path: path.join(output, 'workspace-pack-console-desktop.jpg'), quality: 75 });
     await page.locator('#console-review').click();
     await expect(dialog).toBeVisible();
@@ -145,7 +219,12 @@ export async function checkWorkspacePack({ browser, url, output, revision }) {
     for (const file of downloaded.files) assert.equal(sha(file.content), file.digest);
     const { artifactDigest, ...unsigned } = downloaded;
     assert.equal(sha(JSON.stringify(unsigned)), artifactDigest);
-    record('one confirmed request creates the reviewed pack; actual browser download matches all four hashes');
+    for (const [index, filename] of ['program.py', 'program.json', 'program.md', 'canvas.md'].entries()) {
+      await page.getByRole('button', { name: `Inspect ${filename}`, exact: true }).click();
+      await expect(page.locator('#preview')).toBeFocused();
+      await expect(page.locator('#preview')).toHaveText(pack.files[index].content);
+    }
+    record('one confirmed request creates the reviewed pack; native format cards inspect outputs and actual browser download matches all four hashes');
     await source.fill('import os\n');
     await expect(page.locator('#result')).toBeHidden();
     await create.click(); await confirm.click();
@@ -223,7 +302,14 @@ export async function checkWorkspacePack({ browser, url, output, revision }) {
     await expect(page.locator('#console-events')).toContainText('Browser tool returned a verified pack.');
     assert.equal((await page.locator('#console-events').innerText()).includes(original), false);
     assert.equal(await page.locator('#console-panel').evaluate(element => element.scrollWidth <= element.clientWidth), true);
+    await capabilities.click(); await expect(sheet).toBeVisible();
+    assert.equal(await sheet.evaluate(element => element.scrollWidth <= element.clientWidth), true);
+    await page.keyboard.press('Escape');
+    assert.equal(await page.evaluate(() => document.querySelector('#console-panel').getBoundingClientRect().bottom <= document.querySelector('.workspace-status').getBoundingClientRect().top + 1), true);
     await page.getByRole('button', { name: 'Close Console' }).click();
+    await page.getByRole('button', { name: 'Inspect canvas.md', exact: true }).click();
+    // A browser-tool result is not installed in the form's current result.
+    await expect(source).toBeFocused();
     record('browser tool uses real conversion and Console records only bounded metadata at mobile width');
     await page.reload();
     await expect(create).toBeEnabled();
@@ -232,6 +318,27 @@ export async function checkWorkspacePack({ browser, url, output, revision }) {
     await expect(page.locator('#console-panel')).toBeVisible();
     await page.screenshot({ path: path.join(output, 'workspace-pack-console-mobile.jpg'), quality: 75 });
     record('a fresh mobile visit keeps the Console closeable and reachable from navigation');
+    await capabilities.click(); await expect(sheet).toBeVisible();
+    await page.keyboard.press('Escape');
+    await page.evaluate(() => dispatchEvent(new Event('pagehide')));
+    assert.deepEqual(await page.evaluate(() => Object.keys(window.__consoleTools)), []);
+    for (const mode of ['unsupported', 'rejected']) {
+      const isolated = await browser.newContext();
+      try {
+        const fallback = await isolated.newPage();
+        await fallback.addInitScript(mode => {
+          Object.defineProperty(document, 'modelContext', { configurable: true, value: mode === 'rejected' ? { registerTool() { return Promise.reject(Error('unavailable')); } } : undefined });
+          Object.defineProperty(navigator, 'modelContext', { configurable: true, value: undefined });
+        }, mode);
+        await fallback.goto(url + 'services/workspace-pack/');
+        await fallback.locator('.capability-open').click();
+        await expect(fallback.locator('#console-sheet-summary')).toContainText('0 available now · 0 registered');
+        await fallback.keyboard.press('Escape');
+        await fallback.getByRole('button', { name: 'Run simulation', exact: true }).click();
+        await expect(fallback.locator('#simulation-status')).toContainText('Simulated condition loaded');
+      } finally { await isolated.close(); }
+    }
+    record('unsupported/rejected WebMCP remains truthful; local UI works; pagehide retires every registered tool');
     assert.deepEqual(errors, []);
     const origin = new URL(url).origin;
     assert(requests.every(request => new URL(request.url).origin === origin));

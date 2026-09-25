@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { SCENARIOS, startSimulation, selectStage, applyRecovery, inspectSimulation } from '../../public/local-first/workspace-pack.simulation.js';
+import { SCENARIOS, startSimulation, selectStage, applyRecovery, inspectSimulation, rejectRecovery, CONSOLE_TOOLS, toolGate, validateToolInput, customerPreview } from '../../public/local-first/workspace-pack.simulation.js';
 import { handleWorkspacePack } from '../../src/local-first/workspace-pack.ts';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
@@ -119,4 +119,28 @@ test('Backlog fixture matches actual bounded local-host concurrency and explicit
     for (const response of await Promise.all(active)) { assert.equal(response.status, 200); await response.arrayBuffer(); }
     const retry = await invoke(); assert.equal(retry.status, SCENARIOS.backlog.after.status); await retry.arrayBuffer();
   } finally { busy = false; waiters.forEach(resolve => resolve()); await Promise.allSettled(active); await host.close(); await fs.rm(directory, { recursive: true }); }
+});
+
+test('Console capability gates, schemas and previews follow the exact current simulated run', () => {
+  assert.equal(CONSOLE_TOOLS.length, 5);
+  assert.equal(CONSOLE_TOOLS.some(tool => /approve|apply/.test(tool.name)), false);
+  assert.equal(toolGate('inspect', null), null);
+  assert.equal(toolGate('stage', null), 'Run a rehearsal first');
+  validateToolInput('inspect', {}, null);
+  assert.throws(() => validateToolInput('inspect', { source: 'private' }, null), /input_invalid/);
+  assert.throws(() => validateToolInput('rehearse', { scenario: 'production' }, null), /input_invalid/);
+  const triage = startSimulation('payment', 8);
+  assert.throws(() => validateToolInput('propose', { runId: 8 }, triage), /Needs Recovery/);
+  assert.throws(() => validateToolInput('diagnose', { runId: 8 }, triage), /Needs Diagnosis/);
+  const recovery = selectStage(triage, 'recovery');
+  validateToolInput('propose', { runId: 8 }, recovery);
+  assert.throws(() => validateToolInput('stage', { runId: 7, stage: 'triage' }, recovery), /run_stale/);
+  assert.throws(() => validateToolInput('stage', { runId: 8, stage: 'triage', approved: true }, recovery), /input_invalid/);
+  const declined = rejectRecovery(recovery, 8);
+  assert.throws(() => applyRecovery(declined, 8), /not_reviewable/);
+  assert.throws(() => validateToolInput('propose', { runId: 8 }, declined), /Decision recorded/);
+  assert.equal(inspectSimulation(declined).outcome.status, 409);
+  assert.match(customerPreview(declined).decision, /unchanged/);
+  assert.equal(customerPreview(applyRecovery(recovery, 8)).tone, 'ready');
+  assert.equal(recovery.rejected, false);
 });

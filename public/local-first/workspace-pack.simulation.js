@@ -54,12 +54,12 @@ export const SCENARIOS = Object.freeze(scenarios)
 export const STAGES = Object.freeze(['triage', 'diagnosis', 'recovery'])
 function validate(state) {
   if (!state || !Object.hasOwn(SCENARIOS, state.scenario) || !STAGES.includes(state.stage)
-    || !Number.isSafeInteger(state.runId) || state.runId < 1 || typeof state.recovered !== 'boolean') {
+    || !Number.isSafeInteger(state.runId) || state.runId < 1 || typeof state.recovered !== 'boolean' || typeof state.rejected !== 'boolean') {
     throw Error('simulation_state_invalid')
   }
 }
 export function startSimulation(scenario, runId) {
-  const state = { scenario, runId, stage: 'triage', recovered: false }
+  const state = { scenario, runId, stage: 'triage', recovered: false, rejected: false }
   validate(state)
   return Object.freeze(state)
 }
@@ -70,15 +70,68 @@ export function selectStage(state, stage) {
 }
 export function applyRecovery(state, runId) {
   validate(state)
-  if (state.runId !== runId || state.stage !== 'recovery' || state.recovered) throw Error('simulation_recovery_not_reviewable')
+  if (state.runId !== runId || state.stage !== 'recovery' || state.recovered || state.rejected) throw Error('simulation_recovery_not_reviewable')
   return Object.freeze({ ...state, recovered: true })
 }
 export function inspectSimulation(state) {
   validate(state)
   const scenario = SCENARIOS[state.scenario]
   return Object.freeze({ name: scenario.name, scope: scenario.scope, runId: state.runId, stage: state.stage,
-    recovered: state.recovered, outcome: state.recovered && state.stage === 'recovery' ? scenario.after : scenario.before,
+    recovered: state.recovered, rejected: state.rejected, outcome: state.recovered && state.stage === 'recovery' ? scenario.after : scenario.before,
     heading: state.stage === 'triage' ? 'Initial signal' : state.stage === 'diagnosis' ? 'Understand the condition' : 'Review the next step',
     explanation: state.stage === 'triage' ? scenario.signal : state.stage === 'diagnosis' ? scenario.diagnosis : scenario.recovery,
     result: state.recovered && state.stage === 'recovery' ? scenario.result : null })
+}
+
+export function rejectRecovery(state, runId) {
+  applyRecovery(state, runId) // Reuse the same exact-run and stage gate without applying its result.
+  return Object.freeze({ ...state, rejected: true })
+}
+const schema = properties => ({ type: 'object', required: Object.keys(properties), additionalProperties: false, properties })
+const runId = { type: 'integer', minimum: 1 }
+export const CONSOLE_TOOLS = Object.freeze([
+  { key: 'inspect', title: 'Inspect Console', effect: 'Read', description: 'Read service status and this tab’s rehearsal metadata. No source or generated files.', inputSchema: schema({}) },
+  { key: 'rehearse', title: 'Start rehearsal', effect: 'Local simulation', description: 'Replace only the local rehearsal with a chosen scenario. No service request.', inputSchema: schema({ scenario: { type: 'string', enum: Object.keys(SCENARIOS) } }) },
+  { key: 'stage', title: 'Select response stage', effect: 'Local simulation', description: 'Choose an explanation stage for the exact current rehearsal run. Grants no service authority.', inputSchema: schema({ runId, stage: { type: 'string', enum: STAGES } }) },
+  { key: 'diagnose', title: 'Read diagnosis', effect: 'Read', description: 'Read the selected fixture’s native cause after entering Diagnosis or Recovery.', inputSchema: schema({ runId }) },
+  { key: 'propose', title: 'Prepare recovery review', effect: 'Review proposal', description: 'Show a recovery proposal for the exact current simulated run. Only the visible human controls can apply or reject it.', inputSchema: schema({ runId }) },
+].map(tool => Object.freeze({ ...tool, name: `commerce.console.${tool.key}` })))
+export function toolGate(key, state) {
+  if (!CONSOLE_TOOLS.some(tool => tool.key === key)) return 'Unknown capability'
+  if (key === 'inspect' || key === 'rehearse') return null
+  if (!state) return 'Run a rehearsal first'
+  validate(state)
+  if (key === 'stage') return null
+  if (key === 'diagnose' && state.stage === 'triage') return 'Needs Diagnosis or Recovery'
+  if (key === 'propose') {
+    if (state.stage !== 'recovery') return 'Needs Recovery'
+    if (state.recovered || state.rejected) return 'Decision recorded; start a new run'
+  }
+  return null
+}
+export function validateToolInput(key, input, state) {
+  const tool = CONSOLE_TOOLS.find(tool => tool.key === key)
+  if (!tool || !input || typeof input !== 'object' || Array.isArray(input)) throw Error('console_input_invalid')
+  const keys = Object.keys(tool.inputSchema.properties)
+  if (Object.keys(input).length !== keys.length || keys.some(name => !Object.hasOwn(input, name))) throw Error('console_input_invalid')
+  for (const [name, spec] of Object.entries(tool.inputSchema.properties)) {
+    if (spec.type === 'integer' ? !Number.isSafeInteger(input[name]) || input[name] < 1 : typeof input[name] !== spec.type) throw Error('console_input_invalid')
+    if (spec.enum && !spec.enum.includes(input[name])) throw Error('console_input_invalid')
+  }
+  const refusal = toolGate(key, state)
+  if (refusal) throw Error(refusal)
+  if (keys.includes('runId') && input.runId !== state.runId) throw Error('console_run_stale')
+}
+export function customerPreview(state) {
+  validate(state)
+  const scenario = SCENARIOS[state.scenario]
+  const text = state.recovered ? scenario.result : {
+    calm: 'Your free program pack is ready to prepare.',
+    checkout: 'The sandbox checkout needs a fresh review before it can start.',
+    timeout: 'The sample request timed out. Keep your source and review a fresh attempt.',
+    payment: 'This sample download is waiting for a verified test payment.',
+    backlog: 'The sample service is at capacity. Wait for active work to finish before retrying.',
+  }[state.scenario]
+  return Object.freeze({ scope: scenario.scope, text, tone: state.recovered || state.scenario === 'calm' ? 'ready' : 'attention',
+    decision: state.rejected ? 'Recovery declined. The simulated condition is unchanged.' : null })
 }

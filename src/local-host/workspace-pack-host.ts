@@ -17,6 +17,7 @@ export async function startWorkspacePackHost(options: Options) {
     ['/', 'workspace-pack.html', 'text/html; charset=utf-8'],
     ['/workspace-pack.js', 'workspace-pack.js', 'application/javascript; charset=utf-8'],
     ['/workspace-pack.simulation.js', 'workspace-pack.simulation.js', 'application/javascript; charset=utf-8'],
+    ['/workspace-pack.console.js', 'workspace-pack.console.js', 'application/javascript; charset=utf-8'],
     ['/workspace-pack.css', 'workspace-pack.css', 'text/css; charset=utf-8'],
   ].map(async ([route, name, type]) => [route!, { text: await fs.readFile(path.join(options.assets, name!), 'utf8'), type: type! }] as const)))
   let port = 0, active = 0, closing = false

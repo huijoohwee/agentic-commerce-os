@@ -19,6 +19,7 @@ const ASSET_PATHS = new Map([
   ['/services/workspace-pack/', '/workspace-pack.html'],
   ['/services/workspace-pack/workspace-pack.js', '/workspace-pack.js'],
   ['/services/workspace-pack/workspace-pack.simulation.js', '/workspace-pack.simulation.js'],
+  ['/services/workspace-pack/workspace-pack.console.js', '/workspace-pack.console.js'],
   ['/services/workspace-pack/workspace-pack.css', '/workspace-pack.css'],
 ])
 const CSP = "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; worker-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"

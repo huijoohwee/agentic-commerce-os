@@ -6,7 +6,42 @@ let generation = 0, controller = null, pack = null, urls = [], ready = false, re
 const reviewDialog = $('request-review')
 let reviewTrigger = $('create')
 const consolePanel = $('console-panel'), consoleToggle = $('console-toggle')
-let consoleEventCount = 0
+let consoleEventCount = 0, browserRegistered = false, toolCalls = 0, consoleApi = null, consoleLoad = null, consoleIntent = 0
+let extensionStats = { registered: 0, available: 0, stage: 'Idle', events: 0 }
+const modelContext = document.modelContext?.registerTool ? document.modelContext : navigator.modelContext
+function liveSnapshot() {
+  return { service: $('console-service').textContent, browser: $('console-browser-tool').textContent,
+    conversionRegistered: browserRegistered, form: $('console-form-state').textContent, events: consoleEventCount, toolCalls }
+}
+function updateStatus(stats = extensionStats) {
+  extensionStats = stats
+  const registered = stats.registered + Number(browserRegistered), available = stats.available + Number(browserRegistered)
+  $('console-tool-count').textContent = `${registered} browser tool${registered === 1 ? '' : 's'}`
+  $('capability-count').textContent = `${available} available · ${registered} registered`
+  $('status-service').textContent = `Service: ${$('console-service').textContent}`
+  $('status-rehearsal').textContent = `Rehearsal: ${stats.stage} · ${stats.events} event${stats.events === 1 ? '' : 's'}`
+  $('status-agent').textContent = toolCalls ? `${toolCalls} browser call${toolCalls === 1 ? '' : 's'} observed` : 'No browser calls observed'
+}
+async function consoleAction(action, trigger) {
+  const intent = ++consoleIntent
+  try {
+    consoleLoad ??= import('./workspace-pack.console.js').then(module => module.initConsole({
+      context: modelContext, live: liveSnapshot, changed: updateStatus,
+      openPanel: () => setConsoleOpen(true, false), review: () => $('pack-form').requestSubmit(),
+      toolObserved: () => { toolCalls++; updateStatus() },
+    }))
+    consoleApi = await consoleLoad
+    if (intent === consoleIntent) consoleApi.action(action, trigger)
+  } catch { consoleLoad = null; $('simulation-status').textContent = 'Console tools unavailable. Reload when connected and try again.' }
+}
+document.querySelectorAll('[data-console-action]').forEach(button => button.addEventListener('click', () => consoleAction(button.dataset.consoleAction, button)))
+$('simulation-scenario').addEventListener('change', () => { consoleIntent++ })
+document.addEventListener('keydown', event => {
+  if (!(event.metaKey || event.ctrlKey) || event.altKey || event.repeat || document.querySelector('dialog[open]')
+    || event.target.closest('input,textarea,select,[contenteditable=true]')) return
+  if (event.key.toLowerCase() === 'k') { event.preventDefault(); consoleAction('commands', document.activeElement) }
+  if (event.key.toLowerCase() === 'j') { event.preventDefault(); setConsoleOpen(consolePanel.hidden) }
+})
 function recordConsole(kind, message) {
   const entry = document.createElement('li'), label = document.createElement('time'), detail = document.createElement('span')
   entry.dataset.kind = kind
@@ -20,6 +55,7 @@ function recordConsole(kind, message) {
   events.append(entry)
   while (events.children.length > 16) events.firstElementChild.remove()
   $('console-event-count').textContent = `${consoleEventCount} events`
+  updateStatus(); consoleApi?.refreshLive()
 }
 function setConsoleOpen(open, focus = true) {
   consolePanel.hidden = !open
@@ -29,13 +65,17 @@ function setConsoleOpen(open, focus = true) {
   else consoleToggle.focus()
 }
 consoleToggle.addEventListener('click', () => setConsoleOpen(consolePanel.hidden))
+$('status-console').addEventListener('click', () => setConsoleOpen(consolePanel.hidden))
 $('console-close').addEventListener('click', () => setConsoleOpen(false))
 document.addEventListener('keydown', event => {
-  if (event.key === 'Escape' && !consolePanel.hidden && !reviewDialog.open) { event.preventDefault(); setConsoleOpen(false) }
+  if (event.key === 'Escape' && !consolePanel.hidden && !document.querySelector('dialog[open]')) { event.preventDefault(); setConsoleOpen(false) }
 })
+const statusBar = $('status-service').parentElement
+new ResizeObserver(() => document.documentElement.style.setProperty('--status-height', `${statusBar.getBoundingClientRect().height}px`)).observe(statusBar)
 setConsoleOpen(matchMedia('(min-width: 1100px)').matches, false)
 function setFormStage(stage, message) {
   $('console-form-state').textContent = message
+  consoleApi?.refreshLive()
   document.querySelectorAll('[data-stage]').forEach(step => {
     if (step.dataset.stage === stage) step.setAttribute('aria-current', 'step')
     else step.removeAttribute('aria-current')
@@ -46,68 +86,6 @@ function setReviewEnabled(enabled) {
 }
 $('console-review').addEventListener('click', () => $('pack-form').requestSubmit())
 recordConsole('info', 'Console ready. Events are limited to this tab.')
-// Load the fixture model only when a visitor runs a rehearsal.
-let simulationModule = null, simulationImport = null, simulation = null, simulationGeneration = 0
-const responseStages = [...document.querySelectorAll('[data-response-stage]')]
-function resetSimulation() {
-  simulationGeneration++; simulation = null
-  $('simulation-run').disabled = false
-  $('simulation-report').hidden = true
-  $('simulation-status').textContent = 'Choose a scenario and run the rehearsal.'
-  responseStages.forEach(button => {
-    button.disabled = true
-    button.setAttribute('aria-pressed', String(button.dataset.responseStage === 'triage'))
-  })
-}
-function renderSimulation() {
-  const view = simulationModule.inspectSimulation(simulation)
-  $('simulation-report').hidden = false
-  $('simulation-status').textContent = `${view.name} · ${view.recovered ? 'Simulation complete' : 'Simulated condition loaded'}`
-  $('simulation-report-heading').textContent = view.heading
-  $('simulation-scope').textContent = `Run ${view.runId} · ${view.scope}`
-  $('simulation-signal').textContent = `Fixture HTTP ${view.outcome.status}${view.outcome.code ? ` · ${view.outcome.code}` : ''}`
-  $('simulation-explanation').textContent = view.explanation
-  $('simulation-result').hidden = !view.result
-  $('simulation-result').textContent = view.result ?? ''
-  $('simulation-recover').hidden = view.stage !== 'recovery'
-  $('simulation-recover').disabled = view.recovered
-  $('simulation-recover').dataset.runId = String(view.runId)
-  responseStages.forEach(button => {
-    button.disabled = false
-    button.setAttribute('aria-pressed', String(button.dataset.responseStage === view.stage))
-  })
-}
-$('simulation-scenario').addEventListener('change', resetSimulation)
-$('simulation-reset').addEventListener('click', () => { resetSimulation(); $('simulation-run').focus() })
-$('simulation-run').addEventListener('click', async () => {
-  const current = ++simulationGeneration, scenario = $('simulation-scenario').value
-  $('simulation-run').disabled = true
-  $('simulation-status').textContent = 'Loading local rehearsal…'
-  try {
-    simulationImport ??= import('./workspace-pack.simulation.js')
-    const model = await simulationImport
-    if (current !== simulationGeneration) return
-    simulationModule = model
-    simulation = model.startSimulation(scenario, current)
-    renderSimulation()
-  } catch {
-    if (current === simulationGeneration) {
-      simulationImport = null; simulation = null; $('simulation-report').hidden = true
-      responseStages.forEach(button => { button.disabled = true })
-      $('simulation-status').textContent = 'Rehearsal unavailable. Reload when connected and try again.'
-    }
-  } finally { if (current === simulationGeneration) $('simulation-run').disabled = false }
-})
-responseStages.forEach(button => button.addEventListener('click', () => {
-  if (!simulation) return
-  simulation = simulationModule.selectStage(simulation, button.dataset.responseStage)
-  renderSimulation()
-}))
-$('simulation-recover').addEventListener('click', () => {
-  if (!simulation || simulation.stage !== 'recovery' || simulation.recovered) return
-  simulation = simulationModule.applyRecovery(simulation, Number($('simulation-recover').dataset.runId))
-  renderSimulation()
-})
 function closeReview() {
   if (review) setFormStage('prepare', 'Ready to review')
   review = null
@@ -220,6 +198,10 @@ $('confirm-request').addEventListener('click', async () => {
   }
 })
 document.querySelectorAll('[data-file]').forEach(button => button.addEventListener('click', () => showFile(Number(button.dataset.file))))
+document.querySelectorAll('[data-preview-file]').forEach(button => button.addEventListener('click', () => {
+  if (pack) { showFile(Number(button.dataset.previewFile)); $('preview').focus() }
+  else { $('status').textContent = 'Review your source to create the four included formats.'; $('source').focus() }
+}))
 $('api-url').textContent = endpoint.href
 $('mcp-url').textContent = $('console-mcp-url').textContent = new URL('./mcp', location.href).href
 try {
@@ -231,10 +213,9 @@ try {
   recordConsole('success', 'Service manifest verified.')
 } catch { $('connection').textContent = 'Service unavailable'; $('console-service').textContent = 'Unavailable'; $('status').textContent = 'The service is unavailable. Try again shortly.'; recordConsole('failed', 'Service manifest unavailable.') }
 // Current WebMCP uses Document. Retain only a contract-level adapter for older hosts.
-const modelContext = document.modelContext?.registerTool ? document.modelContext : navigator.modelContext
 if (modelContext?.registerTool) {
   const registration = new AbortController()
-  const retire = () => { registration.abort(); if (modelContext !== document.modelContext) modelContext.unregisterTool?.(toolName) }
+  const retire = () => { browserRegistered = false; updateStatus(); registration.abort(); if (modelContext !== document.modelContext) modelContext.unregisterTool?.(toolName) }
   addEventListener('pagehide', retire, { once: true })
   let registrationTimeout
   try {
@@ -243,7 +224,7 @@ if (modelContext?.registerTool) {
         properties: { title: { type: 'string', maxLength: 80 }, source: { type: 'string', maxLength: 32768 }, sourceDigest: { type: 'string', pattern: '^[a-f0-9]{64}$' } } },
       annotations: { readOnlyHint: true, untrustedContentHint: true, consequentialHint: false },
       execute: async (input, options) => {
-        recordConsole('running', 'Browser tool invoked.')
+        toolCalls++; recordConsole('running', 'Browser tool invoked.')
         try {
           const result = await requestPack(input,
             AbortSignal.any([registration.signal, AbortSignal.timeout(8000), ...(options?.signal ? [options.signal] : [])]))
@@ -257,8 +238,8 @@ if (modelContext?.registerTool) {
     if (registration.signal.aborted) throw Error('webmcp_registration_cancelled')
     $('webmcp-status').textContent = 'Browser WebMCP tool registered.'
     $('console-browser-tool').textContent = 'Registered'
-    $('console-tool-count').textContent = '1 browser tool'
+    browserRegistered = true; updateStatus(); consoleApi?.refreshLive()
     recordConsole('success', 'Browser WebMCP tool registered; no agent connection inferred.')
-  } catch { retire(); $('webmcp-status').textContent = 'Browser tool registration unavailable. Use the MCP or API endpoint.'; $('console-browser-tool').textContent = 'Unavailable'; $('console-tool-count').textContent = '0 browser tools'; recordConsole('failed', 'Browser tool registration unavailable.') }
+  } catch { retire(); $('webmcp-status').textContent = 'Browser tool registration unavailable. Use the MCP or API endpoint.'; $('console-browser-tool').textContent = 'Unavailable'; browserRegistered = false; updateStatus(); consoleApi?.refreshLive(); recordConsole('failed', 'Browser tool registration unavailable.') }
   finally { clearTimeout(registrationTimeout) }
-} else { $('webmcp-status').textContent = 'This browser does not expose WebMCP. The MCP and API endpoints remain available.'; $('console-browser-tool').textContent = 'Unsupported'; $('console-tool-count').textContent = '0 browser tools'; recordConsole('info', 'This browser does not expose WebMCP.') }
+} else { $('webmcp-status').textContent = 'This browser does not expose WebMCP. The MCP and API endpoints remain available.'; $('console-browser-tool').textContent = 'Unsupported'; browserRegistered = false; updateStatus(); consoleApi?.refreshLive(); recordConsole('info', 'This browser does not expose WebMCP.') }
