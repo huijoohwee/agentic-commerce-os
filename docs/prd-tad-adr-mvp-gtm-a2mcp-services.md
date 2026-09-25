@@ -1,18 +1,18 @@
 ---
 title: "Reference Implementation — Commerce A2MCP Services"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.3.5"
-revision: "0.3.5"
+version: "0.4.0"
+revision: "0.4.0"
 date: "2026-09-25"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Commerce product owner"
 continuity_id: "PRD-TAD-ADR-COMMERCE-A2MCP-001"
-prd_revision: "0.3.5"
-tad_revision: "0.3.5"
-adr_revision: "0.3.5"
-mvp_revision: "0.3.5"
-gtm_revision: "0.3.5"
+prd_revision: "0.4.0"
+tad_revision: "0.4.0"
+adr_revision: "0.4.0"
+mvp_revision: "0.4.0"
+gtm_revision: "0.4.0"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
 lifecycle_status: "proposed"
@@ -31,7 +31,7 @@ agenticOsCanvasRenderMode: "2d"
 agenticOsCanvas2dRenderer: "d3"
 surfaces: ["2D Renderer: D3 Graph", "Markdown Preview"]
 primary_surface: "2D Renderer: D3 Graph"
-projection_revision: "0.3.5"
+projection_revision: "0.4.0"
 ---
 
 # Reference implementation — Commerce A2MCP services
@@ -42,7 +42,7 @@ The user subsequently authorized implementing recommendations. This revision rec
 
 ## Continuity and directive — reference implementation
 
-**Join J1:** `PRD-TAD-ADR-COMMERCE-A2MCP-001@0.3.5`. All section references below consume J1 unless an external revision is explicit. PRD owns scope/criteria; TAD consumes PRD; ADR binds TAD; MVP/GTM and venture projections consume these three. A changed criterion requires a coherent five-role revision. Authoring source: [PRD–TAD–ADR–MVP–GTM guideline 3.3.0][guideline], pinned by W1 and its digest.
+**Join J1:** `PRD-TAD-ADR-COMMERCE-A2MCP-001@0.4.0`. All section references below consume J1 unless an external revision is explicit. PRD owns scope/criteria; TAD consumes PRD; ADR binds TAD; MVP/GTM and venture projections consume these three. A changed criterion requires a coherent five-role revision. Authoring source: [PRD–TAD–ADR–MVP–GTM guideline 3.3.0][guideline], pinned by W1 and its digest.
 
 This document owns the proposed A2MCP integration. It supersedes preliminary recommendations in the [evaluation companion at 9671532][assessment], while preserving its dated observations. It consumes the existing [first-dollar owner][first-dollar] at `PRD-TAD-ADR-COMMERCE-MVP-GTM-001@1.2.0` and
 [native implementation owner][implementation] at `edge-commerce-agent-mvp@0.6.0`; it does not redefine
@@ -368,7 +368,7 @@ Total 90s. R2/R3 later use the same 10/15/25/25/15 bounds with their own Reveal 
 
 | PRD-TAD-ADR-MVP-GTM | CID | RAO | Updated Date |
 |---|---|---|---|
-| `PRD-TAD-ADR-COMMERCE-A2MCP-001@0.3.5` | C: G01–09 at C1 and assessment 9671532 · I: reviewable native service contract · D: Implement recommendations within the revised R1 local bounds; preserve separate delivery gates. | R: Commerce engineering · A: Engineer implements and verifies the local public catalog service · O: V1–V3 local proof plus delivery gaps · check: ER10/ER11 | 2026-09-25 |
+| `PRD-TAD-ADR-COMMERCE-A2MCP-001@0.4.0` | C: G01–09 at C1 and assessment 9671532 · I: reviewable native service contract · D: Implement recommendations within the revised R1 local bounds; preserve separate delivery gates. | R: Commerce engineering · A: Engineer implements and verifies the local public catalog service · O: V1–V3 local proof plus delivery gaps · check: ER10/ER11 | 2026-09-25 |
 
 This is the document's handoff row, not a duplicate private task board. Future execution RAO nodes are one independently closable VCC each: V1 projection/protocol; V2 refusal/bounds; V3 authority; V4 channel demonstration; V5 browser/offline; V6 pack; V7 payment; V8 activation/readback. Each inherits the exact PRD/TAD/ADR join and narrows its roadmap budget. No autonomous indefinite loop.
 
@@ -418,7 +418,7 @@ The model is an **incomplete discovery sketch**, not a sourced financial forecas
 
 All three projections consume J1; they introduce no requirements or numbers. They are separately addressable subsections in this bounded file. Audience: prospective pilot reviewer. Decision sought: consent to one bounded free task, later an exact priced offer. Audience publication is not authorized.
 
-### Pitch deck projection, revision 0.3.5
+### Pitch deck projection, revision 0.4.0
 
 | Slide / roles covered | Projects / evidence status | Bound |
 |---|---|---|
@@ -431,11 +431,11 @@ All three projections consume J1; they introduce no requirements or numbers. The
 
 All twelve roles covered in six slides; total 120 seconds. No deck file or successful presentation is claimed. Replace Reveal with real V4 evidence before presenting a working-product claim.
 
-### Business plan projection, revision 0.3.5
+### Business plan projection, revision 0.4.0
 
 Purpose/customer/problem → PRD; market/timing → GTM M1/M2; offer/alternatives → A5 and S0–S3; acquisition/retention → GTM pilot cohort; delivery/suppliers/capacity → TAD ecosystem and GTM support; organization/IP/legal → GTM obligations; risks/recovery → TAD gates and findings; finance/capital → H1–H6 and linked statements; milestones → sole roadmap R0–R3. Missing market, legal and actual cost evidence blocks an investor/customer assurance claim, not completion of this discovery document.
 
-### Financial model projection, revision 0.3.5
+### Financial model projection, revision 0.4.0
 
 Consume H1–H6 and the three scenario formulas above. Inputs belong to GTM; TAD owns resource caps. No spreadsheet is requested; this Markdown model is the declared projection. ADLC Cost Ledger: R0 authoring estimate 15 minutes/cap 25; R1 local implementation estimate two 60-minute sprints; actual active minutes and tokens unavailable; guideline-reading token cost included in ≤30k authoring estimate, not measured. Source CI duration and cost await this exact candidate's receipt; prior PR CI is not charged as measured current work. New paid tools/resources purchased: none. Account bill, energy, sunk device cost and operator labor remain unknown. Later ledger lines must bind candidate/run, duration, token/CI/provider cost and avoidable-block cost to exact receipts; no cost-saving claim is earned by missing measurements.
 
@@ -478,7 +478,7 @@ Known findings: 0 blocker, 5 major, 0 minor; all other reviewed types have zero 
 
 ER11: catalog predecessor PR77 at `c28570e9ee06be631c92b08a010d8dfde808ef53` has a successful Integration Gate ([run 36095863760](https://github.com/huijoohwee/agentic-commerce-os/actions/runs/36095863760), observed 2026-09-25T04:52Z). Its earlier authored-limit fixture findings were corrected without weakening the scanner. ER17 later supplies the verified full-platform Podman override; the explicit Workspace Pack profile uses bounded Node.
 
-Current source lane: `agent/device-0232231d4a19/workspace-pack-release-proof`, native documentation successor of [PR82](https://github.com/huijoohwee/agentic-commerce-os/pull/82) at `aeafcce97efc99a16620475f47e8fdd230f5f697`. PR81 failed the durable-host byte limit; PR82 repairs it. Graph supplier [PR1278](https://github.com/huijoohwee/agentic-graph/pull/1278) at `d23fc95330d5dce1326050705480b3c2776d5fe3` has green source checks; integration remains separate.
+Current source lane: `agent/device-0232231d4a19/workspace-pack-service-journey`, native successor of [PR83](https://github.com/huijoohwee/agentic-commerce-os/pull/83), `e95cd9c11da4d2927beff74516139e4746c9d44a`, whose Integration Gate passed in run 36106003297. Graph [PR1278](https://github.com/huijoohwee/agentic-graph/pull/1278) supplier `d23fc95330d5dce1326050705480b3c2776d5fe3` integrated as `1ee1282ad7346762d3a172094233839aadcd0498`; the four supplier paths match exactly. Commerce remains unmerged and undeployed.
 
 ### Local rehearsal commands — reference implementation
 
@@ -518,31 +518,31 @@ Five flows: user adds source → creates → reviews → downloads/imports; tran
 |---|---|
 | ER12 / V9 correctness and refusal | Commerce typecheck and focused workspace/catalog/MCP/WebMCP/confirmation suites: 27/27 tests pass. Graph workspace-pack plus existing native Block codec suites: 15/15 pass, including CRLF fidelity, tamper, excessive input/output, cancellation, real child deadline, markup escaping and deterministic output. These tests invoke mechanisms independently of document claims. |
 | ER13 / V9 actual native integration | `npm run dev -- --workspace-pack`; official MCP SDK initialize/list/call → compiled native Graph converter; REST returns the identical actual pack. 194-byte sample, 21 nodes/20 edges, artifact `b254cb2427dff5f1ac389f1155cfc16c215e799c59cd2e6049ae9ab27ceb8718`. Bundle SHA-256 `03804bb127b8f83a87d1eff7472d065c8974d307fcac17f75899bf2c862de890` (41.1 KiB). |
-| ER14 / local V5,V9 demonstration | Live browser created four files; invalid `import os` failed visibly. At 390px, document/client widths both 390. Native Graph imported `canvas.md`: D3 topology 21 MermaidNodes/20 pointsTo edges plus document structure, zero unresolved edges. Initial Commerce WebMCP attempt was unavailable; ER16 supersedes that observation after the Document API fix. CDP screen recording saved as 16-second WebM with captures slowed to one frame/second for review; source timing retained. Blob download event was not observable in this in-app browser, so that action is not certified. |
+| ER14 / local V5,V9 demonstration | Live form produced four files; unsupported import failed visibly. At 390px there was no horizontal page overflow. Graph D3 imported 21 MermaidNodes/20 pointsTo edges, zero unresolved. Local 16s WebM retained; initial WebMCP/download gaps are superseded only by the named later checks. |
 
-ER15 / historical broad verification: clean `9aa8bc56b77929215154def8f5ecd479467586fb` passed 91 domain, 296 unit, 60 Worker, 52 admission and 109 local-first tests plus storefront browser proof before `podman_workerd_override_required`; ER17 resolved that prerequisite. PR79, PR80 and Graph PR1278 subsequently passed their exact Linux Integration Gates. The PR80 local rerun passed 91 domain and 298/299 unit tests; `merge-agent-conflict` exceeded its existing 5s fixture limit during heavy host contention, then passed alone in 2.09s unchanged. Its whole local gate remains failed; do not borrow CI as local full-runtime proof. The clean-source listing build also passes after publication. Native receipts live in lane Git metadata `agentic-os-tests/validation-last.json`; retained continuation evidence preserves the PR80 failure separately.
+ER15 / historical verification: `9aa8bc56b77929215154def8f5ecd479467586fb` passed 91 domain, 296 unit, 60 Worker, 52 admission and 109 local-first tests plus browser checks before the missing Podman override; ER17 resolves that prerequisite. PR79/80/82/83 and Graph PR1278 have exact green Linux gates. PR80 local broad retry remains failed: an unrelated 5s Git fixture timed out under host contention, then passed alone in 2.09s unchanged. Native lane Git metadata and `pr80-local-validation.json` retain both surfaces; CI is not local full-runtime proof.
 
-Private local evidence owner: workspace `.workspace/.artifacts/workspace-program-pack-20260925/` holds actual four files, `workspace-program-pack.json`, `mcp-proof.json`, `graph-canvas-proof.json`, desktop/mobile captures, `demo-frames.json` and `workspace-program-pack-demo.webm`. These are local review artifacts, not public submission URLs. Native release receipts bind source candidates; broad integration results must be read from that exact candidate, never borrowed from PR77.
+Private evidence: workspace `.workspace/.artifacts/workspace-program-pack-20260925/` retains actual four files, MCP/Canvas proof, desktop/mobile captures and the local WebM demo. These are not public submission URLs. Source receipts bind exact candidates; do not borrow another candidate’s broad checks.
 
-Operator rehearsal (after native dependency installation): in the Graph lane, `npx --no-install esbuild mcp/workspace-program-pack.ts --bundle --platform=node --format=esm --target=node22 --tsconfig=canvas/tsconfig.json --outfile="$GRAPH_PACK_ADAPTER"`; compute SHA-256 into `GRAPH_PACK_ADAPTER_SHA256`. Export both absolute bundle path and exact digest in the Commerce shell, then `npm run dev -- --workspace-pack`. Open `http://127.0.0.1:5190/agentic-commerce-os/services/workspace-pack/`; MCP uses `.../mcp`. Standard `npm run dev` retains the platform profile and its preflight. Stop only the owned service with SIGTERM; restart/reload after source changes.
+Operator rehearsal: build the exact Graph CLI using the supplier document’s locked esbuild command; bind its absolute path and SHA-256 as `GRAPH_PACK_ADAPTER`/`GRAPH_PACK_ADAPTER_SHA256`, then `npm run dev -- --workspace-pack`. Open local port 5190 at `/agentic-commerce-os/services/workspace-pack/`; MCP appends `mcp`. Standard dev keeps platform preflight. Stop only the owned process; restart after edits.
 
-GTM/projection delta at J1: pitch Reveal is four files plus native Canvas, explicitly local; business-plan offer is a free Workspace Program Pack, future $1 after five observed tasks and two explicit price acceptances; financial-model H1 is a price experiment only, current recognized revenue/collected payment both zero. No model calls, package additions or new paid resources. Device cost, authoring tokens, full active time and hosted headroom remain unknown. Deployment is not needed for this local proof but is required for marketplace acceptance.
+GTM/projections at J1: Reveal = four files plus native Canvas; free Workspace Program Pack; later $1 hypothesis only after five observed tasks/two price acceptances. Recognized revenue and collected payment are zero. No model calls/packages/paid resources; device cost, tokens and hosted headroom remain unknown. Local proof does not meet marketplace acceptance.
 
-Prepared listing content: service name `Workspace Program Pack` (22 characters), `serviceType:A2MCP`, `fee:"0"`. The official service contract requires four numbered description lines: service purpose; semicolon-separated title/source/sourceDigest parameter specifications; `POST`; a runnable curl using the deployed endpoint. The endpoint must be public HTTPS and match that example. Public endpoint and Agent ID remain unset; localhost is a rehearsal URL and cannot pass registration validation. The owner authenticated the existing wallet and approved Airvio Commerce, the description ‘Free services that turn supported Python into editable workspace files and Canvas documents’, and the existing green diamond icon. Authenticated discovery found no ASP; pre-check permits creation. The approved avatar was uploaded. Registration awaits the public endpoint, complete field validation and final registration consent; no admitted public offer or hosted quota receipt exists.
+Prepared listing: `Workspace Program Pack`, `serviceType:A2MCP`, `fee:"0"`. Official description has four numbered lines: purpose; semicolon-separated title/source/sourceDigest specs; POST; runnable curl against the actual HTTPS endpoint. Endpoint and Agent ID remain unset; localhost cannot pass registration. ER19 binds the approved seller identity and avatar. Listing awaits actual hosting, validation and registration consent; no admitted offer exists.
 
-### Completion continuation, revision 0.3.5 — reference implementation
+### Completion continuation, revision 0.4.0 — reference implementation
 
 PRD AC09/V9 now includes successful browser-tool invocation, cancellation and registration failure; AC04/08 still require hosted marketplace evidence. TAD T8 uses the current Document API with an awaited registration and AbortSignal lifecycle; no browser polyfill is installed. ADR A6 retains Graph conversion ownership and adds a contract-only Navigator compatibility path. MVP retains the four-file/Canvas local demo and adds ER16; GTM/deck/business/financial projections at J1 still describe free local fulfillment, zero recognized revenue and an unvalidated later $1 offer.
 
 | Evidence | Result and boundary |
 |---|---|
-| ER16 / browser V9 | Live Codex in-app browser discovers and calls `commerce.workspace.program-pack.create` through WebMCP. It returns the same four files and artifact digest as ER13; normal form invocation also reports 21 nodes and four verified files. Commerce typecheck and five focused suites pass 30/30 tests, including asynchronous registration rejection, the 2s registration deadline, caller cancellation and pagehide cleanup. This is one observed browser host, not all-browser or public-channel conformance. |
-| ER17 / runtime prerequisites | Recovered existing Darwin ARM64 `workerd` from the upstream release's verified build receipt. Binary SHA-256 `0d9f91f3eb904c8a857867bd114f3224006235f51490b8c83c5ba669a6529ec3`; rootless Podman machine `agentic-dev` starts. Run both machine and checks within one owned command lifetime. No rootful switch, privileged helper, runtime patch or new paid resource. |
-| ER18 / upstream readiness | Broad local retry reproduced the old MCP test's 100ms child-startup race. Adopt merged OS `8a40d044fe09e2f5eef48407257dd08d0d385c88` ([PR252](https://github.com/huijoohwee/agentic-os/pull/252), green budgets/test), the first merged repair. Timeout still requires bounded unknown-write evidence; output overflow still proves a prior effect. Package, lock integrity and exact-pin test move together; installed sources are never edited. The Git/signature fixture suite uses a bounded 15s test allowance; product deadlines are unchanged. The first repaired aggregate reached the clean-source listing guard on an uncommitted tree; preserve that guard. ER15 records subsequent committed-source and protected CI outcomes. |
-| ER19 / seller prerequisite | Official OnchainOS v4.6.2 Darwin ARM64 binary verified against release checksums, SHA-256 `632e7b6ba188fb65c923673351a199837d176f60da06c095ad9faab427285510`. Repository README declares MIT. Scoped artifact copy only; no global installer, A2A daemon or shell-profile changes. The owner completed existing-wallet login; authenticated ASP discovery returned zero sellers and pre-check `canCreate:true`. Airvio Commerce profile and existing icon were explicitly approved; avatar upload succeeded. The credential-free profile draft is retained with endpoint unset. No agent registration or listing submission occurred; private auth responses remain outside review artifacts. |
-| ER20 / remaining download proof | In-app click/download API produced no observable saved file. Desktop Chrome/Safari automation failed in the macOS capture layer; the Chrome browser connector is unavailable. Generated Blob links and digest validation work, but completed browser download remains unverified. Recheck when a working desktop browser capture/connector is available; do not change valid product download behavior to mask a harness failure. |
+| ER16 / browser V9 | Actual in-app WebMCP discovery/call returns ER13’s four files/digest. Form output matches. Typecheck plus five focused suites: 30/30 pass, including async registration failure, 2s deadline, cancellation and pagehide. One local browser host only. |
+| ER17 / runtime prerequisites | Existing verified Darwin ARM64 workerd SHA-256 `0d9f91f3eb904c8a857867bd114f3224006235f51490b8c83c5ba669a6529ec3`; rootless Podman `agentic-dev` starts. Run machine/checks within one owned command lifetime. No privileged helper, runtime patch or paid resource. |
+| ER18 / upstream readiness | Adopt merged OS `8a40d044fe09e2f5eef48407257dd08d0d385c88` ([PR252](https://github.com/huijoohwee/agentic-os/pull/252), green gate) to fix the MCP child-startup race. Package, lock and pin test move together; installed sources stay untouched. Timeout/overflow still preserve effect evidence. A bounded 15s Git/signature fixture allowance changes no product deadline. Keep the clean-source build guard. |
+| ER19 / seller prerequisite | Official MIT OnchainOS v4.6.2 verified against release checksums: `632e7b6ba188fb65c923673351a199837d176f60da06c095ad9faab427285510`. Scoped local copy, no global install or daemon. Existing wallet signed in; zero ASPs; creation pre-check passed. Airvio Commerce profile/icon approved; avatar uploaded. Endpoint unset, no registration/submission; credentials remain outside review artifacts. |
+| ER20 / historical download gap | Interactive in-app download exposed no saved file; native app capture/connector was unavailable. Blob links/digests were verified. Keep this harness limitation separate from the current native-browser V10 download check. |
 
-Completed PR80 slice: 45-minute target, seven authored files/one runtime module, document ≤80 KiB, files <600 lines/chunks <500 kB, $0 new spend. Publication and retained verification close its atomic repair; hosted preparation is the separate slice below. Private evidence is `.workspace/.artifacts/workspace-pack-completion-20260925/`, including actual WebMCP response and verified runtime/CLI receipts; no credential is placed in review artifacts.
+Completed PR80 slice: 45 minutes, seven files/one runtime module, document ≤80 KiB, files <600 lines/chunks <500 kB, $0. Continuation evidence in `.workspace/.artifacts/workspace-pack-completion-20260925/` retains WebMCP, runtime and CLI receipts without credentials.
 
 ### Public-host candidate at J1 — implemented, activation pending
 
@@ -550,11 +550,26 @@ PRD F5/AC09 now includes the existing Commerce Worker's `/services/workspace-pac
 
 ADR A7: use the pure converter inside the existing Worker, with the locked official MCP SDK. Reject paid containers, a new host/controller and a live device tunnel. The edge handler uses the same bounded Graph contract, a 96 KiB streamed request ceiling, 220 KiB Graph result ceiling and 5s body/cancellation deadline. The provider's CPU ceiling separately limits synchronous conversion; a JS timer is not CPU isolation. No cookies, credentials, cross-origin browser calls, encoded bodies, storage, model calls or new bindings are accepted. The existing private checkout/fulfillment contracts retain their routes. Release manifests bind the generated module and three pack assets; asset verification resolves their actual nested routes. Rollback uses the existing controller's exact retained Worker version, removes the new route behavior, and needs no data migration.
 
-ER21 / MVP: the official low-level MCP Server replaces the high-level wrapper; Graph owns input validation. PR82 passes typecheck, authored limits, all 113 local-first tests and native browser checks. Committed durable host: 480,082 bytes; minified Worker: 345.41 KiB. Its 34-file release artifact digest is `5e35548709c1d894e96d5efad9b404c8a14e75dfa58a6463f4a64522b1095c26`. Exact protected CI is still required. Local Worker UI/WebMCP produce 21 nodes/four verified files with ER13's digest. Retained completion evidence: `pr82-artifact.json`, `pr82-browser-proof.json`, `pr82-local-first-check.log`, `edge-webmcp-proof.json`. Marketplace/download proof remains open; GTM remains free preview, zero revenue.
+ER21 / MVP: official low-level MCP Server repairs PR81’s 500 kB overflow without relaxing gates. PR82/83 pass protected CI; PR82 also passes typecheck, 113 local-first tests and native browser checks. Node host: 480,082 bytes; minified Worker: 345.41 KiB. PR83 artifact `5305fa94e666b827fbc384a6633bead1a5916dd91259a2491ca28e1ee7b7f771` binds 34 files. UI/WebMCP yield 21 nodes/four verified files. Proofs and 29.4s local video remain in the completion evidence directory; no public channel or revenue claim.
 
-Public-host slice bounds: 45 minutes, ≤12 authored files/four runtime modules, joined document ≤80 KiB, each file <600 lines/chunk <500 kB, $0 new spend. No new npm package or remote resource. Cloudflare Workers Free currently documents 100,000 requests/day, 10ms CPU/request and 128 MiB memory; provider exhaustion must fail, never enable overages ([limits](https://developers.cloudflare.com/workers/platform/limits/), observed 2026-09-25). Actual account eligibility and production CPU/headroom remain deployment prerequisites.
+Public-host slice: 45 minutes, ≤12 files/four modules, document ≤80 KiB, files <600 lines/chunks <500 kB, $0. No new npm package/remote resource. Confirmed Workers Free: 100,000 requests/day, 10ms CPU, 128 MiB ([limits](https://developers.cloudflare.com/workers/platform/limits/), 2026-09-25). Production CPU/headroom requires runtime proof; never enable overages.
 
-Development handover: authenticated Workers dashboard showed **Free / Current plan** on 2026-09-25 (`cloudflare-free-plan-observation.json`); no plan change. Production still reports source `0162872948dbf27d9811daea9e59ffc0b81f9cf3`, Worker `5a4375b1-bc96-4570-a801-655b6640ff17`; no deployment occurred. Approved Airvio Commerce profile/avatar are retained; endpoint/Agent ID remain unset. Next: exact candidate CI, external protected-integration authority, owner-initiated release/approval/readback, then real HTTPS listing validation and registration. Final verification slice: ≤15 active minutes, one document, $0, same byte caps. Recheck on CI, integration/host/admission receipts or restored download capture; external waits have no ETA.
+Development handover: dashboard confirms Free; production still reports source `0162872948dbf27d9811daea9e59ffc0b81f9cf3`, Worker `5a4375b1-bc96-4570-a801-655b6640ff17`. No deployment. The approved seller profile remains ready, endpoint/Agent ID unset. Next: publish this UI successor, exact CI, external protected integration, owner release/approval/readback, real HTTPS listing validation and registration. Prior merge request for PR83 is superseded by this enhancement. Graph cleanup/sync stays separate; pre-existing canonical edits are preserved. Recheck on exact receipts; external waits have no ETA.
+
+
+### Service discovery and request review at J1 — reference implementation
+
+PRD F5/AC10: first-time users need to understand deliverables before sending source; this is a usability hypothesis, not validated demand. V10: discover four included formats → prepare a source → review exact title/byte count, outputs and free total → explicitly create → inspect/download the verified pack. Close, Escape, backdrop and back-to-edit preserve input and send no conversion request. Edited input retires old output; refused/offline requests retain editable source and require explicit retry. No appointments, inventory, payment, account enrollment or booking confirmation are implied. Target: first sample pack in ≤4 actions/60s; timing remains to be measured.
+
+TAD G10: Commerce `e95cd9c11da4d2927beff74516139e4746c9d44a`, `public/local-first/workspace-pack.{html,css,js}` and native storefront controls ground this change. Extend `requestPack`, generation, cancellation and Blob lifecycle; T8 still owns conversion. One native modal with a bounded focus cycle reviews the request; no second cart/store/registry. Form confirmation discloses submission, not additional MCP/WebMCP authority. The same API receives credentials-omitted requests; backend/schema stay unchanged.
+
+Design adoption: [native contract](https://github.com/huijoohwee/huijoohwee.github.io/blob/ae3e4091d8ebef554e0ed416d7c62a11e7efb0ed/guidelines/design-theme-contract.md) 1.1.0 joins J1 for this view only.
+
+ADR A8: one service, four included outputs and reversible review fit the current owners; speculative catalogs/scheduling do not. Keep native light/green identity, system/code fonts and action text; CSS illustrations are decorative. `workspace-pack.css` owns this view’s semantic tokens. Existing `style.css` supplies context, not copied components. Graph Settings remain Graph-owned; no cross-product theme claim, remote assets/fonts, telemetry or dependency. Roll back the three view assets through the existing controller; no data migration.
+
+MVP V10 checks extend the existing browser runner through `test/local-first/workspace-pack-browser.mjs`: real REST conversion, no pre-confirmation POST, focus containment/return, backdrop/Escape, edited/invalid/offline recovery, downloaded bytes/digests, 390px touch layout, ≥44px review controls, measured text/focus contrast, reduced motion and 200% computed-font reflow. Text reflow does not certify browser zoom preferences. Existing WebMCP lifecycle suite remains required. ER22: native browser V10 passes all five groups, including actual downloaded hashes. Drawer text/secondary/button/focus contrast = 14.74/6.47/10.09/10.09:1; controls are ≥44px. Eight existing lifecycle tests pass. Proof: `workspace-pack-browser-proof.json` in native check output; screenshots do not establish delivery. The source itself is not stored; offline conversion and unfinished-source reload persistence remain unsupported and disclosed.
+
+GTM and all three projections at J1 retain the same free offer and zero revenue. Measure sample completion time, review abandonment, successful file retrieval and repeat use in five consenting tasks without adding analytics; demand/WTP remain unvalidated. The request flow is not a sale. Slice budget: ≤35 active minutes, six authored files/two UI modules, joined record ≤80 KiB, $0; exact new source CI/public activation remain separate. Owner: Commerce product/engineering. Exit: V10 browser receipt, updated joined record, exact candidate publication and explicit delivery gaps.
 
 [assessment]: https://github.com/huijoohwee/agentic-commerce-os/blob/9671532ddeb7d049cace6112214465fde9ff15dd/docs/prd-tad-adr-mvp-gtm-handoff.md
 [guideline]: https://github.com/huijoohwee/huijoohwee.github.io/blob/ae3e4091d8ebef554e0ed416d7c62a11e7efb0ed/guidelines/prd-tad-adr-mvp-gtm-guidelines.md

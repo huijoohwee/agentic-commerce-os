@@ -2,13 +2,19 @@ const $ = id => document.getElementById(id)
 const sample = '# Add up a small order\ndef order_total(quantity, unit_price):\n    return quantity * unit_price\n\ntotal = 0\nfor quantity in range(1, 4):\n    total = total + order_total(quantity, 5)\n\nprint(total)\n'
 const endpoint = new URL('./api', location.href), toolName = 'commerce.workspace.program-pack.create'
 const sha = async text => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)))].map(x => x.toString(16).padStart(2, '0')).join('')
-let generation = 0, controller = null, pack = null, urls = [], ready = false
+let generation = 0, controller = null, pack = null, urls = [], ready = false, review = null
+const reviewDialog = $('request-review')
+function closeReview() {
+  review = null
+  if (reviewDialog.open) { reviewDialog.close(); $('create').focus() }
+}
 function invalidate() {
+  closeReview()
   generation++; controller?.abort(); controller = null; pack = null
   urls.forEach(url => URL.revokeObjectURL(url)); urls = []
   $('result').hidden = true; $('empty').hidden = false; $('cancel').hidden = true
   $('result-heading').textContent = 'Ready when you are.'; $('result-badge').textContent = 'No current pack'
-  $('create').disabled = !ready; $('status').textContent = 'Create a fresh pack to match this source.'
+  $('create').disabled = !ready; $('status').textContent = 'Review your source to create a fresh pack.'
   $('source-size').textContent = `${(new TextEncoder().encode($('source').value).length / 1024).toFixed(1)} / 32 KiB`
 }
 function showFile(index) {
@@ -34,16 +40,51 @@ $('source').value = sample; invalidate()
 $('sample').addEventListener('click', () => { $('source').value = sample; $('title').value = 'Order total example'; invalidate() })
 for (const id of ['source', 'title']) $(id).addEventListener('input', invalidate)
 $('cancel').addEventListener('click', () => { invalidate(); $('status').textContent = 'Conversion cancelled. Your source is unchanged.' })
+$('close-review').addEventListener('click', closeReview)
+$('edit-request').addEventListener('click', () => { closeReview(); $('source').focus() })
+reviewDialog.addEventListener('cancel', event => { event.preventDefault(); closeReview() })
+reviewDialog.addEventListener('keydown', event => {
+  if (event.key !== 'Tab') return
+  const first = $('close-review'), last = $('edit-request')
+  if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus() }
+  else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus() }
+})
+reviewDialog.addEventListener('click', event => {
+  if (event.target !== reviewDialog) return
+  const rect = reviewDialog.getBoundingClientRect()
+  if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) closeReview()
+})
 $('pack-form').addEventListener('submit', async event => {
-  event.preventDefault(); invalidate()
+  event.preventDefault()
+  if (!ready || controller) return
+  invalidate()
   const current = generation, source = $('source').value, title = $('title').value
-  if (new TextEncoder().encode(source).length > 32768) { $('status').textContent = 'Keep the Python source within 32 KiB.'; return }
-  const requestController = new AbortController(); controller = requestController
-  const signal = requestController.signal
-  const timeout = setTimeout(() => requestController.abort(), 8000)
+  const bytes = new TextEncoder().encode(source).length
+  if (bytes > 32768) { $('status').textContent = 'Keep the Python source within 32 KiB.'; return }
+  $('create').disabled = true
+  try {
+    const input = { title, source, sourceDigest: await sha(source) }
+    if (current !== generation) return
+    review = { generation: current, input }
+    $('review-title').textContent = title
+    $('review-size').textContent = `${bytes.toLocaleString()} bytes of Python · 4 files included`
+    reviewDialog.showModal()
+    $('status').textContent = 'Review your request. Your source has not been sent.'
+  } catch { $('status').textContent = 'Request review is unavailable. Your source has not been sent.' }
+  finally { if (current === generation) $('create').disabled = !ready }
+})
+$('confirm-request').addEventListener('click', async () => {
+  if (!review || controller) return
+  if (review.generation !== generation || review.input.source !== $('source').value || review.input.title !== $('title').value) {
+    invalidate(); $('status').textContent = 'Your source changed. Review the updated request.'; return
+  }
+  const input = review.input
+  invalidate()
+  const current = generation, requestController = new AbortController(); controller = requestController
+  const signal = requestController.signal, timeout = setTimeout(() => requestController.abort(), 8000)
   $('create').disabled = true; $('cancel').hidden = false; $('status').textContent = 'Creating and verifying your four files…'
   try {
-    const result = await requestPack({ title, source, sourceDigest: await sha(source) }, signal)
+    const result = await requestPack(input, signal)
     if (generation !== current || signal.aborted) return
     pack = result
     urls = pack.files.map(file => URL.createObjectURL(new Blob([file.content], { type: file.mediaType })))
@@ -52,8 +93,9 @@ $('pack-form').addEventListener('submit', async event => {
     $('result-heading').textContent = pack.title; $('result-badge').textContent = '4 files verified'
     $('status').textContent = `Pack ready. Exact source preserved. Canvas contains ${pack.canvas.nodes} nodes. Code was not executed.`
     $('receipt').textContent = `Source: ${pack.sourceDigest}\nPack: ${pack.artifactDigest}`; showFile(0)
+    $('result-heading').focus()
   } catch (error) {
-    if (current === generation) $('status').textContent = signal.aborted ? 'Conversion timed out. You can retry.'
+    if (current === generation) $('status').textContent = signal.aborted ? 'Conversion timed out. You can review and retry.'
       : `Could not create this pack: ${error.message}. Check the supported syntax and try again.`
   } finally {
     clearTimeout(timeout)
