@@ -1,18 +1,18 @@
 ---
 title: "Reference Implementation — Commerce A2MCP Services"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.1.0"
-revision: "0.1.0"
+version: "0.2.0"
+revision: "0.2.0"
 date: "2026-09-25"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Commerce product owner"
 continuity_id: "PRD-TAD-ADR-COMMERCE-A2MCP-001"
-prd_revision: "0.1.0"
-tad_revision: "0.1.0"
-adr_revision: "0.1.0"
-mvp_revision: "0.1.0"
-gtm_revision: "0.1.0"
+prd_revision: "0.2.0"
+tad_revision: "0.2.0"
+adr_revision: "0.2.0"
+mvp_revision: "0.2.0"
+gtm_revision: "0.2.0"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
 lifecycle_status: "proposed"
@@ -20,9 +20,9 @@ lane: "authoring"
 universal_scope: false
 load_policy: "on-demand"
 worktree_id: "device-0232231d4a19--okx-service-evaluation"
-agent_id: "codex-a2mcp-services-spec"
+agent_id: "codex-a2mcp-catalog-service"
 source_revision: "b74536dbcfb49c93f8606a2b57fa4145c320a37c"
-reviewed_source_revision: "9671532ddeb7d049cace6112214465fde9ff15dd"
+reviewed_source_revision: "576c366f3712c06ecd01c89b73ea9b86006ee4c5"
 guideline_revision: "3.3.0"
 guideline_source_revision: "ae3e4091d8ebef554e0ed416d7c62a11e7efb0ed"
 guideline_sha256: "7558913d9877cd77b84d1b84f0f391fb6be457c5bd55327e52cc5a22ee6ae6ea"
@@ -31,7 +31,7 @@ agenticOsCanvasRenderMode: "2d"
 agenticOsCanvas2dRenderer: "d3"
 surfaces: ["2D Renderer: D3 Graph", "Markdown Preview"]
 primary_surface: "2D Renderer: D3 Graph"
-projection_revision: "0.1.0"
+projection_revision: "0.2.0"
 ---
 
 # Reference implementation — Commerce A2MCP services
@@ -40,13 +40,11 @@ The operator offers **services owned by `agentic-commerce-os`** through an agent
 product is not a renamed Graph endpoint. First prove a free, bounded Commerce catalog read; next validate a paid merchant launch-pack service. A2MCP means the marketplace's
 agent-to-MCP/API service category here.
 
-This is an authoring deliverable, not an accepted implementation baseline or release grant. The user authorized generating this document. Implementation, account enrollment,
-listing submission, outreach, payment and deployment require their applicable scope decisions. Existing grants are reusable only when they cover the exact effect. No new paid
-dependency or external message is authorized here.
+The user subsequently authorized implementing recommendations. This revision records the local R1 catalog service and its checks; it is not a hosted activation or payment grant. Account enrollment, listing submission, outreach, payment and deployment still require their applicable exact evidence and authority. No paid dependency or external message is introduced.
 
 ## Continuity and directive — reference implementation
 
-**Join J1:** `PRD-TAD-ADR-COMMERCE-A2MCP-001@0.1.0`. All section references below consume J1 unless an external revision is explicit. PRD owns scope/criteria; TAD consumes
+**Join J1:** `PRD-TAD-ADR-COMMERCE-A2MCP-001@0.2.0`. All section references below consume J1 unless an external revision is explicit. PRD owns scope/criteria; TAD consumes
 PRD; ADR binds TAD; MVP/GTM and venture projections consume these three. A changed criterion requires a coherent five-role revision. Authoring source: [PRD–TAD–ADR–MVP–GTM
 guideline 3.3.0][guideline], pinned by W1 and its digest.
 
@@ -57,8 +55,7 @@ merchant publication, ordinary shopper confirmation, authoritative money, or glo
 
 **CID-D1:** Context: G01–G08 establish native reusable components and unavailable public Commerce MCP; customer WTP and a live marketplace integration are unverified. Intent:
 an agent obtains a useful Commerce result with bounded cost and explicit authority. Directive: specify the smallest native A2MCP service and its acceptance, release and
-first-dollar boundaries. Role: Commerce product owner. Action/SVO: the Commerce product owner specifies the A2MCP service contract. Outcome: this joined document passes the
-named authoring checks and exposes unresolved product evidence without a live claim.
+first-dollar boundaries. Role: Commerce product owner. Action/SVO: the Commerce product owner specifies the A2MCP service contract. Outcome: local MCP invocation passes the named checks and the joined artifact records implementation versus unresolved delivery evidence.
 
 **0:** available source and sandbox evidence, no proved A2MCP customer outcome. **1:** one consenting pilot user completes marketplace discovery → Commerce invocation → real
 catalog result within a seven-day observation window after authorized activation. Payment and repeat demand are later, separately evidenced outcomes. No customer/pilot
@@ -146,38 +143,37 @@ fees, data jurisdiction. Each blocks only its dependent baseline/effect; documen
 ## TAD — reference implementation
 
 **Approach:** expose a least-privilege service profile over native domain contracts. Proposed URL: `https://airvio.co/agentic-commerce-os/services/mcp`; it is not implemented
-or verified. Keep existing `/mcp` agent authentication and `/mcp/operator` privileges unchanged. Do not make either anonymous. If the target accepts only a simple HTTP API,
+on the public Worker. The implemented loopback service uses the same path at `http://127.0.0.1:5192/agentic-commerce-os/services/mcp`. Keep existing `/mcp` agent authentication and `/mcp/operator` privileges unchanged. Do not make either anonymous. If the target accepts only a simple HTTP API,
 use one contract-only `/services/catalog` adapter over the same handler, selected by observed compatibility; do not implement both speculatively.
 
 | Component / responsibility | Exact owner / reuse decision | Smallest delta / checks / current evidence |
 |---|---|---|
-| T1 service transport validates and dispatches one tool | C1 `src/edge/mcp.ts`, SDK transport; extend-owner | Add explicit public-service allowlist containing only `commerce.catalog.public.list`; no operator tools. V1–V3; existing full-profile adapter tests ER05 do not prove this new profile |
-| T2 catalog projector returns sanitized capabilities | C1 `src/core/public-catalog.ts::projectPublicCatalog`; reuse | Serve a bounded, operator-approved immutable projection produced from an admitted registry snapshot; never browser drafts or invented agents. V1/V2; snapshot export handoff proposed |
+| T1 service transport validates and dispatches one tool | `src/edge/mcp.ts::handleCatalogMcpRequest`, SDK transport; extend-owner | Implemented separate allowlist with only `commerce.catalog.public.list`, strict empty input and no Core/provider dispatcher. ER10 proves local V1–V3; original agent/operator handlers preserved |
+| T2 catalog projector returns sanitized capabilities | `src/core/public-catalog.ts::{projectPublicCatalog,createPublicCatalogArtifact,readPublicCatalogArtifact}`; extend-owner | Implemented native projection, source/input/output digests, strict artifact fields and 24-hour expiry. Real admitted snapshot remains missing; fixtures prove local contract only |
 | T3 launch exporter derives reviewed artifact | C1 `public/local-first/launch.js`; reuse via declared module contract | Retain local review semantics; R2 headless adapter supplies explicit draft/review input. No generic package extraction. V6; source proof G03 |
 | T4 browser view projects native actions | C1 `src/edge/client/webmcp-runtime.ts`, local-first UI; retain-local | Preserve existing design tokens/controls; R1 page can link service result, optional tools reuse safe T2 reader. Do not reuse G04's provider-dispatch behavior. V5 |
-| T5 policy bounds input, data and effects | C1 `src/shared/http.ts`, `src/shared/auth.ts`, existing route and capability guards; extend-owner | Unknown capability fails closed; public data does not confer authorization. V2/V3; proposed service limits below |
+| T5 policy bounds input, data and effects | `src/local-host/catalog-service.ts::startCatalogService` plus native HTTP/MCP owners; extend-owner | Implemented one loopback process with 4 slots, rolling 60/minute limit, 5s body deadline, cancellation and strict Host/origin/credential refusal. No global or multi-host quota claim |
 | T6 release controller admits exact runtime | C1 `scripts/local-first-release/`, existing protected workflows and `docs/production-runtime.md`; reuse/extend-owner | A new service route changes the profile: update owner checks and seek its exact release grant, never inherit asset-only authority. V8 |
 | T7 payment owner verifies and journals settlement | G1 payment Worker + shared payment contracts; defer | R3 compatibility/fulfillment mapping through declared protocol, not sibling source import. V7; ER04 is insufficient |
 
 T1–T7 current proposed-product local/delivered rungs are **undocumented/undocumented**. Reused parts retain their own bounded evidence; their maturity is not transferred to
-this service. Build order is portable schema/limits → T2 owner checks → snapshot export → T1 adapter → T4 view → T6 release proof; T7 is a later independent seam. Runtime
+this service. Local T2 export, T1 adapter and T5 host are implemented. Remaining order: admitted snapshot → target-compatible hosted admission/quotas → T4 review → T6 exact release proof; T7 is a later independent seam. Runtime
 responses may return upstream; build dependencies stay acyclic.
 
 ### Service contracts and data lifecycle
 
 R1 advertises the existing `commerce.catalog.public.list` identity with empty object input and no additional properties. Output consumes T2 `{ok, revision, digest, agents}`;
 each row contains only `agentId`, `declaredCategory`, `declaredCapabilities`, `trustStatus`. The literal trust status `declared-and-present` is a declaration, not
-independently verified quality, safety or current price. The transport adds a versioned service envelope with source reference, generated/expiry times and request ID. This
-envelope is proposed; it does not silently change the native projection schema.
+independently verified quality, safety or current price. The transport adds `commerce.public-catalog/v1`, a source revision, epoch-millisecond generation/expiry times, full artifact digest and request ID. Native MCP `structuredContent.result` holds the envelope; text content serializes the same value. The native projection schema stays unchanged.
 
 The operator derives an immutable public artifact from an existing admitted registry snapshot; T2 remains the sole projector and the registry remains authoritative. Record
-full-output digest, source revision and projection version separately from the input snapshot digest. Proposed freshness ceiling: 24 hours; expiry returns unavailable, never
-stale-as-current. Replace artifacts through the existing reviewed asset/release pipeline. There is no second editable catalog, crawler or background refresh loop. If a valid
+full-output digest, source revision and projection version separately from the input snapshot digest. Implemented freshness ceiling: 24 hours; expiry returns unavailable, never
+stale-as-current. The loopback process admits one immutable artifact at startup and rechecks expiry/digest on each request; restart to replace it. Hosted publication remains a separate release change. There is no second editable catalog, crawler or background refresh loop. If a valid
 source snapshot cannot be obtained, R1 is blocked; a test fixture is local proof only.
 
-Limits: request ≤16 KiB; output ≤256 KiB and ≤100 rows; declared capabilities bounded by their upstream schema; 5-second deadline; concurrency initially ≤4 and ≤60
-requests/minute per service. These are proposed application ceilings, not hosting quota claims. Stop at the lower actual quota. Rate-limit before work; cancel on disconnect;
-permit at most one client retry for an idempotent read. Responses contain typed errors for invalid input, unsupported method/tool, stale snapshot, quota and unavailable
+Implemented local limits: request ≤16 KiB; complete MCP output ≤256 KiB and ≤100 rows; declared capabilities bounded by their upstream schema; 5-second deadline; concurrency initially ≤4 and ≤60
+requests/minute per service. These are per-process application ceilings, not hosting quota claims. Snapshot export currently accepts ≤100 total registry rows and <500,000 input bytes; it never truncates larger input. Stop at the lower actual quota. Rate-limit before work; cancel on disconnect;
+the service performs no automatic retry; callers may retry one idempotent read after the stated delay. Responses contain typed errors for invalid input, unsupported method/tool, stale snapshot, quota and unavailable
 dependency. Never turn an error into HTTP 200 success or expose provider errors/secrets.
 
 Data residence: source registry remains with its current owner; public artifact is immutable on the existing delivery surface; private drafts stay in the browser in R1. No
@@ -203,7 +199,7 @@ artifact may be copied by callers; removing a listing cannot recall those copies
 | `commerce.offer.select`, `commerce.checkout.initiate` | Browser select/prepare only; not R1 service tools | Native `StorefrontActions`; retain ordinary human-confirmation boundary |
 | `commerce.theme.deploy` | Operator-only MCP/HTTP; not marketplace exposed | Existing operator claim/fence/version requirements stay intact |
 | Merchant pack / proposed R2 | Local export exists; remote tool name/schema admission pending | T3; use native schema and register only after capability-map review; no fake current MCP tool |
-| Skills and command entrypoints | No A2MCP-specific skill/CLI currently declared | Future skill may orchestrate existing handlers; discovery grants no authority |
+| Skills and command entrypoints | Native CLI: `npm run build:catalog`; `npm run catalog -- export` or `serve`; no A2MCP skill declared | CLI exports from an explicitly selected snapshot or serves a validated artifact on loopback only; discovery grants no authority |
 
 Developer journey: inspect schema and version → local fixtures → official SDK handshake → authorized target call → sanitized request/result evidence → error/reconciliation
 read → support → announced version retirement. Preserve old schema while observed consumers migrate; any compatibility shim must name those consumers and removal trigger. No
@@ -397,8 +393,7 @@ schema/policy/result/cost evidence; concurrency = immutable artifact identity an
 
 ## MVP — reference implementation
 
-MVP consumes AC01–05/08, T1/T2/T4/T5/T6 and A1/A2/A4 at J1. Product implementation is not started. V1–V8 currently have no satisfying service-level evidence; ER01–08 are
-bounded grounding inputs. Local/delivered rungs remain undocumented/undocumented until independent evaluation earns promotion.
+MVP consumes AC01–05/08, T1/T2/T4/T5/T6 and A1/A2/A4 at J1. Local V1–V3 now have ER10 evidence; actual admitted catalog, V4 target invocation/video, V5 service UI and V8 hosted activation remain open. R2/R3 V6/V7 remain deferred. Local/delivered rungs stay undocumented/undocumented pending independent baseline and full service acceptance.
 
 **Domain object:** a merchant service invocation and its exact result. Four maturity dimensions—Core Requirements & Functionality; Innovation & Theme Alignment; Technical
 Execution & Integration; Usefulness & Agentic Experience—are all unassessed for the target integration. No contiguous level is claimed. T1/T6 and missing real pilot evidence
@@ -407,7 +402,7 @@ block an end-to-end score; reuse G02/G03, do not infer the service score from Gr
 | Roadmap phase / rank | Reuse, owner and smallest delta | Prerequisite → exit VCC | Active bounds / external wait / stop and recovery |
 |---|---|---|---|
 | R0 grounded authoring / current | Product owner; this document and G01–09 | User document request → metadata/trace/diagram check; no implementation authority | 15-minute initial estimate; 25-minute cap; byte cap refreshed from 40 to 60 KiB for required flows/projections; <600 lines, 1 file, 0 runtime modules, ≤30k authoring-token estimate; actual tokens unavailable |
-| R1 free native discovery / technical priority | T2 existing projector + T1 public profile + T6 artifact checks; engineering owner | Approved scope, real catalog source, K2/K3 proof → V1–V5/V8 and actual target result | Two 60-minute sprints, ≤6 files/3 runtime modules/24 KiB added, <500 kB chunk, ≤16k authoring tokens, 0 serving tokens/$0 new spend; stop/re-scope if dependencies exceed cap |
+| R1 free native discovery / technical priority | T2 existing projector + T1 public profile + T6 artifact checks; engineering owner | Approved scope, real catalog source, K2/K3 proof → V1–V5/V8 and actual target result | Two 60-minute sprints, ≤7 files/3 runtime modules/40 KiB added (refreshed from 6 files/24 KiB for host build, SDK negative matrix and handoff); planning file ≤64 KiB/<600 lines; <500 kB chunk, ≤16k authoring-token estimate, 0 serving tokens/$0 new spend; stop/re-scope on drift |
 | R2 native merchant pack / nearest paid hypothesis | T3 export and T4 review; product/engineering owner | Named priced need + R1 learning or an independently authorized local pilot → V6 and accepted deliverable | Two 60-minute sprints, ≤5 files/2 modules/16 KiB/12k authoring tokens; $0 new spend; no sale claim; recover by disabling only new adapter |
 | R3 paid A2MCP / conditional | T7 verified rail and artifact binding; payment owner | R2 demand + fee/license/authority proof → V7/V8 + first collected/fulfilled receipt | First 45-minute feasibility pass only, 0 runtime edits; subsequent exact plan required; account/facilitator approvals rechecked on evidence change, no completion ETA |
 
@@ -430,7 +425,7 @@ video exists yet. A fixture or sandbox receipt cannot replace the actual channel
 
 | PRD-TAD-ADR-MVP-GTM | CID | RAO | Updated Date |
 |---|---|---|---|
-| `PRD-TAD-ADR-COMMERCE-A2MCP-001@0.1.0` | C: G01–09 at C1 and assessment 9671532 · I: reviewable native service contract · D: Generate one grounded A2MCP specification within R0 bounds. | R: Technical Writer · A: Technical Writer specifies the Commerce A2MCP service · O: joined document with traceable criteria and explicit gaps · check: ER09 | 2026-09-25 |
+| `PRD-TAD-ADR-COMMERCE-A2MCP-001@0.2.0` | C: G01–09 at C1 and assessment 9671532 · I: reviewable native service contract · D: Implement recommendations within the revised R1 local bounds; preserve separate delivery gates. | R: Commerce engineering · A: Engineer implements and verifies the local public catalog service · O: V1–V3 local proof plus delivery gaps · check: ER10/ER11 | 2026-09-25 |
 
 This is the document's handoff row, not a duplicate private task board. Future execution RAO nodes are one independently closable VCC each: V1 projection/protocol; V2
 refusal/bounds; V3 authority; V4 channel demonstration; V5 browser/offline; V6 pack; V7 payment; V8 activation/readback. Each inherits the exact PRD/TAD/ADR join and narrows
@@ -502,7 +497,7 @@ qualified reviewer must settle applicable obligations before audience claims or 
 All three projections consume J1; they introduce no requirements or numbers. They are separately addressable subsections in this bounded file. Audience: prospective pilot
 reviewer. Decision sought: consent to one bounded free task, later an exact priced offer. Audience publication is not authorized.
 
-### Pitch deck projection, revision 0.1.0
+### Pitch deck projection, revision 0.2.0
 
 | Slide / roles covered | Projects / evidence status | Bound |
 |---|---|---|
@@ -516,16 +511,16 @@ reviewer. Decision sought: consent to one bounded free task, later an exact pric
 All twelve roles covered in six slides; total 120 seconds. No deck file or successful presentation is claimed. Replace Reveal with real V4 evidence before presenting a
 working-product claim.
 
-### Business plan projection, revision 0.1.0
+### Business plan projection, revision 0.2.0
 
 Purpose/customer/problem → PRD; market/timing → GTM M1/M2; offer/alternatives → A5 and S0–S3; acquisition/retention → GTM pilot cohort; delivery/suppliers/capacity → TAD
 ecosystem and GTM support; organization/IP/legal → GTM obligations; risks/recovery → TAD gates and findings; finance/capital → H1–H6 and linked statements; milestones → sole
 roadmap R0–R3. Missing market, legal and actual cost evidence blocks an investor/customer assurance claim, not completion of this discovery document.
 
-### Financial model projection, revision 0.1.0
+### Financial model projection, revision 0.2.0
 
 Consume H1–H6 and the three scenario formulas above. Inputs belong to GTM; TAD owns resource caps. No spreadsheet is requested; this Markdown model is the declared projection.
-ADLC Cost Ledger: R0 authoring active-time estimate 15 minutes/cap 25; actual active minutes and tokens unavailable; guideline-reading token cost included in ≤30k authoring
+ADLC Cost Ledger: R0 authoring estimate 15 minutes/cap 25; R1 local implementation estimate two 60-minute sprints; actual active minutes and tokens unavailable; guideline-reading token cost included in ≤30k authoring
 estimate, not measured. Source CI duration and cost await this exact candidate's receipt; prior PR CI is not charged as measured current work. New paid tools/resources
 purchased: none. Account bill, energy, sunk device cost and operator labor remain unknown. Later ledger lines must bind candidate/run, duration, token/CI/provider cost and
 avoidable-block cost to exact receipts; no cost-saving claim is earned by missing measurements.
@@ -540,9 +535,9 @@ assertion has been validated.
 | C01 | covered / PRD | Personas/pain hypotheses; product owner obtains named need before baseline |
 | C02 | deferred / GTM market | No sourced sizing/geography; research owner completes M1/M2 after segment selection |
 | C03 | covered / PRD+ADR+GTM | Service tiers, alternatives, H1; product owner validates priced response |
-| C04 | covered / PRD+TAD | Journeys/criteria/mobile/offline; QA executes V1–V6 after implementation |
+| C04 | covered / PRD+TAD | Journeys/criteria/mobile/offline; QA consumes ER10 for local V1–V3; V4–V6 remain open |
 | C05 | covered / TAD | Components/contracts/six diagrams; engineering owner checks native integrations |
-| C06 | covered / TAD+ADR | Bounds/privacy/cost/license gates; QA validates V2/V3 and operator verifies quota |
+| C06 | covered / TAD+ADR | Bounds/privacy/cost/license gates; ER10 validates local V2/V3; operator must verify hosted quota |
 | C07 | covered / ADR | A1–A5 alternatives/recovery; independent evaluator resolves pending price/hosting |
 | C08 | covered / MVP | Smallest slice/demo/evidence register; evaluator runs V4 before promotion |
 | C09 | covered / GTM | Cohort/acquisition/retention decisions; product owner records real pilot outcomes |
@@ -570,14 +565,29 @@ Known findings: 0 blocker, 5 major, 0 minor; all other reviewed types have zero 
 current grounding, independent review and the missing evidence above. No runtime-ready or higher claim is made. At most three alignment cycles; two cycles without reduced
 blockers stop for an explicit successor decision.
 
-**Authoring checkpoint:** implemented this proposed five-role document and draft venture projections; runtime AC01–08 remain unimplemented for this service. ER09: the inline
-Node `a2mcp-authoring-audit` using the guideline's `scanFrontmatter` passed required keys, five-role revisions, 16 domain rows, eight criteria, six diagram blocks, four reference
-links and file caps. The guideline's `node scripts/check-diagram-canvas-render.mjs <artifact>` passed: 6 diagrams, 5 projecting, 1 non-projecting, 20 nodes, 15 edges, 6 clusters,
-zero findings. Local Mermaid browser preview rendered 6/6 SVGs at desktop and 390-pixel width; this is secondary-consumer evidence only. The prior assessment PR73 passed
-source CI; native successor `agent/device-0232231d4a19/a2mcp-services-spec` supplies this artifact without editing that published candidate. Its publication receipt and exact
-head are recorded by the native lane; source publication is not protected merge or delivery. Next
-bounded action: product owner reviews R1 scope, identifies a real catalog source and verifies zero-spend hosting eligibility; then the independently judged baseline can admit
-V1–V3 local work. Recheck on new source/account/pilot evidence. No external waiting ETA.
+**Implementation checkpoint (2026-09-25):** local artifact export and narrow MCP invocation are implemented; the existing agent/operator and checkout routes retain their contracts. ER10: `npm run test:unit -- test/shared/catalog-service.test.ts test/shared/edge-mcp.test.ts test/shared/webmcp-tools.test.ts test/shared/human-confirmation.test.ts` passed 22 tests; `npm run typecheck` passed. `npm run build:catalog` produced a 14,341-byte bundle; the existing lockfile supplies external SDK dependencies, with no new dependency. CLI export → loopback serve → official SDK initialize/list/call returned the synthetic fixture and excluded its private field. This is local protocol evidence, not an actual admitted catalog or OKX delivery.
+
+ER11: `npm run check:integration` passed ADLC, evidence-contract, 91 domain, 291 unit, 60 Worker and 52 admission tests. It stopped at the existing durable-host test's `listing_source_must_be_exact_and_clean` precondition (108/109 local-first tests). Rerun after native publication supplies a clean exact candidate; do not weaken the guard. Native validation receipt/log owner: lane Git directory `agentic-os-tests/validation-last.json`. Source lane: `agent/device-0232231d4a19/a2mcp-catalog-service`, predecessor PR74 at `576c366f3712c06ecd01c89b73ea9b86006ee4c5`; source publication, protected integration and runtime remain separate receipts. Seven files/three runtime modules; implementation/tests add approximately 32 KiB. Initial broad validation took 122.8s; exact authoring tokens, device cost and provider quota remain unknown; new paid resources: none.
+
+Next bounded action: rerun clean-source verification, then product owner selects a real admitted snapshot and hosting admission/zero-spend evidence. V4/V5/V8 require that evidence and exact effect grants; recheck when source/account/pilot facts change, with no external-wait ETA. No public listing, video, payment, full Python execution or remote Canvas fulfillment is claimed.
+
+### Local rehearsal commands — reference implementation
+
+Run from the admitted Commerce checkout with its installed lockfile. `SNAPSHOT` is an absolute path to an operator-selected native registry JSON export; `ARTIFACT` is a new absolute output path; `REVISION` is the exact source's 40-hex revision. Never export credentials or private snapshot files to the marketplace. Export excludes private fields and refuses altered input digests, duplicate IDs, excessive rows or an existing output file.
+```sh
+npm run build:catalog
+npm run catalog -- export --snapshot="$SNAPSHOT" --source-revision="$REVISION" --out="$ARTIFACT"
+npm run catalog -- serve --artifact="$ARTIFACT" --port=5192
+```
+Connect a Streamable HTTP MCP client to `http://127.0.0.1:5192/agentic-commerce-os/services/mcp`; initialize → list tools → call `commerce.catalog.public.list` with `{}`. The host is headless and loopback-only; it does not expose a browser page or remote gateway. Stop with SIGINT/SIGTERM. Captured stdout contains request ID/status/bytes/duration/zero model tokens, never request bodies or credentials; the operator owns any capture/retention. No catalog fixture is installed by default.
+
+### Next paid candidate: Workspace Program Pack — reference implementation
+
+The user's Python/Block + Canvas suggestion is recommended as a candidate deliverable: supported Python source, native Block/JSON, Markdown and a reviewable Canvas result, sold by Commerce with Graph retaining conversion, execution and workspace ownership. Buyer outcome and price remain hypotheses; the $1 price is an experiment, not a sale claim. This is Won't in the current R1 increment, not an invented catalog registration.
+
+Grounding at Graph G1: `canvas/src/features/block-editor/programCodec.ts::{renderProgramJson,applyProgramJson,renderProgramMarkdown,applyProgramMarkdown}` implements `workspace-program/v1` / `procedural-python/v1`. `python-learning/learningToolContract.mjs` defines inspect/control with exact source/scene/run identities. `agentic-graph-agent-ready-tool-contract.mjs` includes these only with `includeBrowserOnlyTools`; no published remote execution contract was found. The learning subset caps source at 32 KiB, evaluation at 50,000 steps and compute at 5s (`pythonModel.ts`); it is not general Python/package execution. Canvas export requires the native active workspace/rendering owner.
+
+ADR A6 / defer remote fulfillment: reuse Graph by a declared versioned export or protocol; do not import sibling source, copy its parser, automate an unbound browser session or fabricate completion. Before R2 selection, compare this pack against the existing merchant pack using a named buyer task. Then the Graph owner exposes one bounded conversion/result contract, Commerce binds request/output digests and permitted effects, and V6 is extended with native round-trip, stale-identity and Canvas-result evidence. Browser WebMCP control may support a consented local rehearsal; remote MCP requires a separate admitted adapter. Graph's unrelated modified demo source remains untouched.
 
 [assessment]: https://github.com/huijoohwee/agentic-commerce-os/blob/9671532ddeb7d049cace6112214465fde9ff15dd/docs/prd-tad-adr-mvp-gtm-handoff.md
 [guideline]: https://github.com/huijoohwee/huijoohwee.github.io/blob/ae3e4091d8ebef554e0ed416d7c62a11e7efb0ed/guidelines/prd-tad-adr-mvp-gtm-guidelines.md

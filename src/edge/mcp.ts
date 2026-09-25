@@ -8,6 +8,67 @@ import {
   type AuthoringClaimHeaderVerdict,
 } from './authoring-headers'
 import { capabilityBoundCore } from './capability-authorization'
+import { CATALOG_MAX_BYTES, readPublicCatalogArtifact } from '../core/public-catalog.ts'
+
+export const CATALOG_SERVICE_TOOL = 'commerce.catalog.public.list'
+export const CATALOG_REQUEST_BYTES = 16_384
+
+/** A separate public profile: no Core transport, operator authority or provider dispatcher. */
+export async function handleCatalogMcpRequest(
+  request: Request, readArtifact: () => Promise<unknown>, requestId: string,
+): Promise<Response> {
+  const error = (status: number, message: string, code = -32600, id: string | number | null = null) =>
+    Response.json({ jsonrpc: '2.0', error: { code, message }, id }, {
+      status, headers: { 'cache-control': 'no-store', 'x-request-id': requestId },
+    })
+  if (request.method !== 'POST') {
+    const response = error(405, 'method_not_allowed'); response.headers.set('allow', 'POST'); return response
+  }
+  const origin = request.headers.get('origin')
+  if ((origin !== null && origin !== new URL(request.url).origin)
+    || request.headers.has('authorization') || request.headers.has('cookie') || request.headers.has('content-encoding')) {
+    return error(403, 'public_service_credentials_or_origin_refused')
+  }
+  const body = await readJsonObject(request, CATALOG_REQUEST_BYTES)
+  if (isHttpFailure(body)) return error(body.code === 'body_too_large' ? 413 : 400, body.code, -32700)
+  const id = typeof body.id === 'string' || typeof body.id === 'number' ? body.id : null
+  if (body.jsonrpc !== '2.0' || typeof body.method !== 'string') return error(400, 'invalid_request')
+  if (!['initialize', 'notifications/initialized', 'ping', 'tools/list', 'tools/call'].includes(body.method)) {
+    return error(400, 'unsupported_method', -32601, id)
+  }
+  if (body.method === 'tools/call') {
+    const params = body.params
+    if (!isRecord(params) || params.name !== CATALOG_SERVICE_TOOL) return error(400, 'unsupported_tool', -32602, id)
+    if (!isRecord(params.arguments) || Object.keys(params.arguments).length !== 0
+      || Object.keys(params).some(key => !['name', 'arguments', '_meta'].includes(key))) {
+      return error(400, 'empty_arguments_required', -32602, id)
+    }
+  }
+  // Fail closed even at discovery when no current operator-approved artifact is installed.
+  let artifact
+  try { artifact = await readPublicCatalogArtifact(await readArtifact()) } catch (cause) {
+    const message = cause instanceof Error && /^catalog_(?:artifact|snapshot)_[a-z_]+$/u.test(cause.message)
+      ? cause.message : 'catalog_unavailable'
+    return error(503, message, -32001, id)
+  }
+  const server = new McpServer({ name: 'agentic-commerce-os-catalog', version: '0.1.0' })
+  server.registerTool(CATALOG_SERVICE_TOOL, {
+    title: 'List Public Commerce Agents',
+    description: 'Read operator-published capability declarations. Declared trust is not verified quality or live pricing.',
+    inputSchema: z.object({}).strict(),
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  }, async () => toolResult({ ...artifact, requestId }))
+  const transport = new WebStandardStreamableHTTPServerTransport({ enableJsonResponse: true })
+  try {
+    await server.connect(transport)
+    const response = await transport.handleRequest(request, { parsedBody: body })
+    const text = await response.text()
+    if (new TextEncoder().encode(text).length > CATALOG_MAX_BYTES) return error(503, 'catalog_response_too_large', -32001, id)
+    const headers = new Headers(response.headers)
+    headers.set('x-request-id', requestId); headers.set('cache-control', 'no-store')
+    return new Response(text || null, { status: response.status, headers })
+  } finally { await server.close() }
+}
 
 export const PUBLIC_MCP_TOOL_NAMES = Object.freeze([
   'commerce.runtime.status',
