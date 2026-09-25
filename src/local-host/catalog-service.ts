@@ -4,9 +4,10 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import { randomUUID } from 'node:crypto'
+import { BodyError, readLocalBody } from '../shared/local-http-body.ts'
 import { canonicalJson } from '../shared/digest.ts'
 import { CATALOG_MAX_BYTES, createPublicCatalogArtifact, readPublicCatalogArtifact } from '../core/public-catalog.ts'
-import { CATALOG_REQUEST_BYTES, handleCatalogMcpRequest } from '../edge/mcp.ts'
+import { handleCatalogMcpRequest } from '../edge/mcp.ts'
 
 export const CATALOG_SERVICE_PATH = '/agentic-commerce-os/services/mcp'
 export const CATALOG_SERVICE_LIMITS = Object.freeze({ concurrency: 4, requestsPerMinute: 60, deadlineMs: 5000 })
@@ -64,7 +65,7 @@ export async function startCatalogService(input: unknown, options: Options = {})
     // Keep a terminal error listener even when a cancelled body has already released its readers.
     request.once('error', disconnect)
     try {
-      const body = request.method === 'POST' ? await readBody(request, controller.signal) : undefined
+      const body = request.method === 'POST' ? await readLocalBody(request, controller.signal) : undefined
       const headers = new Headers()
       for (const [key, value] of Object.entries(request.headers)) {
         if (value !== undefined) headers.set(key, Array.isArray(value) ? value.join(', ') : value)
@@ -109,38 +110,6 @@ function reply(response: ServerResponse, status: number, value: unknown): void {
   response.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store',
     'x-content-type-options': 'nosniff', connection: 'close' })
   response.end(JSON.stringify(value))
-}
-class BodyError extends Error { constructor(readonly status: number, code: string) { super(code) } }
-function readBody(request: IncomingMessage, signal: AbortSignal): Promise<string> {
-  const length = request.headers['content-length']
-  if (length !== undefined && (!/^\d+$/u.test(length) || Number(length) > CATALOG_REQUEST_BYTES)) {
-    request.pause(); return Promise.reject(new BodyError(413, 'catalog_request_too_large'))
-  }
-  return new Promise((resolve, reject) => {
-    let bytes = 0, settled = false
-    const chunks: Buffer[] = []
-    const finish = (error?: Error, text?: string) => {
-      if (settled) return
-      settled = true
-      request.off('data', data).off('end', end).off('error', failed)
-      signal.removeEventListener('abort', abort)
-      if (error) { request.pause(); reject(error) } else resolve(text ?? '')
-    }
-    const failed = () => finish(new BodyError(400, 'catalog_body_invalid'))
-    const abort = () => finish(new BodyError(499, 'catalog_cancelled'))
-    const data = (chunk: Buffer) => {
-      bytes += chunk.length
-      if (bytes > CATALOG_REQUEST_BYTES) finish(new BodyError(413, 'catalog_request_too_large'))
-      else chunks.push(chunk)
-    }
-    const end = () => {
-      try { finish(undefined, new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(chunks))) }
-      catch { failed() }
-    }
-    request.on('data', data).once('end', end).once('error', failed)
-    signal.addEventListener('abort', abort, { once: true })
-    if (signal.aborted) abort()
-  })
 }
 
 function readFile(file: string | undefined, maximum: number): unknown {
