@@ -4,6 +4,30 @@ const endpoint = new URL('./api', location.href), toolName = 'commerce.workspace
 const sha = async text => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)))].map(x => x.toString(16).padStart(2, '0')).join('')
 let generation = 0, controller = null, pack = null, urls = [], ready = false, review = null
 const reviewDialog = $('request-review')
+const consolePanel = $('console-panel'), consoleToggle = $('console-toggle')
+let consoleEventCount = 0
+function recordConsole(kind, message) {
+  const entry = document.createElement('li'), label = document.createElement('span'), detail = document.createElement('span')
+  entry.dataset.kind = kind
+  label.textContent = String(++consoleEventCount).padStart(2, '0')
+  detail.textContent = message
+  entry.append(label, detail)
+  const events = $('console-events')
+  events.append(entry)
+  while (events.children.length > 16) events.firstElementChild.remove()
+}
+function setConsoleOpen(open) {
+  consolePanel.hidden = !open
+  consoleToggle.setAttribute('aria-expanded', String(open))
+  if (open) $('console-close').focus()
+  else consoleToggle.focus()
+}
+consoleToggle.addEventListener('click', () => setConsoleOpen(consolePanel.hidden))
+$('console-close').addEventListener('click', () => setConsoleOpen(false))
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && !consolePanel.hidden && !reviewDialog.open) { event.preventDefault(); setConsoleOpen(false) }
+})
+recordConsole('info', 'Console ready. Events are limited to this tab.')
 function closeReview() {
   review = null
   if (reviewDialog.open) { reviewDialog.close(); $('create').focus() }
@@ -39,7 +63,7 @@ async function requestPack(input, signal) {
 $('source').value = sample; invalidate()
 $('sample').addEventListener('click', () => { $('source').value = sample; $('title').value = 'Order total example'; invalidate() })
 for (const id of ['source', 'title']) $(id).addEventListener('input', invalidate)
-$('cancel').addEventListener('click', () => { invalidate(); $('status').textContent = 'Conversion cancelled. Your source is unchanged.' })
+$('cancel').addEventListener('click', () => { invalidate(); $('status').textContent = 'Conversion cancelled. Your source is unchanged.'; recordConsole('info', 'Form conversion cancelled.') })
 $('close-review').addEventListener('click', closeReview)
 $('edit-request').addEventListener('click', () => { closeReview(); $('source').focus() })
 reviewDialog.addEventListener('cancel', event => { event.preventDefault(); closeReview() })
@@ -70,6 +94,7 @@ $('pack-form').addEventListener('submit', async event => {
     $('review-size').textContent = `${bytes.toLocaleString()} bytes of Python · 4 files included`
     reviewDialog.showModal()
     $('status').textContent = 'Review your request. Your source has not been sent.'
+    recordConsole('info', 'Form review opened. Source not sent.')
   } catch { $('status').textContent = 'Request review is unavailable. Your source has not been sent.' }
   finally { if (current === generation) $('create').disabled = !ready }
 })
@@ -83,6 +108,7 @@ $('confirm-request').addEventListener('click', async () => {
   const current = generation, requestController = new AbortController(); controller = requestController
   const signal = requestController.signal, timeout = setTimeout(() => requestController.abort(), 8000)
   $('create').disabled = true; $('cancel').hidden = false; $('status').textContent = 'Creating and verifying your four files…'
+  recordConsole('running', 'Form conversion requested.')
   try {
     const result = await requestPack(input, signal)
     if (generation !== current || signal.aborted) return
@@ -94,23 +120,27 @@ $('confirm-request').addEventListener('click', async () => {
     $('status').textContent = `Pack ready. Exact source preserved. Canvas contains ${pack.canvas.nodes} nodes. Code was not executed.`
     $('receipt').textContent = `Source: ${pack.sourceDigest}\nPack: ${pack.artifactDigest}`; showFile(0)
     $('result-heading').focus()
+    recordConsole('success', 'Form conversion returned four verified files.')
   } catch (error) {
     if (current === generation) $('status').textContent = signal.aborted ? 'Conversion timed out. You can review and retry.'
       : `Could not create this pack: ${error.message}. Check the supported syntax and try again.`
+    if (current === generation) recordConsole('failed', signal.aborted ? 'Form conversion timed out.' : 'Form conversion failed.')
   } finally {
     clearTimeout(timeout)
     if (current === generation) { controller = null; $('cancel').hidden = true; $('create').disabled = !ready }
   }
 })
 document.querySelectorAll('[data-file]').forEach(button => button.addEventListener('click', () => showFile(Number(button.dataset.file))))
-$('api-url').textContent = endpoint.href; $('mcp-url').textContent = new URL('./mcp', location.href).href
+$('api-url').textContent = endpoint.href
+$('mcp-url').textContent = $('console-mcp-url').textContent = new URL('./mcp', location.href).href
 try {
   const response = await fetch('./service.json', { credentials: 'omit' })
   if (!response.ok) throw Error('unavailable')
   const service = await response.json()
   if (service.id !== toolName || service.price.mode !== 'free') throw Error('identity')
-  ready = true; $('connection').textContent = 'Service ready'; $('create').disabled = false
-} catch { $('connection').textContent = 'Service unavailable'; $('status').textContent = 'The service is unavailable. Try again shortly.' }
+  ready = true; $('connection').textContent = 'Service ready'; $('console-service').textContent = 'Ready'; $('create').disabled = false
+  recordConsole('success', 'Service manifest verified.')
+} catch { $('connection').textContent = 'Service unavailable'; $('console-service').textContent = 'Unavailable'; $('status').textContent = 'The service is unavailable. Try again shortly.'; recordConsole('failed', 'Service manifest unavailable.') }
 // Current WebMCP uses Document. Retain only a contract-level adapter for older hosts.
 const modelContext = document.modelContext?.registerTool ? document.modelContext : navigator.modelContext
 if (modelContext?.registerTool) {
@@ -123,13 +153,22 @@ if (modelContext?.registerTool) {
       inputSchema: { type: 'object', required: ['title', 'source', 'sourceDigest'], additionalProperties: false,
         properties: { title: { type: 'string', maxLength: 80 }, source: { type: 'string', maxLength: 32768 }, sourceDigest: { type: 'string', pattern: '^[a-f0-9]{64}$' } } },
       annotations: { readOnlyHint: true, untrustedContentHint: true, consequentialHint: false },
-      execute: async (input, options) => ({ content: [{ type: 'text', text: JSON.stringify(await requestPack(input,
-        AbortSignal.any([registration.signal, AbortSignal.timeout(8000), ...(options?.signal ? [options.signal] : [])]))) }] }) },
+      execute: async (input, options) => {
+        recordConsole('running', 'Browser tool invoked.')
+        try {
+          const result = await requestPack(input,
+            AbortSignal.any([registration.signal, AbortSignal.timeout(8000), ...(options?.signal ? [options.signal] : [])]))
+          recordConsole('success', 'Browser tool returned a verified pack.')
+          return { content: [{ type: 'text', text: JSON.stringify(result) }] }
+        } catch (error) { recordConsole('failed', 'Browser tool ended without a verified pack.'); throw error }
+      } },
     { signal: registration.signal })), new Promise((_, reject) => {
       registrationTimeout = setTimeout(() => reject(Error('webmcp_registration_timeout')), 2000)
     })])
     if (registration.signal.aborted) throw Error('webmcp_registration_cancelled')
     $('webmcp-status').textContent = 'Browser WebMCP tool registered.'
-  } catch { retire(); $('webmcp-status').textContent = 'Browser tool registration unavailable. Use the MCP or API endpoint.' }
+    $('console-browser-tool').textContent = 'Registered'
+    recordConsole('success', 'Browser WebMCP tool registered; no agent connection inferred.')
+  } catch { retire(); $('webmcp-status').textContent = 'Browser tool registration unavailable. Use the MCP or API endpoint.'; $('console-browser-tool').textContent = 'Unavailable'; recordConsole('failed', 'Browser tool registration unavailable.') }
   finally { clearTimeout(registrationTimeout) }
-} else $('webmcp-status').textContent = 'This browser does not expose WebMCP. The MCP and API endpoints remain available.'
+} else { $('webmcp-status').textContent = 'This browser does not expose WebMCP. The MCP and API endpoints remain available.'; $('console-browser-tool').textContent = 'Unsupported'; recordConsole('info', 'This browser does not expose WebMCP.') }

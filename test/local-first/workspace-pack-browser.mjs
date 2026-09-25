@@ -14,12 +14,28 @@ export async function checkWorkspacePack({ browser, url, output, revision }) {
   page.on('pageerror', error => errors.push(error.message));
   const record = name => checks.push(name);
   try {
+    await page.addInitScript(() => {
+      Object.defineProperty(document, 'modelContext', { configurable: true,
+        value: { registerTool(tool) { window.__workspacePackTool = tool; } } });
+    });
     await page.goto(url + 'services/workspace-pack/');
     const create = page.getByRole('button', { name: 'Review request', exact: true });
     const dialog = page.getByRole('dialog'), confirm = page.getByRole('button', { name: 'Create free pack', exact: true });
     const source = page.locator('#source'), title = page.getByLabel('Pack name');
     await expect(create).toBeEnabled();
     const original = await source.inputValue();
+    const consoleToggle = page.getByRole('button', { name: 'Console', exact: true });
+    await consoleToggle.click();
+    await expect(page.getByRole('complementary', { name: 'Console' })).toBeVisible();
+    await expect(page.locator('#console-service')).toHaveText('Ready');
+    await expect(page.locator('#console-browser-tool')).toHaveText('Registered');
+    await expect(page.locator('#console-events')).toContainText('Browser WebMCP tool registered');
+    assert.equal((await page.locator('#console-events').innerText()).includes(original), false);
+    assert.equal(requests.filter(request => request.method === 'POST').length, 0);
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#console-panel')).toBeHidden();
+    await expect(consoleToggle).toBeFocused();
+    record('Console opens with truthful capability state, tab-only activity and no source leak or request');
     await page.screenshot({ path: path.join(output, 'workspace-pack-desktop.jpg'), quality: 75, fullPage: true });
     await create.click();
     await expect(dialog).toBeVisible();
@@ -56,6 +72,11 @@ export async function checkWorkspacePack({ browser, url, output, revision }) {
     assert.equal(pack.title, 'Reviewed program');
     assert.equal(pack.files[0].content, original);
     assert.equal(pack.sourceDigest, sha(original));
+    await consoleToggle.click();
+    await expect(page.locator('#console-events')).toContainText('Form review opened. Source not sent.');
+    await expect(page.locator('#console-events')).toContainText('Form conversion returned four verified files.');
+    assert.equal((await page.locator('#console-events').innerText()).includes(original), false);
+    await page.getByRole('button', { name: 'Close Console' }).click();
     const downloadPromise = page.waitForEvent('download');
     await page.getByRole('link', { name: 'Download full pack', exact: false }).click();
     const download = await downloadPromise;
@@ -126,6 +147,18 @@ export async function checkWorkspacePack({ browser, url, output, revision }) {
     assert.equal(await dialog.evaluate(element => element.scrollWidth <= element.clientWidth), true);
     await page.getByRole('button', { name: 'Back to editing', exact: true }).click();
     record('390px layout, 44px drawer controls, computed contrast, reduced motion and 200% text reflow');
+    const toolOutput = await page.evaluate(async input => window.__workspacePackTool.execute(input),
+      { title: 'Browser tool check', source: original, sourceDigest: sha(original) });
+    const toolPack = JSON.parse(toolOutput.content[0].text);
+    assert.equal(toolPack.sourceDigest, sha(original));
+    assert.equal(toolPack.files.length, 4);
+    await consoleToggle.click();
+    await expect(page.locator('#console-events')).toContainText('Browser tool invoked.');
+    await expect(page.locator('#console-events')).toContainText('Browser tool returned a verified pack.');
+    assert.equal((await page.locator('#console-events').innerText()).includes(original), false);
+    assert.equal(await page.locator('#console-panel').evaluate(element => element.scrollWidth <= element.clientWidth), true);
+    await page.getByRole('button', { name: 'Close Console' }).click();
+    record('browser tool uses real conversion and Console records only bounded metadata at mobile width');
     assert.deepEqual(errors, []);
     const origin = new URL(url).origin;
     assert(requests.every(request => new URL(request.url).origin === origin));
