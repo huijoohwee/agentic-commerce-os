@@ -303,7 +303,11 @@ export async function checkWorkspacePack({ browser, url, output, revision }) {
     assert.equal((await page.locator('#console-events').innerText()).includes(original), false);
     assert.equal(await page.locator('#console-panel').evaluate(element => element.scrollWidth <= element.clientWidth), true);
     await capabilities.click(); await expect(sheet).toBeVisible();
+    // Wider font metrics reproduce the enlarged heading overflow seen on Linux CI.
+    await sheet.locator('h2').evaluate(element => { element.style.fontFamily = 'monospace'; });
     assert.equal(await sheet.evaluate(element => element.scrollWidth <= element.clientWidth), true);
+    const sheetBox = await sheet.boundingBox(), closeBox = await page.locator('#console-sheet-close').boundingBox();
+    assert(closeBox.x >= sheetBox.x && closeBox.x + closeBox.width <= sheetBox.x + sheetBox.width);
     await page.keyboard.press('Escape');
     assert.equal(await page.evaluate(() => document.querySelector('#console-panel').getBoundingClientRect().bottom <= document.querySelector('.workspace-status').getBoundingClientRect().top + 1), true);
     await page.getByRole('button', { name: 'Close Console' }).click();
