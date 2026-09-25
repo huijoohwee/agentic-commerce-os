@@ -3,11 +3,12 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import { verifyGraphBundle } from '../workspace-pack/build-graph.mjs';
 import { FULFILLMENT_CONFIG, readFulfillmentRelease } from './fulfillment.mjs';
 
 export const CONFIG = 'wrangler.local-first.jsonc';
 export const WORKER = 'agentic-commerce-edge-production';
-export const FILES = Object.freeze(['index.html', 'workspace.js', 'app.js', 'drafts.js', 'launch.js', 'checkout.js', 'workflow.js', 'style.css', 'sw.js']);
+export const FILES = Object.freeze(['index.html', 'workspace.js', 'app.js', 'drafts.js', 'launch.js', 'checkout.js', 'workflow.js', 'style.css', 'sw.js', 'workspace-pack.html', 'workspace-pack.js', 'workspace-pack.css']);
 export const PRIVATE_FILES = Object.freeze(['education-materials.md']);
 export const digest = value => createHash('sha256').update(value).digest('hex');
 export const git = (...args) => execFileSync('git', args, { encoding: 'utf8', timeout: 20000 }).trim();
@@ -23,9 +24,12 @@ export function assertLocalFirstConfig(config) {
 }
 export function sourceManifest(revision) {
   if (!/^[0-9a-f]{40}$/.test(revision) || git('rev-parse', 'HEAD') !== revision) throw Error('Candidate source mismatch');
+  verifyGraphBundle();
   assertLocalFirstConfig(JSON.parse(fs.readFileSync(CONFIG, 'utf8')));
   if (fs.readdirSync('public/local-first').sort().join() !== [...FILES, ...PRIVATE_FILES].sort().join()) throw Error('Unexpected static asset inventory');
-  const paths = [CONFIG, 'src/local-first/worker.ts', 'src/edge/production-prefix.ts', 'src/shared/http.ts',
+  const paths = [CONFIG, 'src/local-first/worker.ts', 'src/local-first/workspace-pack.ts',
+    'config/workspace-pack-graph.json', 'src/generated/graph-workspace-pack.js', 'src/generated/graph-workspace-pack.d.ts',
+    'scripts/workspace-pack/build-graph.mjs', 'src/edge/production-prefix.ts', 'src/shared/http.ts',
     ...['checkout', 'session', 'fulfillment-contract', 'fulfillment-definition', 'fulfillment', 'fulfillment-relay', 'stripe-checkout', 'checkout-offer'].map(file => `src/local-first/${file}.ts`),
     'src/sandbox/device-host.ts', 'package.json', 'package-lock.json',
     ...[...FILES, ...PRIVATE_FILES].map(file => 'public/local-first/' + file)];
