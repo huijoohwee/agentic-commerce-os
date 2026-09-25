@@ -33,7 +33,6 @@ import {
   type EvidenceSurface,
   type IsolatedCheckExecutionRequest,
 } from '../../scripts/evidence-verdict-runner.ts'
-
 const temporaryDirectories: string[] = []
 const TASK_ID = '20.2'
 const TASK_CHECK = 'npm run check:evidence'
@@ -44,7 +43,6 @@ const ISSUER = 'external-dispatch-authority'
 const ISSUER_KEY_ID = 'dispatch-key-v1'
 const TRUSTED_GIT = trustedGitExecutable()
 const TRUSTED_GIT_SHA256 = sha256(fs.readFileSync(TRUSTED_GIT))
-
 type Fixture = Readonly<{
   context: EvidenceContext
   artifactRoot: string
@@ -53,12 +51,12 @@ type Fixture = Readonly<{
   performerPublicKeySpkiBase64: string
   receipts: Map<string, EvidenceDispatchReceipt>
 }>
-
 afterEach(() => {
   for (const directory of temporaryDirectories.splice(0)) fs.rmSync(directory, { force: true, recursive: true })
 })
 
-describe('evidence verdict integrity', () => {
+// Real Git repositories, signatures and disk readback need a bounded integration-test allowance.
+describe('evidence verdict integrity', { timeout: 15000 }, () => {
   it('keeps implementation verification non-circular and validates its reachable baseline', () => {
     const packageValue = readJson(path.resolve('package.json')) as { scripts: Record<string, string> }
     const baseline = readJson(path.resolve('docs/verification-baseline.json')) as {
