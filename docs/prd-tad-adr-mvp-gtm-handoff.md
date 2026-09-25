@@ -88,6 +88,143 @@ No API key, cookie, personal buyer details or real-payment data belongs in sourc
 Successor work follows S01–S08 in the sprint owner. Keep the historical evidence below intact;
 new observations reference exact candidates and do not rewrite earlier check outcomes.
 
+## OKX service evaluation — 2026-09-25
+
+**Verdict:** Graph has a working public retrieval service and a working local graph-analysis
+MCP workflow. Commerce has reusable discovery, routing, checkout preparation and merchant
+controls, but its currently deployed profile cannot sell those services through remote MCP.
+Neither an OKX-integrated workflow nor paid Graph fulfillment through OKX is evidenced.
+Proceed with a free A2MCP retrieval pilot; treat monetization as a separate implementation decision.
+This dated observation consumes the existing five-role owners above without promoting their rungs,
+changing accepted requirements, selecting a production payment rail, or authorizing publication.
+
+### PRD observation: minimum requirements and buyer outcome
+
+Scope authorized by the current request: evaluate Commerce selling Graph services via MCP/WebMCP
+against the supplied OKX minimum requirements. No wallet enrollment, listing submission, deployment,
+paid call or buyer outreach was requested. Invocation intent is read/inspect through existing MCP
+owners; `/tool.route`, `#mcp`, `@mcp-gateway` remain the existing Commerce vocabulary, not new aliases.
+
+| Supplied requirement | Observed evidence | Assessment |
+|---|---|---|
+| Publish or integrate a working service through OKX AI | Public Graph MCP works directly; no OKX ASP identity, listing or OKX-originated invocation receipt was found in reviewed source/evidence | Not demonstrated; an ordinary public endpoint is insufficient |
+| Demonstrate an end-to-end workflow | Live Graph search → fetch succeeded; local official-SDK ingest → query → explain passed | Service-level proof exists; OKX discovery → invocation → result remains unverified |
+| Provide service, listing or integration URL | [Graph MCP](https://airvio.co/agentic-graph/mcp) is callable; [Commerce UI](https://airvio.co/agentic-commerce-os/) is a sandbox | Usable service URL exists; it does not establish OKX integration |
+| Show the working product in a demo video | Commerce page visually inspected; no qualifying OKX demo video supplied or produced | Still required for submission |
+
+The [OKX ASP tutorial](https://www.okx.ai/tutorial/asp) permits free A2MCP endpoints and requires
+x402 for paid calls. Its [A2MCP guide](https://web3.okx.com/onchainos/dev-docs/okxai/howtomcp)
+requires public HTTPS; v2 marketplace validation uses the `PAYMENT-REQUIRED` header.
+The [registration guide](https://web3.okx.com/onchainos/dev-docs/okxai/registerasp) requests a name,
+description, price and endpoint after Agentic Wallet setup. Account/platform state was not inspected;
+absence of local registration evidence does not establish that no ASP exists elsewhere.
+
+### TAD observation: existing owners and the missing connection
+
+Source revisions inspected: Commerce `b74536dbcfb49c93f8606a2b57fa4145c320a37c`,
+Graph `e113e0e5fc8ec158ba15fa4dfc3e22b1b1a4d56e`,
+OS `8bd5c314c23e30bc16de9a0fbb0a4349c3273638`.
+
+| Surface / owner | Existing capability | Limit relevant to selling Graph |
+|---|---|---|
+| Commerce `src/edge/mcp.ts` | 13 agent tools and 9 operator tools; routing, catalogs, themes and settlement reads | Full Edge/Core source capability is distinct from the deployed local-first profile |
+| Commerce `src/edge/client/webmcp-runtime.ts` | Shared catalog search, offer selection and checkout initiation | Preparation only; cannot settle; browser tools are a complementary presentation surface |
+| Commerce `src/local-first/worker.ts` | Mobile/offline drafts, merchant workspace and Stripe sandbox | Public MCP POST is refused; no live agent sales in this profile |
+| Graph `mcp/agent-graph-tool-contract.js` | `agentic-graph.agent_graph.ingest`, `.query`, `.explain_edge`, `.parser_generate` | Local stdio tools; not exposed by the seven-tool public MCP endpoint |
+| Graph `cloudflare/pages/agentic-graph-agent-ready.mjs` | Public search/fetch, source-file/shared-document reads and surface inspection | Retrieval of published material; not a remote graph-analysis execution service |
+| Graph `cloudflare/workers/agentic-graph-payment/agenticCommerceX402.ts` | Generic EVM x402 middleware | Handler returns a readiness-probe result, not a purchased graph-analysis deliverable |
+| Graph `grph-shared/src/payments/agenticCommercePaidResourceSsot.ts` and payment Worker | Persisted paid-resource implementation with replay/settlement states | Concrete product is XRPL travel requote for `agent-flight`; not Graph analysis or proven OKX compatibility |
+
+Commerce's `commerce.checkout.confirm` intentionally returns `human_confirmation_required`.
+Changing its response alone would bypass an existing trust boundary and still would not implement
+OKX paid fulfillment. Keep graph execution with Graph, commerce catalog/routing with Commerce,
+and protocol payment verification with the existing payment owner. A future narrow adapter should
+reuse these owners instead of adding another ledger, registry or orchestration platform.
+
+[WebMCP](https://webmachinelearning.github.io/webmcp/) exposes page JavaScript tools through a
+browser model context. It is not itself a remotely callable HTTPS endpoint. No reviewed OKX
+documentation establishes direct marketplace invocation of these browser-local tools. Use HTTP
+MCP/API for OKX and optional WebMCP for a human-visible storefront, with the same domain handlers.
+
+### ADR recommendation: choose the smallest demonstrable service
+
+1. **Free submission pilot:** list the existing public Graph retrieval service as a free A2MCP
+   service, subject to an actual OKX client compatibility check. Draft name: “Graph Source Evidence”.
+   Draft description: “Search published source documents and retrieve cited content for agent tasks.”
+   Price: 0. Candidate endpoint: `https://airvio.co/agentic-graph/mcp`. Do not advertise private
+   repository analysis, transaction capability or paid delivery on this endpoint.
+2. **First-dollar product hypothesis:** one bounded dependency/evidence report for a developer's
+   approved code snapshot. Reuse local ingest/query/explain; return source locations, snapshot digest
+   and explicit unsupported-input diagnostics. Trial price hypothesis: $1 per report, not per raw
+   graph edge. Buyer pain and willingness to pay remain unvalidated.
+3. **Later paid integration:** expose one bounded remote service over an approved snapshot, join its
+   fulfillment to x402 verification/settlement and exact-request replay, then prove it from OKX.
+   Use the payment owner to verify facilitator/network/asset support; a network-string change alone
+   is not compatibility evidence. Preserve the existing human-confirmed shopper checkout contract.
+
+| Priority | Buyer pain hypothesis | Near-built path | Distance to paid evidence |
+|---|---|---|---|
+| 1 | Developer cannot explain a dependency/change with source evidence | Local graph ingest/query/explain already works | Remote isolation, bounded delivery and payment binding missing; highest concrete Graph offer |
+| 2 | Agent needs reliable published documentation | Live public search/fetch already works | Shortest free OKX demonstration; standalone willingness to pay is weak/unmeasured |
+| 3 | Small seller needs agent-discoverable service offers | Commerce catalog/themes/routing and offline workspace exist | Full runtime delivery and provider admission gaps make this a larger marketplace project |
+| Defer | Video generation, travel execution or open-ended autonomous tasks | Some contracts/owners exist | External provider, spend and fulfillment dependencies exceed this zero-spend evaluation |
+
+The [OKX seller SDK guide](https://web3.okx.com/onchainos/dev-docs/payments/service-seller-sdk)
+documents X Layer mainnet and a testnet alternative. Current Graph EVM defaults are Base Sepolia
+(`eip155:84532`) with USDC. The live challenge uses that test network. Mainnet fees, facilitator
+support, SDK licensing, deployed service limits and total operator cost require confirmation before
+implementation/activation; no new package, hosting plan or funds were used here. Commerce and Graph
+MCP source carry MIT licenses; this is not a claim that hosted OKX/Cloudflare services are FOSS.
+
+### MVP evidence: executed observations and bounded next slice
+
+Live observations on 2026-09-25, approximately 03:32–03:36 UTC:
+
+| ID | Request / check | Result and proof boundary |
+|---|---|---|
+| OKX-E01 | GET Commerce `/readyz` | HTTP 200, `profile:local-first`, `checkout:sandbox`, `paymentStorage:stripe-test`, `realMoney:false`; deployed source `0162872948dbf27d9811daea9e59ffc0b81f9cf3`, Worker `5a4375b1-bc96-4570-a801-655b6640ff17` |
+| OKX-E02 | POST Commerce `/mcp`, JSON-RPC initialize | HTTP 501, `checkout_deferred`; deployed agent MCP unavailable |
+| OKX-E03 | Graph public MCP initialize and tools/list | HTTP 200; protocol `2025-06-18`; seven read-only tools: `search`, `fetch`, `list_source_files`, `read_source_file`, `read_shared_document`, `inspect_shared_document_structure`, `inspect_agent_surface` |
+| OKX-E04 | Graph `search({query:"MCP",limit:3})` then `fetch` of returned first ID | Both HTTP 200; fetched `PROMPT-PRESETS.md`, 27,593 characters, `isError:false`; result contained source URL |
+| OKX-E05 | Protected Graph control-plane initialize without credential | HTTP 401 `unauthorized`; no assertion about authenticated tool execution |
+| OKX-E06 | GET Graph `/api/payments/commerce/x402`, without payment | HTTP 402 with base64 v2 `payment-required`; `scheme:exact`, `network:eip155:84532`, `amount:1000`, USDC metadata; no payment, settlement or protected fulfillment attempted |
+| OKX-E07 | Commerce live browser page and WebMCP discovery | Page says sandbox/no real money and shows local offer preview; this document exposed zero tools to the connected browser's WebMCP discovery |
+| OKX-E08 | OS `npm run check` at inspected revision | Evaluators passed; four selected safety suites passed, 28 tests; not the complete 234-suite catalog |
+| OKX-E09 | Commerce focused existing unit suites | `edge-mcp`, `webmcp-tools`, `human-confirmation`: 3 files, 11 tests passed; source adapters/mocks, not OKX or live browser conformance |
+| OKX-E10 | Graph existing tool-contract and official-SDK stdio suites | 6 tests passed, including local fixture ingest → query → edge explanation; no paid/network model call |
+
+A 402 challenge alone cannot prove settlement or fulfillment. The Pages source also has a
+challenge-only response builder; the live response has not been bound to an exact Graph source
+revision or its serving Worker. Source/deployment drift must be resolved before treating its
+configuration as an accepted paid-service candidate.
+
+Proposed first implementation sprint after a scope decision: 60 active minutes maximum, at most
+3 existing runtime modules, 6 changed files, 24 KiB added, each file under 600 lines and each chunk
+under 500 kB, zero paid resources/model calls. First attempt the existing free endpoint unchanged;
+only add a thin owner-bound API adapter if OKX cannot invoke its JSON-RPC shape. Stop and re-scope
+if safe integration needs more. Acceptance: an actual OKX request returns the cited result, the
+public service/Agent ID locator is recorded, and a short demo shows that exact workflow.
+Marketplace review/account access are external dependencies; recheck upon receipt/status change,
+not on a promised completion date. Paid execution is a separate later slice with invalid-proof,
+concurrent replay, expiry, interrupted settlement and no-double-charge acceptance tests.
+
+Suggested demo, approximately 90 seconds: show the service/Agent ID in OKX; ask the user's agent
+for one published source; show search → fetch and the citation; open the returned document;
+show the Commerce product as a clearly labeled complementary storefront; finish with the actual
+service URL. For a later paid demo, also show the challenge, approved payment, delivered artifact
+and a replay producing the same receipt without another charge. Do not use sandbox payment as
+evidence of a collected dollar.
+
+### GTM and release handoff
+
+Technical evaluation is complete; buyer demand, OKX listing, OKX end-to-end delivery and demo-video
+submission remain unproven. No production or payment effect was executed. This evaluation adds
+one on-demand evidence section, zero runtime modules/dependencies and zero always-load bytes;
+the declared report cap is 18 KiB added in one file within a 25-minute assessment window.
+Headless assessment: no local UI implementation or dev-server requirement applies.
+Use START/RELEASE for this document lane and consumer deployment/rollback gates only for a later
+authorized runtime change. Preserve the existing deployment and original historical receipts.
+
 ## Historical implementation observation — reference implementation, 2026-09-09
 
 This implements the reusable slice of
