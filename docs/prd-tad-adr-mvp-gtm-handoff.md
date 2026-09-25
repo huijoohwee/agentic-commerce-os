@@ -90,6 +90,50 @@ new observations reference exact candidates and do not rewrite earlier check out
 
 ## OKX service evaluation — 2026-09-25
 
+### Current interpretation: Commerce owns the service offering
+
+The user's follow-up asks whether the services should come from `agentic-commerce-os`.
+**Yes: the customer-facing service contract, offer and entrypoint should belong to Commerce.**
+The operator is the seller; Commerce is the product/service surface; Graph can remain an upstream
+execution or payment dependency. This does not require moving Graph-owned code into Commerce.
+The earlier direct Graph listing recommendation bypasses the product being evaluated and is
+withdrawn. Graph's working public endpoint is dependency evidence, not Commerce delivery evidence.
+
+**PRD:** evaluate services provided through Commerce's own catalog, merchant and routing capabilities.
+Do not substitute a Graph service URL for the required Commerce integration. The intended workflow is
+OKX agent → Commerce MCP/API service → existing authorized providers as needed → Commerce result.
+WebMCP remains the optional browser interaction surface for the same Commerce operations.
+
+**TAD:** reuse `src/edge/mcp.ts` catalog and intent-routing handlers, existing merchant launch-pack
+logic and the upstream provider contracts. Commerce owns the offer and integration boundary;
+Graph retains graph execution and its existing authoritative payment/settlement responsibilities.
+This separation selects neither a legal merchant-of-record arrangement nor a new money ledger.
+
+**ADR / ranking:** first prove a free Commerce catalog/offer-discovery service using the existing
+public catalog projection. Then validate demand for a bounded merchant offer/launch-pack service
+using the existing offline offer review/export workflow. A $1 pilot price is a hypothesis, not
+an implemented billing feature or proof of demand. Merchant publication remains operator-controlled.
+Graph analysis can later support a cataloged offering if selected; it is not the default product.
+
+**MVP:** the candidate Commerce MCP route is
+`https://airvio.co/agentic-commerce-os/mcp`; OKX-E02 observed it returning 501. It is therefore a
+target to enable and verify, not a ready-to-register endpoint. A bounded free read service still
+needs its Commerce-owned public contract, safe catalog data source, deployment and an actual OKX
+invocation. No fake listings or Graph proxy relabeling count as completion. Inspect the full-runtime
+provider dependencies before choosing the smallest slice; the prior 60-minute implementation
+estimate does not establish feasibility for this corrected boundary. Acceptance is OKX discovery →
+Commerce catalog request → real Commerce result, with the service URL and a demo showing that flow.
+Paid delivery additionally needs the existing payment owner to prove compatible x402 settlement
+and replay-safe fulfillment. Existing human-confirmation restrictions remain intact.
+
+**GTM / handoff:** the earlier Graph tests and live observations remain valid for their recorded
+scope, but do not satisfy Commerce's four OKX submission requirements. No working Commerce remote
+service, OKX integration, collected dollar or qualifying video was established. This correction is
+one documentation file, under 5 KiB added, zero runtime modules and no deployment or payment effect.
+Predecessor PR #72 passed its Integration Gate; this successor requires its own protected check.
+
+### Initial evaluation: observations retained, recommendation superseded
+
 **Verdict:** Graph has a working public retrieval service and a working local graph-analysis
 MCP workflow. Commerce has reusable discovery, routing, checkout preparation and merchant
 controls, but its currently deployed profile cannot sell those services through remote MCP.
@@ -146,7 +190,7 @@ browser model context. It is not itself a remotely callable HTTPS endpoint. No r
 documentation establishes direct marketplace invocation of these browser-local tools. Use HTTP
 MCP/API for OKX and optional WebMCP for a human-visible storefront, with the same domain handlers.
 
-### ADR recommendation: choose the smallest demonstrable service
+### Historical ADR recommendation: superseded by the Commerce service boundary
 
 1. **Free submission pilot:** list the existing public Graph retrieval service as a free A2MCP
    service, subject to an actual OKX client compatibility check. Draft name: “Graph Source Evidence”.
