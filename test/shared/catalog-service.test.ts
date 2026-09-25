@@ -13,8 +13,8 @@ import { startCatalogService } from '../../src/local-host/catalog-service'
 const sourceRevision = 'a'.repeat(40)
 const entry = (id: string, registrationState = 'active') => ({
   agentId: id, category: 'shopping', registrationState,
-  admissionInputs: { toolAllowlistEntry: { tool_names: ['lookup', 'lookup', 'compare'] }, secret: 'private-input' },
-  admissionReceipt: { secret: 'private-receipt' }, providerUrl: 'https://private.invalid',
+  admissionInputs: { toolAllowlistEntry: { tool_names: ['lookup', 'lookup', 'compare'] }, privateNote: 'private-input' },
+  admissionReceipt: { privateNote: 'private-receipt' }, providerUrl: 'https://private.invalid',
 })
 async function snapshot(agents: unknown[] = [entry('z'), entry('a'), entry('hidden', 'inactive')]) {
   const value = { revision: 3, agents }
@@ -53,9 +53,9 @@ describe('public catalog artifact', () => {
   it('refuses tampering, private fields, oversize rows, future time and expiration exactly at the boundary', async () => {
     const value = await artifact()
     await expect(readPublicCatalogArtifact({ ...value, sourceRevision: 'b'.repeat(40) })).rejects.toThrow('digest_mismatch')
-    await expect(readPublicCatalogArtifact({ ...value, secret: 'never public' })).rejects.toThrow('artifact_invalid')
+    await expect(readPublicCatalogArtifact({ ...value, privateNote: 'never public' })).rejects.toThrow('artifact_invalid')
     await expect(readPublicCatalogArtifact({ ...value, catalog: { ...value.catalog,
-      agents: [{ ...value.catalog.agents[0], secret: 'never public' }] } })).rejects.toThrow('artifact_invalid')
+      agents: [{ ...value.catalog.agents[0], privateNote: 'never public' }] } })).rejects.toThrow('artifact_invalid')
     await expect(readPublicCatalogArtifact(value, value.expiresAt)).rejects.toThrow('artifact_expired')
     await expect(readPublicCatalogArtifact(value, value.generatedAt - 1)).rejects.toThrow('artifact_expired')
     await expect(readPublicCatalogArtifact({ ...value, expiresAt: value.generatedAt + CATALOG_MAX_AGE_MS + 1 })).rejects.toThrow('artifact_invalid')

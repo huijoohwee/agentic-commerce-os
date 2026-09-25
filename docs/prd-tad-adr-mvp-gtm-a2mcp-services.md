@@ -1,18 +1,18 @@
 ---
 title: "Reference Implementation — Commerce A2MCP Services"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.1"
-revision: "0.2.1"
+version: "0.2.2"
+revision: "0.2.2"
 date: "2026-09-25"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Commerce product owner"
 continuity_id: "PRD-TAD-ADR-COMMERCE-A2MCP-001"
-prd_revision: "0.2.1"
-tad_revision: "0.2.1"
-adr_revision: "0.2.1"
-mvp_revision: "0.2.1"
-gtm_revision: "0.2.1"
+prd_revision: "0.2.2"
+tad_revision: "0.2.2"
+adr_revision: "0.2.2"
+mvp_revision: "0.2.2"
+gtm_revision: "0.2.2"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
 lifecycle_status: "proposed"
@@ -22,7 +22,7 @@ load_policy: "on-demand"
 worktree_id: "device-0232231d4a19--okx-service-evaluation"
 agent_id: "codex-a2mcp-catalog-service"
 source_revision: "b74536dbcfb49c93f8606a2b57fa4145c320a37c"
-reviewed_source_revision: "28ef49315c5e65fcadb670a6dd5975cf8ca04d2e"
+reviewed_source_revision: "ab13a685d12535e46a03332d562b6c56bff3b40e"
 guideline_revision: "3.3.0"
 guideline_source_revision: "ae3e4091d8ebef554e0ed416d7c62a11e7efb0ed"
 guideline_sha256: "7558913d9877cd77b84d1b84f0f391fb6be457c5bd55327e52cc5a22ee6ae6ea"
@@ -31,7 +31,7 @@ agenticOsCanvasRenderMode: "2d"
 agenticOsCanvas2dRenderer: "d3"
 surfaces: ["2D Renderer: D3 Graph", "Markdown Preview"]
 primary_surface: "2D Renderer: D3 Graph"
-projection_revision: "0.2.1"
+projection_revision: "0.2.2"
 ---
 
 # Reference implementation — Commerce A2MCP services
@@ -44,7 +44,7 @@ The user subsequently authorized implementing recommendations. This revision rec
 
 ## Continuity and directive — reference implementation
 
-**Join J1:** `PRD-TAD-ADR-COMMERCE-A2MCP-001@0.2.1`. All section references below consume J1 unless an external revision is explicit. PRD owns scope/criteria; TAD consumes
+**Join J1:** `PRD-TAD-ADR-COMMERCE-A2MCP-001@0.2.2`. All section references below consume J1 unless an external revision is explicit. PRD owns scope/criteria; TAD consumes
 PRD; ADR binds TAD; MVP/GTM and venture projections consume these three. A changed criterion requires a coherent five-role revision. Authoring source: [PRD–TAD–ADR–MVP–GTM
 guideline 3.3.0][guideline], pinned by W1 and its digest.
 
@@ -425,7 +425,7 @@ video exists yet. A fixture or sandbox receipt cannot replace the actual channel
 
 | PRD-TAD-ADR-MVP-GTM | CID | RAO | Updated Date |
 |---|---|---|---|
-| `PRD-TAD-ADR-COMMERCE-A2MCP-001@0.2.1` | C: G01–09 at C1 and assessment 9671532 · I: reviewable native service contract · D: Implement recommendations within the revised R1 local bounds; preserve separate delivery gates. | R: Commerce engineering · A: Engineer implements and verifies the local public catalog service · O: V1–V3 local proof plus delivery gaps · check: ER10/ER11 | 2026-09-25 |
+| `PRD-TAD-ADR-COMMERCE-A2MCP-001@0.2.2` | C: G01–09 at C1 and assessment 9671532 · I: reviewable native service contract · D: Implement recommendations within the revised R1 local bounds; preserve separate delivery gates. | R: Commerce engineering · A: Engineer implements and verifies the local public catalog service · O: V1–V3 local proof plus delivery gaps · check: ER10/ER11 | 2026-09-25 |
 
 This is the document's handoff row, not a duplicate private task board. Future execution RAO nodes are one independently closable VCC each: V1 projection/protocol; V2
 refusal/bounds; V3 authority; V4 channel demonstration; V5 browser/offline; V6 pack; V7 payment; V8 activation/readback. Each inherits the exact PRD/TAD/ADR join and narrows
@@ -497,7 +497,7 @@ qualified reviewer must settle applicable obligations before audience claims or 
 All three projections consume J1; they introduce no requirements or numbers. They are separately addressable subsections in this bounded file. Audience: prospective pilot
 reviewer. Decision sought: consent to one bounded free task, later an exact priced offer. Audience publication is not authorized.
 
-### Pitch deck projection, revision 0.2.1
+### Pitch deck projection, revision 0.2.2
 
 | Slide / roles covered | Projects / evidence status | Bound |
 |---|---|---|
@@ -511,13 +511,13 @@ reviewer. Decision sought: consent to one bounded free task, later an exact pric
 All twelve roles covered in six slides; total 120 seconds. No deck file or successful presentation is claimed. Replace Reveal with real V4 evidence before presenting a
 working-product claim.
 
-### Business plan projection, revision 0.2.1
+### Business plan projection, revision 0.2.2
 
 Purpose/customer/problem → PRD; market/timing → GTM M1/M2; offer/alternatives → A5 and S0–S3; acquisition/retention → GTM pilot cohort; delivery/suppliers/capacity → TAD
 ecosystem and GTM support; organization/IP/legal → GTM obligations; risks/recovery → TAD gates and findings; finance/capital → H1–H6 and linked statements; milestones → sole
 roadmap R0–R3. Missing market, legal and actual cost evidence blocks an investor/customer assurance claim, not completion of this discovery document.
 
-### Financial model projection, revision 0.2.1
+### Financial model projection, revision 0.2.2
 
 Consume H1–H6 and the three scenario formulas above. Inputs belong to GTM; TAD owns resource caps. No spreadsheet is requested; this Markdown model is the declared projection.
 ADLC Cost Ledger: R0 authoring estimate 15 minutes/cap 25; R1 local implementation estimate two 60-minute sprints; actual active minutes and tokens unavailable; guideline-reading token cost included in ≤30k authoring
@@ -567,9 +567,11 @@ blockers stop for an explicit successor decision.
 
 **Implementation checkpoint (2026-09-25):** local artifact export and narrow MCP invocation are implemented; the existing agent/operator and checkout routes retain their contracts. ER10: `npm run test:unit -- test/shared/catalog-service.test.ts test/shared/edge-mcp.test.ts test/shared/webmcp-tools.test.ts test/shared/human-confirmation.test.ts` passed 22 tests; `npm run typecheck` passed. `npm run build:catalog` produced a 14,380-byte bundle; the existing lockfile supplies external SDK dependencies, with no new dependency. CLI export → loopback serve → official SDK initialize/list/call returned the synthetic fixture and excluded its private field. This is local protocol evidence, not an actual admitted catalog or OKX delivery.
 
-ER11: `npm run check:integration` passed ADLC, evidence-contract, 91 domain, 291 unit, 60 Worker and 52 admission tests. It stopped at the existing durable-host test's `listing_source_must_be_exact_and_clean` precondition (108/109 local-first tests). Rerun after native publication supplies a clean exact candidate; do not weaken the guard. Native validation receipt/log owner: lane Git directory `agentic-os-tests/validation-last.json`. Source lane: `agent/device-0232231d4a19/a2mcp-catalog-compatibility`, predecessor PR75 at `28ef49315c5e65fcadb670a6dd5975cf8ca04d2e`; source publication, protected integration and runtime remain separate receipts. Seven files/three runtime modules; implementation/tests add approximately 32 KiB. Initial broad validation took 122.8s; exact authoring tokens, device cost and provider quota remain unknown; new paid resources: none.
+ER11: clean-candidate `npm run check:integration` at `ab13a685d12535e46a03332d562b6c56bff3b40e` passed ADLC, evidence-contract, 91 domain, 291 unit, 60 Worker, 52 admission and all 109 local-first tests. It also passed exact-source mobile/offline/checkout and durable-listing browser proof, plus offer-watch, sandbox-source and merge-agent checks. It stopped at authored-limits: four synthetic credential-shaped fixture fields. This successor uses ordinary private-note fields while preserving leak and unknown-field rejection coverage; the credential scanner is unchanged. The separate full-platform browser preflight stopped at `podman_workerd_override_required`; Commerce requires a verified platform-matching workerd override with Podman (Docker is not required). Authored-limits, all 100 task-bound records, Dev/Production dry-deployment checks and the 500,000-byte chunk ceiling now pass; full-platform browser proof remains pending the compatible Podman runtime. No whole-gate pass is claimed.
 
-Clean predecessor follow-up: all 109 local-first tests passed; the remaining browser check stopped because pinned Chromium was absent. The official pinned test binary is now installed; `node scripts/local-first-release/check.mjs` passed the existing mobile/offline/checkout browser proof and durable-listing check (unchanged storefront, predecessor source identity). This successor accepts omitted zero-input MCP arguments and exercises both forms through the SDK; nonempty arguments still fail. No published candidate is rewritten.
+Native validation receipt/log owner: lane Git directory `agentic-os-tests/validation-last.json`. Source lane: `agent/device-0232231d4a19/a2mcp-catalog-fixtures`, predecessor PR76 at `ab13a685d12535e46a03332d562b6c56bff3b40e`; source publication, protected integration and runtime remain separate receipts. Seven files/three runtime modules; implementation/tests add approximately 32 KiB. Latest broad verification took 135s; exact authoring tokens, device cost and provider quota remain unknown; new paid resources: none.
+
+Earlier dirty-checkout and absent-Chromium failures are resolved on the clean candidate; their guard and pinned runtime remain intact. The official SDK accepts both omitted zero-input arguments and `{}`; nonempty arguments still fail. Existing browser proof covers the unchanged storefront, not a new catalog UI. Published candidates remain immutable.
 
 Next bounded action: rerun clean-source verification, then product owner selects a real admitted snapshot and hosting admission/zero-spend evidence. V4/V5/V8 require that evidence and exact effect grants; recheck when source/account/pilot facts change, with no external-wait ETA. No public listing, video, payment, full Python execution or remote Canvas fulfillment is claimed.
 
