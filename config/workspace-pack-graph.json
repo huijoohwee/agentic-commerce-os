@@ -1,0 +1,59 @@
+{
+  "schema": "commerce.workspace-pack-graph/v1",
+  "repository": "huijoohwee/agentic-graph",
+  "revision": "d23fc95330d5dce1326050705480b3c2776d5fe3",
+  "entry": "canvas/src/features/block-editor/workspaceProgramPack.ts",
+  "esbuild": "0.28.1",
+  "artifact": {
+    "path": "src/generated/graph-workspace-pack.js",
+    "bytes": 23492,
+    "sha256": "58ffc966f876024f6554d11e62ec48ac0410a8cecddf55e6e85107157946e567"
+  },
+  "inputs": [
+    {
+      "path": "canvas/src/features/parsers/python/lexer.ts",
+      "bytes": 1737,
+      "sha256": "5cc42a6f4adb55d5badff545b3bcf61961fe413003713b59b9b354154a0d0e57"
+    },
+    {
+      "path": "canvas/src/features/python-learning/pythonModel.ts",
+      "bytes": 2512,
+      "sha256": "40a196a2ee1ed895665bd5c11cfbb544500380335b91506b74a9f494f4e5ba17"
+    },
+    {
+      "path": "canvas/src/features/python-learning/pythonValues.ts",
+      "bytes": 9015,
+      "sha256": "095bbdf72ab51c853c35cb5ff10417647a8e439e3d079fb6ad4114a80eabe57a"
+    },
+    {
+      "path": "canvas/src/features/python-learning/pythonParser.ts",
+      "bytes": 12716,
+      "sha256": "05b70ad4f7b63d0c1c240eec253350fe764344cc517740099faf133b79bd8cc4"
+    },
+    {
+      "path": "canvas/src/features/block-editor/programError.ts",
+      "bytes": 130,
+      "sha256": "9ec3f8ac2f4facaad73b711ab7663b9deb84732ed20e06fc05d56a960f76e360"
+    },
+    {
+      "path": "canvas/src/features/block-editor/blockLibrary.ts",
+      "bytes": 8112,
+      "sha256": "5d170e6b2b58b9d974cacee5afa234c417f4b5d26c1f73d40d7981e122847713"
+    },
+    {
+      "path": "canvas/src/features/block-editor/uniqueJson.ts",
+      "bytes": 2012,
+      "sha256": "d6b726ee259465504eb25deea0adfb003bb218e785430745007af7cc90e60267"
+    },
+    {
+      "path": "canvas/src/features/block-editor/programCodec.ts",
+      "bytes": 16474,
+      "sha256": "e9fb0a27bcb28e6aca1cbbf026e2498813c0fdff2bd830908a2ada3aa23d90ec"
+    },
+    {
+      "path": "canvas/src/features/block-editor/workspaceProgramPack.ts",
+      "bytes": 3993,
+      "sha256": "fc626749a488d2f445c7e5a358eb86f3ca63621f5a48be5b543026dbb44b3836"
+    }
+  ]
+}

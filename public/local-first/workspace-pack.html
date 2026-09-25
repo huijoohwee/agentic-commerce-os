@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light"><meta name="description" content="Turn supported Python into an editable Workspace Program Pack. Four files, one free conversion, no code execution.">
+  <title>Workspace Program Pack · Airvio Commerce</title>
+  <link rel="stylesheet" href="./workspace-pack.css"><script type="module" src="./workspace-pack.js"></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to workspace</a>
+  <div class="service-note">A useful next step for your code. <span>Free conversion · No payment</span></div>
+  <header><a class="brand" href="./" aria-label="Airvio Commerce home">airvio<span>commerce</span></a><nav aria-label="Service"><a href="#formats">Included files</a><a href="#builder">Create a pack <span aria-hidden="true">↗</span></a></nav><span id="connection" class="pill">Checking service</span></header>
+  <main id="main">
+    <section class="intro" aria-labelledby="service-heading">
+      <div class="intro-copy"><p class="eyebrow">WORKSPACE PROGRAM PACK / 01</p><h1 id="service-heading">Your code.<br>More ways<br>to work with it.</h1><p class="lede">Keep your Python. Explore its structure in Blocks. Take the whole idea into Canvas.</p><div class="hero-actions"><a class="button" href="#builder">Prepare your pack <span aria-hidden="true">↗</span></a><span>Four files. One free conversion.</span></div></div>
+      <div class="program-art" aria-hidden="true"><div class="art-caption"><span>ONE SOURCE</span><span>FOUR FORMATS</span></div><div class="source-sheet"><div class="sheet-top"><span>program.py</span><span>01</span></div><pre>def order_total(quantity, price):
+    return quantity * price
+
+print(order_total(3, 5))</pre><div class="sheet-bottom">The source stays yours. <span>↗</span></div></div><div class="structure-sheet"><span class="eyebrow">PROGRAM STRUCTURE</span><div class="diagram"><span>Program</span><i></i><div><span>Function</span><span>Expression</span></div></div><span class="art-file">canvas.md</span></div><div class="art-caption art-bottom"><span>EDITABLE. PORTABLE.</span><span>NO CODE EXECUTION</span></div></div>
+    </section>
+    <section id="formats" class="formats" aria-labelledby="formats-heading"><div class="section-heading"><div><p class="eyebrow">INCLUDED IN EVERY PACK</p><h2 id="formats-heading">A format for each next step.</h2></div><p>All four included. Nothing to configure.</p></div>
+      <div class="format-grid"><article><div class="format-art python-art" aria-hidden="true"><span>.py</span><small>THE ORIGINAL</small></div><h3>Python source</h3><p>Your exact source, ready to keep editing.</p><span class="file-label">program.py</span></article><article><div class="format-art block-art" aria-hidden="true"><span>{ }</span><small>THE STRUCTURE</small></div><h3>Editable Blocks</h3><p>A native program tree for the Block editor.</p><span class="file-label">program.json</span></article><article><div class="format-art markdown-art" aria-hidden="true"><span># _</span><small>THE DOCUMENT</small></div><h3>Portable Markdown</h3><p>Your program in a document you can share.</p><span class="file-label">program.md</span></article><article><div class="format-art canvas-art" aria-hidden="true"><span>↳</span><small>THE CONNECTIONS</small></div><h3>Canvas document</h3><p>See how your program’s parts connect.</p><span class="file-label">canvas.md</span></article></div>
+    </section>
+    <ol class="steps" aria-label="Create a pack"><li><b>01</b> Prepare your source</li><li><b>02</b> Review your request</li><li><b>03</b> Take your four files</li></ol>
+    <section id="builder" aria-labelledby="builder-heading"><div class="section-heading"><div><p class="eyebrow">MAKE IT YOURS</p><h2 id="builder-heading">Start with a small program.</h2></div><span class="pill quiet">Free · No account needed</span></div>
+      <div class="workspace">
+        <section class="panel input-panel" aria-labelledby="source-heading"><div class="section-title"><h3 id="source-heading">Your source</h3><button id="sample" class="text-button" type="button">Load example <span aria-hidden="true">↗</span></button></div>
+          <form id="pack-form"><label for="title">Pack name</label><input id="title" maxlength="80" value="Order total example" pattern="[A-Za-z0-9][A-Za-z0-9 ._\-]{0,79}" required>
+            <label for="source">Python <span id="source-size">0 / 32 KiB</span></label><textarea id="source" rows="12" spellcheck="false" autocapitalize="off" autocomplete="off" required aria-describedby="source-help"></textarea>
+            <p id="source-help" class="hint">Supports assignments, loops, conditions and functions. Imports, packages and general Python execution are outside this service.</p>
+            <div class="actions"><button id="create" type="submit" disabled>Review request <span aria-hidden="true">↗</span></button><button id="cancel" type="button" class="secondary" hidden>Cancel conversion</button></div><p class="hint">Review first. Your source is sent only when you create the pack.</p>
+          </form>
+        </section>
+        <section class="panel output-panel" aria-labelledby="result-heading"><div class="section-title"><div><p class="eyebrow">YOUR DELIVERABLE</p><h3 id="result-heading" tabindex="-1">Ready when you are.</h3></div><span id="result-badge" class="pill quiet">No pack yet</span></div>
+          <p id="status" role="status" aria-live="polite">Load the example or enter your program, then review your request.</p>
+          <div id="empty"><span class="empty-mark" aria-hidden="true">{ }</span><p>One source, ready for its next chapter.</p><p class="hint">Your verified files will appear here.<br>Conversion does not run your code.</p></div>
+          <div id="result" hidden><div class="tabs" role="group" aria-label="Output format"><button data-file="0" type="button" aria-pressed="true">Python</button><button data-file="1" type="button" aria-pressed="false">Block / JSON</button><button data-file="2" type="button" aria-pressed="false">Markdown</button><button data-file="3" type="button" aria-pressed="false">Canvas</button></div>
+            <pre id="preview" tabindex="0" aria-label="Generated file preview"></pre><p id="file-info" class="hint"></p>
+            <div class="actions"><a id="download" class="button" download>Download file ↓</a><a id="download-pack" class="button secondary" download="workspace-program-pack.json">Download full pack ↓</a></div>
+            <div class="canvas-next"><strong>Continue in Graph</strong><p>Open <b>program.py</b> in Editor Workspace for Python and Block views. Import <b>canvas.md</b> to review the program graph on Canvas.</p><a href="https://airvio.co/agentic-graph/?openEditorWorkspace=1" target="_blank" rel="noopener noreferrer">Open Graph workspace ↗</a></div>
+            <details><summary>Verify this pack</summary><p>File and pack digests identify the returned bytes. They do not prove a sale or marketplace admission.</p><code id="receipt"></code></details>
+          </div>
+        </section>
+      </div>
+    </section>
+    <section class="service-details" aria-labelledby="details-heading"><h2 id="details-heading">Simple, by design.</h2><div><details><summary>What happens to my code?</summary><p>After your review, the source is sent to this service for conversion. It is not executed or stored. The generated files stay in this page until you download them or leave.</p></details><details><summary>Can I use it offline?</summary><p>Conversion needs a connection to this service. Downloaded files can be kept and edited locally. This page does not save an unfinished source across reloads.</p></details><details class="integration"><summary>Use this service from an agent</summary><p>REST, MCP and browser WebMCP use the same conversion. Agents provide the exact source and its SHA-256 digest; the browser review applies to requests made with this form.</p><dl><dt>API</dt><dd><code id="api-url"></code></dd><dt>MCP</dt><dd><code id="mcp-url"></code></dd><dt>Tool</dt><dd><code>commerce.workspace.program-pack.create</code></dd></dl><p id="webmcp-status">Checking browser tool support.</p></details></div></section>
+    <footer><a class="brand" href="./">airvio<span>commerce</span></a><p>Commerce owns the service. Graph owns the conversion.<br>No source storage · Not listed on OKX yet</p></footer>
+  </main>
+  <dialog id="request-review" aria-labelledby="review-heading" aria-describedby="review-disclosure"><div class="drawer-top"><p class="eyebrow">YOUR REQUEST</p><button id="close-review" type="button" class="text-button" autofocus>Close <span aria-hidden="true">×</span></button></div><h2 id="review-heading">Ready to make your pack?</h2><p class="drawer-intro">A final look before your source is sent.</p><div class="review-item"><span class="review-mark" aria-hidden="true">{ }</span><div><h3>Workspace Program Pack</h3><p id="review-title"></p><span id="review-size" class="hint"></span></div></div><dl class="review-facts"><dt>Included</dt><dd>Python, Block / JSON,<br>Markdown and Canvas</dd><dt>Processing</dt><dd>Conversion only</dd><dt>Source storage</dt><dd>None</dd></dl><p id="review-disclosure" class="hint">Creating the pack sends this source to the service. Your code will not be executed. No account or payment is required.</p><div class="review-total"><span>Total</span><strong>Free</strong></div><div class="drawer-actions"><button id="confirm-request" type="button">Create free pack <span aria-hidden="true">↗</span></button><button id="edit-request" type="button" class="secondary">Back to editing</button></div></dialog>
+</body>
+</html>
