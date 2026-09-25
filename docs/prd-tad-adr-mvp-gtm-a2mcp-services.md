@@ -1,18 +1,18 @@
 ---
 title: "Reference Implementation — Commerce A2MCP Services"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.3.4"
-revision: "0.3.4"
+version: "0.3.5"
+revision: "0.3.5"
 date: "2026-09-25"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Commerce product owner"
 continuity_id: "PRD-TAD-ADR-COMMERCE-A2MCP-001"
-prd_revision: "0.3.4"
-tad_revision: "0.3.4"
-adr_revision: "0.3.4"
-mvp_revision: "0.3.4"
-gtm_revision: "0.3.4"
+prd_revision: "0.3.5"
+tad_revision: "0.3.5"
+adr_revision: "0.3.5"
+mvp_revision: "0.3.5"
+gtm_revision: "0.3.5"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
 lifecycle_status: "proposed"
@@ -31,7 +31,7 @@ agenticOsCanvasRenderMode: "2d"
 agenticOsCanvas2dRenderer: "d3"
 surfaces: ["2D Renderer: D3 Graph", "Markdown Preview"]
 primary_surface: "2D Renderer: D3 Graph"
-projection_revision: "0.3.4"
+projection_revision: "0.3.5"
 ---
 
 # Reference implementation — Commerce A2MCP services
@@ -42,7 +42,7 @@ The user subsequently authorized implementing recommendations. This revision rec
 
 ## Continuity and directive — reference implementation
 
-**Join J1:** `PRD-TAD-ADR-COMMERCE-A2MCP-001@0.3.4`. All section references below consume J1 unless an external revision is explicit. PRD owns scope/criteria; TAD consumes PRD; ADR binds TAD; MVP/GTM and venture projections consume these three. A changed criterion requires a coherent five-role revision. Authoring source: [PRD–TAD–ADR–MVP–GTM guideline 3.3.0][guideline], pinned by W1 and its digest.
+**Join J1:** `PRD-TAD-ADR-COMMERCE-A2MCP-001@0.3.5`. All section references below consume J1 unless an external revision is explicit. PRD owns scope/criteria; TAD consumes PRD; ADR binds TAD; MVP/GTM and venture projections consume these three. A changed criterion requires a coherent five-role revision. Authoring source: [PRD–TAD–ADR–MVP–GTM guideline 3.3.0][guideline], pinned by W1 and its digest.
 
 This document owns the proposed A2MCP integration. It supersedes preliminary recommendations in the [evaluation companion at 9671532][assessment], while preserving its dated observations. It consumes the existing [first-dollar owner][first-dollar] at `PRD-TAD-ADR-COMMERCE-MVP-GTM-001@1.2.0` and
 [native implementation owner][implementation] at `edge-commerce-agent-mvp@0.6.0`; it does not redefine
@@ -368,7 +368,7 @@ Total 90s. R2/R3 later use the same 10/15/25/25/15 bounds with their own Reveal 
 
 | PRD-TAD-ADR-MVP-GTM | CID | RAO | Updated Date |
 |---|---|---|---|
-| `PRD-TAD-ADR-COMMERCE-A2MCP-001@0.3.4` | C: G01–09 at C1 and assessment 9671532 · I: reviewable native service contract · D: Implement recommendations within the revised R1 local bounds; preserve separate delivery gates. | R: Commerce engineering · A: Engineer implements and verifies the local public catalog service · O: V1–V3 local proof plus delivery gaps · check: ER10/ER11 | 2026-09-25 |
+| `PRD-TAD-ADR-COMMERCE-A2MCP-001@0.3.5` | C: G01–09 at C1 and assessment 9671532 · I: reviewable native service contract · D: Implement recommendations within the revised R1 local bounds; preserve separate delivery gates. | R: Commerce engineering · A: Engineer implements and verifies the local public catalog service · O: V1–V3 local proof plus delivery gaps · check: ER10/ER11 | 2026-09-25 |
 
 This is the document's handoff row, not a duplicate private task board. Future execution RAO nodes are one independently closable VCC each: V1 projection/protocol; V2 refusal/bounds; V3 authority; V4 channel demonstration; V5 browser/offline; V6 pack; V7 payment; V8 activation/readback. Each inherits the exact PRD/TAD/ADR join and narrows its roadmap budget. No autonomous indefinite loop.
 
@@ -418,7 +418,7 @@ The model is an **incomplete discovery sketch**, not a sourced financial forecas
 
 All three projections consume J1; they introduce no requirements or numbers. They are separately addressable subsections in this bounded file. Audience: prospective pilot reviewer. Decision sought: consent to one bounded free task, later an exact priced offer. Audience publication is not authorized.
 
-### Pitch deck projection, revision 0.3.4
+### Pitch deck projection, revision 0.3.5
 
 | Slide / roles covered | Projects / evidence status | Bound |
 |---|---|---|
@@ -431,11 +431,11 @@ All three projections consume J1; they introduce no requirements or numbers. The
 
 All twelve roles covered in six slides; total 120 seconds. No deck file or successful presentation is claimed. Replace Reveal with real V4 evidence before presenting a working-product claim.
 
-### Business plan projection, revision 0.3.4
+### Business plan projection, revision 0.3.5
 
 Purpose/customer/problem → PRD; market/timing → GTM M1/M2; offer/alternatives → A5 and S0–S3; acquisition/retention → GTM pilot cohort; delivery/suppliers/capacity → TAD ecosystem and GTM support; organization/IP/legal → GTM obligations; risks/recovery → TAD gates and findings; finance/capital → H1–H6 and linked statements; milestones → sole roadmap R0–R3. Missing market, legal and actual cost evidence blocks an investor/customer assurance claim, not completion of this discovery document.
 
-### Financial model projection, revision 0.3.4
+### Financial model projection, revision 0.3.5
 
 Consume H1–H6 and the three scenario formulas above. Inputs belong to GTM; TAD owns resource caps. No spreadsheet is requested; this Markdown model is the declared projection. ADLC Cost Ledger: R0 authoring estimate 15 minutes/cap 25; R1 local implementation estimate two 60-minute sprints; actual active minutes and tokens unavailable; guideline-reading token cost included in ≤30k authoring estimate, not measured. Source CI duration and cost await this exact candidate's receipt; prior PR CI is not charged as measured current work. New paid tools/resources purchased: none. Account bill, energy, sunk device cost and operator labor remain unknown. Later ledger lines must bind candidate/run, duration, token/CI/provider cost and avoidable-block cost to exact receipts; no cost-saving claim is earned by missing measurements.
 
@@ -478,7 +478,7 @@ Known findings: 0 blocker, 5 major, 0 minor; all other reviewed types have zero 
 
 ER11: catalog predecessor PR77 at `c28570e9ee06be631c92b08a010d8dfde808ef53` has a successful Integration Gate ([run 36095863760](https://github.com/huijoohwee/agentic-commerce-os/actions/runs/36095863760), observed 2026-09-25T04:52Z). Its earlier authored-limit fixture findings were corrected without weakening the scanner. ER17 later supplies the verified full-platform Podman override; the explicit Workspace Pack profile uses bounded Node.
 
-Current source lane: `agent/device-0232231d4a19/workspace-pack-worker-bounds`, native successor of [PR81](https://github.com/huijoohwee/agentic-commerce-os/pull/81) at `5871bb11cf389ca7deae9a02650b7efd0b10c894`. PR81 [Integration Gate](https://github.com/huijoohwee/agentic-commerce-os/actions/runs/36104100346) failed the 500 kB durable-host budget (112/113 local-first tests passed). This revision reduces SDK footprint without weakening that gate. Graph supplier [PR1278](https://github.com/huijoohwee/agentic-graph/pull/1278) at `d23fc95330d5dce1326050705480b3c2776d5fe3` has green source checks; integration remains separate.
+Current source lane: `agent/device-0232231d4a19/workspace-pack-release-proof`, native documentation successor of [PR82](https://github.com/huijoohwee/agentic-commerce-os/pull/82) at `aeafcce97efc99a16620475f47e8fdd230f5f697`. PR81 failed the durable-host byte limit; PR82 repairs it. Graph supplier [PR1278](https://github.com/huijoohwee/agentic-graph/pull/1278) at `d23fc95330d5dce1326050705480b3c2776d5fe3` has green source checks; integration remains separate.
 
 ### Local rehearsal commands — reference implementation
 
@@ -530,7 +530,7 @@ GTM/projection delta at J1: pitch Reveal is four files plus native Canvas, expli
 
 Prepared listing content: service name `Workspace Program Pack` (22 characters), `serviceType:A2MCP`, `fee:"0"`. The official service contract requires four numbered description lines: service purpose; semicolon-separated title/source/sourceDigest parameter specifications; `POST`; a runnable curl using the deployed endpoint. The endpoint must be public HTTPS and match that example. Public endpoint and Agent ID remain unset; localhost is a rehearsal URL and cannot pass registration validation. The owner authenticated the existing wallet and approved Airvio Commerce, the description ‘Free services that turn supported Python into editable workspace files and Canvas documents’, and the existing green diamond icon. Authenticated discovery found no ASP; pre-check permits creation. The approved avatar was uploaded. Registration awaits the public endpoint, complete field validation and final registration consent; no admitted public offer or hosted quota receipt exists.
 
-### Completion continuation, revision 0.3.4 — reference implementation
+### Completion continuation, revision 0.3.5 — reference implementation
 
 PRD AC09/V9 now includes successful browser-tool invocation, cancellation and registration failure; AC04/08 still require hosted marketplace evidence. TAD T8 uses the current Document API with an awaited registration and AbortSignal lifecycle; no browser polyfill is installed. ADR A6 retains Graph conversion ownership and adds a contract-only Navigator compatibility path. MVP retains the four-file/Canvas local demo and adds ER16; GTM/deck/business/financial projections at J1 still describe free local fulfillment, zero recognized revenue and an unvalidated later $1 offer.
 
@@ -550,11 +550,11 @@ PRD F5/AC09 now includes the existing Commerce Worker's `/services/workspace-pac
 
 ADR A7: use the pure converter inside the existing Worker, with the locked official MCP SDK. Reject paid containers, a new host/controller and a live device tunnel. The edge handler uses the same bounded Graph contract, a 96 KiB streamed request ceiling, 220 KiB Graph result ceiling and 5s body/cancellation deadline. The provider's CPU ceiling separately limits synchronous conversion; a JS timer is not CPU isolation. No cookies, credentials, cross-origin browser calls, encoded bodies, storage, model calls or new bindings are accepted. The existing private checkout/fulfillment contracts retain their routes. Release manifests bind the generated module and three pack assets; asset verification resolves their actual nested routes. Rollback uses the existing controller's exact retained Worker version, removes the new route behavior, and needs no data migration.
 
-ER21 / MVP: the official low-level MCP Server replaces the high-level wrapper; Graph remains input-validation owner. Typecheck and four focused route/refusal/cancellation/workerd SDK tests pass after repair. Minified Wrangler dry-run is 345.41 KiB; diagnostic Node bundle is 478,849 bytes before listing-plan injection. Exact committed build and complete local-first/CI checks remain required. The local Worker page and actual WebMCP previously produced 21 nodes/four verified files with ER13's digest (`edge-webmcp-proof.json`). This is local execution, not marketplace admission or completed download. GTM projections remain free preview, zero collected/recognized revenue.
+ER21 / MVP: the official low-level MCP Server replaces the high-level wrapper; Graph owns input validation. PR82 passes typecheck, authored limits, all 113 local-first tests and native browser checks. Committed durable host: 480,082 bytes; minified Worker: 345.41 KiB. Its 34-file release artifact digest is `5e35548709c1d894e96d5efad9b404c8a14e75dfa58a6463f4a64522b1095c26`. Exact protected CI is still required. Local Worker UI/WebMCP produce 21 nodes/four verified files with ER13's digest. Retained completion evidence: `pr82-artifact.json`, `pr82-browser-proof.json`, `pr82-local-first-check.log`, `edge-webmcp-proof.json`. Marketplace/download proof remains open; GTM remains free preview, zero revenue.
 
 Public-host slice bounds: 45 minutes, ≤12 authored files/four runtime modules, joined document ≤80 KiB, each file <600 lines/chunk <500 kB, $0 new spend. No new npm package or remote resource. Cloudflare Workers Free currently documents 100,000 requests/day, 10ms CPU/request and 128 MiB memory; provider exhaustion must fail, never enable overages ([limits](https://developers.cloudflare.com/workers/platform/limits/), observed 2026-09-25). Actual account eligibility and production CPU/headroom remain deployment prerequisites.
 
-Development handover: publish this two-file repair and observe its exact CI and committed artifact checks. Production Release requires protected Commerce/supplier integration and the existing owner-initiated workflow with candidate-bound approval/readback/rollback. Wrangler is authenticated, but account subscription lookup returned 403; existing-account dashboard sign-in is pending to verify Free eligibility. No deployment occurred. Approved Airvio Commerce profile/avatar are retained; endpoint/Agent ID remain unset. Then validate the real HTTPS listing before registration. Recheck on candidate CI, source integration, dashboard sign-in, host/admission receipts or restored download capture; external waits have no ETA.
+Development handover: authenticated Workers dashboard showed **Free / Current plan** on 2026-09-25 (`cloudflare-free-plan-observation.json`); no plan change. Production still reports source `0162872948dbf27d9811daea9e59ffc0b81f9cf3`, Worker `5a4375b1-bc96-4570-a801-655b6640ff17`; no deployment occurred. Approved Airvio Commerce profile/avatar are retained; endpoint/Agent ID remain unset. Next: exact candidate CI, external protected-integration authority, owner-initiated release/approval/readback, then real HTTPS listing validation and registration. Final verification slice: ≤15 active minutes, one document, $0, same byte caps. Recheck on CI, integration/host/admission receipts or restored download capture; external waits have no ETA.
 
 [assessment]: https://github.com/huijoohwee/agentic-commerce-os/blob/9671532ddeb7d049cace6112214465fde9ff15dd/docs/prd-tad-adr-mvp-gtm-handoff.md
 [guideline]: https://github.com/huijoohwee/huijoohwee.github.io/blob/ae3e4091d8ebef554e0ed416d7c62a11e7efb0ed/guidelines/prd-tad-adr-mvp-gtm-guidelines.md
