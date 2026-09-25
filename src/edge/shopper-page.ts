@@ -7,9 +7,11 @@ export const SHOPPER_PAGE = `<section aria-labelledby="catalog-heading" id="cata
       <p class="eyebrow">Find your next outcome</p>
       <label>Category <select id="catalog-category" aria-label="Category"><option value="">All categories</option></select></label>
       <label>Availability <select id="catalog-availability" aria-label="Availability"><option value="">All listings</option><option value="ready">Offers available</option></select></label>
+      <button class="secondary" id="catalog-saved-only" type="button" aria-pressed="false">Saved listings</button>
       <button class="secondary" id="catalog-reset" type="button">Reset filters</button>
     </div></details>
     <div><div class="toolbar"><span id="catalog-count" role="status">Loading listings…</span><label class="sr-only" for="catalog-sort">Sort listings</label><select id="catalog-sort" aria-label="Sort listings"><option value="relevance">Recommended order</option><option value="title">Name: A to Z</option></select></div>
+      <section id="catalog-shortlist" class="shortlist" aria-label="Saved and compared listings" aria-live="polite"></section>
       <div id="catalog-results" aria-live="polite" aria-busy="true"><div class="empty-state"><h3>Finding useful offers</h3><p class="hint">Your marketplace will appear here.</p></div></div>
       <div class="pagination"><button id="catalog-previous" type="button" class="secondary" disabled>Previous</button><span id="catalog-page">Page 1</span><button id="catalog-next" type="button" class="secondary" disabled>Next</button></div>
     </div>

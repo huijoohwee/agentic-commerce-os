@@ -6,6 +6,26 @@ const listings = Array.from({ length: 15 }, (_, index) => ({
   offers: [{ offerId: `offer-${index}`, amountMinor: 2500 + index * 100, currency: 'USD' }],
 }))
 
+test('saved catalog IDs survive reload and comparison stays scoped to current listings', async ({ page }) => {
+  await page.route('**/v1/public/agents?**', route => route.fulfill({ json: { ok: true, agents: listings } }))
+  await page.goto('/agentic-commerce-os/')
+  await expect(page.locator('#catalog-count')).toHaveText('15 listings')
+  await page.getByRole('button', { name: 'Save Outcome 01' }).click()
+  await expect(page.getByRole('button', { name: 'Remove saved Outcome 01' })).toHaveAttribute('aria-pressed', 'true')
+  await page.getByRole('button', { name: 'Compare Outcome 01' }).click()
+  await page.getByRole('button', { name: 'Compare Outcome 02' }).click()
+  await expect(page.locator('#catalog-shortlist')).toContainText('2/3 to compare')
+  await expect(page.locator('#catalog-shortlist')).toContainText('From $25.00')
+  await page.getByRole('button', { name: 'Saved listings' }).click()
+  await expect(page.locator('#catalog-count')).toHaveText('1 listing')
+  await page.reload()
+  await expect(page.getByRole('button', { name: 'Remove saved Outcome 01' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.locator('#catalog-shortlist')).toContainText('0/3 to compare')
+  await page.getByRole('button', { name: 'Saved listings' }).click()
+  await expect(page.locator('#catalog-count')).toHaveText('1 listing')
+  await expect(page.locator('#catalog-results h3')).toHaveText('Outcome 01')
+})
+
 test('marketplace browse, filters, pagination and keyboard details work without eager agent discovery', async ({ page }) => {
   const discoveries: string[] = []
   page.on('request', request => { if (request.url().includes('/v1/intents/route')) discoveries.push(request.url()) })
