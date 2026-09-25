@@ -1,21 +1,25 @@
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import { Server } from '@modelcontextprotocol/sdk/server/index.js'
+import { CallToolRequestSchema, ErrorCode, ListToolsRequestSchema, McpError } from '@modelcontextprotocol/sdk/types.js'
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js'
-import * as z from 'zod/v4'
 import { createWorkspaceProgramPack, WORKSPACE_PACK_SCHEMA } from '../generated/graph-workspace-pack.js'
 import graphPin from '../../config/workspace-pack-graph.json' with { type: 'json' }
-import { isHttpFailure, readJsonObject } from '../shared/http.ts'
+import { isHttpFailure, isRecord, readJsonObject } from '../shared/http.ts'
 
 export const WORKSPACE_PACK_PATH = '/agentic-commerce-os/services/workspace-pack'
 const TOOL = 'commerce.workspace.program-pack.create'
 const LIMITS = Object.freeze({ requestBytes: 98304, sourceBytes: 32768, resultBytes: 225280, deadlineMs: 5000 })
-const inputSchema = z.object({ title: z.string().regex(/^[A-Za-z0-9][A-Za-z0-9 ._-]{0,79}$/),
-  source: z.string().min(1).max(LIMITS.sourceBytes), sourceDigest: z.string().regex(/^[a-f0-9]{64}$/) }).strict()
+const inputSchema = { type: 'object' as const, required: ['title', 'source', 'sourceDigest'], additionalProperties: false,
+  properties: { title: { type: 'string', pattern: '^[A-Za-z0-9][A-Za-z0-9 ._-]{0,79}$' },
+    source: { type: 'string', minLength: 1, maxLength: LIMITS.sourceBytes },
+    sourceDigest: { type: 'string', pattern: '^[a-f0-9]{64}$' } } }
 
 async function convert(input: unknown, signal: AbortSignal) {
   if (signal.aborted) throw Error('workspace_pack_cancelled')
-  const parsed = inputSchema.parse(input)
+  if (!isRecord(input) || Object.keys(input).sort().join(',') !== 'source,sourceDigest,title') {
+    throw Error('workspace_pack_input_invalid')
+  }
   // Graph's pinned native converter owns byte limits, source digest and exact round trips.
-  const result = await createWorkspaceProgramPack({ schema: WORKSPACE_PACK_SCHEMA, ...parsed })
+  const result = await createWorkspaceProgramPack({ schema: WORKSPACE_PACK_SCHEMA, ...input })
   if (signal.aborted) throw Error('workspace_pack_cancelled')
   return result
 }
@@ -42,7 +46,7 @@ export async function handleWorkspacePack(request: Request, sourceRevision: stri
   if (request.method !== 'POST') return new Response(null, { status: 405, headers: { allow: 'POST' } })
   const deadline = new AbortController(), signal = AbortSignal.any([request.signal, deadline.signal])
   const timer = setTimeout(() => deadline.abort(), LIMITS.deadlineMs)
-  let server: McpServer | undefined
+  let server: Server | undefined
   try {
     // Aborting the pipe interrupts a stalled body reader as well as downstream work.
     const bounded = new Request(request, { body: request.body?.pipeThrough(new TransformStream(), { signal }) ?? null,
@@ -50,12 +54,14 @@ export async function handleWorkspacePack(request: Request, sourceRevision: stri
     const body = await readJsonObject(bounded, LIMITS.requestBytes)
     if (isHttpFailure(body)) return fail(body.code === 'body_too_large' ? 413 : body.code === 'content_type_required' ? 415 : 400, body.code)
     if (route === '/api') return Response.json(await convert(body, signal))
-    server = new McpServer({ name: 'agentic-commerce-os-workspace-pack', version: '0.1.0' })
-    server.registerTool(TOOL, { title: 'Create a Workspace Program Pack',
+    server = new Server({ name: 'agentic-commerce-os-workspace-pack', version: '0.1.0' }, { capabilities: { tools: {} } })
+    server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: [{ name: TOOL, title: 'Create a Workspace Program Pack',
       description: 'Convert supported Python into Python, Block/JSON, Markdown and Canvas files. Free. Does not execute code or publish files.',
       inputSchema, annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-    }, async input => {
-      try { return { content: [{ type: 'text' as const, text: JSON.stringify(await convert(input, signal)) }] } }
+    }] }))
+    server.setRequestHandler(CallToolRequestSchema, async ({ params }) => {
+      if (params.name !== TOOL) throw new McpError(ErrorCode.InvalidParams, 'Unknown tool')
+      try { return { content: [{ type: 'text' as const, text: JSON.stringify(await convert(params.arguments, signal)) }] } }
       catch { return { isError: true, content: [{ type: 'text' as const,
         text: 'Workspace conversion refused. Check source, digest and supported Python syntax.' }] } }
     })
