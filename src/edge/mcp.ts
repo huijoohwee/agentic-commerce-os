@@ -39,6 +39,8 @@ export async function handleCatalogMcpRequest(
   if (body.method === 'tools/call') {
     const params = body.params
     if (!isRecord(params) || params.name !== CATALOG_SERVICE_TOOL) return error(400, 'unsupported_tool', -32602, id)
+    // MCP permits omitted arguments for a zero-input tool; normalize only that case.
+    if (params.arguments === undefined) params.arguments = {}
     if (!isRecord(params.arguments) || Object.keys(params.arguments).length !== 0
       || Object.keys(params).some(key => !['name', 'arguments', '_meta'].includes(key))) {
       return error(400, 'empty_arguments_required', -32602, id)

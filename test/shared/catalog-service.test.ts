@@ -122,10 +122,12 @@ describe('bounded loopback catalog host', () => {
       // SDK 1.30.0's concrete sessionId getter includes undefined; its own Transport declaration omits it under exactOptionalPropertyTypes.
       await client.connect(new StreamableHTTPClientTransport(new URL(host.url)) as Transport)
       expect((await client.listTools()).tools.map(tool => tool.name)).toEqual([CATALOG_SERVICE_TOOL])
-      const result = await client.callTool({ name: CATALOG_SERVICE_TOOL, arguments: {} })
-      expect(result.isError).toBeUndefined()
-      expect(result.structuredContent).toMatchObject({ result: { schema: 'commerce.public-catalog/v1', sourceRevision,
-        catalog: { agents: [{ agentId: 'a' }, { agentId: 'z' }] } } })
+      for (const params of [{ name: CATALOG_SERVICE_TOOL }, { name: CATALOG_SERVICE_TOOL, arguments: {} }]) {
+        const result = await client.callTool(params)
+        expect(result.isError).toBeUndefined()
+        expect(result.structuredContent).toMatchObject({ result: { schema: 'commerce.public-catalog/v1', sourceRevision,
+          catalog: { agents: [{ agentId: 'a' }, { agentId: 'z' }] } } })
+      }
       expect(JSON.stringify(observations)).not.toMatch(/private|cookie|authorization|admissionInputs/)
       expect(observations.length).toBeGreaterThanOrEqual(3)
     } finally { await client.close(); await host.close() }
