@@ -1,4 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import { runInNewContext } from 'node:vm'
+import { webcrypto } from 'node:crypto'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
@@ -92,4 +94,59 @@ describe('Workspace Pack HTTP and MCP host', () => {
       expect((await fetch(host.url + 'api', { method: 'POST', headers: { 'content-type': 'application/json' }, body: 'x'.repeat(99000) })).status).toBe(413)
     } finally { await client.close(); await host.close() }
   })
+})
+
+
+describe('Workspace Pack browser tool lifecycle', () => {
+  async function browser(registerTool?: (...args: any[]) => unknown, legacy?: object) {
+    const nodes = new Map<string, any>(), events = new Map<string, () => void>()
+    const node = (id: string) => {
+      if (!nodes.has(id)) nodes.set(id, { value: '', textContent: '', addEventListener() {} })
+      return nodes.get(id)
+    }
+    const fetcher = vi.fn(async (_url: unknown, options?: any) => {
+      if (options?.signal?.aborted) throw Error('aborted')
+      return { ok: true, json: async () => options?.method === 'POST'
+        ? result(JSON.parse(options.body)) : { id: PACK_TOOL, price: { mode: 'free' } } }
+    })
+    const source = await fs.readFile('public/local-first/workspace-pack.js', 'utf8')
+    const pending = runInNewContext(`(async () => {${source}\n})()`, {
+      document: { getElementById: node, querySelectorAll: () => [], modelContext: registerTool ? { registerTool } : undefined },
+      navigator: { modelContext: legacy }, location: { href: 'http://localhost/services/workspace-pack/' },
+      addEventListener: (name: string, action: () => void) => events.set(name, action),
+      URL, TextEncoder, crypto: webcrypto, AbortController, AbortSignal, setTimeout, clearTimeout, fetch: fetcher,
+    })
+    return { pending, node, events, fetcher }
+  }
+  it('awaits Document registration, prefers it to legacy hosts, shares verified API results and cancels on pagehide', async () => {
+    let tool: any, signal: AbortSignal | undefined, complete: (() => void) | undefined
+    const legacy = { registerTool: vi.fn() }
+    const registered = new Promise<void>(resolve => { complete = resolve })
+    const page = await browser((value, options) => { tool = value; signal = options.signal; return registered }, legacy)
+    expect(page.node('webmcp-status').textContent).not.toContain('registered')
+    complete!(); await page.pending
+    expect(legacy.registerTool).not.toHaveBeenCalled()
+    expect(page.node('webmcp-status').textContent).toBe('Browser WebMCP tool registered.')
+    const output = await tool.execute(input(), {})
+    expect(JSON.parse(output.content[0].text)).toEqual(result(input()))
+    const cancelled = new AbortController(); cancelled.abort()
+    await expect(tool.execute(input(), { signal: cancelled.signal })).rejects.toThrow('aborted')
+    page.events.get('pagehide')!()
+    expect(signal?.aborted).toBe(true)
+    await expect(tool.execute(input(), {})).rejects.toThrow('aborted')
+  })
+  it('reports asynchronous registration rejection and absent support without claiming registration', async () => {
+    const rejected = await browser(() => Promise.reject(Error('unsupported')))
+    await rejected.pending
+    expect(rejected.node('webmcp-status').textContent).toContain('registration unavailable')
+    const absent = await browser(); await absent.pending
+    expect(absent.node('webmcp-status').textContent).toContain('does not expose WebMCP')
+  })
+  it('retires a registration that never settles at the bounded deadline', async () => {
+    let signal: AbortSignal | undefined
+    const page = await browser((_value, options) => { signal = options.signal; return new Promise(() => {}) })
+    await page.pending
+    expect(signal?.aborted).toBe(true)
+    expect(page.node('webmcp-status').textContent).toContain('registration unavailable')
+  }, 3000)
 })

@@ -69,14 +69,25 @@ try {
   if (service.id !== toolName || service.price.mode !== 'free') throw Error('identity')
   ready = true; $('connection').textContent = 'Local service ready'; $('create').disabled = false
 } catch { $('connection').textContent = 'Service unavailable'; $('status').textContent = 'Start the Workspace Pack dev profile to continue.' }
-if (navigator.modelContext?.registerTool) {
+// Current WebMCP uses Document. Retain only a contract-level adapter for older hosts.
+const modelContext = document.modelContext?.registerTool ? document.modelContext : navigator.modelContext
+if (modelContext?.registerTool) {
+  const registration = new AbortController()
+  const retire = () => { registration.abort(); if (modelContext !== document.modelContext) modelContext.unregisterTool?.(toolName) }
+  addEventListener('pagehide', retire, { once: true })
+  let registrationTimeout
   try {
-    navigator.modelContext.registerTool({ name: toolName, description: 'Convert supported Python to a free Workspace Program Pack without executing it.',
+    await Promise.race([Promise.resolve(modelContext.registerTool({ name: toolName, description: 'Convert supported Python to a free Workspace Program Pack without executing it.',
       inputSchema: { type: 'object', required: ['title', 'source', 'sourceDigest'], additionalProperties: false,
         properties: { title: { type: 'string', maxLength: 80 }, source: { type: 'string', maxLength: 32768 }, sourceDigest: { type: 'string', pattern: '^[a-f0-9]{64}$' } } },
-      annotations: { readOnlyHint: true }, execute: async (input, options) => ({ content: [{ type: 'text',
-        text: JSON.stringify(await requestPack(input, options?.signal ?? AbortSignal.timeout(8000))) }] }) })
+      annotations: { readOnlyHint: true, untrustedContentHint: true, consequentialHint: false },
+      execute: async (input, options) => ({ content: [{ type: 'text', text: JSON.stringify(await requestPack(input,
+        AbortSignal.any([registration.signal, AbortSignal.timeout(8000), ...(options?.signal ? [options.signal] : [])]))) }] }) },
+    { signal: registration.signal })), new Promise((_, reject) => {
+      registrationTimeout = setTimeout(() => reject(Error('webmcp_registration_timeout')), 2000)
+    })])
+    if (registration.signal.aborted) throw Error('webmcp_registration_cancelled')
     $('webmcp-status').textContent = 'Browser WebMCP tool registered.'
-    addEventListener('pagehide', () => navigator.modelContext.unregisterTool(toolName), { once: true })
-  } catch { $('webmcp-status').textContent = 'Browser tool registration unavailable. Use the MCP or API endpoint.' }
+  } catch { retire(); $('webmcp-status').textContent = 'Browser tool registration unavailable. Use the MCP or API endpoint.' }
+  finally { clearTimeout(registrationTimeout) }
 } else $('webmcp-status').textContent = 'This browser does not expose WebMCP. The MCP and API endpoints remain available.'
