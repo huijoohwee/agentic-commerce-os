@@ -1,18 +1,18 @@
 ---
 title: "Reference Implementation — Commerce A2MCP Services"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.3.0"
-revision: "0.3.0"
+version: "0.3.1"
+revision: "0.3.1"
 date: "2026-09-25"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Commerce product owner"
 continuity_id: "PRD-TAD-ADR-COMMERCE-A2MCP-001"
-prd_revision: "0.3.0"
-tad_revision: "0.3.0"
-adr_revision: "0.3.0"
-mvp_revision: "0.3.0"
-gtm_revision: "0.3.0"
+prd_revision: "0.3.1"
+tad_revision: "0.3.1"
+adr_revision: "0.3.1"
+mvp_revision: "0.3.1"
+gtm_revision: "0.3.1"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
 lifecycle_status: "proposed"
@@ -31,7 +31,7 @@ agenticOsCanvasRenderMode: "2d"
 agenticOsCanvas2dRenderer: "d3"
 surfaces: ["2D Renderer: D3 Graph", "Markdown Preview"]
 primary_surface: "2D Renderer: D3 Graph"
-projection_revision: "0.3.0"
+projection_revision: "0.3.1"
 ---
 
 # Reference implementation — Commerce A2MCP services
@@ -42,7 +42,7 @@ The user subsequently authorized implementing recommendations. This revision rec
 
 ## Continuity and directive — reference implementation
 
-**Join J1:** `PRD-TAD-ADR-COMMERCE-A2MCP-001@0.3.0`. All section references below consume J1 unless an external revision is explicit. PRD owns scope/criteria; TAD consumes PRD; ADR binds TAD; MVP/GTM and venture projections consume these three. A changed criterion requires a coherent five-role revision. Authoring source: [PRD–TAD–ADR–MVP–GTM guideline 3.3.0][guideline], pinned by W1 and its digest.
+**Join J1:** `PRD-TAD-ADR-COMMERCE-A2MCP-001@0.3.1`. All section references below consume J1 unless an external revision is explicit. PRD owns scope/criteria; TAD consumes PRD; ADR binds TAD; MVP/GTM and venture projections consume these three. A changed criterion requires a coherent five-role revision. Authoring source: [PRD–TAD–ADR–MVP–GTM guideline 3.3.0][guideline], pinned by W1 and its digest.
 
 This document owns the proposed A2MCP integration. It supersedes preliminary recommendations in the [evaluation companion at 9671532][assessment], while preserving its dated observations. It consumes the existing [first-dollar owner][first-dollar] at `PRD-TAD-ADR-COMMERCE-MVP-GTM-001@1.2.0` and
 [native implementation owner][implementation] at `edge-commerce-agent-mvp@0.6.0`; it does not redefine
@@ -362,13 +362,13 @@ The order follows nearest-built capability because no validated WTP exists. A re
 | Inspect result | Show native Commerce result and explain declared trust; no fabricated live prices | 25s |
 | Close | Show service URL, available modes and limits | 15s |
 
-Total 90s. R2/R3 later use the same 10/15/25/25/15 bounds with their own Reveal V6/V7: exact pack, then verified paid artifact/receipt and replay. These R1/R2/R3 channel demos remain planned; R2W has a separately labelled local recording. No video exists yet. A fixture or sandbox receipt cannot replace the actual channel invocation or actual collected-payment evidence.
+Total 90s. R2/R3 later use the same 10/15/25/25/15 bounds with their own Reveal V6/V7: exact pack, then verified paid artifact/receipt and replay. These R1/R2/R3 channel demos remain planned; R2W has a separately labelled local recording. No target-channel video exists yet. A fixture or sandbox receipt cannot replace the actual channel invocation or actual collected-payment evidence.
 
 ### Planning record — 2026-09-25
 
 | PRD-TAD-ADR-MVP-GTM | CID | RAO | Updated Date |
 |---|---|---|---|
-| `PRD-TAD-ADR-COMMERCE-A2MCP-001@0.3.0` | C: G01–09 at C1 and assessment 9671532 · I: reviewable native service contract · D: Implement recommendations within the revised R1 local bounds; preserve separate delivery gates. | R: Commerce engineering · A: Engineer implements and verifies the local public catalog service · O: V1–V3 local proof plus delivery gaps · check: ER10/ER11 | 2026-09-25 |
+| `PRD-TAD-ADR-COMMERCE-A2MCP-001@0.3.1` | C: G01–09 at C1 and assessment 9671532 · I: reviewable native service contract · D: Implement recommendations within the revised R1 local bounds; preserve separate delivery gates. | R: Commerce engineering · A: Engineer implements and verifies the local public catalog service · O: V1–V3 local proof plus delivery gaps · check: ER10/ER11 | 2026-09-25 |
 
 This is the document's handoff row, not a duplicate private task board. Future execution RAO nodes are one independently closable VCC each: V1 projection/protocol; V2 refusal/bounds; V3 authority; V4 channel demonstration; V5 browser/offline; V6 pack; V7 payment; V8 activation/readback. Each inherits the exact PRD/TAD/ADR join and narrows its roadmap budget. No autonomous indefinite loop.
 
@@ -418,7 +418,7 @@ The model is an **incomplete discovery sketch**, not a sourced financial forecas
 
 All three projections consume J1; they introduce no requirements or numbers. They are separately addressable subsections in this bounded file. Audience: prospective pilot reviewer. Decision sought: consent to one bounded free task, later an exact priced offer. Audience publication is not authorized.
 
-### Pitch deck projection, revision 0.3.0
+### Pitch deck projection, revision 0.3.1
 
 | Slide / roles covered | Projects / evidence status | Bound |
 |---|---|---|
@@ -431,11 +431,11 @@ All three projections consume J1; they introduce no requirements or numbers. The
 
 All twelve roles covered in six slides; total 120 seconds. No deck file or successful presentation is claimed. Replace Reveal with real V4 evidence before presenting a working-product claim.
 
-### Business plan projection, revision 0.3.0
+### Business plan projection, revision 0.3.1
 
 Purpose/customer/problem → PRD; market/timing → GTM M1/M2; offer/alternatives → A5 and S0–S3; acquisition/retention → GTM pilot cohort; delivery/suppliers/capacity → TAD ecosystem and GTM support; organization/IP/legal → GTM obligations; risks/recovery → TAD gates and findings; finance/capital → H1–H6 and linked statements; milestones → sole roadmap R0–R3. Missing market, legal and actual cost evidence blocks an investor/customer assurance claim, not completion of this discovery document.
 
-### Financial model projection, revision 0.3.0
+### Financial model projection, revision 0.3.1
 
 Consume H1–H6 and the three scenario formulas above. Inputs belong to GTM; TAD owns resource caps. No spreadsheet is requested; this Markdown model is the declared projection. ADLC Cost Ledger: R0 authoring estimate 15 minutes/cap 25; R1 local implementation estimate two 60-minute sprints; actual active minutes and tokens unavailable; guideline-reading token cost included in ≤30k authoring estimate, not measured. Source CI duration and cost await this exact candidate's receipt; prior PR CI is not charged as measured current work. New paid tools/resources purchased: none. Account bill, energy, sunk device cost and operator labor remain unknown. Later ledger lines must bind candidate/run, duration, token/CI/provider cost and avoidable-block cost to exact receipts; no cost-saving claim is earned by missing measurements.
 
@@ -478,7 +478,7 @@ Known findings: 0 blocker, 5 major, 0 minor; all other reviewed types have zero 
 
 ER11: catalog predecessor PR77 at `c28570e9ee06be631c92b08a010d8dfde808ef53` has a successful Integration Gate ([run 36095863760](https://github.com/huijoohwee/agentic-commerce-os/actions/runs/36095863760), observed 2026-09-25T04:52Z). Its earlier authored-limit fixture findings were corrected without weakening the scanner. The full-platform local dev profile still requires a verified Podman workerd override; the new explicit Workspace Pack profile runs only this bounded Node service.
 
-Current source lane: `agent/device-0232231d4a19/workspace-program-pack`, admitted successor of PR77. New candidate publication and integration are recorded by the native release wrapper; they do not establish a protected merge or runtime activation. The Graph lane has the same semantic scope on G1, with four admitted files; its unrelated canonical demo edit is preserved.
+Current source lane: `agent/device-0232231d4a19/workspace-program-pack-proof`, native documentation successor of [PR78](https://github.com/huijoohwee/agentic-commerce-os/pull/78) at `9aa8bc56b77929215154def8f5ecd479467586fb`; runtime bytes are unchanged. Graph supplier [PR1278](https://github.com/huijoohwee/agentic-graph/pull/1278) at `d23fc95330d5dce1326050705480b3c2776d5fe3` is published. New candidate publication and integration are recorded by the native release wrapper; they do not establish a protected merge or runtime activation. The Graph lane has the same semantic scope on G1, with four admitted files; its unrelated canonical demo edit is preserved.
 
 ### Local rehearsal commands — reference implementation
 
@@ -520,6 +520,8 @@ Five flows: user adds source → creates → reviews → downloads/imports; tran
 | ER13 / V9 actual native integration | `npm run dev -- --workspace-pack`; official MCP SDK initialize/list/call → compiled native Graph converter; REST returns the identical actual pack. 194-byte sample, 21 nodes/20 edges, artifact `b254cb2427dff5f1ac389f1155cfc16c215e799c59cd2e6049ae9ab27ceb8718`. Bundle SHA-256 `03804bb127b8f83a87d1eff7472d065c8974d307fcac17f75899bf2c862de890` (41.1 KiB). |
 | ER14 / local V5,V9 demonstration | Live browser created four files; invalid `import os` failed visibly. At 390px, document/client widths both 390. Native Graph imported `canvas.md`: D3 topology 21 MermaidNodes/20 pointsTo edges plus document structure, zero unresolved edges. Commerce WebMCP unavailable. CDP screen recording saved as 16-second WebM with captures slowed to one frame/second for review; source timing retained. Blob download event was not observable in this in-app browser, so that action is not certified. |
 
+ER15 / broader local verification: clean source `9aa8bc56b77929215154def8f5ecd479467586fb`, `npm run check:integration`, 154.23s total. ADLC, evidence contract, generated types/typecheck, 91 domain, 296 unit, 60 Worker, 52 admission and 109 local-first tests passed, as did existing storefront mobile/offline/checkout/durable-listing browser proof, authored limits and task bounds. The whole gate failed at `podman_workerd_override_required`; the verified platform-matching override required by `docs/container-runtime.md` is absent locally. Do not substitute the known-incompatible bundled runtime. Native Linux CI remains the independent full-gate check; deployment dry-runs later in the local chain were not reached. Measured implementation-stage CPU 179.76s and maximum single-process RSS 659,505,152 bytes; this is validation cost, not per-call serving cost. Receipt: lane Git metadata `agentic-os-tests/validation-last.json`, implementation log `consumer-da31012c40330e7e21538e7d.log`.
+
 Private local evidence owner: workspace `.workspace/.artifacts/workspace-program-pack-20260925/` holds actual four files, `workspace-program-pack.json`, `mcp-proof.json`, `graph-canvas-proof.json`, desktop/mobile captures, `demo-frames.json` and `workspace-program-pack-demo.webm`. These are local review artifacts, not public submission URLs. Native release receipts bind source candidates; broad integration results must be read from that exact candidate, never borrowed from PR77.
 
 Operator rehearsal (after native dependency installation): in the Graph lane, `npx --no-install esbuild mcp/workspace-program-pack.ts --bundle --platform=node --format=esm --target=node22 --tsconfig=canvas/tsconfig.json --outfile="$GRAPH_PACK_ADAPTER"`; compute SHA-256 into `GRAPH_PACK_ADAPTER_SHA256`. Export both absolute bundle path and exact digest in the Commerce shell, then `npm run dev -- --workspace-pack`. Open `http://127.0.0.1:5190/agentic-commerce-os/services/workspace-pack/`; MCP uses `.../mcp`. Standard `npm run dev` retains the platform profile and its preflight. Stop only the owned service with SIGTERM; restart/reload after source changes.
@@ -528,7 +530,7 @@ GTM/projection delta at J1: pitch Reveal is four files plus native Canvas, expli
 
 Prepared listing content: name `Workspace Program Pack`; category `A2MCP`; free price; description “Convert supported Python to exact Python, native Block/JSON, Markdown and a Canvas document without executing code”; request/output schema above. Public endpoint and Agent ID are deliberately unset. X2 requires public HTTPS; no callable OnchainOS tool/CLI or local skill was found in this session. No authenticated seller identity, admitted public offer or host quota receipt has been demonstrated. Local service readiness must never be substituted for catalog admission.
 
-Next bounded action, product/engineering owner: release the two exact source candidates; inspect their native Integration Gates. Then admit the offer through the existing Commerce registry using an authorized identity and publicly reachable free-host service, retain deployed source/bundle identities, and submit through the actual seller account. Recheck on protected merge, host/registry receipt or authenticated identity availability; external waits have no ETA. Missing those receipts blocks publication only. $1 collection, target-channel execution and hosted rollback remain unproved; no production-ready rung is claimed.
+Next bounded action, product/engineering owner: publish this proof-only successor and inspect the exact source Integration Gates for it and Graph PR1278. Both runtime candidates were handed off; no merge or deployment is inferred. Then admit the offer through the existing Commerce registry using an authorized identity and publicly reachable free-host service, retain deployed source/bundle identities, and submit through the actual seller account. Recheck on protected merge, host/registry receipt or authenticated identity availability; external waits have no ETA. Missing those receipts blocks publication only. $1 collection, target-channel execution and hosted rollback remain unproved; no production-ready rung is claimed.
 
 [assessment]: https://github.com/huijoohwee/agentic-commerce-os/blob/9671532ddeb7d049cace6112214465fde9ff15dd/docs/prd-tad-adr-mvp-gtm-handoff.md
 [guideline]: https://github.com/huijoohwee/huijoohwee.github.io/blob/ae3e4091d8ebef554e0ed416d7c62a11e7efb0ed/guidelines/prd-tad-adr-mvp-gtm-guidelines.md
