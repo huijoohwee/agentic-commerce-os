@@ -2,6 +2,7 @@ import { handleCheckout, checkoutConfigured, type CheckoutEnv } from './checkout
 import type { PaymentFetch } from './stripe-checkout.ts'
 import { renderStorefrontTemplate } from './checkout-offer.ts'
 import { PRODUCTION_STOREFRONT_PREFIX } from '../edge/production-prefix.ts'
+import { handleWorkspacePack, WORKSPACE_PACK_PATH } from './workspace-pack.ts'
 import { handleFulfillment } from './fulfillment.ts'
 import type { FulfillmentRuntime } from './fulfillment-contract.ts'
 import { createFulfillmentRelay, type ListingRelayEnv } from './fulfillment-relay.ts'
@@ -15,6 +16,9 @@ const ASSET_PATHS = new Map([
   ['/checkout.js', '/checkout.js'], ['/launch.js', '/launch.js'], ['/workspace.js', '/workspace.js'],
   ['/style.css', '/style.css'], ['/sw.js', '/sw.js'],
   ['/workflow.js', '/workflow.js'],
+  ['/services/workspace-pack/', '/workspace-pack.html'],
+  ['/services/workspace-pack/workspace-pack.js', '/workspace-pack.js'],
+  ['/services/workspace-pack/workspace-pack.css', '/workspace-pack.css'],
 ])
 const CSP = "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; worker-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
 
@@ -39,6 +43,11 @@ export async function fetchLocalFirst(request: Request, env: LocalFirstEnv, tran
     if (url.pathname !== prefix && !url.pathname.startsWith(`${prefix}/`)) {
       return finish(Response.json({ ok: false, code: 'not_found' }, { status: 404 }))
     }
+    if (url.pathname === WORKSPACE_PACK_PATH && ['GET', 'HEAD'].includes(request.method)) {
+      url.pathname += '/'; url.search = ''; return finish(Response.redirect(url.href, 308))
+    }
+    const pack = await handleWorkspacePack(request, env.RELEASE_CANDIDATE_SHA)
+    if (pack) return finish(pack)
     const fulfillment = await handleFulfillment(request, env.STOREFRONT_SESSION_SECRET, runtime)
     if (fulfillment) return finish(fulfillment)
     const checkout = await handleCheckout(request, env, transport, runtime)

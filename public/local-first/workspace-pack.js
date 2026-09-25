@@ -67,8 +67,8 @@ try {
   if (!response.ok) throw Error('unavailable')
   const service = await response.json()
   if (service.id !== toolName || service.price.mode !== 'free') throw Error('identity')
-  ready = true; $('connection').textContent = 'Local service ready'; $('create').disabled = false
-} catch { $('connection').textContent = 'Service unavailable'; $('status').textContent = 'Start the Workspace Pack dev profile to continue.' }
+  ready = true; $('connection').textContent = 'Service ready'; $('create').disabled = false
+} catch { $('connection').textContent = 'Service unavailable'; $('status').textContent = 'The service is unavailable. Try again shortly.' }
 // Current WebMCP uses Document. Retain only a contract-level adapter for older hosts.
 const modelContext = document.modelContext?.registerTool ? document.modelContext : navigator.modelContext
 if (modelContext?.registerTool) {
