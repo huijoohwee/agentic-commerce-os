@@ -46,6 +46,68 @@ function setReviewEnabled(enabled) {
 }
 $('console-review').addEventListener('click', () => $('pack-form').requestSubmit())
 recordConsole('info', 'Console ready. Events are limited to this tab.')
+// Load the fixture model only when a visitor runs a rehearsal.
+let simulationModule = null, simulationImport = null, simulation = null, simulationGeneration = 0
+const responseStages = [...document.querySelectorAll('[data-response-stage]')]
+function resetSimulation() {
+  simulationGeneration++; simulation = null
+  $('simulation-run').disabled = false
+  $('simulation-report').hidden = true
+  $('simulation-status').textContent = 'Choose a scenario and run the rehearsal.'
+  responseStages.forEach(button => {
+    button.disabled = true
+    button.setAttribute('aria-pressed', String(button.dataset.responseStage === 'triage'))
+  })
+}
+function renderSimulation() {
+  const view = simulationModule.inspectSimulation(simulation)
+  $('simulation-report').hidden = false
+  $('simulation-status').textContent = `${view.name} · ${view.recovered ? 'Simulation complete' : 'Simulated condition loaded'}`
+  $('simulation-report-heading').textContent = view.heading
+  $('simulation-scope').textContent = `Run ${view.runId} · ${view.scope}`
+  $('simulation-signal').textContent = `Fixture HTTP ${view.outcome.status}${view.outcome.code ? ` · ${view.outcome.code}` : ''}`
+  $('simulation-explanation').textContent = view.explanation
+  $('simulation-result').hidden = !view.result
+  $('simulation-result').textContent = view.result ?? ''
+  $('simulation-recover').hidden = view.stage !== 'recovery'
+  $('simulation-recover').disabled = view.recovered
+  $('simulation-recover').dataset.runId = String(view.runId)
+  responseStages.forEach(button => {
+    button.disabled = false
+    button.setAttribute('aria-pressed', String(button.dataset.responseStage === view.stage))
+  })
+}
+$('simulation-scenario').addEventListener('change', resetSimulation)
+$('simulation-reset').addEventListener('click', () => { resetSimulation(); $('simulation-run').focus() })
+$('simulation-run').addEventListener('click', async () => {
+  const current = ++simulationGeneration, scenario = $('simulation-scenario').value
+  $('simulation-run').disabled = true
+  $('simulation-status').textContent = 'Loading local rehearsal…'
+  try {
+    simulationImport ??= import('./workspace-pack.simulation.js')
+    const model = await simulationImport
+    if (current !== simulationGeneration) return
+    simulationModule = model
+    simulation = model.startSimulation(scenario, current)
+    renderSimulation()
+  } catch {
+    if (current === simulationGeneration) {
+      simulationImport = null; simulation = null; $('simulation-report').hidden = true
+      responseStages.forEach(button => { button.disabled = true })
+      $('simulation-status').textContent = 'Rehearsal unavailable. Reload when connected and try again.'
+    }
+  } finally { if (current === simulationGeneration) $('simulation-run').disabled = false }
+})
+responseStages.forEach(button => button.addEventListener('click', () => {
+  if (!simulation) return
+  simulation = simulationModule.selectStage(simulation, button.dataset.responseStage)
+  renderSimulation()
+}))
+$('simulation-recover').addEventListener('click', () => {
+  if (!simulation || simulation.stage !== 'recovery' || simulation.recovered) return
+  simulation = simulationModule.applyRecovery(simulation, Number($('simulation-recover').dataset.runId))
+  renderSimulation()
+})
 function closeReview() {
   if (review) setFormStage('prepare', 'Ready to review')
   review = null

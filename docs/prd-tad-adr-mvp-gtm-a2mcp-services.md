@@ -1,18 +1,18 @@
 ---
 title: "Reference Implementation — Commerce A2MCP Services"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.5.2"
-revision: "0.5.2"
+version: "0.5.3"
+revision: "0.5.3"
 date: "2026-09-25"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Commerce product owner"
 continuity_id: "PRD-TAD-ADR-COMMERCE-A2MCP-001"
-prd_revision: "0.5.2"
-tad_revision: "0.5.2"
-adr_revision: "0.5.2"
-mvp_revision: "0.5.2"
-gtm_revision: "0.5.2"
+prd_revision: "0.5.3"
+tad_revision: "0.5.3"
+adr_revision: "0.5.3"
+mvp_revision: "0.5.3"
+gtm_revision: "0.5.3"
 local_rung: "dev-proven"
 delivered_rung: "dev-proven"
 lifecycle_status: "proposed"
@@ -20,9 +20,9 @@ lane: "authoring"
 universal_scope: false
 load_policy: "on-demand"
 worktree_id: "device-0232231d4a19--workspace-pack-console"
-agent_id: "codex-workspace-pack-console-layout"
-source_revision: "332a7f301ee7676afb02cbb7ed7c02dac4779107"
-reviewed_source_revision: "332a7f301ee7676afb02cbb7ed7c02dac4779107"
+agent_id: "codex-workspace-pack-console-scenarios"
+source_revision: "8b147799e20b3ab8dc38990ef4568960e337744a"
+reviewed_source_revision: "8b147799e20b3ab8dc38990ef4568960e337744a"
 guideline_revision: "3.3.0"
 guideline_source_revision: "ae3e4091d8ebef554e0ed416d7c62a11e7efb0ed"
 guideline_sha256: "7558913d9877cd77b84d1b84f0f391fb6be457c5bd55327e52cc5a22ee6ae6ea"
@@ -31,7 +31,7 @@ agenticOsCanvasRenderMode: "2d"
 agenticOsCanvas2dRenderer: "d3"
 surfaces: ["2D Renderer: D3 Graph", "Markdown Preview"]
 primary_surface: "2D Renderer: D3 Graph"
-projection_revision: "0.5.2"
+projection_revision: "0.5.3"
 ---
 
 # Reference implementation — Commerce A2MCP services
@@ -42,7 +42,7 @@ The user subsequently authorized implementing recommendations. This revision rec
 
 ## Continuity and directive — reference implementation
 
-**Join J1:** `PRD-TAD-ADR-COMMERCE-A2MCP-001@0.5.2`. All section references below consume J1 unless an external revision is explicit. PRD owns scope/criteria; TAD consumes PRD; ADR binds TAD; MVP/GTM and venture projections consume these three. A changed criterion requires a coherent five-role revision. Authoring source: [PRD–TAD–ADR–MVP–GTM guideline 3.3.0][guideline], pinned by W1 and its digest.
+**Join J1:** `PRD-TAD-ADR-COMMERCE-A2MCP-001@0.5.3`. All section references below consume J1 unless an external revision is explicit. PRD owns scope/criteria; TAD consumes PRD; ADR binds TAD; MVP/GTM and venture projections consume these three. A changed criterion requires a coherent five-role revision. Authoring source: [PRD–TAD–ADR–MVP–GTM guideline 3.3.0][guideline], pinned by W1 and its digest.
 
 This document owns the proposed A2MCP integration. It supersedes preliminary recommendations in the [evaluation companion at 9671532][assessment], while preserving its dated observations. It consumes the existing [first-dollar owner][first-dollar] at `PRD-TAD-ADR-COMMERCE-MVP-GTM-001@1.2.0` and
 [native implementation owner][implementation] at `edge-commerce-agent-mvp@0.6.0`; it does not redefine
@@ -585,13 +585,13 @@ GTM, pitch, business and financial projections remain at a free offer with zero 
 
 ER23: protected source/run receipts, public proof and real demo are retained at `.workspace/.artifacts/workspace-pack-journey-20260925/` outside the source tree; `deployment-review.md` and `okx-registration-proof.json` carry the effect and blocker evidence without wallet credentials. The first production run 36109606475 failed before Worker write on the existing offline device host; the host was restored before the fresh successful run. Native source completion proved 30 paths but stopped at canonical sync/authenticated cleanup; retain its clean worktree and recovery bytes. That documentation successor changed no serving code or marketplace state. Bound: one document, <600 lines, <86 KiB, $0; verify exact diff and doc conformance before publication.
 
-### Catalog decision support and Workspace Pack Console, revision 0.5.2 — reference implementation
+### Catalog decision support and Workspace Pack Console, revision 0.5.3 — reference implementation
 
-PRD AC11: a buyer saves an admitted listing, filters to saved results and compares at most three current listings by title, category, provider, summary and displayed offer floor before choosing any offer; useful shortlist completion is a hypothesis, with a five-task observation target and no sale claim. AC12: a Workspace Pack visitor sees one Console beside the workspace on desktop and opens/closes it on mobile to inspect actual local service/WebMCP readiness and recent form/browser-tool activity, without source text or an inferred agent connection. AC13: the local service-mode Commerce root reaches that workspace; its Prepare → Review → Convert → Files state follows the current form request, and Console review opens the existing confirmation without sending source.
-TAD: existing shopper catalog/page/style owners retain category badges and the bounded local shortlist. Commerce `workspace-pack.{html,css,js}` owns the service workspace and Console; it reuses Graph FloatingPanel's labelled panel contract and Console-only information model, with no React runtime or other view import. The Console docks at ≥1100px without covering the workspace; smaller visits start closed. Native green semantic tokens and system/code fonts remain in `workspace-pack.css`, with dark Console surface tokens; no remote assets, theme owner or dependency. Timestamped fixed event messages retain at most 16 entries in memory; registration/count badges come from actual registration, and direct MCP clients stay outside tab observation. `workspace-pack-host.ts` maps both local `/agentic-commerce-os` root spellings to its existing service URL; the production root's shopper/vendor/admin owner is unchanged. Review delegates to the existing form handler and restores the initiating control on dismissal; form edits retire stale outputs, and browser-tool events do not overwrite form progress.
-ADR A10: retain native cards, filters, parsing and confirmation; no new registry, agent messaging, remote assets or dependent service. A11: use Commerce's native HTML panel contract because Graph's selected-Mission Console requires observation bindings absent from this page; tab activity is not a fabricated Mission span tree. A12: a persistent service Console and workspace-first layout close the discoverability gap; the existing confirmation remains the only human form-submit gate. No tool approval, payment, release or publication authority is added. Root aliases belong only to the bounded local service host. Rollback reverts the view assets and aliases through their owners; no data migration or conversion/payment state change.
-MVP V11 retains the 19 prior catalog browser checks and separate Dev paid-loop evidence. V12/V13: `npx vitest run --config vitest.config.ts test/shared/workspace-program-pack.test.ts` passed 8 tests including exact root redirects, unknown-route refusal, SDK MCP calls and registration lifecycle; the focused `checkWorkspacePack` browser run passed desktop dock geometry, Console-to-existing-review with no pre-confirmation POST, focus return, stage transitions, actual conversion/download hashes, offline/refused-input recovery, browser-tool invocation, 390px containment and 200% text reflow. Proof/screenshots: `/tmp/workspace-pack-console-layout-20260925/workspace-pack-browser-proof.json`; source binding is predecessor plus working diff, not a protected release receipt. Live IAB root navigation, Console review and the sample's four-file result were also observed. Typecheck, WebMCP and authored limits passed. Predecessor [PR88](https://github.com/huijoohwee/agentic-commerce-os/pull/88) head `332a7f301ee7676afb02cbb7ed7c02dac4779107` passed Integration Gate run `36132695930`; this native successor preserves it and needs its own exact CI receipt. Complete local integration still requires the documented patched Podman runtime and independent evaluator context; no full-local or production claim. Sprint cap: 45 active minutes, seven files/three existing modules/16 KiB net UI delta, <600 lines/file and <500 KiB/chunk; elapsed/token/CI cost not independently metered, $0 new spend.
-GTM and venture projections: retain the free service and zero recognized revenue. Measure Console discovery, review comprehension, file retrieval and repeat use in five consenting tasks before changing package/price; demand remains unvalidated. Development has the named local proof; Production Release and Runtime remain at the prior deployed candidate. Next owner action: Commerce engineering publishes the exact successor, checks its protected Integration Gate and obtains effect-specific source/deploy receipts before any promotion. Recheck when those receipts arrive; external wait has no ETA. The PR87 local-consent quarantine preserved recovery bytes and branch/objects without provider retirement authority; no cleanup or deployment effect is performed by this increment.
+PRD AC11: a buyer saves an admitted listing, filters saved results and compares at most three current listings before choosing an offer; useful shortlist completion remains a five-task observation hypothesis. AC12/13 retain the desktop Console beside the workspace, mobile open/close, truthful service/WebMCP readiness, local Commerce root entry and Prepare → Review → Convert → Files state bound to the current form. AC14 adds Calm, Checkout, Timeout, Payment and Backlog, an accessible play icon, and visible Triage/Diagnosis/Recovery stages. A visitor inspects the initial signal, understands the native condition and explicitly applies the reviewed next step only to the simulation. Every result says simulated/expected; changing the scenario or resetting retires the old run. No scenario sends source, makes a request/payment, injects a real fault or grants service/release authority.
+TAD: native catalog, form, conversion and confirmation owners remain authoritative. Commerce `workspace-pack.{html,css,js}` retains Graph FloatingPanel's labelled contract with Console only, native green tokens, ≥1100px dock and smaller-screen closed default; no React/other view import. Real readiness and the 16-event in-memory tab log remain separate from rehearsal state. The 5,239-byte `workspace-pack.simulation.js` loads from the same origin only on first Run; both existing host/Worker route maps and release asset inventory include it. Its immutable pure model uses known scenarios/stages and one reviewed recovery per run; UI generations retire stale imports/runs and Reset restores play focus. Expected fixtures are grounded at Commerce `8b147799e20b3ab8dc38990ef4568960e337744a`: `src/local-first/workspace-pack.ts` owns readiness/deadline, `src/local-first/checkout.ts` owns confirmation/payment delivery, and `src/local-host/workspace-pack-host.ts` owns four-request capacity. UI and pure local model invocation are supported; simulation MCP/WebMCP tools are deferred, while the existing conversion tool is unchanged. No new store, dependency, remote asset or telemetry; direct MCP clients remain outside tab observation. Local root aliases do not change the production shopper/vendor/admin root.
+ADR A10–A12 retain native listing decisions, Console-only panel reuse and existing form confirmation; tab events do not fabricate selected-Mission spans or agent connections. A13 chooses isolated instructional replay over live fault injection: native-owner tests prove the named expected refusal/recovery outcomes, but the client fixtures cannot evaluate current policy or certify live recovery. Response stages expose explanation, never permission. Recovery requires the displayed run in Recovery and refuses stale/repeated application; paid delivery remains provider-verified. Offline replay after the module is cached does not imply offline service fulfillment. Rollback reverts simulation view/model, route-map and release-inventory additions through existing owners; no migration or conversion/payment state change.
+MVP V11–V13 retain prior catalog and workspace proofs. V14: five tests in `test/local-first/workspace-pack-simulation.test.mjs` passed immutable/stale/replay state, actual free descriptor and deadline interruption/fresh conversion, checkout confirmation refusal/reviewed acceptance, unpaid/paid delivery, and four-request saturation/retry. Four Workspace Pack route/workerd tests passed; typecheck, WebMCP and authored limits passed. Expanded `checkWorkspacePack` passed all five scenarios, three stages, explicit recovery/reset, stale lazy-load retirement, one module fetch, zero simulation POSTs, unchanged source/live log, cached offline replay, 390px/200% text controls, plus real conversion/four download hashes and browser-tool invocation. Evidence: `/tmp/workspace-pack-console-scenarios-20260925/workspace-pack-browser-proof.json`, completed `2026-09-25T13:04:21.073Z`, bound to predecessor plus working diff; live IAB also exposes the scenario controls. Predecessor [PR89](https://github.com/huijoohwee/agentic-commerce-os/pull/89), exact head `8b147799e20b3ab8dc38990ef4568960e337744a`, passed protected Integration Gate run `36135464864`; this native successor requires its own clean-source and protected CI receipt. Full local integration still requires the documented patched Podman runtime and independent evaluator context. Sprint cap: 45 active minutes, eleven files, one lazy module, <16 KiB net UI delta, <600 lines/file and <500 KiB/chunk; elapsed/token/CI cost not independently metered, $0 new spend. Simulation is Dev proof, not live incident recovery or Production proof.
+GTM and venture projections retain the free service and zero recognized revenue. Measure scenario comprehension, Console discovery, review comprehension, file retrieval and repeat use in five consenting tasks before changing price; willingness to pay and time-to-explain improvement remain unvalidated. No real failure or recovery-rate claim follows from a rehearsal. Production Release and Runtime remain at the prior deployed candidate. Next owner action: Commerce engineering publishes the exact successor, runs clean-source checks and obtains its protected Integration Gate and separate source/deploy receipts before promotion. Recheck when those receipts arrive; external wait has no ETA. Retain PR89 and earlier recovery branches/objects; no provider cleanup or production effect belongs to this increment.
 
 [assessment]: https://github.com/huijoohwee/agentic-commerce-os/blob/9671532ddeb7d049cace6112214465fde9ff15dd/docs/prd-tad-adr-mvp-gtm-handoff.md
 [guideline]: https://github.com/huijoohwee/huijoohwee.github.io/blob/ae3e4091d8ebef554e0ed416d7c62a11e7efb0ed/guidelines/prd-tad-adr-mvp-gtm-guidelines.md

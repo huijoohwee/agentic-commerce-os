@@ -30,12 +30,12 @@ test('public profile binds the pinned Graph artifact, exact assets and source wi
   assert.equal(descriptor.marketplaceListed, false); assert.equal(descriptor.price.amount, '0');
   assert.equal(response.headers.get('x-commerce-source'), revision);
   assert.equal((await worker.fetch(new Request(base), env)).headers.get('location'), base + '/');
-  for (const [route, asset] of [['/', '/workspace-pack.html'], ['/workspace-pack.js', '/workspace-pack.js'], ['/workspace-pack.css', '/workspace-pack.css']]) {
+  for (const [route, asset] of [['/', '/workspace-pack.html'], ['/workspace-pack.js', '/workspace-pack.js'], ['/workspace-pack.css', '/workspace-pack.css'], ['/workspace-pack.simulation.js', '/workspace-pack.simulation.js']]) {
     const result = await worker.fetch(new Request(base + route, { headers: { cookie: 'not-forwarded=1' } }), env);
     assert.equal(await result.text(), asset); assert.equal(result.headers.get('cache-control'), 'no-store, no-transform');
   }
   assert.deepEqual(authoredAssets(revision).filter(asset => asset.path.startsWith('services/')).map(asset => asset.path).sort(),
-    ['services/workspace-pack/', 'services/workspace-pack/workspace-pack.css', 'services/workspace-pack/workspace-pack.js']);
+    ['services/workspace-pack/', 'services/workspace-pack/workspace-pack.css', 'services/workspace-pack/workspace-pack.js', 'services/workspace-pack/workspace-pack.simulation.js']);
 });
 test('edge REST produces exact four-file output and refuses malformed, stale, executable and oversized input', async () => {
   const result = await worker.fetch(post(input), env); assert.equal(result.status, 200); verifyPack(await result.json());

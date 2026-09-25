@@ -9,6 +9,7 @@ export async function checkWorkspacePack({ browser, url, output, revision }) {
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, acceptDownloads: true,
     reducedMotion: 'reduce' });
   const requests = [], errors = [], checks = [];
+  let releaseModule = () => {};
   context.on('request', request => requests.push({ url: request.url(), method: request.method() }));
   const page = await context.newPage();
   page.on('pageerror', error => errors.push(error.message));
@@ -31,6 +32,49 @@ export async function checkWorkspacePack({ browser, url, output, revision }) {
     const workspace = await page.locator('#builder').boundingBox();
     assert(workspace.x + workspace.width <= dock.x);
     await expect(page.locator('#console-tool-count')).toHaveText('1 browser tool');
+    assert.equal(requests.some(request => request.url.endsWith('/workspace-pack.simulation.js')), false);
+    const scenario = page.getByLabel('Scenario', { exact: true });
+    const runSimulation = page.getByRole('button', { name: 'Run simulation', exact: true });
+    const stages = page.getByRole('group', { name: 'Response stage', exact: true });
+    const liveActivity = await page.locator('#console-events').innerText();
+    await expect(stages.getByRole('button', { name: 'Recovery', exact: true })).toBeDisabled();
+    // A selection made during first lazy import must retire the older pending run.
+    const moduleGate = new Promise(resolve => { releaseModule = resolve; });
+    await page.route('**/workspace-pack.simulation.js', async route => { await moduleGate; await route.continue(); });
+    const loading = page.waitForRequest(request => request.url().endsWith('/workspace-pack.simulation.js'));
+    await runSimulation.click(); await loading;
+    await scenario.selectOption('checkout'); releaseModule();
+    await expect(page.locator('#simulation-report')).toBeHidden();
+    for (const [value, label, status] of [['calm', 'Calm', 200], ['checkout', 'Checkout', 403],
+      ['timeout', 'Timeout', 504], ['payment', 'Payment', 409], ['backlog', 'Backlog', 503]]) {
+      await scenario.selectOption(value); await runSimulation.click();
+      await expect(page.locator('#simulation-status')).toHaveText(`${label} · Simulated condition loaded`);
+      await expect(stages.getByRole('button', { name: 'Triage', exact: true })).toHaveAttribute('aria-pressed', 'true');
+      await expect(page.locator('#simulation-signal')).toContainText(`Fixture HTTP ${status}`);
+      await expect(page.locator('#simulation-recover')).toBeHidden();
+      await stages.getByRole('button', { name: 'Diagnosis', exact: true }).click();
+      await expect(page.locator('#simulation-report-heading')).toHaveText('Understand the condition');
+      await stages.getByRole('button', { name: 'Recovery', exact: true }).click();
+      await page.getByRole('button', { name: 'Apply to simulation', exact: true }).click();
+      await expect(page.locator('#simulation-status')).toHaveText(`${label} · Simulation complete`);
+      await expect(page.locator('#simulation-signal')).toHaveText('Fixture HTTP 200');
+      await expect(page.locator('#simulation-recover')).toBeDisabled();
+    }
+    await page.screenshot({ path: path.join(output, 'workspace-pack-simulation-desktop.jpg'), quality: 75 });
+    await scenario.selectOption('timeout');
+    await expect(page.locator('#simulation-report')).toBeHidden();
+    await expect(stages.getByRole('button', { name: 'Recovery', exact: true })).toBeDisabled();
+    await context.setOffline(true); await runSimulation.click();
+    await expect(page.locator('#simulation-status')).toHaveText('Timeout · Simulated condition loaded');
+    await context.setOffline(false);
+    await page.getByRole('button', { name: 'Reset', exact: true }).click();
+    await expect(runSimulation).toBeFocused();
+    await expect(source).toHaveValue(original);
+    await expect(page.locator('#console-form-state')).toHaveText('Prepare your source');
+    assert.equal(await page.locator('#console-events').innerText(), liveActivity);
+    assert.equal(requests.filter(request => request.method === 'POST').length, 0);
+    assert.equal(requests.filter(request => request.url.endsWith('/workspace-pack.simulation.js')).length, 1);
+    record('five lazy-loaded scenario rehearsals, staged/reviewed recovery, stale-selection reset and offline replay leave live state and requests untouched');
     await page.screenshot({ path: path.join(output, 'workspace-pack-console-desktop.jpg'), quality: 75 });
     await page.locator('#console-review').click();
     await expect(dialog).toBeVisible();
@@ -169,6 +213,12 @@ export async function checkWorkspacePack({ browser, url, output, revision }) {
     assert.equal(toolPack.sourceDigest, sha(original));
     assert.equal(toolPack.files.length, 4);
     await consoleToggle.click();
+    await runSimulation.click();
+    await stages.getByRole('button', { name: 'Diagnosis', exact: true }).click();
+    await stages.getByRole('button', { name: 'Recovery', exact: true }).click();
+    await expect(page.locator('#simulation-recover')).toBeEnabled();
+    const simGeometry = await page.locator('#simulation-run').boundingBox();
+    assert(simGeometry.width >= 44 && simGeometry.height >= 44);
     await expect(page.locator('#console-events')).toContainText('Browser tool invoked.');
     await expect(page.locator('#console-events')).toContainText('Browser tool returned a verified pack.');
     assert.equal((await page.locator('#console-events').innerText()).includes(original), false);
@@ -193,5 +243,5 @@ export async function checkWorkspacePack({ browser, url, output, revision }) {
   } catch (error) {
     await page.screenshot({ path: path.join(output, 'workspace-pack-failure.jpg'), quality: 75 }).catch(() => {});
     throw error;
-  } finally { await context.close(); }
+  } finally { releaseModule(); await context.close(); }
 }
