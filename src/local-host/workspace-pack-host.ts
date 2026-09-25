@@ -36,7 +36,7 @@ export async function startWorkspacePackHost(options: Options) {
       || request.headers.authorization !== undefined || request.headers.cookie !== undefined
       || request.headers['content-encoding'] !== undefined) return failure(403, 'workspace_pack_credentials_or_origin_refused')
     if (request.method === 'GET') {
-      if (request.url === '/' || request.url === PACK_PATH) return send(302, '', 'text/plain', { location: PACK_PATH + '/' })
+      if (['/', '/agentic-commerce-os', '/agentic-commerce-os/', PACK_PATH].includes(request.url ?? '')) return send(302, '', 'text/plain', { location: PACK_PATH + '/' })
       if (request.url === `${PACK_PATH}/service.json`) return send(200, { schema: 'commerce.workspace-pack-service/v1',
         id: PACK_TOOL, owner: 'agentic-commerce-os', title: 'Workspace Program Pack', price: { amount: '0', mode: 'free' },
         availability: 'device-session', scope: 'loopback-only', marketplaceListed: false, registryAdmission: 'not-claimed',
