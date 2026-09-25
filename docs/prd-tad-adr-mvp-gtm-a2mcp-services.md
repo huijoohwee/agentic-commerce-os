@@ -1,18 +1,18 @@
 ---
 title: "Reference Implementation — Commerce A2MCP Services"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.4.1"
-revision: "0.4.1"
+version: "0.5.0"
+revision: "0.5.0"
 date: "2026-09-25"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Commerce product owner"
 continuity_id: "PRD-TAD-ADR-COMMERCE-A2MCP-001"
-prd_revision: "0.4.1"
-tad_revision: "0.4.1"
-adr_revision: "0.4.1"
-mvp_revision: "0.4.1"
-gtm_revision: "0.4.1"
+prd_revision: "0.5.0"
+tad_revision: "0.5.0"
+adr_revision: "0.5.0"
+mvp_revision: "0.5.0"
+gtm_revision: "0.5.0"
 local_rung: "dev-proven"
 delivered_rung: "dev-proven"
 lifecycle_status: "proposed"
@@ -21,8 +21,8 @@ universal_scope: false
 load_policy: "on-demand"
 worktree_id: "device-0232231d4a19--okx-service-evaluation"
 agent_id: "codex-workspace-program-pack"
-source_revision: "b74536dbcfb49c93f8606a2b57fa4145c320a37c"
-reviewed_source_revision: "c28570e9ee06be631c92b08a010d8dfde808ef53"
+source_revision: "4eaabee651ae215452e885474d82a777c7908ab5"
+reviewed_source_revision: "4eaabee651ae215452e885474d82a777c7908ab5"
 guideline_revision: "3.3.0"
 guideline_source_revision: "ae3e4091d8ebef554e0ed416d7c62a11e7efb0ed"
 guideline_sha256: "7558913d9877cd77b84d1b84f0f391fb6be457c5bd55327e52cc5a22ee6ae6ea"
@@ -31,7 +31,7 @@ agenticOsCanvasRenderMode: "2d"
 agenticOsCanvas2dRenderer: "d3"
 surfaces: ["2D Renderer: D3 Graph", "Markdown Preview"]
 primary_surface: "2D Renderer: D3 Graph"
-projection_revision: "0.4.1"
+projection_revision: "0.5.0"
 ---
 
 # Reference implementation — Commerce A2MCP services
@@ -42,7 +42,7 @@ The user subsequently authorized implementing recommendations. This revision rec
 
 ## Continuity and directive — reference implementation
 
-**Join J1:** `PRD-TAD-ADR-COMMERCE-A2MCP-001@0.4.0`. All section references below consume J1 unless an external revision is explicit. PRD owns scope/criteria; TAD consumes PRD; ADR binds TAD; MVP/GTM and venture projections consume these three. A changed criterion requires a coherent five-role revision. Authoring source: [PRD–TAD–ADR–MVP–GTM guideline 3.3.0][guideline], pinned by W1 and its digest.
+**Join J1:** `PRD-TAD-ADR-COMMERCE-A2MCP-001@0.5.0`. All section references below consume J1 unless an external revision is explicit. PRD owns scope/criteria; TAD consumes PRD; ADR binds TAD; MVP/GTM and venture projections consume these three. A changed criterion requires a coherent five-role revision. Authoring source: [PRD–TAD–ADR–MVP–GTM guideline 3.3.0][guideline], pinned by W1 and its digest.
 
 This document owns the proposed A2MCP integration. It supersedes preliminary recommendations in the [evaluation companion at 9671532][assessment], while preserving its dated observations. It consumes the existing [first-dollar owner][first-dollar] at `PRD-TAD-ADR-COMMERCE-MVP-GTM-001@1.2.0` and
 [native implementation owner][implementation] at `edge-commerce-agent-mvp@0.6.0`; it does not redefine
@@ -583,7 +583,15 @@ MVP: the public 24-second WebM video and `public-service-proof.json` in the reta
 
 GTM, pitch, business and financial projections remain at a free offer with zero recognized revenue. The public UI and MCP endpoint are working service/integration URLs; the OKX Agent ID is a registered identity, not an approved listing URL. The later $1 hypothesis requires observed tasks and willingness-to-pay evidence. No paid plan, overage, sale or new account is claimed. Next check: a compliant activation path → actual submission/review receipt → buyer invocation through OKX; external review has no ETA before submission.
 
-ER23: protected source/run receipts, public proof and real demo are retained at `.workspace/.artifacts/workspace-pack-journey-20260925/` outside the source tree; `deployment-review.md` and `okx-registration-proof.json` carry the effect and blocker evidence without wallet credentials. The first production run 36109606475 failed before Worker write on the existing offline device host; the host was restored before the fresh successful run. Native source completion proved 30 paths but stopped at canonical sync/authenticated cleanup; retain its clean worktree and recovery bytes. This documentation successor changes no serving code or marketplace state. Bound: one document, <600 lines, <86 KiB, $0; verify exact diff and doc conformance before publication.
+ER23: protected source/run receipts, public proof and real demo are retained at `.workspace/.artifacts/workspace-pack-journey-20260925/` outside the source tree; `deployment-review.md` and `okx-registration-proof.json` carry the effect and blocker evidence without wallet credentials. The first production run 36109606475 failed before Worker write on the existing offline device host; the host was restored before the fresh successful run. Native source completion proved 30 paths but stopped at canonical sync/authenticated cleanup; retain its clean worktree and recovery bytes. That documentation successor changed no serving code or marketplace state. Bound: one document, <600 lines, <86 KiB, $0; verify exact diff and doc conformance before publication.
+
+### Catalog decision support, revision 0.5.0 — reference implementation
+
+PRD AC11: a buyer saves an admitted listing, filters to saved results and compares at most three current listings by title, category, provider, summary and displayed offer floor before choosing any offer; useful shortlist completion is a hypothesis, with a five-task observation target and no sale claim.
+TAD: existing shopper catalog/page/style owners render category badges and a local shortlist; only bounded listing IDs persist under the current catalog path, while comparison remains in memory and is pruned when results change. Search may still invoke native offer discovery; shortlist controls do not call network or checkout.
+ADR A10: extend native cards and filters, reusing catalog parsing and confirmation. No new registry, agent messaging, remote assets, tool authority or dependent service; device-storage refusal is visible. Rollback removes UI code without touching admitted catalog or payment state.
+MVP V11: keyboard save/compare/filter/reload and mobile width run in `test/browser/commerce-experience.spec.ts`; 19 browser component tests and the separate Dev paid-loop test passed with exact verified workerd SHA-256 `0d9f91f3eb904c8a857867bd114f3224006235f51490b8c83c5ba669a6529ec3` and owned sidecar cleanup. Typecheck and authored limits passed. This is local proof only; protected source and public delivery remain separate. Sprint cap: 90 active minutes, six files/two UI modules/16 KiB, each file <600 lines and chunk <500 KiB, $0 new spend.
+GTM and venture projections: keep the existing free service and zero recognized revenue. Measure shortlist use, offer selection and repeat use in five consenting tasks before changing package/price; protected merge and production readback each need their own exact receipt.
 
 [assessment]: https://github.com/huijoohwee/agentic-commerce-os/blob/9671532ddeb7d049cace6112214465fde9ff15dd/docs/prd-tad-adr-mvp-gtm-handoff.md
 [guideline]: https://github.com/huijoohwee/huijoohwee.github.io/blob/ae3e4091d8ebef554e0ed416d7c62a11e7efb0ed/guidelines/prd-tad-adr-mvp-gtm-guidelines.md
