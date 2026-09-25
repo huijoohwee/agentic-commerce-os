@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light"><title>Workspace Program Pack · Airvio Commerce</title>
+  <link rel="stylesheet" href="./workspace-pack.css"><script type="module" src="./workspace-pack.js"></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to workspace</a>
+  <header><a class="brand" href="./">airvio<span>commerce</span></a><span id="connection" class="pill">Checking service</span></header>
+  <main id="main">
+    <section class="intro"><div><p class="eyebrow">ONE PROGRAM. FOUR USEFUL FORMATS.</p><h1>From an idea<br>to a working pack.</h1><p class="lede">Turn supported Python into editable Blocks, portable Markdown and a Canvas document. Keep the source. Share the structure.</p></div>
+      <aside class="offer"><span class="eyebrow">WORKSPACE PROGRAM PACK</span><strong>Free</strong><p>One conversion. Four files.<br>Built with Graph’s native editor tools.</p><span class="pill quiet">Local preview · No payment</span></aside></section>
+    <ol class="steps"><li><b>01</b> Add your program</li><li><b>02</b> Review the formats</li><li><b>03</b> Take them to your workspace</li></ol>
+    <div class="workspace">
+      <section class="panel input-panel" aria-labelledby="source-heading"><div class="section-title"><h2 id="source-heading">Your source</h2><button id="sample" class="text-button" type="button">Load example ↗</button></div>
+        <form id="pack-form"><label for="title">Pack name</label><input id="title" maxlength="80" value="Order total example" pattern="[A-Za-z0-9][A-Za-z0-9 ._\-]{0,79}" required>
+          <label for="source">Python <span id="source-size">0 / 32 KiB</span></label><textarea id="source" rows="14" spellcheck="false" autocapitalize="off" autocomplete="off" required></textarea>
+          <p class="hint">Supports assignments, loops, conditions and functions. Imports, packages and general Python execution are outside this service.</p>
+          <div class="actions"><button id="create" type="submit" disabled>Create program pack <span>↗</span></button><button id="cancel" type="button" class="secondary" hidden>Cancel</button></div>
+        </form>
+      </section>
+      <section class="panel output-panel" aria-labelledby="result-heading"><div class="section-title"><div><p class="eyebrow">YOUR DELIVERABLE</p><h2 id="result-heading">Ready when you are.</h2></div><span id="result-badge" class="pill quiet">No pack yet</span></div>
+        <p id="status" role="status" aria-live="polite">Load the example or enter your program, then create a pack.</p>
+        <div id="empty"><div class="format-grid"><span>.py<small>Original Python</small></span><span>.json<small>Native Block tree</small></span><span>.md<small>Portable source</small></span><span>Canvas<small>Program structure</small></span></div><p>Your source stays unchanged. Conversion does not run your code.</p></div>
+        <div id="result" hidden><div class="tabs" role="group" aria-label="Output format"><button data-file="0" type="button" aria-pressed="true">Python</button><button data-file="1" type="button" aria-pressed="false">Block / JSON</button><button data-file="2" type="button" aria-pressed="false">Markdown</button><button data-file="3" type="button" aria-pressed="false">Canvas</button></div>
+          <pre id="preview" tabindex="0" aria-label="Generated file preview"></pre><p id="file-info" class="hint"></p>
+          <div class="actions"><a id="download" class="button" download>Download this file ↓</a><a id="download-pack" class="button secondary" download="workspace-program-pack.json">Download full pack ↓</a></div>
+          <div class="canvas-next"><strong>Continue in Graph</strong><p>Open <b>program.py</b> in Editor Workspace for Python and Block views. Import <b>canvas.md</b> to review the program graph on Canvas.</p><a href="https://airvio.co/agentic-graph/?openEditorWorkspace=1" target="_blank" rel="noopener noreferrer">Open Graph workspace ↗</a></div>
+          <details><summary>Verify this pack</summary><p>Each file and the complete pack carry a SHA-256 digest. These identify the returned bytes; they do not prove a sale or marketplace admission.</p><code id="receipt"></code></details>
+        </div>
+      </section>
+    </div>
+    <details class="integration"><summary>Use this service from an agent</summary><p>Free REST and Streamable HTTP MCP use the same Graph adapter. Include the SHA-256 digest of your exact UTF-8 source with each request.</p><dl><dt>API</dt><dd><code id="api-url"></code></dd><dt>MCP</dt><dd><code id="mcp-url"></code></dd><dt>Tool</dt><dd><code>commerce.workspace.program-pack.create</code></dd></dl><p id="webmcp-status">Checking browser tool support.</p></details>
+    <footer><span>Commerce owns the service. Graph owns the conversion.</span><span>Device-session availability · Not listed on OKX yet</span></footer>
+  </main>
+</body>
+</html>
