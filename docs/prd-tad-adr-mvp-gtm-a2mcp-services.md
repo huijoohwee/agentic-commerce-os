@@ -1,28 +1,28 @@
 ---
 title: "Reference Implementation — Commerce A2MCP Services"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.5.0"
-revision: "0.5.0"
+version: "0.5.6"
+revision: "0.5.6"
 date: "2026-09-25"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Commerce product owner"
 continuity_id: "PRD-TAD-ADR-COMMERCE-A2MCP-001"
-prd_revision: "0.5.0"
-tad_revision: "0.5.0"
-adr_revision: "0.5.0"
-mvp_revision: "0.5.0"
-gtm_revision: "0.5.0"
+prd_revision: "0.5.6"
+tad_revision: "0.5.6"
+adr_revision: "0.5.6"
+mvp_revision: "0.5.6"
+gtm_revision: "0.5.6"
 local_rung: "dev-proven"
 delivered_rung: "dev-proven"
 lifecycle_status: "proposed"
 lane: "authoring"
 universal_scope: false
 load_policy: "on-demand"
-worktree_id: "device-0232231d4a19--okx-service-evaluation"
-agent_id: "codex-workspace-program-pack"
-source_revision: "4eaabee651ae215452e885474d82a777c7908ab5"
-reviewed_source_revision: "4eaabee651ae215452e885474d82a777c7908ab5"
+worktree_id: "device-0232231d4a19--workspace-pack-console"
+agent_id: "codex-workspace-pack-console-reflow"
+source_revision: "30188bb517362b0fe8f14a51f15d3c6ce56cb5c1"
+reviewed_source_revision: "30188bb517362b0fe8f14a51f15d3c6ce56cb5c1"
 guideline_revision: "3.3.0"
 guideline_source_revision: "ae3e4091d8ebef554e0ed416d7c62a11e7efb0ed"
 guideline_sha256: "7558913d9877cd77b84d1b84f0f391fb6be457c5bd55327e52cc5a22ee6ae6ea"
@@ -31,7 +31,7 @@ agenticOsCanvasRenderMode: "2d"
 agenticOsCanvas2dRenderer: "d3"
 surfaces: ["2D Renderer: D3 Graph", "Markdown Preview"]
 primary_surface: "2D Renderer: D3 Graph"
-projection_revision: "0.5.0"
+projection_revision: "0.5.6"
 ---
 
 # Reference implementation — Commerce A2MCP services
@@ -42,7 +42,7 @@ The user subsequently authorized implementing recommendations. This revision rec
 
 ## Continuity and directive — reference implementation
 
-**Join J1:** `PRD-TAD-ADR-COMMERCE-A2MCP-001@0.5.0`. All section references below consume J1 unless an external revision is explicit. PRD owns scope/criteria; TAD consumes PRD; ADR binds TAD; MVP/GTM and venture projections consume these three. A changed criterion requires a coherent five-role revision. Authoring source: [PRD–TAD–ADR–MVP–GTM guideline 3.3.0][guideline], pinned by W1 and its digest.
+**Join J1:** `PRD-TAD-ADR-COMMERCE-A2MCP-001@0.5.6`. All section references below consume J1 unless an external revision is explicit. PRD owns scope/criteria; TAD consumes PRD; ADR binds TAD; MVP/GTM and venture projections consume these three. A changed criterion requires a coherent five-role revision. Authoring source: [PRD–TAD–ADR–MVP–GTM guideline 3.3.0][guideline], pinned by W1 and its digest.
 
 This document owns the proposed A2MCP integration. It supersedes preliminary recommendations in the [evaluation companion at 9671532][assessment], while preserving its dated observations. It consumes the existing [first-dollar owner][first-dollar] at `PRD-TAD-ADR-COMMERCE-MVP-GTM-001@1.2.0` and
 [native implementation owner][implementation] at `edge-commerce-agent-mvp@0.6.0`; it does not redefine
@@ -585,13 +585,13 @@ GTM, pitch, business and financial projections remain at a free offer with zero 
 
 ER23: protected source/run receipts, public proof and real demo are retained at `.workspace/.artifacts/workspace-pack-journey-20260925/` outside the source tree; `deployment-review.md` and `okx-registration-proof.json` carry the effect and blocker evidence without wallet credentials. The first production run 36109606475 failed before Worker write on the existing offline device host; the host was restored before the fresh successful run. Native source completion proved 30 paths but stopped at canonical sync/authenticated cleanup; retain its clean worktree and recovery bytes. That documentation successor changed no serving code or marketplace state. Bound: one document, <600 lines, <86 KiB, $0; verify exact diff and doc conformance before publication.
 
-### Catalog decision support, revision 0.5.0 — reference implementation
+### Catalog decision support and Workspace Pack Console, revision 0.5.6 — reference implementation
 
-PRD AC11: a buyer saves an admitted listing, filters to saved results and compares at most three current listings by title, category, provider, summary and displayed offer floor before choosing any offer; useful shortlist completion is a hypothesis, with a five-task observation target and no sale claim.
-TAD: existing shopper catalog/page/style owners render category badges and a local shortlist; only bounded listing IDs persist under the current catalog path, while comparison remains in memory and is pruned when results change. Search may still invoke native offer discovery; shortlist controls do not call network or checkout.
-ADR A10: extend native cards and filters, reusing catalog parsing and confirmation. No new registry, agent messaging, remote assets, tool authority or dependent service; device-storage refusal is visible. Rollback removes UI code without touching admitted catalog or payment state.
-MVP V11: keyboard save/compare/filter/reload and mobile width run in `test/browser/commerce-experience.spec.ts`; 19 browser component tests and the separate Dev paid-loop test passed with exact verified workerd SHA-256 `0d9f91f3eb904c8a857867bd114f3224006235f51490b8c83c5ba669a6529ec3` and owned sidecar cleanup. Typecheck and authored limits passed. This is local proof only; protected source and public delivery remain separate. Sprint cap: 90 active minutes, six files/two UI modules/16 KiB, each file <600 lines and chunk <500 KiB, $0 new spend.
-GTM and venture projections: keep the existing free service and zero recognized revenue. Measure shortlist use, offer selection and repeat use in five consenting tasks before changing package/price; protected merge and production readback each need their own exact receipt.
+PRD AC11–AC14 retain the admitted-listing shortlist/three-item comparison, Console-only workspace, reviewed four-file conversion and five isolated rehearsals (Calm, Checkout, Timeout, Payment, Backlog). AC15 lets visitors inspect actual registered capabilities, current stage requirements and effects from the same definitions used by browser tools; counts never imply an agent is connected. AC16 adds a compact status bar with service state, bounded rehearsal activity, observed browser-call count, Commands (Ctrl/⌘ K) and Console (Ctrl/⌘ J), without intercepting editing fields or open dialogs. AC17 reuses the four native deliverable cards as working preview entry points and shows a clearly labelled customer-facing scenario banner; no invented inventory, reviews, discounts, payment completion or live incident claim. AC18 offers stepwise and timed deterministic guides with pause/resume/stop, current-run retirement, explicit recovery apply/decline and source preservation. Every guide stops before the visible decision; no approval tool exists. These features address capability comprehension and rehearsal discovery; the five-task user-outcome target remains unmeasured.
+TAD: Commerce `workspace-pack.{html,css,js}` retains Graph FloatingPanel's labelled contract with Console only; no other view/React import. Native form/service readiness and the 16-event tab log remain separate from the 12-event rehearsal log. `workspace-pack.console.js` and the existing pure `workspace-pack.simulation.js` load only on first Console feature use. The coordinator shares actions across UI, Commands and five browser tools: `commerce.console.inspect`, `.rehearse`, `.stage`, `.diagnose`, `.propose`. It uses the pure model's capability definitions, schema validation, current-run guard and stage requirements; one real conversion tool plus five registered local Console tools yields six registered, with three available before a run, four at Triage, five at Diagnosis and six before a Recovery decision. Registration failures/unsupported hosts show actual zero or partial counts; pagehide aborts registrations and guide timers. Tools remain registered across stage changes but revalidate availability on every call. Simulation MCP is not exposed; native conversion MCP/WebMCP is unchanged. Rehearse/stage/propose affect only local fixtures/review; read tools exclude source/generated files. Guides reuse the stage path, stop at decisions, pause on hidden documents and retire on scenario/reset/run changes. The same-origin route maps and release inventory include the new module. Preview text comes from the selected fixture; clickable format cards reuse actual output/source focus. Status layout measures its rendered height when ResizeObserver is available; the optional enhancement must not interrupt tool registration in a headless host. CSS dimensions remain the fallback. The capability dialog header wraps with wider platform fonts and enlarged text, keeping its Close control inside the sheet. No new store, network service, dependency or telemetry.
+ADR A10–A13 retain native catalog/form/confirmation owners, Console-only panel reuse, no fabricated Mission spans and instructional replay instead of live fault injection. A14 adds a native capability/command dialog and browser-only rehearsal tools over the existing model, choosing a bounded truthful tool set rather than unsupported operational controls. The model guards exact run IDs, stages, inputs and repeated/declined recovery; the coordinator never registers apply/approval, payment, publication or deployment tools. A visible local decision is not cryptographic human-presence evidence or a production grant. Scripted playback is labelled deterministic and cannot certify live recovery or agent reasoning. Native service, checkout and host behavior remains grounded at predecessor `c6f7d13fe064af468e6bab97fa518517420b4c45`, including deadline, provider-verified delivery and four-request capacity. Rollback reverts this increment's module/view/route/inventory changes; no migration or payment/conversion policy change.
+MVP V11–V14 retain prior catalog, conversion and scenario evidence. V15–V18: six simulation/native-owner tests and four route/workerd tests passed, including new capability/schema/stale-run/decline/preview cases; typecheck, WebMCP and authored limits passed. Expanded browser acceptance passed actual registered handlers, capability filtering/availability, keyboard/focus restoration, guides pausing before recovery, decline/replay, customer preview, mobile/200% text containment, unsupported/rejected registration and lifecycle retirement alongside the existing real four-file conversion/download proof. Escape closes the sheet and restores its trigger; all four native format cards opened the real generated outputs. Browser proof: `/tmp/workspace-pack-console-capabilities-20260925/workspace-pack-browser-proof.json`, completed `2026-09-25T13:44:36.215Z`, bound to predecessor plus working diff. Live IAB WebMCP rehearse/stage/propose calls were observed; the proposal returned `applied:false` and displayed the same decision controls. Net UI delta is 25,186 bytes; always-loaded main JS adds 118 bytes after extracting its prior rehearsal controller. Predecessor [PR90](https://github.com/huijoohwee/agentic-commerce-os/pull/90), exact head `c6f7d13fe064af468e6bab97fa518517420b4c45`, passed protected Integration Gate run `36139422801`; the successor needs its own exact-source receipt. The first capability candidate [PR91](https://github.com/huijoohwee/agentic-commerce-os/pull/91) head `09e2be79cb40b7ab399f896996b3bdb1d25136f3` failed three existing headless lifecycle tests because ResizeObserver was unavailable. PR92 head `30188bb517362b0fe8f14a51f15d3c6ce56cb5c1` guards that optional enhancement: 299 unit tests, 119 local-first tests and eleven exact-source Workspace Pack browser checks passed locally. Protected run `36143567729` then found capability-sheet overflow at 200% text on Linux. This native successor wraps the header and adds wider-font Close-control containment coverage; failed candidates remain preserved and a fresh protected receipt is required. The reflow successor passed the same eleven browser checks locally, including the wider-font heading and Close-control containment regression; proof is retained at `/tmp/workspace-pack-console-reflow-20260925/workspace-pack-browser-proof.json`. Full local integration still requires the documented patched Podman runtime and independent evaluator context. Feature sprint cap: 45 active minutes, twelve files, two lazy modules, <30 KiB net UI delta; reflow correction cap: 15 active minutes, three existing files, <600 lines/file and <500 KiB/chunk; elapsed/token/CI cost not independently metered, $0 new spend. Development evidence is not Production or live recovery evidence.
+GTM and venture projections retain the free service, zero recognized revenue and later $1 willingness-to-pay hypothesis. Measure tool/permission comprehension, successful guided decisions, actual file retrieval and repeat use in five consenting tasks before price or demand claims. Production Release and Runtime remain at the prior deployed candidate; marketplace activation retains its unresolved FOSS dependency boundary. Next owner action: Commerce engineering completes the named checks, publishes this exact native successor, checks protected Integration Gate, and obtains separate source/deploy receipts before promotion. External waits have no ETA; recheck their evidence when available. Retain PR90 and earlier recovery branches/objects; no provider retirement or production effect belongs to this increment.
 
 [assessment]: https://github.com/huijoohwee/agentic-commerce-os/blob/9671532ddeb7d049cace6112214465fde9ff15dd/docs/prd-tad-adr-mvp-gtm-handoff.md
 [guideline]: https://github.com/huijoohwee/huijoohwee.github.io/blob/ae3e4091d8ebef554e0ed416d7c62a11e7efb0ed/guidelines/prd-tad-adr-mvp-gtm-guidelines.md

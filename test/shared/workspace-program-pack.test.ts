@@ -73,6 +73,12 @@ describe('Workspace Pack HTTP and MCP host', () => {
     const client = new Client({ name: 'workspace-pack-test', version: '1' })
     try {
       expect((await fetch(host.url)).status).toBe(200)
+      for (const pathname of ['/agentic-commerce-os', '/agentic-commerce-os/']) {
+        const response = await fetch(new URL(pathname, host.url), { redirect: 'manual' })
+        expect(response.status).toBe(302)
+        expect(new URL(response.headers.get('location')!, host.url).href).toBe(host.url)
+      }
+      expect((await fetch(new URL('/agentic-commerce-os/unknown', host.url))).status).toBe(404)
       const descriptor = await (await fetch(host.url + 'service.json')).json()
       expect(descriptor).toMatchObject({ id: PACK_TOOL, marketplaceListed: false, registryAdmission: 'not-claimed' })
       // SDK 1.30.0 concrete transport exposes optional sessionId under exactOptionalPropertyTypes.
@@ -100,8 +106,11 @@ describe('Workspace Pack HTTP and MCP host', () => {
 describe('Workspace Pack browser tool lifecycle', () => {
   async function browser(registerTool?: (...args: any[]) => unknown, legacy?: object) {
     const nodes = new Map<string, any>(), events = new Map<string, () => void>()
+    const element = (): any => ({ value: '', textContent: '', dataset: {}, children: [], addEventListener() {}, setAttribute() {},
+      append(...items: any[]) { this.children.push(...items); items.forEach(item => { item.remove = () => this.children.splice(this.children.indexOf(item), 1) }) },
+      get firstElementChild() { return this.children[0] } })
     const node = (id: string) => {
-      if (!nodes.has(id)) nodes.set(id, { value: '', textContent: '', addEventListener() {} })
+      if (!nodes.has(id)) nodes.set(id, element())
       return nodes.get(id)
     }
     const fetcher = vi.fn(async (_url: unknown, options?: any) => {
@@ -111,8 +120,8 @@ describe('Workspace Pack browser tool lifecycle', () => {
     })
     const source = await fs.readFile('public/local-first/workspace-pack.js', 'utf8')
     const pending = runInNewContext(`(async () => {${source}\n})()`, {
-      document: { getElementById: node, querySelectorAll: () => [], modelContext: registerTool ? { registerTool } : undefined },
-      navigator: { modelContext: legacy }, location: { href: 'http://localhost/services/workspace-pack/' },
+      document: { getElementById: node, createElement: element, addEventListener() {}, querySelectorAll: () => [], modelContext: registerTool ? { registerTool } : undefined },
+      matchMedia: () => ({ matches: false }), navigator: { modelContext: legacy }, location: { href: 'http://localhost/services/workspace-pack/' },
       addEventListener: (name: string, action: () => void) => events.set(name, action),
       URL, TextEncoder, crypto: webcrypto, AbortController, AbortSignal, setTimeout, clearTimeout, fetch: fetcher,
     })
