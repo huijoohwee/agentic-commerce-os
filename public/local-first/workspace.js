@@ -167,7 +167,7 @@ for (const role of ['vendor', 'admin']) for (const field of ['query', 'state']) 
 for (const link of document.querySelectorAll('#create-offer, [data-create-offer]')) link.addEventListener('click', event => {
   event.preventDefault(); void loadEditor().then(app => { if (app.newDraft()) location.hash = 'vendor-editor'; }).catch(message);
 });
-window.addEventListener('hashchange', () => { if ($('#workspace-agent-drawer').open) $('#workspace-agent-drawer').close(); if ($('#offer-detail').open) $('#offer-detail').close(); void route().catch(message); });
+window.addEventListener('hashchange', () => { if ($('#workspace-agent-drawer').open) $('#workspace-agent-drawer').close(); if ($('#environment-check-detail').open) $('#environment-check-detail').close(); if ($('#offer-detail').open) $('#offer-detail').close(); void route().catch(message); });
 document.addEventListener('commerce:drafts-updated', () => { channel?.postMessage('changed'); void refresh().catch(message); });
 if (channel) channel.onmessage = () => { void refresh().catch(message); void editor?.externalChange().catch(message); };
 function connection() { $('#connection').textContent = navigator.onLine ? 'Local workspace · Online' : 'Offline · Drafts available'; }
@@ -284,6 +284,11 @@ function renderAdminContext(projects) {
   const suffix = selected ? '?project=' + encodeURIComponent(selected) : '';
   $('#admin-environment-link').href = '#admin-runtime' + suffix;
   $('#environment-checks-link').href = '#admin-runtime' + suffix + (suffix ? '&' : '?') + 'section=checks';
+  $('#admin-environment-history-link').href = $('#environment-checks-link').getAttribute('href');
+  const showingChecks = location.hash.startsWith('#admin-runtime') && params.get('section') === 'checks';
+  $('#admin-environment-history-link').toggleAttribute('data-active', showingChecks);
+  if (showingChecks) { $('#admin-environment-history-link').setAttribute('aria-current', 'location'); $('#admin-environment-link').removeAttribute('aria-current'); }
+  else $('#admin-environment-history-link').removeAttribute('aria-current');
   $('#environment-project-link').href = selected ? '#admin-project' + suffix : '#admin';
   $('#environment-context').textContent = project ? project.name + ' · Shared local runtime' : 'Project unavailable · Return to All projects or import its backup';
   $('#environment-scope').textContent = project?.name || 'Project unavailable';
@@ -309,6 +314,7 @@ for (const button of document.querySelectorAll('#project-search-shortcut, [data-
   button.addEventListener('click', () => void focusWorkspaceSearch().catch(message));
 }
 window.addEventListener('keydown', event => {
+  if (document.querySelector('dialog[open]')) return;
   if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k' && document.body.classList.contains('console-mode')) {
     event.preventDefault(); void focusWorkspaceSearch().catch(message);
   }
@@ -316,6 +322,7 @@ window.addEventListener('keydown', event => {
 const sourceRevision = document.querySelector('meta[name="commerce-source"]').content;
 let environmentController = null, environmentGeneration = 0, environmentObservation = null, environmentExpiry;
 const environmentHistory = [];
+let environmentHistoryPage = 0, environmentDetailTrigger;
 function renderScope() {
   const stores = [...new Set(drafts.filter(draft => draft.launch).map(draft => draft.launch.merchantId))];
   const scope = stores.length === 1 ? stores[0] : stores.length ? `${stores.length} stores in local drafts` : 'No saved merchant';
@@ -357,15 +364,16 @@ async function readEnvironment(response) {
 async function checkEnvironment(signal) {
   if (signal?.aborted) throw Error('workspace_cancelled');
   if (environmentController || !navigator.onLine) throw Error('workspace_environment_busy_or_offline');
-  const generation = ++environmentGeneration, controller = new AbortController(); environmentController = controller;
+  const started = performance.now(), generation = ++environmentGeneration, controller = new AbortController(); environmentController = controller;
   clearTimeout(environmentExpiry); environmentObservation = null;
   const cancel = () => controller.abort(); signal?.addEventListener('abort', cancel, { once: true });
   const timer = setTimeout(cancel, 5000);
   $('#environment-status').textContent = 'Checking this environment…'; renderEnvironment();
-  let observation, evidence;
+  let observation, evidence, httpStatus = null;
   try {
     const url = new URL('./readyz', location.href); url.hash = ''; url.search = '';
     const response = await fetch(url, { credentials: 'omit', cache: 'no-store', redirect: 'error', signal: controller.signal });
+    httpStatus = response.status;
     const value = await readEnvironment(response);
     if (controller.signal.aborted) throw Error('cancelled');
     if (value.profile !== 'local-first' || value.sourceRevision !== sourceRevision || value.storage !== 'browser-only'
@@ -387,24 +395,59 @@ async function checkEnvironment(signal) {
         : ['SyntaxError', 'TypeError'].includes(error.name) ? 'Could not verify the environment. Keep working locally and check again when available.' : error.message };
   } finally { clearTimeout(timer); signal?.removeEventListener('abort', cancel); }
   if (generation !== environmentGeneration) return;
+  Object.assign(observation, { id: generation, durationMs: Math.max(0, Math.round(performance.now() - started)), httpStatus,
+    result: evidence ? (evidence.ok ? 'configured' : 'unavailable') : 'unknown',
+    evidence: evidence ? Object.fromEntries(['ok', 'profile', 'checkout', 'storage', 'paymentStorage', 'paymentProvider', 'realMoney', 'sourceRevision', 'workerVersionId'].map(key => [key, evidence[key]])) : null });
   environmentController = null; environmentObservation = observation;
   $('#environment-status').textContent = observation.message;
-  environmentHistory.unshift(observation); environmentHistory.length = Math.min(20, environmentHistory.length);
+  environmentHistoryPage = 0; environmentHistory.unshift(observation); environmentHistory.length = Math.min(20, environmentHistory.length);
   renderEnvironmentHistory();
   renderEnvironment();
   if (!evidence || controller.signal.aborted) throw Error('workspace_environment_unverified');
   return evidence;
 }
-function renderEnvironmentHistory() {
-  const query = $('#environment-history-query').value.trim().toLowerCase();
-  const filtered = environmentHistory.filter(item => [item.label, item.message, item.version || ''].join(' ').toLowerCase().includes(query));
-  const holder = $('#environment-history'); holder.replaceChildren();
-  if (!filtered.length) { holder.append(node('p', environmentHistory.length ? 'No checks match this search.' : 'No checks yet. Use Check environment to inspect this runtime.', 'records-empty')); return; }
-  holder.append(recordTable(['Observed', 'Result', 'Details'], filtered.map(item => [
-    node('span', new Date(item.time).toLocaleTimeString()), node('span', item.label, 'state-badge'), node('span', item.message)
-  ]), 'Environment check history'));
+function inspectEnvironmentCheck(item) {
+  environmentDetailTrigger = document.activeElement;
+  $('#environment-check-title').textContent = 'Environment check ' + item.id;
+  const facts = $('#environment-check-facts'); facts.replaceChildren();
+  const entries = { Result: item.label, Observed: new Date(item.time).toLocaleString(), Duration: item.durationMs + ' ms',
+    'HTTP response': item.httpStatus ?? 'No response', 'Page source': sourceRevision,
+    'Observed source': item.evidence?.sourceRevision ?? 'Unverified', 'Runtime version': item.evidence?.workerVersionId ?? 'Unknown' };
+  for (const [label, value] of Object.entries(entries)) facts.append(node('dt', label), node('dd', String(value)));
+  $('#environment-check-message').textContent = item.message;
+  $('#environment-check-evidence').textContent = item.evidence ? JSON.stringify(item.evidence, null, 2) : 'No verified response was retained.';
+  $('#environment-check-detail details').open = false; $('#environment-check-detail').showModal();
 }
-$('#environment-history-query').addEventListener('input', renderEnvironmentHistory);
+$('#environment-check-close').addEventListener('click', () => $('#environment-check-detail').close());
+$('#environment-check-detail').addEventListener('close', () => {
+  if (document.querySelector('dialog[open]')) return;
+  if (environmentDetailTrigger?.isConnected) environmentDetailTrigger.focus({ preventScroll: true });
+  else $('#environment-history-query').focus({ preventScroll: true });
+});
+function renderEnvironmentHistory() {
+  const query = $('#environment-history-query').value.trim().toLowerCase(), result = $('#environment-history-result').value;
+  const filtered = environmentHistory.filter(item => (!result || item.result === result)
+    && [item.label, item.message, item.version || '', item.evidence?.sourceRevision || '', 'check ' + item.id].join(' ').toLowerCase().includes(query));
+  const pages = Math.max(1, Math.ceil(filtered.length / 10)); environmentHistoryPage = Math.min(environmentHistoryPage, pages - 1);
+  $('#environment-history-count').textContent = filtered.length + (filtered.length === 1 ? ' check' : ' checks') + ' · Page ' + (environmentHistoryPage + 1) + ' of ' + pages;
+  $('#environment-history-previous').disabled = environmentHistoryPage === 0;
+  $('#environment-history-next').disabled = environmentHistoryPage + 1 >= pages;
+  const holder = $('#environment-history'); holder.replaceChildren();
+  if (!filtered.length) { holder.append(node('p', environmentHistory.length ? 'No checks match these filters.' : 'No checks yet. Use Check environment to inspect this runtime.', 'records-empty')); return; }
+  holder.append(recordTable(['Source', 'Result', 'Checkout', 'Observed', 'Duration', 'Action'], filtered.slice(environmentHistoryPage * 10, (environmentHistoryPage + 1) * 10).map(item => {
+    const source = item.evidence?.sourceRevision, identity = node('span', !source ? 'Unverified' : source === 'local-unreleased' ? 'Local development' : source.slice(0, 8));
+    identity.append(node('small', 'Check ' + item.id));
+    const status = node('span', item.label, 'check-result check-' + item.result);
+    if (item === environmentHistory[0]) status.append(node('small', 'Latest check'));
+    const inspect = node('button', 'Inspect', 'secondary'); inspect.type = 'button'; inspect.setAttribute('aria-label', 'Inspect environment check ' + item.id);
+    inspect.addEventListener('click', () => inspectEnvironmentCheck(item));
+    return [identity, status, node('span', item.evidence?.checkout === 'sandbox' ? 'Test mode' : item.evidence ? 'Unavailable' : 'Unknown'),
+      node('span', new Date(item.time).toLocaleTimeString()), node('span', item.durationMs + ' ms'), inspect];
+  }), 'Environment check history'));
+}
+for (const id of ['environment-history-query', 'environment-history-result']) $('#' + id).addEventListener('input', () => { environmentHistoryPage = 0; renderEnvironmentHistory(); });
+$('#environment-history-previous').addEventListener('click', () => { environmentHistoryPage--; renderEnvironmentHistory(); });
+$('#environment-history-next').addEventListener('click', () => { environmentHistoryPage++; renderEnvironmentHistory(); });
 $('#environment-refresh').addEventListener('click', () => void checkEnvironment().catch(() => {}));
 $('#environment-cancel').addEventListener('click', () => environmentController?.abort());
 window.addEventListener('offline', () => { if (environmentObservation) environmentObservation.stale = true; environmentController?.abort(); renderEnvironment(); });

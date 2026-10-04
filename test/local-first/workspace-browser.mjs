@@ -30,7 +30,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await page.getByText('Offline access is ready.', { exact: false }).waitFor();
   await page.screenshot({ path: path.join(output, 'shopper-empty-desktop.png'), fullPage: true });
   await page.getByRole('link', { name: 'Admin', exact: true }).click();
-  await page.locator('#admin').getByRole('link', { name: 'Environment', exact: true }).click();
+  await page.locator('#admin').getByRole('link', { name: 'Overview', exact: true }).click();
   await expect(page.locator('#environment-badge')).toHaveText('Not checked');
   await context.setOffline(true); await context.setOffline(false);
   await expect(page.locator('#environment-status')).not.toContainText('Offline.');
@@ -167,6 +167,8 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await expect(page.getByRole('table', { name: 'Project offers', exact: true }).locator('tbody tr')).toHaveCount(1);
   await page.getByRole('searchbox', { name: 'Search project offers', exact: true }).fill('');
   await page.getByRole('link', { name: 'Environment details', exact: true }).click();
+  await page.reload();
+  await expect(page.locator('#environment-history-count')).toHaveText('0 checks · Page 1 of 1');
   await expect(page.locator('#environment-scope')).toHaveText('studio-north');
   await expect(page.locator('#console-location')).toHaveText('studio-north / Environment');
   await expect(page.locator('#environment-latest')).toHaveText('Independent offer 11');
@@ -177,12 +179,53 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await expect(page.locator('#environment-history')).toContainText('No checks match');
   await page.locator('#environment-history-query').fill('');
   await expect(page.getByRole('table', { name: 'Environment check history' }).locator('tbody tr').first()).toContainText('Sandbox configured');
+  const firstCheck = page.getByRole('button', { name: 'Inspect environment check 1', exact: true });
+  await firstCheck.click();
+  const checkDetail = page.getByRole('dialog', { name: 'Environment check 1', exact: true });
+  await expect(checkDetail).toBeVisible();
+  await expect(page.locator('#environment-check-facts')).toContainText('HTTP response200');
+  const retained = JSON.parse(await page.locator('#environment-check-evidence').textContent());
+  assert.equal(retained.sourceRevision, await page.locator('meta[name="commerce-source"]').getAttribute('content'));
+  assert.equal(retained.checkout, 'sandbox'); assert.equal(retained.realMoney, false);
+  await page.keyboard.press('ControlOrMeta+k'); await expect(checkDetail).toBeVisible();
+  await page.keyboard.press('Escape'); await expect(firstCheck).toBeFocused();
+  await page.route('**/readyz', route => route.abort());
+  await page.locator('#environment-refresh').click(); await expect(page.locator('#environment-badge')).toHaveText('Unknown');
+  await page.getByLabel('Filter check result', { exact: true }).selectOption('unknown');
+  await expect(page.locator('#environment-history-count')).toHaveText('1 check · Page 1 of 1');
+  await page.locator('#environment-history').getByRole('button', { name: 'Inspect environment check 2', exact: true }).click();
+  await expect(page.locator('#environment-check-evidence')).toHaveText('No verified response was retained.');
+  await expect(page.locator('#environment-check-facts')).toContainText('No response');
+  await page.keyboard.press('Escape'); await page.unroute('**/readyz');
+  await page.getByLabel('Filter check result', { exact: true }).selectOption('');
+  for (let i = 0; i < 19; i++) {
+    await page.locator('#environment-refresh').click();
+    await expect(page.locator('#environment-refresh')).toBeEnabled();
+  }
+  await expect(page.locator('#environment-history-count')).toHaveText('20 checks · Page 1 of 2');
+  await expect(page.getByRole('table', { name: 'Environment check history' }).locator('tbody tr')).toHaveCount(10);
+  await page.locator('#environment-history-next').click();
+  await expect(page.locator('#environment-history-count')).toHaveText('20 checks · Page 2 of 2');
+  await expect(firstCheck).toHaveCount(0);
+  await page.locator('#environment-history-query').fill('check 21');
+  await expect(page.locator('#environment-history-count')).toHaveText('1 check · Page 1 of 1');
+  await page.locator('#environment-history-query').fill('');
+  await page.getByLabel('Filter check result', { exact: true }).selectOption('unavailable');
+  await expect(page.locator('#environment-history')).toContainText('No checks match these filters.');
+  await page.getByLabel('Filter check result', { exact: true }).selectOption('');
   await page.getByRole('link', { name: 'Check history', exact: true }).click();
   await expect(page.locator('#environment-history-heading')).toBeInViewport();
+  await expect(page.locator('#admin-environment-history-link')).toHaveAttribute('aria-current', 'location');
+  await expect(page.locator('#admin-environment-history-link')).toHaveAttribute('href', '#admin-runtime?project=store%3Astudio-north&section=checks');
   for (const width of [360, 768, 1280]) {
     await page.setViewportSize({ width, height: 900 }); await page.goto(url + '#admin-runtime?project=store%3Astudio-north');
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await page.screenshot({ path: path.join(output, `aligned-environment-${width}.png`), fullPage: true });
+    await page.screenshot({ path: path.join(output, `environment-inspection-${width}.png`) });
+    await page.locator('#environment-history').getByRole('button', { name: 'Inspect environment check 21', exact: true }).click();
+    assert.equal(await page.locator('#environment-check-detail').evaluate(element => element.scrollWidth <= element.clientWidth), true);
+    await page.screenshot({ path: path.join(output, `environment-check-detail-${width}.png`) });
+    await page.keyboard.press('Escape');
   }
   await page.locator('#environment-project-link').click();
   await expect(page.locator('#project-heading')).toHaveText('studio-north');
