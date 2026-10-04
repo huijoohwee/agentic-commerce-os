@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { canonicalJson, sha256Hex } from '../../src/shared/digest'
 import { installModelContextHarness, type WebMcpHarness } from './model-context'
 
 const proposal = { merchantId: 'solo-shop', agentId: 'solo-agent', brand: 'Solo shop',
@@ -108,4 +109,98 @@ test('shopper agent actions render prices and selection in the human view', asyn
   await expect(offer).toHaveAttribute('aria-pressed', 'true')
   await expect(page.locator('#offer-selection')).toContainText('Research brief')
   await expect(page.locator('#offer-selection')).toContainText('25.00')
+})
+
+test('environment observations are bounded, identity matched, cancellable and never authorize writes', async ({ page, context }) => {
+  const writes: string[] = []
+  let reads = 0
+  page.on('request', request => { if (request.method() !== 'GET') writes.push(request.url()) })
+  await page.goto('/admin#runtime')
+  await expect(page.locator('#environment-badge')).toHaveText('Not checked')
+  await context.setOffline(true); await context.setOffline(false)
+  await expect(page.locator('#environment-status')).not.toContainText('Offline.')
+  const panel = page.locator('#environment-panel')
+  const expected = { source: await panel.getAttribute('data-source'), lane: await panel.getAttribute('data-lane'), version: await panel.getAttribute('data-version') }
+  const evidence = { ok: true, contract: 'commerce.edge-readiness/v2', lane: expected.lane,
+    releaseCandidateSha: expected.source, version: { id: expected.version }, sourceReadiness: { ok: true }, liveReleaseReadiness: { ok: true } }
+  let body = JSON.stringify(evidence)
+  await page.route('**/readyz', route => { reads++; return route.fulfill({ status: 200, contentType: 'application/json', body }) })
+  expect(reads).toBe(0)
+  await page.clock.install()
+  await page.locator('#environment-refresh').click()
+  await expect(page.locator('#environment-badge')).toHaveText('Checks passed')
+  await expect(page.locator('#environment-status')).toContainText('No deployment')
+  for (const width of [360, 768, 1280]) {
+    await page.setViewportSize({ width, height: 900 })
+    expect(await page.evaluate('document.documentElement.scrollWidth <= innerWidth')).toBe(true)
+  }
+  await page.clock.fastForward(60001)
+  await expect(page.locator('#environment-badge')).toHaveText('Stale · Check again')
+  expect(reads).toBe(1)
+  for (const value of [{ ...evidence, lane: 'other' }, { ...evidence, version: { id: 'other' } },
+    { ...evidence, releaseCandidateSha: 'other' }, { ...evidence, profile: 'local-first', contract: 'other' }]) {
+    body = JSON.stringify(value)
+    await page.locator('#environment-refresh').click()
+    await expect(page.locator('#environment-status')).toContainText('does not match')
+    await expect(page.locator('#environment-badge')).toHaveText('Unknown')
+  }
+  body = ' '.repeat(32769)
+  await page.locator('#environment-refresh').click()
+  await expect(page.locator('#environment-status')).toContainText('exceeded its limit')
+  await context.setOffline(true)
+  await expect(page.locator('#environment-badge')).toHaveText('Offline')
+  await expect(page.locator('#environment-refresh')).toBeDisabled()
+  await context.setOffline(false)
+  await page.unroute('**/readyz')
+  let releaseRead!: () => void
+  const heldRead = new Promise<void>(resolve => { releaseRead = resolve })
+  await page.route('**/readyz', async route => { await heldRead; await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(evidence) }) })
+  await page.locator('#environment-refresh').click()
+  await page.locator('#environment-cancel').click()
+  await expect(page.locator('#environment-status')).toContainText('cancelled')
+  releaseRead(); await page.unrouteAll({ behavior: 'wait' })
+  await expect(page.locator('#environment-badge')).toHaveText('Unknown')
+  let releaseTimeout!: () => void
+  const heldTimeout = new Promise<void>(resolve => { releaseTimeout = resolve })
+  await page.route('**/readyz', async route => { await heldTimeout; await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(evidence) }) })
+  await page.locator('#environment-refresh').click()
+  await page.clock.fastForward(5001)
+  await expect(page.locator('#environment-status')).toContainText('timed out')
+  releaseTimeout(); await page.unrouteAll({ behavior: 'wait' })
+  await expect(page.locator('#environment-badge')).toHaveText('Unknown')
+  expect(writes).toEqual([])
+  await page.screenshot({ path: test.info().outputPath('environment-desktop.png'), fullPage: true })
+})
+
+
+test('a lost publication response stays unknown until explicit matching readback', async ({ page }) => {
+  let manifestDigest: string | null = null, publications = 0
+  await page.route('**/v1/public/merchants/*/catalog', route => route.fulfill({ status: 200,
+    contentType: 'application/json', body: JSON.stringify({ ok: true, manifestDigest, listings: [] }) }))
+  await page.route('**/v1/operator/**', async route => {
+    if (route.request().url().endsWith('/theme')) {
+      publications++
+      manifestDigest = await sha256Hex(canonicalJson(route.request().postDataJSON().manifest))
+      await route.abort('failed'); return
+    }
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, agents: [{ agentId: 'solo-agent' }] }) })
+  })
+  await page.goto('/vendor')
+  for (const [name, value] of Object.entries(proposal)) await page.locator(`[name="${name}"]`).fill(value)
+  await page.getByRole('button', { name: 'Stage for review' }).click()
+  await expect(page.locator('#merchant-proposals')).toContainText('pending')
+  await page.goto('/admin')
+  await page.getByLabel('Operator credential').fill('recovery-fixture-secret')
+  await page.getByRole('button', { name: 'Connect', exact: true }).click()
+  await expect(page.locator('#operator-overview')).toContainText('1 registered agents')
+  await page.clock.install()
+  await page.getByRole('button', { name: 'Approve and publish' }).click()
+  await expect(page.locator('#merchant-proposals')).toContainText('Outcome unknown')
+  await expect(page.getByRole('button', { name: 'Approve and publish' })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Check publication' }).click()
+  await expect(page.locator('#merchant-status')).toContainText('Wait one minute')
+  await page.clock.fastForward(60001)
+  await page.getByRole('button', { name: 'Check publication' }).click()
+  await expect(page.locator('#merchant-proposals')).toContainText('This storefront version was confirmed')
+  expect(publications).toBe(1)
 })

@@ -1,3 +1,4 @@
+import { handleWorkspaceService } from './workspace-service.ts'
 import { handleCheckout, checkoutConfigured, type CheckoutEnv } from './checkout.ts'
 import type { PaymentFetch } from './stripe-checkout.ts'
 import { renderStorefrontTemplate } from './checkout-offer.ts'
@@ -16,6 +17,7 @@ const ASSET_PATHS = new Map([
   ['/checkout.js', '/checkout.js'], ['/launch.js', '/launch.js'], ['/workspace.js', '/workspace.js'],
   ['/style.css', '/style.css'], ['/sw.js', '/sw.js'],
   ['/workflow.js', '/workflow.js'],
+  ['/workspace-capabilities.js', '/workspace-capabilities.js'], ['/workspace-tools.js', '/workspace-tools.js'],
   ['/services/workspace-pack/', '/workspace-pack.html'],
   ['/services/workspace-pack/workspace-pack.js', '/workspace-pack.js'],
   ['/services/workspace-pack/workspace-pack.simulation.js', '/workspace-pack.simulation.js'],
@@ -48,6 +50,8 @@ export async function fetchLocalFirst(request: Request, env: LocalFirstEnv, tran
     if (url.pathname === WORKSPACE_PACK_PATH && ['GET', 'HEAD'].includes(request.method)) {
       url.pathname += '/'; url.search = ''; return finish(Response.redirect(url.href, 308))
     }
+    const workspace = await handleWorkspaceService(request, env.RELEASE_CANDIDATE_SHA, () => readiness(env))
+    if (workspace) return finish(workspace)
     const pack = await handleWorkspacePack(request, env.RELEASE_CANDIDATE_SHA)
     if (pack) return finish(pack)
     const fulfillment = await handleFulfillment(request, env.STOREFRONT_SESSION_SECRET, runtime)
@@ -68,10 +72,8 @@ export async function fetchLocalFirst(request: Request, env: LocalFirstEnv, tran
       return finish(Response.redirect(url.href, 308));
     }
     if (relative === '/readyz') {
-      const valid = /^[0-9a-f]{40}$/u.test(env.RELEASE_CANDIDATE_SHA) && checkoutConfigured(env)
-      return finish(Response.json({ ok: valid, profile: 'local-first', checkout: valid ? 'sandbox' : 'unavailable',
-        storage: 'browser-only', paymentStorage: 'stripe-test', paymentProvider: 'stripe', realMoney: false, sourceRevision: env.RELEASE_CANDIDATE_SHA,
-        workerVersionId: env.CF_VERSION_METADATA?.id ?? null }, { status: valid ? 200 : 503 }))
+      const value = readiness(env)
+      return finish(Response.json(value, { status: value.ok ? 200 : 503 }))
     }
     const versionPrefix = `/assets/${env.RELEASE_CANDIDATE_SHA}/`
     const assetPath = relative.startsWith(versionPrefix) ? '/' + relative.slice(versionPrefix.length) : relative
@@ -89,6 +91,12 @@ export async function fetchLocalFirst(request: Request, env: LocalFirstEnv, tran
       return finish(new Response(renderStorefrontTemplate(await response.text(), source), { headers }))
     }
     return finish(response)
+}
+function readiness(env: LocalFirstEnv) {
+  const valid = /^[0-9a-f]{40}$/u.test(env.RELEASE_CANDIDATE_SHA) && checkoutConfigured(env)
+  return { ok: valid, profile: 'local-first', checkout: valid ? 'sandbox' : 'unavailable',
+    storage: 'browser-only', paymentStorage: 'stripe-test', paymentProvider: 'stripe', realMoney: false,
+    sourceRevision: env.RELEASE_CANDIDATE_SHA, workerVersionId: env.CF_VERSION_METADATA?.id ?? null }
 }
 const unavailableRuntime: FulfillmentRuntime = Object.freeze({
   async ready() { throw Error('fulfillment_unavailable') },

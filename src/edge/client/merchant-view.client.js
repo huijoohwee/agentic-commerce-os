@@ -3,6 +3,8 @@ const renderProposals = async () => {
   const revision = ++proposalRenderRevision;
   const proposals = await readProposals();
   if (revision !== proposalRenderRevision) return;
+  const merchants = [...new Set(proposals.map(proposal => proposal.manifest.merchantId))];
+  document.querySelector('#workspace-scope').textContent = merchants.length === 1 ? merchants[0] : merchants.length ? merchants.length + ' stores in local proposals' : 'No local merchant proposals';
   document.querySelector('#proposal-count').textContent = proposals.length + ' proposals';
   if (role === 'admin') {
     document.querySelector('#stat-pending').textContent = proposals.filter(p => p.status === 'pending').length;
@@ -21,6 +23,13 @@ const renderProposals = async () => {
     describe(card, [['Store', proposal.manifest.merchantId], ['Agent', proposal.manifest.catalogScope.join(', ')],
       ['Change', proposal.expectedPreviousManifestDigest === null ? 'New storefront' : 'Update published storefront'],
       ['Staged', new Date(proposal.createdAt).toLocaleString()]]);
+    card.append(node('p', ({
+      pending: 'Draft staged. A connected human must review the exact change before publication.',
+      applying: 'Publication outcome is pending. Do not repeat it; wait one minute, then check publication.',
+      uncertain: 'Outcome unknown. Wait one minute, then check the live version before staging another change.',
+      applied: 'This storefront version was confirmed. This does not prove checkout, payment or fulfillment.',
+      rejected: 'Rejected locally. Edit the storefront to prepare a new review.'
+    })[proposal.status] || 'Unknown state. Inspect the record before taking action.', 'hint'));
     const version = node('details');
     version.append(node('summary', 'Review exact change'), node('pre', JSON.stringify({ manifest: proposal.manifest, expectedPreviousManifestDigest: proposal.expectedPreviousManifestDigest }, null, 2)));
     card.append(version);

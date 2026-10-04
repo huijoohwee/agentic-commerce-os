@@ -2,8 +2,8 @@ const CACHE_PREFIX = 'agentic-commerce-local-first-';
 const RELEASE = '__RELEASE__';
 const CACHE = CACHE_PREFIX + RELEASE;
 const SCOPE = new URL(self.registration.scope);
-const FILES = ['', 'workspace.js', 'app.js', 'drafts.js', 'launch.js', 'checkout.js', 'workflow.js', 'style.css'];
-const assetUrl = file => new URL(file ? `assets/${RELEASE}/${file}` : '', SCOPE);
+const FILES = ['', 'workspace.js', 'workspace-capabilities.js', 'workspace-tools.js', 'services/workspace/service.json', 'app.js', 'drafts.js', 'launch.js', 'checkout.js', 'workflow.js', 'style.css'];
+const assetUrl = file => new URL(file.startsWith('services/') ? file : file ? `assets/${RELEASE}/${file}` : '', SCOPE);
 const PATHS = new Set(FILES.map(file => assetUrl(file).pathname));
 self.addEventListener('install', event => event.waitUntil((async () => {
   const cache = await caches.open(CACHE);
@@ -12,6 +12,10 @@ self.addEventListener('install', event => event.waitUntil((async () => {
     const url = assetUrl(file);
     const response = await fetch(new Request(url, { cache: 'reload', credentials: 'omit', signal: AbortSignal.timeout(15000) }));
     if (!response.ok) throw Error('offline_asset_unavailable');
+    if (file.endsWith('service.json')) {
+      const value = await response.clone().json();
+      if (value.schema !== 'commerce.workspace-service/v1' || value.sourceRevision !== RELEASE) throw Error('offline_service_source_mismatch');
+    }
     await cache.put(url.href, response);
   }
   await self.skipWaiting();
