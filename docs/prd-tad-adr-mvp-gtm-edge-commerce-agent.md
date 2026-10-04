@@ -2,13 +2,13 @@
 title: "Reference Implementation — Native Commerce, Workspaces and First-Dollar Boundary"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "edge-commerce-agent-mvp"
-revision: "0.8.0"
-version: "0.8.0"
-prd_revision: "0.8.0"
-tad_revision: "0.8.0"
-adr_revision: "0.8.0"
-mvp_revision: "0.8.0"
-gtm_revision: "0.8.0"
+revision: "0.8.1"
+version: "0.8.1"
+prd_revision: "0.8.1"
+tad_revision: "0.8.1"
+adr_revision: "0.8.1"
+mvp_revision: "0.8.1"
+gtm_revision: "0.8.1"
 date: "2026-10-04"
 lang: "en-US"
 frontmatter_contract: "required"
@@ -24,14 +24,14 @@ lifecycle_status: "proposed"
 demand_status: "unvalidated"
 worktree_id: "device-0232231d4a19--commerce-workspace-plan"
 agent_id: "codex-commerce-workspace-ui"
-source_revision: "e305f61bd6ecdf14f65eceb44c894ec4dc0636f8"
+source_revision: "9bb287ec89177fc60980732bc48806e4bfbb8016"
 guideline_revision: "3.4.0"
 guideline_source_revision: "82835ac37d524643faa6b9703cb077ea9474ab15"
 related_continuity_id: "PRD-TAD-ADR-COMMERCE-MVP-GTM-001"
 agenticOsCanvasRenderMode: "2d"
 agenticOsCanvas2dRenderer: "d3"
 surfaces: ["2D Renderer: D3 Graph"]
-reviewed_source_revision: "e305f61bd6ecdf14f65eceb44c894ec4dc0636f8"
+reviewed_source_revision: "9bb287ec89177fc60980732bc48806e4bfbb8016"
 ---
 
 # Reference implementation — native commerce, workspaces and first-dollar boundary
@@ -44,7 +44,7 @@ The proposed [native commerce transfer ecosystem](prd-tad-adr-mvp-gtm-native-com
 at `NATIVE-COMMERCE-TRANSFER-001@0.2.1` specifies MainPanel, transfer and policy-evidence enhancements.
 It consumes this sandbox baseline and inherits no implementation, payment or deployment readiness.
 
-`edge-commerce-agent-mvp@0.8.0` joins [PRD](#prd), [TAD](#tad), [ADR](#adr), [MVP](#mvp)
+`edge-commerce-agent-mvp@0.8.1` joins [PRD](#prd), [TAD](#tad), [ADR](#adr), [MVP](#mvp)
 and [GTM](#gtm). PRD owns criteria; TAD consumes that exact revision; ADR binds the design;
 MVP and GTM consume their checks and outcomes. This document describes concrete choices for
 this reference implementation, not universal vendor requirements. Shared [guidelines][guideline]
@@ -67,12 +67,12 @@ keep unvalidated demand, live payment and full-agent production behind their own
 ## Current workspace increment — reference implementation
 
 The [workspace companion](prd-tad-adr-mvp-gtm-commerce-workspaces.md) is the size-bounded
-CW-01–CW-07 extension of this same `edge-commerce-agent-mvp@0.8.0` join. It owns the new
+CW-01–CW-07 extension of this same `edge-commerce-agent-mvp@0.8.1` join. It owns the new
 project/environment read projection, native admin recovery journey, capability boundaries,
 five flows, C01–C16 coverage and next bounded tasks. It adds no independent product or roadmap.
 The five section roles below retain EC-01–EC-10; each consumes its matching companion section
 for CW requirements/design/decisions/MVP/GTM. Historical receipts remain at their recorded revisions.
-The 0.6.0 sandbox retains its scoped evidence. Revision 0.8.0 adds local environment visibility,
+The 0.6.0 sandbox retains its scoped evidence. Revision 0.8.1 adds local environment visibility,
 publication recovery copy, a local Dev entry and failure-path checks. The companion records their
 local proof and incomplete human/full-runtime acceptance. Whole-document rungs stay `undocumented`.
 
@@ -120,7 +120,7 @@ this documentation revision neither rewrites exported packs nor treats that comp
 
 ## PRD
 
-**Join:** `edge-commerce-agent-mvp@0.8.0`.
+**Join:** `edge-commerce-agent-mvp@0.8.1`.
 
 **PP-01 — unvalidated:** a solo service operator cannot easily test an offer-to-delivery journey
 without rebuilding payment integration. Impact and frequency are hypotheses; no priced prospect
@@ -173,7 +173,7 @@ retroactive runtime acceptance results. Customer adoption remains below sign-off
 
 ## TAD
 
-**Join:** TAD consumes exactly PRD `edge-commerce-agent-mvp@0.8.0`; ADR binds these components.
+**Join:** TAD consumes exactly PRD `edge-commerce-agent-mvp@0.8.1`; ADR binds these components.
 CW requirements consume W1–W5 in the companion. The following rungs are historical EC evidence,
 not fresh verification of the October source or whole-workspace acceptance.
 
@@ -373,7 +373,7 @@ change edits neither mirror nor route. Route evidence never grants another compo
 
 ## ADR
 
-**Join:** ADR `edge-commerce-agent-mvp@0.8.0` binds this PRD/TAD. Accepted decisions:
+**Join:** ADR `edge-commerce-agent-mvp@0.8.1` binds this PRD/TAD. Accepted decisions:
 
 - **EC-A1 — reuse native owners.** Existing drafts, themes and checkout avoid a second store or
   application. A new cart/database was rejected for this single-offer rehearsal; recovery preserves
@@ -453,7 +453,7 @@ never enroll fabricated payer evidence from this sandbox. [The sprint][sprint] o
 ## Alignment and maintenance — reference implementation
 
 The historical evidence companion consumes 0.6.0 and the sprint at 1.2.0; it is not silently
-re-stamped as October evidence. The workspace companion records the 0.8.0 implementation and local UI checkpoint. Historical
+re-stamped as October evidence. The workspace companion records the 0.8.1 implementation and local UI checkpoint. Historical
 five-role joins, source links, schema owners, five flow inventories, deployment boundaries and
 monetization separation are the bounded documentation review. Existing source checks validate
 syntax, links, limits and projection; they do not certify every advisory statement in the guideline.
@@ -493,6 +493,6 @@ source or evidence revision; at most three alignment cycles, stop/replan if bloc
 
 ## Experience assessment — reference implementation
 
-This assessment consumes `edge-commerce-agent-mvp@0.8.0` and the separately scoped EC/CW criteria and evidence above. Core Requirements & Functionality, Innovation & Theme Alignment, Technical Execution & Integration, and Usefulness & Agentic Experience are **unassessed**: no criterion-scored user observation is attached to this implementation revision; automated and agent-operated checks are not customer observations. Existing sandbox and authoring receipts retain their recorded source, environment and expiry; this assessment neither renews them nor changes their readiness scope.
+This assessment consumes `edge-commerce-agent-mvp@0.8.1` and the separately scoped EC/CW criteria and evidence above. Core Requirements & Functionality, Innovation & Theme Alignment, Technical Execution & Integration, and Usefulness & Agentic Experience are **unassessed**: no criterion-scored user observation is attached to this implementation revision; automated and agent-operated checks are not customer observations. Existing sandbox and authoring receipts retain their recorded source, environment and expiry; this assessment neither renews them nor changes their readiness scope.
 
 The document owner must capture one timed pilot in the buyer’s existing workspace, record the four observations using the shared maturity rubric, and measure accepted outcome, actual payment, repeat use and delivery/support cost separately. A successful sandbox checkout proves its declared mechanism only; it cannot establish willingness to pay, a commercial winner or collected customer revenue. Append the learn-loop result as a successor Context through the shared planning owner.

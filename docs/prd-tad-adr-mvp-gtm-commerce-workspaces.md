@@ -2,13 +2,13 @@
 title: "Reference Implementation — Native Commerce Workspace Increment"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "edge-commerce-agent-mvp"
-revision: "0.8.0"
-version: "0.8.0"
-prd_revision: "0.8.0"
-tad_revision: "0.8.0"
-adr_revision: "0.8.0"
-mvp_revision: "0.8.0"
-gtm_revision: "0.8.0"
+revision: "0.8.1"
+version: "0.8.1"
+prd_revision: "0.8.1"
+tad_revision: "0.8.1"
+adr_revision: "0.8.1"
+mvp_revision: "0.8.1"
+gtm_revision: "0.8.1"
 date: "2026-10-04"
 lang: "en-US"
 frontmatter_contract: "required"
@@ -23,7 +23,7 @@ lifecycle_status: "active"
 runtime_readiness_policy: "fail-closed"
 worktree_id: "device-0232231d4a19--commerce-workspace-plan"
 agent_id: "codex-commerce-workspace-ui"
-source_revision: "e305f61bd6ecdf14f65eceb44c894ec4dc0636f8"
+source_revision: "9bb287ec89177fc60980732bc48806e4bfbb8016"
 guideline_revision: "3.4.0"
 guideline_source_revision: "82835ac37d524643faa6b9703cb077ea9474ab15"
 guideline_sha256: "9707ee2355d4d60b8f7a759441fbe67c8235e8762ab9cb0a46dd070a5f02b84a"
@@ -35,7 +35,7 @@ surfaces: ["2D Renderer: D3 Graph"]
 # Reference implementation — native commerce workspace increment
 
 This on-demand companion extends the [product owner](prd-tad-adr-mvp-gtm-edge-commerce-agent.md)
-at **`edge-commerce-agent-mvp@0.8.0`**. PRD, TAD, ADR, MVP and GTM below share that join.
+at **`edge-commerce-agent-mvp@0.8.1`**. PRD, TAD, ADR, MVP and GTM below share that join.
 The split preserves the <600-line limit and leaves dated sandbox evidence in its original owner.
 No second platform, roadmap, capability registry or release controller is introduced.
 The [first-dollar sprint](prd-tad-adr-mvp-gtm-20260909T1320Z-solopreneur-mvp-gtm.md)
@@ -55,7 +55,9 @@ checks. It does not grant deployment, outreach, provisioning or money effects.
 S0 = Commerce Git commit `f2284eff42d3903d8c72d23cc919d3d72aadba9c`, inspected 2026-10-04.
 S0 grounds the plan; implementation starts from published plan commit
 `e305f61bd6ecdf14f65eceb44c894ec4dc0636f8` in successor branch
-`agent/device-0232231d4a19/commerce-workspace-ui`. Implementation rows refer to its reserved diff;
+`agent/device-0232231d4a19/commerce-workspace-ui`, then verification successor
+`agent/device-0232231d4a19/commerce-workspace-verification` from `9bb287ec89177fc60980732bc48806e4bfbb8016`.
+Implementation rows refer to the retained diff;
 the native publication receipt binds the final candidate without a self-referential commit hash.
 The parent retains older sandbox receipt pins; S0 is a code snapshot, not an observed deployment.
 Shared authoring: [guideline 3.4.0][guideline], [templates 1.5.0][templates], [verification][verification].
@@ -178,11 +180,11 @@ CW-07 supplies the acceptance check for focus, accessible names, status text and
 
 ### Five flows and inventories
 
-All diagrams are proposed CW projections at version 0.8.0, dated 2026-10-04. Rectangles are native
+All diagrams are proposed CW projections at version 0.8.1, dated 2026-10-04. Rectangles are native
 components/stages; rounded nodes are people. No diagram asserts production readiness. Text inventories
 provide the mobile/offline alternative; canvas projection is parse-only and consumes zero model tokens.
 
-**Diagram CW-J** · Class: Journey stage map · Notation: flowchart LR · Version: 0.8.0
+**Diagram CW-J** · Class: Journey stage map · Notation: flowchart LR · Version: 0.8.1
 **Caption:** the merchant reaches a reviewed local offer before choosing any remote effect.
 ```mermaid
 flowchart LR
@@ -197,7 +199,7 @@ flowchart LR
 | J3 | Exact revision and permitted action / CW-03,04,06 |
 | J4 | Preview, payment and fulfillment states / CW-05 |
 
-**Diagram CW-W** · Class: User workflow · Notation: sequenceDiagram · Version: 0.8.0
+**Diagram CW-W** · Class: User workflow · Notation: sequenceDiagram · Version: 0.8.1
 **Caption:** only a reviewed request reaches the existing owner; an unknown result remains unresolved.
 ```mermaid
 sequenceDiagram
@@ -217,7 +219,7 @@ sequenceDiagram
 | V | Match current version / cancel / preserve unresolved, CW-01,07 |
 | O | Existing CAS receipt / already applied / stale version rejected, CW-04,05 |
 
-**Diagram CW-D** · Class: Data flow · Notation: flowchart LR · Version: 0.8.0
+**Diagram CW-D** · Class: Data flow · Notation: flowchart LR · Version: 0.8.1
 **Caption:** draft content and runtime observations remain distinct inputs to the visible review.
 ```mermaid
 flowchart LR
@@ -233,7 +235,7 @@ flowchart LR
 | D3 | Presentation only, J3; no new ledger, CW-05,07 |
 | D4 | Existing theme/checkout/fulfillment authority, J4; no cross-effect success inference, CW-04,05 |
 
-**Diagram CW-H** · Class: Orchestration / harness flow · Notation: flowchart LR · Version: 0.8.0
+**Diagram CW-H** · Class: Orchestration / harness flow · Notation: flowchart LR · Version: 0.8.1
 **Caption:** an optional agent can discover and prepare only through the admitted owner contract.
 ```mermaid
 flowchart LR
@@ -248,7 +250,7 @@ flowchart LR
 | H3 | S3/S6 executor; existing effect limits, no agent-created presence receipt |
 | H4 | W1–W5 readback at J4; W3 proposed 5 s deadline, no retry loop |
 
-**Diagram CW-T** · Class: Runtime topology · Notation: flowchart TB · Version: 0.8.0
+**Diagram CW-T** · Class: Runtime topology · Notation: flowchart TB · Version: 0.8.1
 **Caption:** the local browser remains useful alone; online profiles preserve their existing trust boundaries.
 ```mermaid
 flowchart TB
@@ -388,7 +390,7 @@ as finished.
 
 ## From-0-to-1 coverage — reference implementation
 
-All rows bind `edge-commerce-agent-mvp@0.8.0`. Coverage is a disposition, not readiness or validation.
+All rows bind `edge-commerce-agent-mvp@0.8.1`. Coverage is a disposition, not readiness or validation.
 Dispositioned **16/16**; covered applicable **11/16**; deferred **5**; not applicable **0**.
 
 | Domain | Decision / exact source section in this revision | Accountable owner / evidence or gap / next check |
@@ -420,7 +422,7 @@ ADR bindings: 7/7. These are authored traceability counts, not completed VCCs or
 paths, 60 active-minute cap, 90 KB diff cap, 0 new modules/packages/services and $0 new spend.
 The inherited 0.7.0 plan is commit `e305f61bd6ecdf14f65eceb44c894ec4dc0636f8` / PR #94;
 its protected Integration Gate passed. That result does not certify this successor's changed code.
-**Production Release:** none for 0.8.0. **Runtime:** local loopback and test fixtures only; no new live
+**Production Release:** none for 0.8.1. **Runtime:** local loopback and test fixtures only; no new live
 deployment, payment or customer receipt. Historical EC evidence keeps its own source and expiry.
 
 | Criterion / native owner | Implemented source and check disposition | Remaining acceptance |
@@ -451,17 +453,22 @@ labelled sample draft. It is not the five-person E2 study, demand validation or 
 
 Targeted evidence: five merchant browser cases pass; the existing local-first harness passes all
 role/offline/review/checkout/pack/durable-listing groups with the added environment assertions.
-Typecheck, 91 domain tests and unit checks passed in the affected runner before final UI refinements.
+At clean `9bb287ec8`, typecheck, 91 domain tests, unit tests, five merchant browser cases and the
+local-first browser harness passed. Worker tests passed 59/60: the remaining assertion required
+the retained “Release identity” label. This successor restores it in the environment disclosure; both invalid-configuration Worker cases
+and all five merchant browser cases pass after the correction.
 Both Dev and Production dry runs passed; largest measured chunk was 488,129 bytes (<500,000).
 Metadata/five-role joins, authored limits and terminology pass. The initial affected run stopped with
 `blocked-validation-input-drift` because source changed during validation; that run is not final proof.
 Exact clean-candidate integration,
-worker runtime and dry-run outcomes must be read from the native publication/check receipt; local
+worker regression and dry-run outcomes must be read from the native publication/check receipt; local
 fixtures can identify the base HEAD while the checkout is dirty and must not be described as its
 clean release proof. Screenshot artifacts are under `node_modules/.cache/local-first-verification`.
 
 **Release handoff:** run affected checks, publish the reserved diff through the native owner, and
-retain exact-candidate PR/check evidence. A local platform prerequisite failure blocks that check;
+retain exact-candidate PR/check evidence. The separate clean named-check run passed 119 local-first tests, its browser groups and source
+checks, then stopped at `podman_workerd_override_required` before full browser setup. This local
+platform prerequisite blocks that check;
 it does not justify weakening the guard. Protected integration, deployment, cleanup and canonical
 sync remain separate effects. Recheck on changed source, CI evidence, runtime prerequisite or grant.
 
@@ -477,7 +484,7 @@ stop after three alignment cycles or two without blocker reduction.
 
 | PRD-TAD-ADR-MVP-GTM | CID | RAO | Updated Date |
 |---|---|---|---|
-| Native workspace implementation and source handoff | edge-commerce-agent-mvp@0.8.0 / CW-D02 | UI owner → extend context/environment/recovery and verify browser behavior → 12-file successor with scoped checks and remaining gaps | 2026-10-04 |
+| Native workspace implementation and source handoff | edge-commerce-agent-mvp@0.8.1 / CW-D02 | UI owner → extend context/environment/recovery and verify browser behavior → 12-file successor with scoped checks and remaining gaps | 2026-10-04 |
 | Next authorized planning action | Same join / CW-P1 | Product → identify one reachable merchant and proposed priced outcome → E1 inputs; prerequisite: explicit contact authority, recheck on supplied prospect | 2026-10-04 |
 | Next acceptance action | Same join / CW-01–07 | Product/QA → run five human baseline tasks and resolve full-runtime prerequisites → independently bound acceptance; recheck when participants/runtime are available | 2026-10-04 |
 
