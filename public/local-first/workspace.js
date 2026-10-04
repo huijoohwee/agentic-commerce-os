@@ -1,7 +1,7 @@
-import { listDrafts } from './drafts.js';
+import { listDrafts, groupProjects } from './drafts.js';
 
 const $ = selector => document.querySelector(selector);
-const views = new Set(['shop', 'checkout', 'vendor', 'vendor-editor', 'vendor-preview', 'admin', 'admin-reviews', 'admin-data', 'admin-runtime', 'admin-project']);
+const views = new Set(['shop', 'checkout', 'vendor', 'vendor-editor', 'vendor-preview', 'admin', 'admin-reviews', 'admin-data', 'admin-runtime', 'admin-project', 'admin-tools']);
 const channel = typeof BroadcastChannel === 'function' ? new BroadcastChannel('commerce-local-drafts') : null;
 let drafts = [], draftsLoaded = false, launch, editor, editorPromise, generation = 0, navigation = 0, shopPage = 0, detailId = null, projectSearchRequested = false;
 const tablePages = { vendor: 0, admin: 0 };
@@ -136,7 +136,7 @@ async function route() {
   const revision = ++navigation, hash = location.hash.slice(1), requested = hash.split('?')[0], view = views.has(requested) ? requested : 'shop', role = view.split('-')[0];
   document.body.classList.toggle('console-mode', role === 'admin');
   $('#console-breadcrumb').hidden = role !== 'admin';
-  $('#console-location').textContent = ({ admin: 'All projects', 'admin-project': 'Project', 'admin-runtime': 'Environment', 'admin-reviews': 'Launch reviews', 'admin-data': 'Data & portability' })[view] || '';
+  $('#console-location').textContent = ({ admin: 'All projects', 'admin-project': 'Project', 'admin-runtime': 'Environment', 'admin-reviews': 'Launch reviews', 'admin-data': 'Data & portability', 'admin-tools': 'Tools & commands' })[view] || '';
   document.querySelectorAll('[data-role-panel]').forEach(panel => { panel.hidden = panel.dataset.rolePanel !== role; });
   document.querySelectorAll('[data-view-panel]').forEach(panel => { panel.hidden = panel.dataset.viewPanel !== view; });
   document.querySelectorAll('[data-role]').forEach(link => { if (link.dataset.role === (role === 'checkout' ? 'shop' : role)) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current'); });
@@ -144,6 +144,8 @@ async function route() {
   $('#workspace-context').hidden = role !== 'vendor';
   document.title = `${role === 'checkout' ? 'Checkout' : role === 'shop' ? 'Shopper' : role === 'vendor' ? 'Vendor workspace' : 'Admin workspace'} · Airvio`;
   if (view === 'vendor-editor' || view === 'admin-data') await loadEditor();
+  if (revision !== navigation) return;
+  if (view === 'admin-tools') await loadTools();
   if (revision !== navigation) return;
   if (view === 'checkout') await (await import('./checkout.js')).openCheckout();
   renderCurrent();
@@ -164,16 +166,6 @@ document.addEventListener('commerce:drafts-updated', () => { channel?.postMessag
 if (channel) channel.onmessage = () => { void refresh().catch(message); void editor?.externalChange().catch(message); };
 function connection() { $('#connection').textContent = navigator.onLine ? 'Local workspace · Online' : 'Offline · Drafts available'; }
 window.addEventListener('online', connection); window.addEventListener('offline', connection); connection();
-function projectsFromDrafts() {
-  const projects = new Map();
-  for (const draft of drafts) {
-    const id = draft.launch ? 'store:' + draft.launch.merchantId : 'local:unassigned';
-    if (!projects.has(id)) projects.set(id, { id, name: draft.launch?.merchantId || 'Personal workspace', offers: [] });
-    projects.get(id).offers.push(draft);
-  }
-  if (!projects.size) projects.set('local:unassigned', { id: 'local:unassigned', name: 'Personal workspace', offers: [] });
-  return [...projects.values()].sort((a, b) => a.name.localeCompare(b.name));
-}
 function projectPreview(project) {
   const preview = node('div', undefined, 'console-preview'); preview.setAttribute('aria-hidden', 'true');
   const frame = node('div', undefined, 'mini-storefront');
@@ -213,7 +205,7 @@ function projectCard(project, detail = false) {
 }
 function renderProjects() {
   if (!draftsLoaded) { $('#project-list').replaceChildren(node('p', 'Loading saved projects…', 'muted')); return; }
-  const projects = projectsFromDrafts(), query = $('#project-query').value.trim().toLowerCase();
+  const projects = groupProjects(drafts), query = $('#project-query').value.trim().toLowerCase();
   const filtered = projects.filter(project => [project.name, ...project.offers.map(offer => offer.title)].some(value => value.toLowerCase().includes(query)));
   $('#project-result-count').textContent = filtered.length + (filtered.length === 1 ? ' project' : ' projects');
   $('#project-list').replaceChildren(...filtered.map(project => projectCard(project)));
@@ -300,13 +292,15 @@ async function readEnvironment(response) {
     return JSON.parse(text + decoder.decode());
   } finally { await reader.cancel(); }
 }
-async function checkEnvironment() {
-  if (environmentController || !navigator.onLine) return;
+async function checkEnvironment(signal) {
+  if (signal?.aborted) throw Error('workspace_cancelled');
+  if (environmentController || !navigator.onLine) throw Error('workspace_environment_busy_or_offline');
   const generation = ++environmentGeneration, controller = new AbortController(); environmentController = controller;
   clearTimeout(environmentExpiry); environmentObservation = null;
-  const timer = setTimeout(() => controller.abort(), 5000);
+  const cancel = () => controller.abort(); signal?.addEventListener('abort', cancel, { once: true });
+  const timer = setTimeout(cancel, 5000);
   $('#environment-status').textContent = 'Checking this environment…'; renderEnvironment();
-  let observation;
+  let observation, evidence;
   try {
     const url = new URL('./readyz', location.href); url.hash = ''; url.search = '';
     const response = await fetch(url, { credentials: 'omit', cache: 'no-store', redirect: 'error', signal: controller.signal });
@@ -320,6 +314,7 @@ async function checkEnvironment() {
       || (value.workerVersionId !== null && (typeof value.workerVersionId !== 'string' || !/^[a-zA-Z0-9._-]{1,128}$/.test(value.workerVersionId)))) {
       throw Error('Evidence does not match this page and profile. Reload the page, then check again.');
     }
+    evidence = value;
     observation = { time: Date.now(), label: value.ok ? 'Sandbox configured' : 'Unavailable',
       checkout: value.ok ? 'Configured · Test mode only' : 'Unavailable · Drafts still work', version: value.workerVersionId,
       message: value.ok ? 'Sandbox configuration observed. No real payment, offer publication or fulfillment is proved by this check.'
@@ -328,21 +323,28 @@ async function checkEnvironment() {
     observation = { time: Date.now(), label: 'Unknown', checkout: 'Unknown · Check again',
       message: controller.signal.aborted ? 'Check cancelled or timed out. The outcome is unknown; you can explicitly check again.'
         : ['SyntaxError', 'TypeError'].includes(error.name) ? 'Could not verify the environment. Keep working locally and check again when available.' : error.message };
-  } finally { clearTimeout(timer); }
+  } finally { clearTimeout(timer); signal?.removeEventListener('abort', cancel); }
   if (generation !== environmentGeneration) return;
   environmentController = null; environmentObservation = observation;
   $('#environment-status').textContent = observation.message;
   environmentHistory.unshift(observation); environmentHistory.length = Math.min(20, environmentHistory.length);
   $('#environment-history').replaceChildren(...environmentHistory.map(item => node('li', new Date(item.time).toLocaleTimeString() + ' · ' + item.label + ' — ' + item.message)));
   renderEnvironment();
+  if (!evidence || controller.signal.aborted) throw Error('workspace_environment_unverified');
+  return evidence;
 }
-$('#environment-refresh').addEventListener('click', () => void checkEnvironment());
+$('#environment-refresh').addEventListener('click', () => void checkEnvironment().catch(() => {}));
 $('#environment-cancel').addEventListener('click', () => environmentController?.abort());
 window.addEventListener('offline', () => { if (environmentObservation) environmentObservation.stale = true; environmentController?.abort(); renderEnvironment(); });
 window.addEventListener('online', renderEnvironment);
 window.addEventListener('focus', renderEnvironment);
 window.addEventListener('pagehide', () => { environmentGeneration++; environmentController?.abort(); environmentController = null; clearTimeout(environmentExpiry); });
 window.addEventListener('pageshow', renderEnvironment);
+let toolsPromise;
+function loadTools() {
+  toolsPromise ??= import('./workspace-tools.js').then(module => module.mountWorkspaceTools({ checkEnvironment, sourceRevision })).catch(error => { toolsPromise = null; throw error; });
+  return toolsPromise;
+}
 void Promise.all([refresh(), route()]).catch(message);
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js', { scope: './', updateViaCache: 'none' })

@@ -171,3 +171,14 @@ export async function exportDrafts() {
   return JSON.stringify({ schema: workflows ? SCHEMA : 'commerce.local-drafts/v2',
     drafts: workflows ? drafts : drafts.map(({ workflow: _workflow, ...draft }) => draft) }, null, 2);
 }
+
+export function groupProjects(drafts) {
+  const projects = new Map();
+  for (const draft of drafts) {
+    const id = draft.launch ? 'store:' + draft.launch.merchantId : 'local:unassigned';
+    if (!projects.has(id)) projects.set(id, { id, name: draft.launch?.merchantId || 'Personal workspace', offers: [] });
+    projects.get(id).offers.push(draft);
+  }
+  if (!projects.size) projects.set('local:unassigned', { id: 'local:unassigned', name: 'Personal workspace', offers: [] });
+  return [...projects.values()].sort((a, b) => a.name.localeCompare(b.name));
+}

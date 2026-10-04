@@ -6,6 +6,19 @@ import { BROWSER_CHECKS } from '../../scripts/local-first-release/browser-proof.
 export async function checkRoleWorkspace({ browser, url, output, observeContext, record }) {
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
   observeContext(context);
+  // API contract fixture; native browser availability is checked separately in live UI verification.
+  await context.addInitScript(() => {
+    const tools = new Map();
+    Object.defineProperty(document, 'modelContext', { value: {
+      async registerTool(tool, { signal }) {
+        if (signal.aborted) throw Error('cancelled');
+        if (tools.has(tool.name)) throw Error('duplicate'); tools.set(tool.name, tool);
+        signal.addEventListener('abort', () => tools.delete(tool.name), { once: true });
+      },
+      async getTools() { return [...tools.values()].map(tool => ({ ...tool, inputSchema: JSON.stringify(tool.inputSchema) })); },
+      async executeTool(tool, input) { return tools.get(tool.name).execute(input, {}); },
+    } });
+  });
   const page = await context.newPage(); await page.goto(url);
   await expect(page.getByRole('heading', { name: 'Your collection starts with one offer.' })).toBeVisible();
   // Release-scoped assets cannot collide with the legacy cache-first service worker's unversioned paths.
@@ -137,6 +150,67 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await expect(page.locator('#project-detail .project-card')).toHaveCount(0);
   await page.getByRole('link', { name: 'All projects', exact: true }).click();
   await expect(page.locator('#project-list .project-card')).toHaveCount(2);
+  await page.getByRole('link', { name: 'Tools & commands', exact: true }).click();
+  await page.locator('#workspace-run').click();
+  await expect(page.locator('#workspace-result')).toContainText('browser-local');
+  await expect(page.locator('#workspace-result')).toContainText('studio-north');
+  await expect(page.locator('#workspace-result')).not.toContainText('PRIVATE');
+  await page.locator('#workspace-webmcp-enable').click();
+  await expect(page.locator('#workspace-webmcp-status')).toContainText('Four read-only tools registered');
+  const nativeList = await page.evaluate(async () => {
+    const tools = await document.modelContext.getTools();
+    return document.modelContext.executeTool(tools.find(tool => tool.name.endsWith('.projects.list')), {});
+  });
+  assert.deepEqual(nativeList, JSON.parse(await page.locator('#workspace-result').textContent()));
+  const explicit = await page.evaluate(async () => {
+    const tools = await document.modelContext.getTools();
+    return document.modelContext.executeTool(tools.find(tool => tool.name.endsWith('.projects.list')),
+      { snapshot: { schema: 'commerce.workspace-snapshot/v1', offers: [] } });
+  });
+  assert.equal(explicit.provenance, 'provided-snapshot'); assert.equal(explicit.value.projects[0].offerCount, 0);
+  await page.locator('#workspace-tool').selectOption('commerce.workspace.offer.review');
+  await page.locator('#workspace-arguments').fill(JSON.stringify({ offerId: drafts[1].id, expectedRevision: 999 }));
+  await page.locator('#workspace-run').click();
+  await expect(page.locator('#workspace-tool-status')).toHaveText('workspace_revision_changed');
+  await page.locator('#workspace-arguments').fill(JSON.stringify({ offerId: drafts[1].id, expectedRevision: 1 }));
+  await page.locator('#workspace-run').click();
+  await expect(page.locator('#workspace-result')).toContainText('still-required');
+  await page.locator('#workspace-prepare').click();
+  await expect(page.locator('#workspace-tool-status')).toContainText('Nothing was sent.');
+  await expect(page.locator('#workspace-result')).toContainText('commerce.workspace-snapshot/v1');
+  await expect(page.locator('#workspace-result')).not.toContainText('PRIVATE');
+  await page.locator('#workspace-tool').selectOption('commerce.workspace.projects.list');
+  await page.locator('#workspace-invocation').fill('/tool.route @wrong #mcp commerce.workspace.projects.list');
+  await page.locator('#workspace-run').click();
+  await expect(page.locator('#workspace-tool-status')).toContainText('workspace_invocation_invalid');
+  await page.locator('#workspace-invocation').fill('/tool.route @mcp-gateway #mcp commerce.workspace.projects.list');
+  await page.locator('#workspace-run').click();
+  for (const width of [360, 768, 1280]) {
+    await page.setViewportSize({ width, height: 1000 });
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    await page.screenshot({ path: path.join(output, `workspace-tools-${width}.png`), fullPage: true });
+  }
+  const drift = await page.evaluate(async () => {
+    const api = document.modelContext, original = api.getTools, tool = (await original())[0];
+    api.getTools = async () => [];
+    try { await api.executeTool(tool, {}); return 'unexpected success'; }
+    catch (error) { return error.message; }
+    finally { api.getTools = original; }
+  });
+  assert.match(drift, /registration changed/);
+  await expect(page.locator('#workspace-webmcp-status')).toContainText('Disabled.');
+  await page.locator('#workspace-webmcp-enable').click();
+  await expect(page.locator('#workspace-webmcp-status')).toContainText('Four read-only tools registered');
+  await page.locator('#workspace-webmcp-disable').click();
+  assert.equal(await page.evaluate(async () => (await document.modelContext.getTools()).length), 0);
+  await context.setOffline(true); await page.reload();
+  await page.locator('#workspace-run').click();
+  await expect(page.locator('#workspace-result')).toContainText('studio-north');
+  await page.locator('#workspace-tool').selectOption('commerce.workspace.environment.read');
+  await page.locator('#workspace-run').click();
+  await expect(page.locator('#workspace-tool-status')).toContainText(/workspace_environment_(busy_or_offline|unverified)/);
+  await context.setOffline(false);
+  await page.locator('.console-sidebar').getByRole('link', { name: 'Projects', exact: true }).click();
   await page.screenshot({ path: path.join(output, 'admin-desktop.png'), fullPage: true });
   await page.getByRole('link', { name: 'Launch reviews', exact: true }).click();
   await page.locator('#admin-query').fill('offer 03');
