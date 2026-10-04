@@ -131,3 +131,73 @@ const nativeToolDefinitions = [
   { name: 'commerce.merchant.proposals.read', title: 'Read local review queue', description: 'Read proposals visible in this browser. No credentials are exposed.',
     inputSchema: { type: 'object', additionalProperties: false, properties: {} }, execute: async () => ({ ok: true, proposals: await readProposals() }) }
 ].map(tool => ({ ...tool, outputSchema: { type: 'object' }, annotations: { readOnlyHint: tool.name !== 'commerce.merchant.theme.stage', untrustedContentHint: true, consequentialHint: false } }));
+// This projection reads public evidence; it never uses the operator credential or changes authority.
+const environmentPanel = document.querySelector('#environment-panel');
+if (environmentPanel) {
+  const element = id => document.getElementById('environment-' + id);
+  const history = [];
+  let controller = null, generation = 0, observation = null, expiry;
+  const render = () => {
+    const stale = observation && (observation.stale || !navigator.onLine || Date.now() - observation.time > 60000);
+    clearTimeout(expiry);
+    if (observation && !stale) expiry = setTimeout(render, Math.max(1, 60001 - (Date.now() - observation.time)));
+    element('badge').textContent = !navigator.onLine ? 'Offline' : stale ? 'Stale · Check again' : observation?.label || 'Not checked';
+    element('observed').textContent = observation ? new Date(observation.time).toLocaleString() + (stale ? ' · stale' : '') : 'Not checked';
+    element('refresh').disabled = !navigator.onLine || !!controller;
+    element('cancel').hidden = !controller;
+    if (!navigator.onLine) element('status').textContent = 'Offline. Local proposals remain available. Reconnect and explicitly check again.';
+    else if (stale) element('status').textContent = 'This observation expired. Check again before relying on it.';
+    else element('status').textContent = controller ? 'Checking this environment…' : observation?.message || 'Check this environment explicitly. No previous result authorizes a publication, deployment or payment.';
+  };
+  const read = async response => {
+    if (![200, 503].includes(response.status) || !/^application\/json(?:;|$)/i.test(response.headers.get('content-type') || '')) throw Error('Environment response is unavailable or invalid.');
+    const reader = response.body?.getReader();
+    if (!reader) throw Error('Environment response is empty.');
+    let bytes = 0, text = ''; const decoder = new TextDecoder('utf-8', { fatal: true });
+    try {
+      for (;;) {
+        const next = await reader.read(); if (next.done) break;
+        bytes += next.value.byteLength; if (bytes > 32768) throw Error('Environment response exceeded its limit.');
+        text += decoder.decode(next.value, { stream: true });
+      }
+      return JSON.parse(text + decoder.decode());
+    } finally { await reader.cancel(); }
+  };
+  element('refresh').addEventListener('click', async () => {
+    if (controller || !navigator.onLine) return;
+    const current = ++generation, pending = new AbortController(); controller = pending;
+    clearTimeout(expiry); observation = null;
+    const timer = setTimeout(() => pending.abort(), 5000);
+    element('status').textContent = 'Checking this environment…'; render();
+    let result;
+    try {
+      const response = await fetch(runtimePath('/readyz'), { credentials: 'omit', cache: 'no-store', redirect: 'error', signal: pending.signal });
+      const value = await read(response), expected = environmentPanel.dataset;
+      if (pending.signal.aborted) throw Error('cancelled');
+      if (!value || value.contract !== 'commerce.edge-readiness/v2' || value.releaseCandidateSha !== expected.source
+        || value.lane !== expected.lane || typeof value.ok !== 'boolean' || value.ok !== (response.status === 200)
+        || typeof value.sourceReadiness?.ok !== 'boolean' || typeof value.liveReleaseReadiness?.ok !== 'boolean'
+        || (value.version?.id ?? '') !== expected.version
+        || (value.ok && (!value.sourceReadiness.ok || !value.liveReleaseReadiness.ok))) {
+        throw Error('Evidence does not match this page and profile. Reload the page, then check again.');
+      }
+      result = { time: Date.now(), label: value.ok ? 'Checks passed' : 'Unavailable',
+        message: value.ok ? 'Readiness passed for this page identity. No deployment, publication, payment or fulfillment receipt is proved by this check.'
+          : 'Readiness is unavailable for this page identity. Keep local proposals; the runtime owner must investigate before proceeding.' };
+    } catch (error) {
+      result = { time: Date.now(), label: 'Unknown', message: pending.signal.aborted
+        ? 'Check cancelled or timed out. The outcome is unknown; you can explicitly check again.'
+        : ['SyntaxError', 'TypeError'].includes(error.name) ? 'Could not verify the environment. Keep local proposals and check again when available.' : error.message };
+    } finally { clearTimeout(timer); }
+    if (generation !== current) return;
+    controller = null; observation = result; element('status').textContent = result.message;
+    history.unshift(result); history.length = Math.min(20, history.length);
+    element('history').replaceChildren(...history.map(item => node('li', new Date(item.time).toLocaleTimeString() + ' · ' + item.label + ' — ' + item.message)));
+    render();
+  });
+  element('cancel').addEventListener('click', () => controller?.abort());
+  window.addEventListener('offline', () => { if (observation) observation.stale = true; controller?.abort(); render(); });
+  for (const event of ['online', 'focus', 'pageshow', 'hashchange']) window.addEventListener(event, render);
+  window.addEventListener('pagehide', () => { generation++; controller?.abort(); controller = null; clearTimeout(expiry); });
+  render();
+}

@@ -1,7 +1,7 @@
 import { listDrafts } from './drafts.js';
 
 const $ = selector => document.querySelector(selector);
-const views = new Set(['shop', 'checkout', 'vendor', 'vendor-editor', 'vendor-preview', 'admin', 'admin-reviews', 'admin-data']);
+const views = new Set(['shop', 'checkout', 'vendor', 'vendor-editor', 'vendor-preview', 'admin', 'admin-reviews', 'admin-data', 'admin-runtime']);
 const channel = typeof BroadcastChannel === 'function' ? new BroadcastChannel('commerce-local-drafts') : null;
 let drafts = [], launch, editor, editorPromise, generation = 0, navigation = 0, shopPage = 0, detailId = null;
 const tablePages = { vendor: 0, admin: 0 };
@@ -123,12 +123,14 @@ async function refresh() {
   $('#vendor-total').textContent = String(drafts.length); $('#vendor-complete').textContent = String(complete.length);
   $('#admin-stores').textContent = String(new Set(complete.map(d => d.launch.merchantId)).size);
   $('#admin-reviewable').textContent = String(reviewable.length); $('#admin-attention').textContent = String(drafts.length - reviewable.length);
+  renderScope();
   renderCurrent();
 }
 function renderCurrent() {
   if (!$('#shop').hidden) renderShop();
   if (!$('#vendor').hidden) renderTable('vendor');
   if (!$('#admin').hidden) renderTable('admin');
+  renderEnvironment();
 }
 async function route() {
   const revision = ++navigation, hash = location.hash.slice(1), view = views.has(hash) ? hash : 'shop', role = view.split('-')[0];
@@ -136,6 +138,7 @@ async function route() {
   document.querySelectorAll('[data-view-panel]').forEach(panel => { panel.hidden = panel.dataset.viewPanel !== view; });
   document.querySelectorAll('[data-role]').forEach(link => { if (link.dataset.role === (role === 'checkout' ? 'shop' : role)) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current'); });
   document.querySelectorAll('[data-view]').forEach(link => { if (link.dataset.view === view) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current'); });
+  $('#workspace-context').hidden = !['vendor', 'admin'].includes(role);
   document.title = `${role === 'checkout' ? 'Checkout' : role === 'shop' ? 'Shopper' : role === 'vendor' ? 'Vendor workspace' : 'Admin workspace'} · Airvio`;
   if (view === 'vendor-editor' || view === 'admin-data') await loadEditor();
   if (revision !== navigation) return;
@@ -154,6 +157,88 @@ document.addEventListener('commerce:drafts-updated', () => { channel?.postMessag
 if (channel) channel.onmessage = () => { void refresh().catch(message); void editor?.externalChange().catch(message); };
 function connection() { $('#connection').textContent = navigator.onLine ? 'Local workspace · Online' : 'Offline · Drafts available'; }
 window.addEventListener('online', connection); window.addEventListener('offline', connection); connection();
+const sourceRevision = document.querySelector('meta[name="commerce-source"]').content;
+let environmentController = null, environmentGeneration = 0, environmentObservation = null, environmentExpiry;
+const environmentHistory = [];
+function renderScope() {
+  const stores = [...new Set(drafts.filter(draft => draft.launch).map(draft => draft.launch.merchantId))];
+  const scope = stores.length === 1 ? stores[0] : stores.length ? `${stores.length} stores in local drafts` : 'No saved merchant';
+  $('#workspace-scope').textContent = scope + ' · This device';
+  $('#environment-scope').textContent = scope;
+}
+function renderEnvironment() {
+  const observation = environmentObservation;
+  const stale = observation && (observation.stale || !navigator.onLine || Date.now() - observation.time > 60000);
+  clearTimeout(environmentExpiry);
+  if (observation && !stale) environmentExpiry = setTimeout(renderEnvironment, Math.max(1, 60001 - (Date.now() - observation.time)));
+  $('#environment-source').textContent = sourceRevision === 'local-unreleased' ? 'Local development · Unreleased changes' : sourceRevision;
+  $('#environment-badge').textContent = !navigator.onLine ? 'Offline' : stale ? 'Stale · Check again' : observation?.label || 'Not checked';
+  $('#environment-checkout').textContent = stale ? 'Unknown · Observation is stale' : observation?.checkout || 'Unknown · Check environment';
+  $('#environment-observed').textContent = observation ? new Date(observation.time).toLocaleString() + (stale ? ' · stale' : '') : 'Not checked';
+  $('#environment-version').textContent = observation?.version || 'Unknown';
+  $('#environment-refresh').disabled = !navigator.onLine || !!environmentController;
+  $('#environment-cancel').hidden = !environmentController;
+  if (!navigator.onLine) $('#environment-status').textContent = 'Offline. Drafts remain available; reconnect and explicitly check the environment.';
+  else if (stale) $('#environment-status').textContent = 'This observation is stale. Check again before relying on it; no action is authorized by a previous result.';
+  else $('#environment-status').textContent = environmentController ? 'Checking this environment…' : observation?.message || 'Check the current environment. Opening this page grants no publishing or payment access.';
+}
+async function readEnvironment(response) {
+  if (![200, 503].includes(response.status) || !/^application\/json(?:;|$)/i.test(response.headers.get('content-type') || '')) throw Error('Environment response is unavailable or invalid.');
+  const reader = response.body?.getReader();
+  if (!reader) throw Error('Environment response is empty.');
+  let bytes = 0, text = ''; const decoder = new TextDecoder('utf-8', { fatal: true });
+  try {
+    for (;;) {
+      const next = await reader.read(); if (next.done) break;
+      bytes += next.value.byteLength; if (bytes > 32768) throw Error('Environment response exceeded its limit.');
+      text += decoder.decode(next.value, { stream: true });
+    }
+    return JSON.parse(text + decoder.decode());
+  } finally { await reader.cancel(); }
+}
+async function checkEnvironment() {
+  if (environmentController || !navigator.onLine) return;
+  const generation = ++environmentGeneration, controller = new AbortController(); environmentController = controller;
+  clearTimeout(environmentExpiry); environmentObservation = null;
+  const timer = setTimeout(() => controller.abort(), 5000);
+  $('#environment-status').textContent = 'Checking this environment…'; renderEnvironment();
+  let observation;
+  try {
+    const url = new URL('./readyz', location.href); url.hash = ''; url.search = '';
+    const response = await fetch(url, { credentials: 'omit', cache: 'no-store', redirect: 'error', signal: controller.signal });
+    const value = await readEnvironment(response);
+    if (controller.signal.aborted) throw Error('cancelled');
+    if (value.profile !== 'local-first' || value.sourceRevision !== sourceRevision || value.storage !== 'browser-only'
+      || value.realMoney !== false || !['sandbox', 'unavailable'].includes(value.checkout) || typeof value.ok !== 'boolean'
+      || value.ok !== (response.status === 200) || value.ok !== (value.checkout === 'sandbox')
+      || (sourceRevision !== 'local-unreleased' && !/^[a-f0-9]{40}$/.test(sourceRevision))
+      || (value.ok && (value.paymentProvider !== 'stripe' || value.paymentStorage !== 'stripe-test'))
+      || (value.workerVersionId !== null && (typeof value.workerVersionId !== 'string' || !/^[a-zA-Z0-9._-]{1,128}$/.test(value.workerVersionId)))) {
+      throw Error('Evidence does not match this page and profile. Reload the page, then check again.');
+    }
+    observation = { time: Date.now(), label: value.ok ? 'Sandbox configured' : 'Unavailable',
+      checkout: value.ok ? 'Configured · Test mode only' : 'Unavailable · Drafts still work', version: value.workerVersionId,
+      message: value.ok ? 'Sandbox configuration observed. No real payment, offer publication or fulfillment is proved by this check.'
+        : 'The sandbox is unavailable here. Continue preparing drafts; the runtime owner must resolve its configuration.' };
+  } catch (error) {
+    observation = { time: Date.now(), label: 'Unknown', checkout: 'Unknown · Check again',
+      message: controller.signal.aborted ? 'Check cancelled or timed out. The outcome is unknown; you can explicitly check again.'
+        : ['SyntaxError', 'TypeError'].includes(error.name) ? 'Could not verify the environment. Keep working locally and check again when available.' : error.message };
+  } finally { clearTimeout(timer); }
+  if (generation !== environmentGeneration) return;
+  environmentController = null; environmentObservation = observation;
+  $('#environment-status').textContent = observation.message;
+  environmentHistory.unshift(observation); environmentHistory.length = Math.min(20, environmentHistory.length);
+  $('#environment-history').replaceChildren(...environmentHistory.map(item => node('li', new Date(item.time).toLocaleTimeString() + ' · ' + item.label + ' — ' + item.message)));
+  renderEnvironment();
+}
+$('#environment-refresh').addEventListener('click', () => void checkEnvironment());
+$('#environment-cancel').addEventListener('click', () => environmentController?.abort());
+window.addEventListener('offline', () => { if (environmentObservation) environmentObservation.stale = true; environmentController?.abort(); renderEnvironment(); });
+window.addEventListener('online', renderEnvironment);
+window.addEventListener('focus', renderEnvironment);
+window.addEventListener('pagehide', () => { environmentGeneration++; environmentController?.abort(); environmentController = null; clearTimeout(environmentExpiry); });
+window.addEventListener('pageshow', renderEnvironment);
 void Promise.all([refresh(), route()]).catch(message);
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js', { scope: './', updateViaCache: 'none' })

@@ -1,7 +1,7 @@
 export function merchantNavigation(role: 'admin' | 'vendor'): string {
   const views = role === 'vendor'
     ? [['storefront', 'Storefront', '◧'], ['catalog', 'Catalog', '▦'], ['proposals', 'Proposals', '▤']]
-    : [['overview', 'Overview', '◫'], ['agents', 'Agents', '▦'], ['reviews', 'Reviews', '▤'], ['runtime', 'Runtime', '⚙']]
+    : [['overview', 'Overview', '◫'], ['agents', 'Agents', '▦'], ['reviews', 'Reviews', '▤'], ['runtime', 'Environment', '⚙']]
   return `<aside class="sidebar"><p class="eyebrow">${role === 'vendor' ? 'Your business' : 'Marketplace'}</p><nav aria-label="${role} workspace">${views.map(([id, label, icon]) => `<a href="#${id}" data-view-link="${id}" data-title="${label}"><span class="nav-icon" aria-hidden="true">${icon}</span>${label}</a>`).join('')}</nav><p class="sidebar-note">${role === 'vendor' ? 'Prepare a storefront. Review your catalog. Reach your first customer.' : 'Keep your marketplace running with clear, deliberate approvals.'}</p></aside>`
 }
 

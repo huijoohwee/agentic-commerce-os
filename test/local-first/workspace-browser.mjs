@@ -17,6 +17,44 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await page.getByText('Offline access is ready.', { exact: false }).waitFor();
   await page.screenshot({ path: path.join(output, 'shopper-empty-desktop.png'), fullPage: true });
   await page.getByRole('link', { name: 'Admin', exact: true }).click();
+  await page.getByRole('link', { name: 'Environment', exact: true }).click();
+  await expect(page.locator('#environment-badge')).toHaveText('Not checked');
+  await context.setOffline(true); await context.setOffline(false);
+  await expect(page.locator('#environment-status')).not.toContainText('Offline.');
+  await page.getByRole('button', { name: 'Check environment', exact: true }).click();
+  await expect(page.locator('#environment-badge')).toHaveText('Sandbox configured');
+  await expect(page.locator('#environment-status')).toContainText('No real payment');
+  for (const width of [360, 768, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    await page.screenshot({ path: path.join(output, `environment-${width}.png`), fullPage: true });
+  }
+  await context.setOffline(true);
+  await expect(page.locator('#environment-badge')).toHaveText('Offline');
+  await expect(page.locator('#environment-checkout')).toContainText('Unknown');
+  await expect(page.locator('#environment-refresh')).toBeDisabled();
+  await context.setOffline(false);
+  await expect(page.locator('#environment-badge')).toHaveText('Stale · Check again');
+  const sourceRevision = await page.locator('meta[name="commerce-source"]').getAttribute('content');
+  const readiness = { ok: true, profile: 'local-first', storage: 'browser-only', realMoney: false,
+    checkout: 'sandbox', paymentStorage: 'stripe-test', paymentProvider: 'stripe', workerVersionId: null, sourceRevision };
+  for (const body of [JSON.stringify({ ...readiness, sourceRevision: 'f'.repeat(40) }), '{', ' '.repeat(32769)]) {
+    await page.route('**/readyz', route => route.fulfill({ status: 200, contentType: 'application/json', body }));
+    await page.locator('#environment-refresh').click();
+    await expect(page.locator('#environment-badge')).toHaveText('Unknown');
+    await expect(page.locator('#environment-checkout')).not.toContainText('Configured');
+    await page.unroute('**/readyz');
+  }
+  let releaseRead;
+  const heldRead = new Promise(resolve => { releaseRead = resolve; });
+  await page.route('**/readyz', async route => { await heldRead; await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(readiness) }); });
+  await page.locator('#environment-refresh').click();
+  await expect(page.locator('#environment-refresh')).toBeDisabled();
+  await page.locator('#environment-cancel').click();
+  await expect(page.locator('#environment-status')).toContainText('cancelled');
+  releaseRead(); await page.unrouteAll({ behavior: 'wait' });
+  await expect(page.locator('#environment-badge')).toHaveText('Unknown');
+  await page.setViewportSize({ width: 1440, height: 1000 });
   await page.getByRole('link', { name: 'Data & portability', exact: true }).click();
   const now = Date.now();
   const drafts = Array.from({ length: 13 }, (_, index) => ({
