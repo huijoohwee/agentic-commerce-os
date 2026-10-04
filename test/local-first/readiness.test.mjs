@@ -1,8 +1,47 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { waitForReadiness, waitForBrowserDocument } from '../../scripts/local-first-release/readiness.mjs';
+import { waitForReadiness, waitForBrowserDocument, requireRollbackRehearsal,
+  assertFulfillmentRollbackProof } from '../../scripts/local-first-release/readiness.mjs';
 const revision = 'a'.repeat(40), versionId = 'candidate-version';
 const current = { ok: true, profile: 'local-first', checkout: 'sandbox', storage: 'browser-only', realMoney: false, paymentStorage: 'stripe-test', paymentProvider: 'stripe', sourceRevision: revision, workerVersionId: versionId };
+
+test('fulfillment releases cannot omit or disable their candidate rollback rehearsal', () => {
+  for (const selection of [undefined, 'false']) {
+    assert.throws(() => requireRollbackRehearsal(selection, { reader: {} }), /requires exact-candidate/);
+    assert.equal(requireRollbackRehearsal(selection, null), false);
+  }
+  assert.equal(requireRollbackRehearsal('true', { reader: {} }), true);
+  assert.throws(() => requireRollbackRehearsal('true', null), /requires the retained reader/);
+  for (const selection of ['', 'yes', true]) assert.throws(() => requireRollbackRehearsal(selection, {}), /Invalid/);
+});
+
+test('completion needs the same source, active version, reader and actual retained job recovery', () => {
+  const active = { versionId, deploymentId: 'restored-deployment' };
+  const reader = { sourceRevision: 'b'.repeat(40), versionId: 'reader-version', runId: 42 };
+  const proof = { schema: 'commerce.fulfillment-provider-rollback/v1', status: 'complete', sourceRevision: revision,
+    candidate: { versionId, deploymentId: 'original-deployment' }, reader,
+    readerDeployment: { versionId: reader.versionId, deploymentId: 'reader-deployment' }, restoredDeployment: active,
+    readerVerified: true, restoredVerified: true, writeResultUnknown: false, realMoney: false,
+    retainedJob: { runId: 'listing-' + 'c'.repeat(64), outputDigest: 'd'.repeat(64), draftDigest: 'e'.repeat(64),
+      transport: 'actual-public-browser', executor: 'pinned-device-host', paymentSubmitted: false } };
+  const expected = { revision, active, reader };
+  assert.equal(assertFulfillmentRollbackProof(proof, expected), proof);
+  assert.throws(() => assertFulfillmentRollbackProof(null, expected), /missing or incomplete/);
+  for (const mutate of [
+    p => { p.sourceRevision = 'f'.repeat(40); }, p => { p.status = 'preserve-required'; },
+    p => { p.restoredVerified = false; }, p => { p.readerVerified = false; },
+    p => { p.writeResultUnknown = true; }, p => { p.realMoney = true; },
+    p => { p.candidate.versionId = 'other-candidate'; }, p => { p.restoredDeployment.deploymentId = 'other-deployment'; },
+    p => { p.reader.sourceRevision = revision; }, p => { p.reader.runId++; },
+    p => { p.readerDeployment.versionId = 'other-reader'; }, p => { p.retainedJob = null; },
+    p => { p.retainedJob.transport = 'fixture'; }, p => { p.retainedJob.outputDigest = ''; },
+    p => { p.retainedJob.paymentSubmitted = true; },
+  ]) {
+    const changed = structuredClone(proof); mutate(changed);
+    assert.throws(() => assertFulfillmentRollbackProof(changed, expected), /missing or incomplete/);
+  }
+});
+
 const response = (body = current, status = 200) => new Response(typeof body === 'string' ? body : JSON.stringify(body),
   { status, headers: { 'content-type': typeof body === 'string' ? 'text/html' : 'application/json', 'cf-ray': 'test-ray' } });
 function probe(sequence, overrides = {}) {

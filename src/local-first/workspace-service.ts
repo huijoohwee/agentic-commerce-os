@@ -13,9 +13,9 @@ function routingTokens() {
   if (!owner || owner.bindingTokens.length !== 1 || owner.semanticTokens.length !== 1) throw Error('workspace_routing_unavailable')
   return { commandToken: owner.commandToken, bindingToken: owner.bindingTokens[0], semanticToken: owner.semanticTokens[0] }
 }
-/** Explicit caller snapshots only; no persistence, outbound requests, credentials or agent writes. */
+/** Explicit caller snapshots and bounded environment reads; no persistence, credentials or agent writes. */
 export async function handleWorkspaceService(request: Request, sourceRevision: string,
-  environment: () => unknown): Promise<Response | null> {
+  environment: (signal?: AbortSignal) => unknown): Promise<Response | null> {
   const url = new URL(request.url), route = url.pathname.slice(WORKSPACE_SERVICE_PATH.length)
   if (!url.pathname.startsWith(WORKSPACE_SERVICE_PATH + '/') || !['/api', '/invoke', '/mcp', '/service.json'].includes(route)) return null
   const fail = (status: number, code: string) => Response.json({ ok: false, code }, { status })

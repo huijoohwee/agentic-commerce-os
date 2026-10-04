@@ -2,20 +2,20 @@
 title: "Reference Implementation — Native Commerce, Workspaces and First-Dollar Boundary"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "edge-commerce-agent-mvp"
-revision: "0.14.0"
-version: "0.14.0"
-prd_revision: "0.14.0"
-tad_revision: "0.14.0"
-adr_revision: "0.14.0"
-mvp_revision: "0.14.0"
-gtm_revision: "0.14.0"
+revision: "0.16.0"
+version: "0.16.0"
+prd_revision: "0.16.0"
+tad_revision: "0.16.0"
+adr_revision: "0.16.0"
+mvp_revision: "0.16.0"
+gtm_revision: "0.16.0"
 date: "2026-10-04"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Commerce product architecture"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
-readiness_scope: "CW implementation slice locally checked; whole-product acceptance and delivered proof remain incomplete"
+readiness_scope: "CW/RR implementation locally checked; whole-product acceptance and delivered proof remain incomplete"
 lane: "authoring"
 universal_scope: false
 load_policy: "on-demand"
@@ -44,7 +44,7 @@ The proposed [native commerce transfer ecosystem](prd-tad-adr-mvp-gtm-native-com
 at `NATIVE-COMMERCE-TRANSFER-001@0.2.1` specifies MainPanel, transfer and policy-evidence enhancements.
 It consumes this sandbox baseline and inherits no implementation, payment or deployment readiness.
 
-`edge-commerce-agent-mvp@0.14.0` joins [PRD](#prd), [TAD](#tad), [ADR](#adr), [MVP](#mvp)
+`edge-commerce-agent-mvp@0.16.0` joins [PRD](#prd), [TAD](#tad), [ADR](#adr), [MVP](#mvp)
 and [GTM](#gtm). PRD owns criteria; TAD consumes that exact revision; ADR binds the design;
 MVP and GTM consume their checks and outcomes. This document describes concrete choices for
 this reference implementation, not universal vendor requirements. Shared [guidelines][guideline]
@@ -67,7 +67,7 @@ keep unvalidated demand, live payment and full-agent production behind their own
 ## Current workspace increment — reference implementation
 
 The [workspace companion](prd-tad-adr-mvp-gtm-commerce-workspaces.md) is the size-bounded
-CW-01–CW-08 extension of this same `edge-commerce-agent-mvp@0.14.0` join. It owns the new
+CW-01–CW-08 extension of this same `edge-commerce-agent-mvp@0.16.0` join. It owns the new
 project/environment read projection, native admin recovery journey, capability boundaries,
 five flows, C01–C16 coverage and next bounded tasks. It adds no independent product or roadmap.
 The five section roles below retain EC-01–EC-10; each consumes its matching companion section
@@ -140,7 +140,7 @@ this documentation revision neither rewrites exported packs nor treats that comp
 
 ## PRD
 
-**Join:** `edge-commerce-agent-mvp@0.14.0`.
+**Join:** `edge-commerce-agent-mvp@0.16.0`.
 
 **PP-01 — unvalidated:** a solo service operator cannot easily test an offer-to-delivery journey
 without rebuilding payment integration. Impact and frequency are hypotheses; no priced prospect
@@ -193,7 +193,7 @@ retroactive runtime acceptance results. Customer adoption remains below sign-off
 
 ## TAD
 
-**Join:** TAD consumes exactly PRD `edge-commerce-agent-mvp@0.14.0`; ADR binds these components.
+**Join:** TAD consumes exactly PRD `edge-commerce-agent-mvp@0.16.0`; ADR binds these components.
 CW requirements consume W1–W5 in the companion. The following rungs are historical EC evidence,
 not fresh verification of the October source or whole-workspace acceptance.
 
@@ -393,7 +393,7 @@ change edits neither mirror nor route. Route evidence never grants another compo
 
 ## ADR
 
-**Join:** ADR `edge-commerce-agent-mvp@0.14.0` binds this PRD/TAD. Accepted decisions:
+**Join:** ADR `edge-commerce-agent-mvp@0.16.0` binds this PRD/TAD. Accepted decisions:
 
 - **EC-A1 — reuse native owners.** Existing drafts, themes and checkout avoid a second store or
   application. A new cart/database was rejected for this single-offer rehearsal; recovery preserves
@@ -473,7 +473,7 @@ never enroll fabricated payer evidence from this sandbox. [The sprint][sprint] o
 ## Alignment and maintenance — reference implementation
 
 The historical evidence companion consumes 0.6.0 and the sprint at 1.2.0; it is not silently
-re-stamped as October evidence. The workspace companion records the 0.14.0 implementation and local UI checkpoint. Historical
+re-stamped as October evidence. The workspace companion records the 0.16.0 source join; RR-D10 records local readiness repair and remaining runtime gates. Historical
 five-role joins, source links, schema owners, five flow inventories, deployment boundaries and
 monetization separation are the bounded documentation review. Existing source checks validate
 syntax, links, limits and projection; they do not certify every advisory statement in the guideline.
@@ -513,6 +513,25 @@ source or evidence revision; at most three alignment cycles, stop/replan if bloc
 
 ## Experience assessment — reference implementation
 
-This assessment consumes `edge-commerce-agent-mvp@0.14.0` and the separately scoped EC/CW criteria and evidence above. Core Requirements & Functionality, Innovation & Theme Alignment, Technical Execution & Integration, and Usefulness & Agentic Experience are **unassessed**: no criterion-scored user observation is attached to this implementation revision; automated and agent-operated checks are not customer observations. Existing sandbox and authoring receipts retain their recorded source, environment and expiry; this assessment neither renews them nor changes their readiness scope.
+This assessment consumes `edge-commerce-agent-mvp@0.16.0` and the separately scoped EC/CW criteria and evidence above. Core Requirements & Functionality, Innovation & Theme Alignment, Technical Execution & Integration, and Usefulness & Agentic Experience are **unassessed**: no criterion-scored user observation is attached to this implementation revision; automated and agent-operated checks are not customer observations. Existing sandbox and authoring receipts retain their recorded source, environment and expiry; this assessment neither renews them nor changes their readiness scope.
 
 The document owner must capture one timed pilot in the buyer’s existing workspace, record the four observations using the shared maturity rubric, and measure accepted outcome, actual payment, repeat use and delivery/support cost separately. A successful sandbox checkout proves its declared mechanism only; it cannot establish willingness to pay, a commercial winner or collected customer revenue. Append the learn-loop result as a successor Context through the shared planning owner.
+
+
+## RR-D10 — Production readiness recovery, reference implementation
+
+**Context / PRD:** the 2026-10-04 live audit found fulfillment admission 503 while configuration readiness was 200. The deployed source remained `081de8b254985b09bd6e3d7367bf5d54484e44a3`; protected main was `ff97aa8274b9e00c1fda2a743aa5cdaba3c59e19`. User instruction “implement Production readiness” authorizes the repair over existing owners. Buyer priority: recover the existing offer-to-fulfillment path before adding capabilities.
+**TAD:** the existing local-first Worker owns one bounded readiness observation, reused by the environment tool. Its configured host is checked through the existing authenticated relay with a 3-second deadline and request cancellation. Configuration, disabled fulfillment and unavailable fulfillment stay distinct. No cookie, job, model invocation, new registry or stored health cache is created. Browser tools remain explicit and lazy; the existing invocation grammar and schemas stay intact.
+**ADR / RR-A1:** extend existing readiness and release owners. A configured host failure produces HTTP 503 with sandbox configuration retained; the native environment view shows Degraded. Host pins/errors/credentials stay private. Local profiles without a host explicitly report disabled. Fulfillment promotion requires the existing actual-listing rollback rehearsal; a v3 completion binds its proof digest to the exact source, restored deployment and retained reader. No evaluator proof or production authority is fabricated.
+**MVP:** RR-01 requires unavailable, recovered, canceled and hung hosts to produce truthful bounded readiness; RR-02 requires API/tool parity and preserved UI/invocation flows; RR-03 rejects skipped, foreign-candidate or incomplete rollback evidence before a production-complete receipt. Independent full-profile evaluator enrollment, provider/catalog/registry evidence, real payments and whole-product parity remain outside proven scope.
+**GTM:** restored execution shortens the existing first-offer path; no new price, demand, collection or conversion claim. Customer validation remains with the first-dollar owner. Sprint estimate/cap: 30 active minutes, 10 code/test modules plus three existing documentation owners, <200 kB source diff, no dependencies/new hosted resources/paid calls. One new test module is lazy development-only; existing runtime owners gain bounded code with no always-load module added. External waits have conditions, not ETAs.
+
+| Criterion | Existing owner and check | Local readiness | Delivered readiness / next condition |
+|---|---|---|---|
+| RR-01 | `worker.ts`; `runtime-readiness.test.mjs`, `worker.test.mjs` | dev-proven: healthy/degraded/disabled, 3-second bound and cancellation checks pass | spec-complete: public Worker still serves old source; exact integrated release required |
+| RR-02 | `workspace-service.ts`, `workspace.js`; `workspace-invocation.test.mjs`, `workspace-browser.mjs` | dev-proven: API/MCP parity passes; responsive/degraded UI acceptance retained in browser receipt | spec-complete: new workspace endpoint absent from current deployment |
+| RR-03 | `local-first-release/execute.mjs`, `readiness.mjs`; release/readiness/rollback tests | dev-proven: 26 targeted controller/proof tests pass | spec-complete: new candidate-bound authorized rehearsal and v3 receipt required |
+
+**Runtime repair observation:** existing VM/model container and the exact pinned host were restarted without rebuilding, downloading, inference or credential changes. Authenticated loopback host readiness returned 200 matching source/bundle/image/definition/model pins. Original SQLite data is retained. The model retains its 1.5 GiB/2 CPU limits and loopback binding. Public session admission remains 503: current tunnel ingress cannot be read with the available credentials (401); the historical receipt points to occupied port 5191 while the pinned host listens on 5192. No tunnel was started from that stale receipt.
+**Production release boundary:** protected integration and exact human-approved deployment remain separate. The old waiting release targets superseded main; it needs owner disposition before a fresh run. Full-profile issuer enrollment and self-review prevention remain blocking. This increment neither weakens those gates nor upgrades current production readiness.
+**TODO successor / same join:** runtime operator obtains current read-only ingress evidence for the existing tunnel, verifies the exact 5192 host target, then starts the retained connector and rechecks public admission. Source owner publishes this candidate through native RELEASE; integration owner supplies protected merge proof; deployment owner selects the exact integrated source, validates free-tier eligibility and grants the required run-specific approval. Runtime owner retains browser/invocation/rollback/readback receipts. Recheck only on source, host, ingress, authority or evidence changes. Recovery remains the existing retained-reader controller and reviewed source revert; no data migration is introduced.

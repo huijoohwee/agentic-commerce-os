@@ -11,6 +11,7 @@ import { observeBefore, deployLocalFirst, rehearseLocalFirstRollback } from './d
 import { verifyRetainedBaseline } from './retained-baseline.mjs';
 import { assertBrowserProof } from './browser-proof.mjs';
 import { readFulfillmentRelease, verifyFulfillmentRelease } from './fulfillment.mjs';
+import { requireRollbackRehearsal, assertFulfillmentRollbackProof } from './readiness.mjs';
 import { readJsonResponse } from '../../src/shared/http.ts';
 
 const env = process.env, revision = env.CANDIDATE_SHA, runId = Number(env.GITHUB_RUN_ID);
@@ -40,9 +41,7 @@ const retainedBaseline = await verifyRetainedBaseline(env.LOCAL_FIRST_RETAINED_B
 if (JSON.stringify(read('retained-baseline.json')) !== JSON.stringify(retainedBaseline)) throw Error('Retained baseline changed after preparation');
 const before = await observeBefore(provider, routeAuthority, retainedBaseline);
 const fulfillment = readFulfillmentRelease();
-const rehearsal = env.LOCAL_FIRST_ROLLBACK_REHEARSAL === 'true';
-if (!['true', 'false', undefined].includes(env.LOCAL_FIRST_ROLLBACK_REHEARSAL)) throw Error('Invalid rollback rehearsal selection');
-if (rehearsal && !fulfillment) throw Error('Rollback rehearsal requires the retained reader and authenticated fulfillment host');
+const rehearsal = requireRollbackRehearsal(env.LOCAL_FIRST_ROLLBACK_REHEARSAL, fulfillment);
 const verifyHost = () => verifyFulfillmentRelease(fulfillment, { provider, routeAuthority,
   token: env.GH_TOKEN, bearer: env.LISTING_HOST_BEARER });
 const fulfillmentProof = await verifyHost();
@@ -101,6 +100,7 @@ if (rehearsal) {
     const proof = await rehearseLocalFirstRollback({ provider, routeAuthority, candidate: journal.active,
       reader: fulfillment.reader, revision, pins: fulfillment.pins, checkMain, record, wrangler, observation, journal });
     journal.active = proof.restoredDeployment;
+    assertFulfillmentRollbackProof(proof, { revision, active: journal.active, reader: fulfillment.reader });
     write('fulfillment-rollback-proof.json', proof);
     await verifyLive(journal.active);
   } catch (error) {
@@ -108,9 +108,10 @@ if (rehearsal) {
   } finally { await observation.close(); }
 }
 journal.outcome = 'production-complete'; record('complete');
-const body = { schema: 'commerce.local-first-production-completion/v2', status: 'production-complete',
+const body = { schema: 'commerce.local-first-production-completion/v3', status: 'production-complete',
   profile: 'local-first', checkout: 'sandbox', sourceRevision: revision, artifactDigest: artifact.artifactDigest,
   runId, worker: WORKER, deployment: journal.active, route: journal.route, fulfillment: fulfillmentProof,
+  rollbackProofDigest: rehearsal ? digest(fs.readFileSync(path.join(output, 'fulfillment-rollback-proof.json'))) : null,
   completedAt: new Date().toISOString(), browserProofDigest: digest(fs.readFileSync(path.join(output, 'live/browser-proof.json'))) };
 write('completion.json', { ...body, receiptDigest: digest(JSON.stringify(body)) });
 console.log(JSON.stringify({ status: body.status, sourceRevision: revision, profile: body.profile, checkout: body.checkout }));

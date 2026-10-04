@@ -9,15 +9,15 @@ The operator's 2026-09-11 scope decision selects the free local-first MVP in the
 [1.1.0 sprint amendment](prd-tad-adr-mvp-gtm-20260909T1320Z-solopreneur-mvp-gtm.md).
 `wrangler.local-first.jsonc` serves browser-only offer drafts, JSON backup/transfer,
 offline loading and explicit Graph navigation through the existing Commerce route.
-Checkout, orders, publication, supplier execution and all server mutations are deferred.
-The profile requires no core/sandbox/provider service, human-presence signer or remote draft database.
+Native human-operated test checkout, session-bound listing fulfillment and bounded read-only workspace tools extend this profile. Real payments and full-provider commerce remain deferred.
+The profile requires no core/sandbox/provider service, human-presence signer or remote draft database; configured listing fulfillment uses its pinned authenticated device-session host.
 It does not claim any of the full platform's 100 independent task verdicts or a payment result.
 
 Run `npm run check:local-first` and `node scripts/local-first-release/artifact.mjs`.
 The protected source Integration Gate includes the local-first unit and browser checks. The separate
 `Local-first Production Release` workflow verifies the exact current main, builds
 asset identity, and repeats the real browser checks before production approval.
-The operator authorized owner self-review for this checkout-deferred MVP on 2026-09-11.
+The scoped local-first owner self-review exception began with the 2026-09-11 MVP; the release verifier binds the current permitted sandbox profile and exact artifact.
 Required production approval and the main-only environment branch policy remain enabled.
 The local-first verifier observes the actual GitHub run and approval, requires the repository
 owner to initiate and approve the first attempt, and binds a distinct profile receipt to the
@@ -25,9 +25,27 @@ exact source and artifact. Other actors, workflows, profiles and reruns are reje
 The full Commerce verifier still requires `prevent_self_review: true`; while the environment
 allows owner self-review, full-provider releases fail closed. Restore that policy before
 resuming the deferred full profile. The approved MVP job verifies provider state and deploys
-the asset-only Worker. Bootstrap verifies the private Worker before binding the exact route;
+the local-first Worker with explicit sandbox and fulfillment bindings. Bootstrap verifies the private Worker before binding the exact route;
 an existing local-first route activates on deployment. The job
 retains a sealed completion only after live browser and version/route checks pass.
+Fulfillment releases require rollback rehearsal before any deployment effect: the workflow defaults
+the selection to true and rejects false/missing selection for a configured host. Its actual browser
+listing must survive the retained reader and exact candidate restoration. Completion v3 binds
+`rollbackProofDigest`; older v2 receipts remain historical evidence, not a current recovery guarantee.
+
+`/readyz` reports `readinessScope: configured-capabilities` and fulfillment `ready`, `disabled` or
+`unavailable`. It reuses the authenticated host identity probe with a 3-second bound and request
+cancellation. A configured host failure returns 503 even when checkout remains sandbox-configured.
+No host configuration returns disabled explicitly; this is not full commerce readiness. The same
+observation is available through the read-only workspace environment tool. Neither observation
+creates a session, job or model call, and it proves no completed fulfillment or payment.
+The environment UI shows a degraded host separately from checkout configuration.
+
+On 2026-10-04, the retained VM/model/host were restored locally and authenticated host readiness
+matched the deployed pins. Public admission remained 503 because current tunnel ingress could not
+be verified with available credentials. Obtain current ingress evidence before starting the retained
+connector: the historical 5191 target conflicts with another app; the pinned listing host uses 5192.
+Do not repoint, expose, or start a tunnel using an unverified historical target.
 An ambiguous mutation is preserved rather than replayed; an exactly observed failed
 bootstrap can remove its own new route while retaining the uploaded Worker.
 

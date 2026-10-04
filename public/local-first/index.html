@@ -10,6 +10,7 @@
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
   <header class="topbar">
+    <button id="workspace-navigation-toggle" class="secondary navigation-toggle" type="button" aria-label="Hide navigation" aria-expanded="true" aria-controls="shop-navigation" title="Hide navigation"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><rect x="2" y="3" width="14" height="12" rx="2" stroke="currentColor"/><path d="M7 3v12" stroke="currentColor"/></svg></button>
     <a class="brand" href="#shop" aria-label="Airvio Commerce home">airvio<span>commerce</span></a>
     <nav id="console-breadcrumb" class="console-breadcrumb" aria-label="Workspace location" hidden><a id="console-root" href="#admin">Projects</a><span aria-hidden="true">/</span><span id="console-location">All projects</span></nav>
     <nav class="role-nav" aria-label="Workspace"><a href="#shop" data-role="shop" aria-current="page">Shopper</a><a href="#vendor" data-role="vendor">Vendor</a><a href="#admin" data-role="admin">Admin</a></nav>
@@ -20,7 +21,7 @@
     <p id="status" class="global-status" role="status" aria-live="polite"></p>
     <section id="shop" data-role-panel="shop" aria-labelledby="shop-heading">
       <div class="workspace-shell">
-        <aside class="sidebar console-sidebar" aria-label="Shopper navigation"><button class="console-search secondary" type="button" data-workspace-search><span aria-hidden="true">⌕</span> Search offers <kbd>⌘ K</kbd></button>
+        <aside id="shop-navigation" class="sidebar console-sidebar" aria-label="Shopper navigation"><button class="console-search secondary" type="button" data-workspace-search><span aria-hidden="true">⌕</span> Search offers <kbd>⌘ K</kbd></button>
           <p class="sidebar-label">Storefront</p><a href="#shop" data-view="shop"><span aria-hidden="true">◫</span> Offer collection</a><a href="#shop-sandbox"><span aria-hidden="true">▧</span> Sandbox example</a>
           <p class="sidebar-label">Workspace</p><a href="#vendor"><span aria-hidden="true">▤</span> Manage offers</a><a href="#admin-tools"><span aria-hidden="true">⌘</span> Tools &amp; commands</a><a href="#admin-runtime"><span class="status-dot" aria-hidden="true"></span> Environment</a>
           <div class="sidebar-note"><span class="status-dot" aria-hidden="true"></span><strong>Private storefront preview</strong><p>Explore saved offers on this device.<br>Preview prices are estimates.</p></div>
@@ -59,7 +60,7 @@
     </section>
     <section id="vendor" data-role-panel="vendor" hidden>
       <div class="workspace-shell">
-        <aside class="sidebar console-sidebar" aria-label="Vendor navigation"><button class="console-search secondary" type="button" data-workspace-search><span aria-hidden="true">⌕</span> Search offers <kbd>⌘ K</kbd></button>
+        <aside id="vendor-navigation" class="sidebar console-sidebar" aria-label="Vendor navigation"><button class="console-search secondary" type="button" data-workspace-search><span aria-hidden="true">⌕</span> Search offers <kbd>⌘ K</kbd></button>
           <p class="sidebar-label">Catalog</p><a href="#vendor" data-view="vendor"><span aria-hidden="true">▤</span> Offers</a><a href="#vendor-editor" data-view="vendor-editor"><span aria-hidden="true">＋</span> Offer editor</a><a href="#vendor-preview" data-view="vendor-preview"><span aria-hidden="true">◫</span> Storefront preview</a>
           <p class="sidebar-label">Workspace</p><a href="#admin-reviews"><span aria-hidden="true">✓</span> Launch reviews</a><a href="#admin-data"><span aria-hidden="true">⇄</span> Data &amp; portability</a><a href="#admin-tools"><span aria-hidden="true">⌘</span> Tools &amp; commands</a><a href="#admin-runtime"><span class="status-dot" aria-hidden="true"></span> Environment</a>
           <div class="sidebar-note"><span class="status-dot" aria-hidden="true"></span><strong>Local-first workspace</strong><p>Private drafts on this device.<br>Human review before publication.</p></div>
@@ -113,7 +114,7 @@
     </section>
     <section id="admin" data-role-panel="admin" hidden>
       <div class="workspace-shell">
-        <aside class="sidebar console-sidebar" aria-label="Admin navigation"><button id="project-search-shortcut" class="console-search secondary" type="button"><span aria-hidden="true">⌕</span> Search projects <kbd>⌘ K</kbd></button>
+        <aside id="admin-navigation" class="sidebar console-sidebar" aria-label="Admin navigation"><button id="project-search-shortcut" class="console-search secondary" type="button"><span aria-hidden="true">⌕</span> Search projects <kbd>⌘ K</kbd></button>
           <div class="project-selector"><label for="admin-project-select">Project</label><select id="admin-project-select"><option value="">All projects</option></select></div><p class="sidebar-label">Workspace</p><a href="#admin" data-view="admin"><span aria-hidden="true">▦</span> Projects</a><a href="#admin-reviews" data-view="admin-reviews"><span aria-hidden="true">▤</span> Launch reviews</a><a href="#admin-data" data-view="admin-data"><span aria-hidden="true">⇄</span> Data &amp; portability</a>
           <a href="#admin-tools" data-view="admin-tools"><span aria-hidden="true">⌘</span> Tools &amp; commands</a>
           <p class="sidebar-label">Environment</p><a id="admin-environment-link" href="#admin-runtime" data-view="admin-runtime"><span class="status-dot" aria-hidden="true"></span> Overview</a><a id="admin-environment-history-link" href="#admin-runtime?section=checks"><span aria-hidden="true">▤</span> Environment checks</a><a href="#vendor"><span aria-hidden="true">▧</span> Offer workspace</a><a href="#shop"><span aria-hidden="true">◫</span> Storefront preview</a>
