@@ -152,9 +152,10 @@ async function route() {
   if (revision !== navigation) return;
   if (view === 'checkout') await (await import('./checkout.js')).openCheckout();
   renderCurrent();
-  if (hash === 'collection' || hash === 'shop-sandbox') document.getElementById(hash)?.scrollIntoView({ block: 'start' });
+  if (view === 'admin-runtime' && new URLSearchParams(hash.split('?')[1]).get('section') === 'checks') $('#environment-checks').scrollIntoView({ block: 'start' });
+  else if (hash === 'collection' || hash === 'shop-sandbox') document.getElementById(hash)?.scrollIntoView({ block: 'start' });
   else if (hash !== 'main') window.scrollTo({ top: 0, behavior: 'instant' });
-  if (searchRequested && view === role) { const target = searchRequested; searchRequested = null; $(target).focus(); return; }
+  if (searchRequested) { const target = searchRequested; searchRequested = null; if (view === role && target.startsWith('#' + (role === 'admin' ? 'project' : role) + '-')) { $(target).focus(); return; } }
   if (hash !== 'collection' && hash !== 'main') document.querySelector(`#${role} [data-view-panel="${view}"] h1, #${role}-heading`)?.focus({ preventScroll: true });
 }
 $('#shop-search').addEventListener('submit', event => event.preventDefault());
@@ -203,17 +204,19 @@ function projectCard(project, detail = false) {
     node('small', latest ? 'Saved ' + new Date(latest.updatedAt).toLocaleString() : 'No saved activity yet', 'muted'));
   content.append(title, facts, activity);
   const actions = node('div', undefined, 'project-actions');
-  actions.append(projectLink(detail ? 'Open offer workspace' : 'Project details', detail ? '#vendor' : '#admin-project?project=' + encodeURIComponent(project.id)));
+  actions.append(projectLink(detail ? 'Environment details' : 'Project details', (detail ? '#admin-runtime?project=' : '#admin-project?project=') + encodeURIComponent(project.id)));
   actions.append(projectLink('▤', '#admin-reviews', 'Open all launch reviews'), projectLink('⇄', '#admin-data', 'Back up all drafts'));
   info.append(content, actions); card.append(projectPreview(project), info); return card;
 }
 function renderProjects() {
   if (!draftsLoaded) { $('#project-list').replaceChildren(node('p', 'Loading saved projects…', 'muted')); return; }
   const projects = groupProjects(drafts), query = $('#project-query').value.trim().toLowerCase();
+  renderAdminContext(projects);
   const filtered = projects.filter(project => [project.name, ...project.offers.map(offer => offer.title)].some(value => value.toLowerCase().includes(query)));
   $('#project-result-count').textContent = filtered.length + (filtered.length === 1 ? ' project' : ' projects');
   $('#project-list').replaceChildren(...filtered.map(project => projectCard(project)));
   if (!filtered.length) $('#project-list').append(node('div', 'No projects match. Try a merchant name or offer title.', 'empty-state'));
+  $('#workspace-activity').replaceChildren(offerRecords(filtered.flatMap(project => project.offers), 'Recent offer activity'));
   if (!location.hash.startsWith('#admin-project')) return;
   const requested = new URLSearchParams(location.hash.split('?')[1] || '').get('project');
   const project = requested === null ? projects[0] : projects.find(item => item.id === requested);
@@ -228,22 +231,66 @@ function renderProjects() {
   const observation = node('span', $('#environment-badge').textContent, 'state-badge'); observation.dataset.environmentObservation = '';
   const timestamp = node('small', '', 'muted'); timestamp.dataset.environmentTime = '';
   const evidence = node('div', undefined, 'sandbox-observation'); evidence.append(observation, timestamp);
-  sandbox.append(summary, evidence, projectLink('Inspect environment', '#admin-runtime')); detail.append(sandbox);
-  const activity = node('section', undefined, 'project-records'); activity.append(node('h2', 'Saved offers'));
-  if (!project.offers.length) activity.append(node('p', 'No saved offers. Create one in the offer workspace.', 'muted'));
-  else {
-    const table = node('table', undefined, 'data-table'); table.setAttribute('aria-label', 'Project offers');
-    const header = node('thead'), row = node('tr'), body = node('tbody');
-    for (const label of ['Offer', 'Review status', 'Updated', 'Action']) { const th = node('th', label); th.scope = 'col'; row.append(th); } header.append(row);
-    for (const offer of [...project.offers].sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 10)) {
-      const row = node('tr'), action = node('td'); action.append(offerLink(offer, 'Open offer'));
-      const cells = [node('td', offer.title), node('td', stateLabel(stateOf(offer))), node('td', new Date(offer.updatedAt).toLocaleDateString()), action];
-      cells.forEach((cell, index) => { cell.dataset.label = ['Offer', 'Review status', 'Updated', 'Action'][index]; row.append(cell); }); body.append(row);
-    }
-    table.append(header, body); activity.append(table, node('p', 'Showing up to 10 most recently saved offers. Open the offer workspace for the full collection.', 'footnote'));
-  }
-  detail.append(activity);
+  sandbox.append(summary, evidence, projectLink('Inspect environment', '#admin-runtime?project=' + encodeURIComponent(project.id))); detail.append(sandbox);
+  detail.append(offerRecords(project.offers, 'Project offers'));
 }
+function offerRecords(offers, label) {
+  const section = node('section', undefined, 'project-records offer-records'), heading = node('div', undefined, 'records-heading');
+  const search = node('input'); search.type = 'search'; search.maxLength = 120; search.placeholder = 'Search saved offers'; search.setAttribute('aria-label', 'Search ' + label.toLowerCase());
+  const field = node('div', undefined, 'console-query'); field.append(search); heading.append(node('h2', label), field);
+  const content = node('div'), pager = node('nav', undefined, 'pagination'); pager.setAttribute('aria-label', label + ' pagination');
+  const previous = node('button', 'Previous', 'secondary'), next = node('button', 'Next', 'secondary'), count = node('span');
+  previous.type = next.type = 'button'; count.setAttribute('role', 'status'); pager.append(previous, count, next); section.append(heading, content, pager);
+  let page = 0;
+  const render = () => {
+    const query = search.value.trim().toLowerCase(), filtered = offers.filter(offer => matches(offer, query) || stateLabel(stateOf(offer)).toLowerCase().includes(query))
+      .sort((a, b) => b.updatedAt - a.updatedAt || a.id.localeCompare(b.id));
+    const pages = Math.max(1, Math.ceil(filtered.length / 10)); page = Math.min(page, pages - 1); content.replaceChildren();
+    if (!filtered.length) content.append(node('p', offers.length ? 'No saved offers match this search.' : 'No saved activity yet. Create an offer to begin.', 'records-empty'));
+    else {
+      const rows = filtered.slice(page * 10, page * 10 + 10).map(offer => {
+        const title = node('span', offer.title); title.append(node('small', offer.launch?.merchantId || 'Personal workspace'));
+        const status = node('span', stateLabel(stateOf(offer)), 'state-badge state-' + stateOf(offer));
+        return [title, status, node('span', 'v' + offer.revision), node('span', new Date(offer.updatedAt).toLocaleDateString()), offerLink(offer, 'Open offer')];
+      });
+      content.append(recordTable(['Offer', 'Review status', 'Revision', 'Updated', 'Action'], rows, label));
+    }
+    previous.disabled = page === 0; next.disabled = page + 1 >= pages;
+    count.textContent = filtered.length + ' offers · Page ' + (page + 1) + ' of ' + pages;
+  };
+  search.addEventListener('input', () => { page = 0; render(); });
+  previous.addEventListener('click', () => { page--; render(); }); next.addEventListener('click', () => { page++; render(); }); render(); return section;
+}
+function recordTable(columns, rows, label) {
+  const table = node('table', undefined, 'data-table'), header = node('thead'), heading = node('tr'), body = node('tbody'); table.setAttribute('aria-label', label);
+  for (const column of columns) { const th = node('th', column); th.scope = 'col'; heading.append(th); } header.append(heading);
+  for (const values of rows) { const row = node('tr'); values.forEach((value, index) => { const cell = node('td'); cell.dataset.label = columns[index]; cell.append(value); row.append(cell); }); body.append(row); }
+  table.append(header, body); return table;
+}
+function renderAdminContext(projects) {
+  const params = new URLSearchParams(location.hash.split('?')[1] || '');
+  const requested = params.get('project'), detail = location.hash.startsWith('#admin-project');
+  const project = requested === null ? (detail ? projects[0] : { name: 'All projects', offers: drafts }) : projects.find(item => item.id === requested);
+  const select = $('#admin-project-select'), selected = requested ?? (detail ? project?.id : '') ?? '';
+  select.replaceChildren(new Option('All projects', ''), ...projects.map(item => new Option(item.name, item.id)));
+  if (selected && !projects.some(item => item.id === selected)) select.append(new Option('Project unavailable', selected));
+  select.value = selected;
+  const suffix = selected ? '?project=' + encodeURIComponent(selected) : '';
+  $('#admin-environment-link').href = '#admin-runtime' + suffix;
+  $('#environment-checks-link').href = '#admin-runtime' + suffix + (suffix ? '&' : '?') + 'section=checks';
+  $('#environment-project-link').href = selected ? '#admin-project' + suffix : '#admin';
+  $('#environment-context').textContent = project ? project.name + ' · Shared local runtime' : 'Project unavailable · Return to All projects or import its backup';
+  $('#environment-scope').textContent = project?.name || 'Project unavailable';
+  $('.environment-overview').hidden = !project;
+  $('#environment-preview').replaceChildren(...(project ? [projectPreview(project)] : []));
+  const latest = project && [...project.offers].sort((a, b) => b.updatedAt - a.updatedAt)[0];
+  $('#environment-latest').textContent = latest?.title || 'No saved activity yet';
+  $('#environment-latest-time').textContent = latest ? 'Saved ' + new Date(latest.updatedAt).toLocaleString() : 'Create an offer in the offer workspace.';
+  if (location.hash.startsWith('#admin-runtime')) $('#console-location').textContent = (selected ? (project?.name || 'Project unavailable') + ' / ' : '') + 'Environment';
+}
+$('#admin-project-select').addEventListener('change', event => {
+  location.hash = event.target.value ? 'admin-project?project=' + encodeURIComponent(event.target.value) : 'admin';
+});
 $('#project-query').addEventListener('input', renderProjects);
 async function focusWorkspaceSearch() {
   const role = document.body.dataset.workspaceRole;
@@ -337,11 +384,21 @@ async function checkEnvironment(signal) {
   environmentController = null; environmentObservation = observation;
   $('#environment-status').textContent = observation.message;
   environmentHistory.unshift(observation); environmentHistory.length = Math.min(20, environmentHistory.length);
-  $('#environment-history').replaceChildren(...environmentHistory.map(item => node('li', new Date(item.time).toLocaleTimeString() + ' · ' + item.label + ' — ' + item.message)));
+  renderEnvironmentHistory();
   renderEnvironment();
   if (!evidence || controller.signal.aborted) throw Error('workspace_environment_unverified');
   return evidence;
 }
+function renderEnvironmentHistory() {
+  const query = $('#environment-history-query').value.trim().toLowerCase();
+  const filtered = environmentHistory.filter(item => [item.label, item.message, item.version || ''].join(' ').toLowerCase().includes(query));
+  const holder = $('#environment-history'); holder.replaceChildren();
+  if (!filtered.length) { holder.append(node('p', environmentHistory.length ? 'No checks match this search.' : 'No checks yet. Use Check environment to inspect this runtime.', 'records-empty')); return; }
+  holder.append(recordTable(['Observed', 'Result', 'Details'], filtered.map(item => [
+    node('span', new Date(item.time).toLocaleTimeString()), node('span', item.label, 'state-badge'), node('span', item.message)
+  ]), 'Environment check history'));
+}
+$('#environment-history-query').addEventListener('input', renderEnvironmentHistory);
 $('#environment-refresh').addEventListener('click', () => void checkEnvironment().catch(() => {}));
 $('#environment-cancel').addEventListener('click', () => environmentController?.abort());
 window.addEventListener('offline', () => { if (environmentObservation) environmentObservation.stale = true; environmentController?.abort(); renderEnvironment(); });

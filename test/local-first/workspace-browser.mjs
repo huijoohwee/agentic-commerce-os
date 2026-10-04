@@ -141,6 +141,14 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await expect(page.locator('#admin-stores')).toHaveText('2');
   await expect(page.locator('#project-list .project-card')).toHaveCount(2);
   await expect(page.locator('#project-list')).not.toContainText('PRIVATE');
+  const activity = page.getByRole('table', { name: 'Recent offer activity', exact: true });
+  await expect(activity.locator('tbody tr')).toHaveCount(10);
+  await page.getByRole('navigation', { name: 'Recent offer activity pagination', exact: true }).getByRole('button', { name: 'Next' }).click();
+  await expect(activity.locator('tbody tr')).toHaveCount(3);
+  await page.getByRole('searchbox', { name: 'Search recent offer activity', exact: true }).fill('offer 03');
+  await expect(activity.locator('tbody tr')).toHaveCount(1);
+  await expect(page.locator('#workspace-activity')).not.toContainText('PRIVATE');
+  await page.getByRole('searchbox', { name: 'Search recent offer activity', exact: true }).fill('');
   assert.equal(await page.locator('#project-list img').count(), 0);
   await page.locator('#project-query').fill('studio-north');
   await expect(page.locator('#project-list .project-card')).toHaveCount(1);
@@ -154,6 +162,30 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await expect(page.locator('#project-detail')).not.toContainText('Independent offer 02');
   await expect(page.locator('#project-detail')).not.toContainText('PRIVATE');
   await expect(page.locator('#console-location')).toHaveText('studio-north');
+  await expect(page.locator('#admin-project-select')).toHaveValue('store:studio-north');
+  await page.getByRole('searchbox', { name: 'Search project offers', exact: true }).fill('offer 03');
+  await expect(page.getByRole('table', { name: 'Project offers', exact: true }).locator('tbody tr')).toHaveCount(1);
+  await page.getByRole('searchbox', { name: 'Search project offers', exact: true }).fill('');
+  await page.getByRole('link', { name: 'Environment details', exact: true }).click();
+  await expect(page.locator('#environment-scope')).toHaveText('studio-north');
+  await expect(page.locator('#console-location')).toHaveText('studio-north / Environment');
+  await expect(page.locator('#environment-latest')).toHaveText('Independent offer 11');
+  await expect(page.locator('#environment-preview')).not.toContainText('PRIVATE');
+  await page.locator('#environment-refresh').click();
+  await expect(page.locator('#environment-badge')).toHaveText('Sandbox configured');
+  await page.locator('#environment-history-query').fill('no such observation');
+  await expect(page.locator('#environment-history')).toContainText('No checks match');
+  await page.locator('#environment-history-query').fill('');
+  await expect(page.getByRole('table', { name: 'Environment check history' }).locator('tbody tr').first()).toContainText('Sandbox configured');
+  await page.getByRole('link', { name: 'Check history', exact: true }).click();
+  await expect(page.locator('#environment-history-heading')).toBeInViewport();
+  for (const width of [360, 768, 1280]) {
+    await page.setViewportSize({ width, height: 900 }); await page.goto(url + '#admin-runtime?project=store%3Astudio-north');
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    await page.screenshot({ path: path.join(output, `aligned-environment-${width}.png`), fullPage: true });
+  }
+  await page.locator('#environment-project-link').click();
+  await expect(page.locator('#project-heading')).toHaveText('studio-north');
   for (const width of [360, 768, 1280]) {
     await page.setViewportSize({ width, height: 900 });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
@@ -174,6 +206,11 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await expect(page.locator('#project-heading')).toHaveText('studio-north');
   await page.keyboard.press('ControlOrMeta+k');
   await expect(page.locator('#project-query')).toBeFocused();
+  await page.getByLabel('Project', { exact: true }).selectOption('store:solo-studio');
+  await expect(page.locator('#project-heading')).toHaveText('solo-studio');
+  await page.goto(url + '#admin-runtime?project=missing');
+  await expect(page.locator('#environment-context')).toContainText('Project unavailable');
+  await expect(page.locator('.environment-overview')).toBeHidden();
   await page.goto(url + '#admin-project?project=missing');
   await expect(page.locator('#project-heading')).toHaveText('Project unavailable');
   await expect(page.locator('#project-detail .project-card')).toHaveCount(0);

@@ -138,3 +138,41 @@ body.console-mode{--ink:#202024;--muted:#727279;--line:#e5e5e8;--paper:#fafafa;b
 .console-mode .mini-collection .product-monogram{width:22px;height:28px;font-size:.65rem}
 @media(max-width:1100px){.console-mode .editor-layout{grid-template-columns:minmax(0,1fr)}.console-mode .product-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:680px){.console-mode [data-role-panel]{scroll-margin-top:0}.console-mode .collection{padding:18px;scroll-margin-top:16px}.console-mode .product-grid{grid-template-columns:minmax(0,1fr)}.console-mode .live-offer{display:block;scroll-margin-top:16px}.console-mode .live-offer>div:last-child{margin-top:20px}.console-mode .metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.console-mode .metrics article{padding:16px}.console-mode .metrics article:last-child{grid-column:1/-1}.console-mode .editor-actions>*{flex-basis:100%}}
+
+/* Project overview and environment details reuse the native card and record owners. */
+.project-selector{display:block;margin:20px 8px 0;color:var(--muted);font-size:.67rem}
+.project-selector label{font:inherit;color:inherit;margin:0}
+.project-selector select{display:block;width:100%;min-width:0;margin-top:8px;padding:8px;font-size:.73rem;border-color:var(--line);background:#fafafa}
+.console-section-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:28px 0 16px;padding-top:22px;border-top:1px dashed var(--line)}
+.console-section-toolbar h2{margin:0;font-size:.8rem;font-weight:500}
+#admin .console-summary{margin-bottom:16px}
+.admin-overview-heading{padding-bottom:24px;border-bottom:1px dashed var(--line)}
+.environment-overview{grid-template-columns:minmax(240px,.9fr) minmax(0,1.4fr)}
+#environment-preview{min-width:0;display:flex}
+#environment-preview>.console-preview{width:100%;height:100%;min-height:300px}
+.environment-card-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:18px}
+.environment-card-heading h2{margin:0}
+.environment-card-heading .badge{white-space:normal;font-size:.64rem}
+.environment-overview .project-facts{grid-template-columns:116px minmax(0,1fr)}
+.environment-card-actions{display:flex;gap:8px;flex-wrap:wrap;padding:12px 16px;border-top:1px solid var(--line);background:#fdfdfd}
+.environment-card-actions>a{flex:1;white-space:nowrap;text-align:center}
+.environment-status{font-size:.74rem;line-height:1.7;color:var(--muted);margin:14px 0 22px}
+.offer-records{margin-top:24px}
+.records-heading{display:flex;justify-content:space-between;align-items:center;gap:16px;margin:-22px -24px 0;padding:12px 18px;border-bottom:1px solid var(--line);background:#fafafa}
+.records-heading h2{margin:0}
+.records-heading input{width:200px}
+.project-records .data-table{margin-top:0}
+.project-records .data-table th{font-size:.68rem;font-weight:500;white-space:nowrap}
+.project-records .data-table td{overflow-wrap:anywhere;vertical-align:middle}
+.project-records .data-table td>span>small{display:block;margin-top:4px;color:var(--muted);font-size:.64rem}
+.project-records .pagination{margin:0 -24px -22px;padding:10px 18px;border-top:1px solid var(--line);justify-content:flex-end;font-size:.68rem}
+.records-empty{padding:24px 0;font-size:.76rem;color:var(--muted)}
+#environment-checks{scroll-margin-top:80px}
+.environment-history>.footnote{margin:12px 0}
+.environment-history .data-table td:first-child{white-space:nowrap}
+.environment-support{margin-top:20px;align-items:start}
+.environment-support details.panel{margin:0;padding:8px 20px;border:1px solid var(--line)}
+.environment-support summary{font-size:.8rem;font-weight:550}
+.environment-support details[open]{padding-bottom:20px}
+@media(max-width:1000px){.environment-overview{grid-template-columns:minmax(0,1fr)}#environment-preview>.console-preview{min-height:230px;border-right:0;border-bottom:1px solid var(--line)}.environment-card-actions>a{white-space:normal}.records-heading{align-items:flex-start;flex-wrap:wrap}.project-records .data-table th{white-space:normal}}
+@media(max-width:680px){.project-selector{width:165px;flex-shrink:0;margin:0 8px 0 0}.project-selector select{margin-top:2px;min-height:44px}.console-section-toolbar{margin-top:20px;padding-top:18px}.console-section-toolbar .console-query{flex:0 1 170px;min-width:0}.environment-overview .project-facts{grid-template-columns:100px minmax(0,1fr)}.environment-card-heading{flex-wrap:wrap}.environment-card-actions{padding:12px}.environment-card-actions>a{flex-basis:100%}.records-heading{margin:-18px -18px 0;padding:14px 18px}.records-heading .console-query,.records-heading input{width:100%}.project-records .pagination{margin:0 -18px -18px;padding:12px;flex-wrap:wrap;justify-content:space-between}#environment-checks{scroll-margin-top:16px}.environment-support details.panel{padding:8px 18px}}

@@ -2,13 +2,13 @@
 title: "Reference Implementation — Native Commerce Workspace Increment"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "edge-commerce-agent-mvp"
-revision: "0.11.0"
-version: "0.11.0"
-prd_revision: "0.11.0"
-tad_revision: "0.11.0"
-adr_revision: "0.11.0"
-mvp_revision: "0.11.0"
-gtm_revision: "0.11.0"
+revision: "0.12.0"
+version: "0.12.0"
+prd_revision: "0.12.0"
+tad_revision: "0.12.0"
+adr_revision: "0.12.0"
+mvp_revision: "0.12.0"
+gtm_revision: "0.12.0"
 date: "2026-10-04"
 lang: "en-US"
 frontmatter_contract: "required"
@@ -35,7 +35,7 @@ surfaces: ["2D Renderer: D3 Graph"]
 # Reference implementation — native commerce workspace increment
 
 This on-demand companion extends the [product owner](prd-tad-adr-mvp-gtm-edge-commerce-agent.md)
-at **`edge-commerce-agent-mvp@0.11.0`**. PRD, TAD, ADR, MVP and GTM below share that join.
+at **`edge-commerce-agent-mvp@0.12.0`**. PRD, TAD, ADR, MVP and GTM below share that join.
 The split preserves the <600-line limit and leaves dated sandbox evidence in its original owner.
 No second platform, roadmap, capability registry or release controller is introduced.
 The [first-dollar sprint](prd-tad-adr-mvp-gtm-20260909T1320Z-solopreneur-mvp-gtm.md)
@@ -193,11 +193,11 @@ acceptance remain gaps; screenshots and layout checks are not an accessibility c
 
 ### Five flows and inventories
 
-All diagrams are proposed CW projections at version 0.11.0, dated 2026-10-04. Rectangles are native
+All diagrams are proposed CW projections at version 0.12.0, dated 2026-10-04. Rectangles are native
 components/stages; rounded nodes are people. No diagram asserts production readiness. Text inventories
 provide the mobile/offline alternative; canvas projection is parse-only and consumes zero model tokens.
 
-**Diagram CW-J** · Class: Journey stage map · Notation: flowchart LR · Version: 0.11.0
+**Diagram CW-J** · Class: Journey stage map · Notation: flowchart LR · Version: 0.12.0
 **Caption:** the merchant reaches a reviewed local offer before choosing any remote effect.
 ```mermaid
 flowchart LR
@@ -212,7 +212,7 @@ flowchart LR
 | J3 | Exact revision and permitted action / CW-03,04,06 |
 | J4 | Preview, payment and fulfillment states / CW-05 |
 
-**Diagram CW-W** · Class: User workflow · Notation: sequenceDiagram · Version: 0.11.0
+**Diagram CW-W** · Class: User workflow · Notation: sequenceDiagram · Version: 0.12.0
 **Caption:** only a reviewed request reaches the existing owner; an unknown result remains unresolved.
 ```mermaid
 sequenceDiagram
@@ -232,7 +232,7 @@ sequenceDiagram
 | V | Match current version / cancel / preserve unresolved, CW-01,07 |
 | O | Existing CAS receipt / already applied / stale version rejected, CW-04,05 |
 
-**Diagram CW-D** · Class: Data flow · Notation: flowchart LR · Version: 0.11.0
+**Diagram CW-D** · Class: Data flow · Notation: flowchart LR · Version: 0.12.0
 **Caption:** draft content and runtime observations remain distinct inputs to the visible review.
 ```mermaid
 flowchart LR
@@ -248,7 +248,7 @@ flowchart LR
 | D3 | Presentation only, J3; no new ledger, CW-05,07 |
 | D4 | Existing theme/checkout/fulfillment authority, J4; no cross-effect success inference, CW-04,05 |
 
-**Diagram CW-H** · Class: Orchestration / harness flow · Notation: flowchart LR · Version: 0.11.0
+**Diagram CW-H** · Class: Orchestration / harness flow · Notation: flowchart LR · Version: 0.12.0
 **Caption:** an optional agent can discover and prepare only through the admitted owner contract.
 ```mermaid
 flowchart LR
@@ -263,7 +263,7 @@ flowchart LR
 | H3 | S3/S6 executor; existing effect limits, no agent-created presence receipt |
 | H4 | W1–W5 readback at J4; W3 proposed 5 s deadline, no retry loop |
 
-**Diagram CW-T** · Class: Runtime topology · Notation: flowchart TB · Version: 0.11.0
+**Diagram CW-T** · Class: Runtime topology · Notation: flowchart TB · Version: 0.12.0
 **Caption:** the local browser remains useful alone; online profiles preserve their existing trust boundaries.
 ```mermaid
 flowchart TB
@@ -405,7 +405,7 @@ as finished.
 
 ## From-0-to-1 coverage — reference implementation
 
-All rows bind `edge-commerce-agent-mvp@0.11.0`. Coverage is a disposition, not readiness or validation.
+All rows bind `edge-commerce-agent-mvp@0.12.0`. Coverage is a disposition, not readiness or validation.
 Dispositioned **16/16**; covered applicable **11/16**; deferred **5**; not applicable **0**.
 
 | Domain | Decision / exact source section in this revision | Accountable owner / evidence or gap / next check |
@@ -465,7 +465,7 @@ Cleanup keeps the reviewable worktree and preview; integration/deployment need t
 paths, 60 active-minute cap, 90 KB diff cap, 0 new modules/packages/services and $0 new spend.
 The inherited 0.7.0 plan is commit `e305f61bd6ecdf14f65eceb44c894ec4dc0636f8` / PR #94;
 its protected Integration Gate passed. That result does not certify this successor's changed code.
-**Production Release:** none for 0.11.0. **Runtime:** local loopback and test fixtures only; no new live
+**Production Release:** none for 0.12.0. **Runtime:** local loopback and test fixtures only; no new live
 deployment, payment or customer receipt. Historical EC evidence keeps its own source and expiry.
 
 | Criterion / native owner | Implemented source and check disposition | Remaining acceptance |
@@ -559,20 +559,20 @@ by these checks. Recheck when source, native API, runtime prerequisites or autho
 
 ### CW-D05 — Shared shopper and vendor console
 
-**PRD / CW-01,02,07:** switching roles retains a consistent header, breadcrumb, navigation,
-panel density and mobile layout while preserving catalog filters, offer editing and human review.
-**TAD / W1,W2:** reuse the existing console CSS owner and workspace hash router. Shopper uses a
-compact collection and sandbox panel; Vendor reuses its offer table/editor inside the same shell.
-Search buttons and Cmd/Ctrl+K focus the active role's query; subviews return to that role's list.
-**ADR / CW-A6:** remove the replaced decorative hero and banner styles; add no modules, packages,
-capability identities or data stores. Invocation capabilities and payment authority are unchanged.
-**MVP:** existing browser coverage checks shared content geometry at 360/768/1280 pixels,
-role search and subview keyboard routing, filters, previews, editing, offline persistence and
-sandbox access. Live local review covers empty states and mobile layouts; fixture images carry
-sample offers. Clean candidate/CI receipts own release proof; local checks do not prove deployment.
-**GTM:** reduce role-switch friction for the same first-offer demonstration; customer TTV and
-willingness to pay remain unvalidated. Sprint: 25 active-minute estimate, 40-minute cap,
-6 files / 80 KB diff (compressed CSS expands review bytes), no always-load module additions. Recheck on source/API/authority drift.
+**PRD / CW-01,02,07:** switching roles retains a consistent header, breadcrumb, navigation, panel density and mobile layout while preserving catalog filters, offer editing and human review.
+**TAD / W1,W2:** reuse the existing console CSS owner and workspace hash router. Shopper uses a compact collection and sandbox panel; Vendor reuses its offer table/editor inside the same shell. Search buttons and Cmd/Ctrl+K focus the active role's query; subviews return to that role's list.
+**ADR / CW-A6:** remove the replaced decorative hero and banner styles; add no modules, packages, capability identities or data stores. Invocation capabilities and payment authority are unchanged.
+**MVP:** existing browser coverage checks shared content geometry at 360/768/1280 pixels, role search and subview keyboard routing, filters, previews, editing, offline persistence and sandbox access. Live local review covers empty states and mobile layouts; fixture images carry sample offers. Clean candidate/CI receipts own release proof; local checks do not prove deployment.
+**GTM:** reduce role-switch friction for the same first-offer demonstration; customer TTV and willingness to pay remain unvalidated. Sprint: 25 active-minute estimate, 40-minute cap, 6 files / 80 KB diff (compressed CSS expands review bytes), no always-load module additions. Recheck on source/API/authority drift.
+
+
+### CW-D06 — Project overview and environment detail alignment
+
+**PRD / CW-01,02,07:** project selection retains its merchant context through environment detail and back. Overview and project pages show searchable, paginated saved-offer activity; environment detail combines a local preview, observed status, explicit checks and searchable tab history. No hosted infrastructure management is added.
+**TAD / W1,W2:** the existing workspace router, project grouping, preview card and readiness owner remain authoritative. Query parameters carry project identity; unknown projects stay unavailable. One record-table renderer serves saved activity and check history. Local saved revisions and shared runtime observations remain separate facts.
+**ADR / CW-A7:** reuse current components and semantic controls; no imported design assets, new modules, packages, capability schemas or storage. Root, project and environment views share the console layout. The browser tools and MCP/sigil invocation contracts remain unchanged; observation expiry, cancellation and explicit refresh retain their current owner.
+**MVP / evidence:** typecheck and the existing full browser harness pass before publication. Added coverage verifies project context, activity search/pagination, check-history filtering, unavailable project refusal, mobile geometry and offline reload. Exact clean candidate and CI results belong to native publication/check receipts; screenshots contain local fixtures and prove no deployment.
+**GTM / bounds:** reduce navigation friction in the same first-offer demonstration. TTV and willingness to pay remain unvalidated. Estimate 30 active minutes; 45-minute cap, 8 files / 90 KB diff, zero new modules/packages/spend. Recheck when source, runtime or authority changes; source publication remains separate from integration and deployment.
 
 | Finding Type | Severity / Rule ID and rule text | Artifact / evidence | Owner and remediation |
 |---|---|---|---|
@@ -586,7 +586,7 @@ stop after three alignment cycles or two without blocker reduction.
 
 | PRD-TAD-ADR-MVP-GTM | CID | RAO | Updated Date |
 |---|---|---|---|
-| Shared role console and invocation source handoff | edge-commerce-agent-mvp@0.11.0 / CW-D03 | UI owner → align shopper/vendor with the native console and verify role workflows → bounded successor with scoped checks and remaining gaps | 2026-10-04 |
+| Project and environment console source handoff | edge-commerce-agent-mvp@0.12.0 / CW-D06 | UI owner → align project/environment views and verify native navigation → bounded successor with scoped checks and remaining gaps | 2026-10-04 |
 | Next authorized planning action | Same join / CW-P1 | Product → identify one reachable merchant and proposed priced outcome → E1 inputs; prerequisite: explicit contact authority, recheck on supplied prospect | 2026-10-04 |
 | Next acceptance action | Same join / CW-01–08 | Product/QA → run five human baseline tasks and resolve full-runtime prerequisites → independently bound acceptance; recheck when participants/runtime are available | 2026-10-04 |
 
