@@ -1,9 +1,9 @@
 import { listDrafts } from './drafts.js';
 
 const $ = selector => document.querySelector(selector);
-const views = new Set(['shop', 'checkout', 'vendor', 'vendor-editor', 'vendor-preview', 'admin', 'admin-reviews', 'admin-data', 'admin-runtime']);
+const views = new Set(['shop', 'checkout', 'vendor', 'vendor-editor', 'vendor-preview', 'admin', 'admin-reviews', 'admin-data', 'admin-runtime', 'admin-project']);
 const channel = typeof BroadcastChannel === 'function' ? new BroadcastChannel('commerce-local-drafts') : null;
-let drafts = [], launch, editor, editorPromise, generation = 0, navigation = 0, shopPage = 0, detailId = null;
+let drafts = [], draftsLoaded = false, launch, editor, editorPromise, generation = 0, navigation = 0, shopPage = 0, detailId = null, projectSearchRequested = false;
 const tablePages = { vendor: 0, admin: 0 };
 const node = (tag, text, className) => {
   const element = document.createElement(tag);
@@ -114,7 +114,7 @@ async function refresh() {
   const revision = ++generation, next = await listDrafts();
   if (next.some(draft => draft.launch)) launch ??= await import('./launch.js');
   if (revision !== generation) return;
-  drafts = next;
+  drafts = next; draftsLoaded = true;
   if (detailId) $('#offer-detail').close();
   const selectedStore = $('#shop-store').value;
   $('#shop-store').replaceChildren(new Option('All stores', ''), ...[...new Set(drafts.filter(d => d.launch).map(d => d.launch.merchantId))].sort().map(store => new Option(store, store)));
@@ -129,21 +129,26 @@ async function refresh() {
 function renderCurrent() {
   if (!$('#shop').hidden) renderShop();
   if (!$('#vendor').hidden) renderTable('vendor');
-  if (!$('#admin').hidden) renderTable('admin');
+  if (!$('#admin').hidden) { renderTable('admin'); renderProjects(); }
   renderEnvironment();
 }
 async function route() {
-  const revision = ++navigation, hash = location.hash.slice(1), view = views.has(hash) ? hash : 'shop', role = view.split('-')[0];
+  const revision = ++navigation, hash = location.hash.slice(1), requested = hash.split('?')[0], view = views.has(requested) ? requested : 'shop', role = view.split('-')[0];
+  document.body.classList.toggle('console-mode', role === 'admin');
+  $('#console-breadcrumb').hidden = role !== 'admin';
+  $('#console-location').textContent = ({ admin: 'All projects', 'admin-project': 'Project', 'admin-runtime': 'Environment', 'admin-reviews': 'Launch reviews', 'admin-data': 'Data & portability' })[view] || '';
   document.querySelectorAll('[data-role-panel]').forEach(panel => { panel.hidden = panel.dataset.rolePanel !== role; });
   document.querySelectorAll('[data-view-panel]').forEach(panel => { panel.hidden = panel.dataset.viewPanel !== view; });
   document.querySelectorAll('[data-role]').forEach(link => { if (link.dataset.role === (role === 'checkout' ? 'shop' : role)) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current'); });
-  document.querySelectorAll('[data-view]').forEach(link => { if (link.dataset.view === view) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current'); });
-  $('#workspace-context').hidden = !['vendor', 'admin'].includes(role);
+  document.querySelectorAll('[data-view]').forEach(link => { if (link.dataset.view === view || (view === 'admin-project' && link.dataset.view === 'admin')) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current'); });
+  $('#workspace-context').hidden = role !== 'vendor';
   document.title = `${role === 'checkout' ? 'Checkout' : role === 'shop' ? 'Shopper' : role === 'vendor' ? 'Vendor workspace' : 'Admin workspace'} · Airvio`;
   if (view === 'vendor-editor' || view === 'admin-data') await loadEditor();
   if (revision !== navigation) return;
   if (view === 'checkout') await (await import('./checkout.js')).openCheckout();
   renderCurrent();
+  if (role === 'admin') window.scrollTo({ top: 0, behavior: 'instant' });
+  if (projectSearchRequested && view === 'admin') { projectSearchRequested = false; $('#project-query').focus(); return; }
   if (hash !== 'collection' && hash !== 'main') document.querySelector(`#${role} [data-view-panel="${view}"] h1, #${role}-heading`)?.focus({ preventScroll: true });
 }
 $('#shop-search').addEventListener('submit', event => event.preventDefault());
@@ -151,12 +156,109 @@ for (const id of ['shop-query', 'shop-store', 'shop-sort']) $('#' + id).addEvent
 $('#shop-previous').addEventListener('click', () => { shopPage--; renderShop(); });
 $('#shop-next').addEventListener('click', () => { shopPage++; renderShop(); });
 for (const role of ['vendor', 'admin']) for (const field of ['query', 'state']) $('#' + role + '-' + field).addEventListener('input', () => { tablePages[role] = 0; renderTable(role); });
-$('#create-offer').addEventListener('click', event => { event.preventDefault(); void loadEditor().then(app => { if (app.newDraft()) location.hash = 'vendor-editor'; }).catch(message); });
+for (const link of document.querySelectorAll('#create-offer, [data-create-offer]')) link.addEventListener('click', event => {
+  event.preventDefault(); void loadEditor().then(app => { if (app.newDraft()) location.hash = 'vendor-editor'; }).catch(message);
+});
 window.addEventListener('hashchange', () => { if ($('#offer-detail').open) $('#offer-detail').close(); void route().catch(message); });
 document.addEventListener('commerce:drafts-updated', () => { channel?.postMessage('changed'); void refresh().catch(message); });
 if (channel) channel.onmessage = () => { void refresh().catch(message); void editor?.externalChange().catch(message); };
 function connection() { $('#connection').textContent = navigator.onLine ? 'Local workspace · Online' : 'Offline · Drafts available'; }
 window.addEventListener('online', connection); window.addEventListener('offline', connection); connection();
+function projectsFromDrafts() {
+  const projects = new Map();
+  for (const draft of drafts) {
+    const id = draft.launch ? 'store:' + draft.launch.merchantId : 'local:unassigned';
+    if (!projects.has(id)) projects.set(id, { id, name: draft.launch?.merchantId || 'Personal workspace', offers: [] });
+    projects.get(id).offers.push(draft);
+  }
+  if (!projects.size) projects.set('local:unassigned', { id: 'local:unassigned', name: 'Personal workspace', offers: [] });
+  return [...projects.values()].sort((a, b) => a.name.localeCompare(b.name));
+}
+function projectPreview(project) {
+  const preview = node('div', undefined, 'console-preview'); preview.setAttribute('aria-hidden', 'true');
+  const frame = node('div', undefined, 'mini-storefront');
+  const masthead = node('div', undefined, 'mini-masthead'); masthead.append(node('b', 'airvio'), node('span', 'LOCAL PREVIEW'));
+  const hero = node('div', undefined, 'mini-hero');
+  hero.append(node('span', project.name), node('strong', project.offers[0]?.launch?.outcome || 'Useful work. Thoughtfully prepared.'), node('i', 'Your collection'));
+  const collection = node('div', undefined, 'mini-collection');
+  for (const offer of project.offers.slice(0, 3)) {
+    const tile = node('div'); tile.append(art(offer), node('small', offer.title)); collection.append(tile);
+  }
+  if (!project.offers.length) {
+    for (const text of ['Plan', 'Prepare', 'Review']) { const tile = node('div'); tile.append(node('span', text.slice(0, 1), 'mini-placeholder'), node('small', text)); collection.append(tile); }
+  }
+  frame.append(masthead, hero, collection); preview.append(frame); return preview;
+}
+function projectLink(text, href, label) {
+  const link = node('a', text, 'button secondary'); link.href = href;
+  if (label) link.setAttribute('aria-label', label); return link;
+}
+function projectCard(project, detail = false) {
+  const card = node('article', undefined, 'project-card'); card.dataset.project = project.id;
+  const info = node('div', undefined, 'project-info'), content = node('div', undefined, 'project-copy');
+  const title = node('h2', detail ? 'Device workspace' : project.name);
+  const facts = node('dl', undefined, 'project-facts');
+  const saved = project.offers.length, reviewed = project.offers.filter(offer => stateOf(offer) === 'reviewable').length;
+  facts.append(node('dt', 'Draft storage'), node('dd', 'Available · This browser', 'project-available'),
+    node('dt', 'Storefront'), node('dd', 'Private preview · Not published'),
+    node('dt', 'Offers'), node('dd', saved + ' saved · ' + reviewed + ' ready for review'));
+  const activity = node('div', undefined, 'project-activity'), latest = [...project.offers].sort((a, b) => b.updatedAt - a.updatedAt)[0];
+  activity.append(node('span', 'Latest local activity', 'muted'), node('p', latest ? latest.title : 'Create your first offer to begin.'),
+    node('small', latest ? 'Saved ' + new Date(latest.updatedAt).toLocaleString() : 'No saved activity yet', 'muted'));
+  content.append(title, facts, activity);
+  const actions = node('div', undefined, 'project-actions');
+  actions.append(projectLink(detail ? 'Open offer workspace' : 'Project details', detail ? '#vendor' : '#admin-project?project=' + encodeURIComponent(project.id)));
+  actions.append(projectLink('▤', '#admin-reviews', 'Open all launch reviews'), projectLink('⇄', '#admin-data', 'Back up all drafts'));
+  info.append(content, actions); card.append(projectPreview(project), info); return card;
+}
+function renderProjects() {
+  if (!draftsLoaded) { $('#project-list').replaceChildren(node('p', 'Loading saved projects…', 'muted')); return; }
+  const projects = projectsFromDrafts(), query = $('#project-query').value.trim().toLowerCase();
+  const filtered = projects.filter(project => [project.name, ...project.offers.map(offer => offer.title)].some(value => value.toLowerCase().includes(query)));
+  $('#project-result-count').textContent = filtered.length + (filtered.length === 1 ? ' project' : ' projects');
+  $('#project-list').replaceChildren(...filtered.map(project => projectCard(project)));
+  if (!filtered.length) $('#project-list').append(node('div', 'No projects match. Try a merchant name or offer title.', 'empty-state'));
+  if (!location.hash.startsWith('#admin-project')) return;
+  const requested = new URLSearchParams(location.hash.split('?')[1] || '').get('project');
+  const project = requested === null ? projects[0] : projects.find(item => item.id === requested);
+  const detail = $('#project-detail'); detail.replaceChildren();
+  $('#project-heading').textContent = project?.name || 'Project unavailable';
+  $('#console-location').textContent = project?.name || 'Project unavailable';
+  $('#project-description').textContent = project ? 'Local-first · ' + project.offers.length + ' saved offers · Private to this browser' : 'This project is not saved on this device. Return to your projects or import its backup.';
+  if (!project) return;
+  detail.append(node('p', 'Environments', 'console-section-label'), projectCard(project, true));
+  const sandbox = node('article', undefined, 'console-sandbox');
+  const summary = node('div'); summary.append(node('h2', 'Sandbox checkout'), node('p', 'Shared example offer · Test mode only · No real money', 'muted'));
+  const observation = node('span', $('#environment-badge').textContent, 'state-badge'); observation.dataset.environmentObservation = '';
+  const timestamp = node('small', '', 'muted'); timestamp.dataset.environmentTime = '';
+  const evidence = node('div', undefined, 'sandbox-observation'); evidence.append(observation, timestamp);
+  sandbox.append(summary, evidence, projectLink('Inspect environment', '#admin-runtime')); detail.append(sandbox);
+  const activity = node('section', undefined, 'project-records'); activity.append(node('h2', 'Saved offers'));
+  if (!project.offers.length) activity.append(node('p', 'No saved offers. Create one in the offer workspace.', 'muted'));
+  else {
+    const table = node('table', undefined, 'data-table'); table.setAttribute('aria-label', 'Project offers');
+    const header = node('thead'), row = node('tr'), body = node('tbody');
+    for (const label of ['Offer', 'Review status', 'Updated', 'Action']) { const th = node('th', label); th.scope = 'col'; row.append(th); } header.append(row);
+    for (const offer of [...project.offers].sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 10)) {
+      const row = node('tr'), action = node('td'); action.append(offerLink(offer, 'Open offer'));
+      const cells = [node('td', offer.title), node('td', stateLabel(stateOf(offer))), node('td', new Date(offer.updatedAt).toLocaleDateString()), action];
+      cells.forEach((cell, index) => { cell.dataset.label = ['Offer', 'Review status', 'Updated', 'Action'][index]; row.append(cell); }); body.append(row);
+    }
+    table.append(header, body); activity.append(table, node('p', 'Showing up to 10 most recently saved offers. Open the offer workspace for the full collection.', 'footnote'));
+  }
+  detail.append(activity);
+}
+$('#project-query').addEventListener('input', renderProjects);
+async function focusProjectSearch() {
+  if (location.hash === '#admin') { $('#project-query').focus(); return; }
+  projectSearchRequested = true; location.hash = 'admin';
+}
+$('#project-search-shortcut').addEventListener('click', () => void focusProjectSearch().catch(message));
+window.addEventListener('keydown', event => {
+  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k' && document.body.classList.contains('console-mode')) {
+    event.preventDefault(); void focusProjectSearch().catch(message);
+  }
+});
 const sourceRevision = document.querySelector('meta[name="commerce-source"]').content;
 let environmentController = null, environmentGeneration = 0, environmentObservation = null, environmentExpiry;
 const environmentHistory = [];
@@ -178,6 +280,8 @@ function renderEnvironment() {
   $('#environment-version').textContent = observation?.version || 'Unknown';
   $('#environment-refresh').disabled = !navigator.onLine || !!environmentController;
   $('#environment-cancel').hidden = !environmentController;
+  for (const label of document.querySelectorAll('[data-environment-observation]')) label.textContent = $('#environment-badge').textContent;
+  for (const label of document.querySelectorAll('[data-environment-time]')) label.textContent = observation ? new Date(observation.time).toLocaleString() : 'No observation yet';
   if (!navigator.onLine) $('#environment-status').textContent = 'Offline. Drafts remain available; reconnect and explicitly check the environment.';
   else if (stale) $('#environment-status').textContent = 'This observation is stale. Check again before relying on it; no action is authorized by a previous result.';
   else $('#environment-status').textContent = environmentController ? 'Checking this environment…' : observation?.message || 'Check the current environment. Opening this page grants no publishing or payment access.';

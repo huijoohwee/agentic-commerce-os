@@ -97,6 +97,46 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await expect(page.locator('#admin-reviewable')).toHaveText('12');
   await expect(page.locator('#admin-attention')).toHaveText('1');
   await expect(page.locator('#admin-stores')).toHaveText('2');
+  await expect(page.locator('#project-list .project-card')).toHaveCount(2);
+  await expect(page.locator('#project-list')).not.toContainText('PRIVATE');
+  assert.equal(await page.locator('#project-list img').count(), 0);
+  await page.locator('#project-query').fill('studio-north');
+  await expect(page.locator('#project-list .project-card')).toHaveCount(1);
+  await page.locator('#project-query').fill('absent merchant');
+  await expect(page.locator('#project-list')).toContainText('No projects match.');
+  await page.locator('#project-query').fill('');
+  await page.screenshot({ path: path.join(output, 'projects-desktop.png'), fullPage: true });
+  await page.locator('[data-project="store:studio-north"]').getByRole('link', { name: 'Project details', exact: true }).click();
+  await expect(page.locator('#project-heading')).toHaveText('studio-north');
+  await expect(page.getByRole('table', { name: 'Project offers', exact: true }).locator('tbody tr')).toHaveCount(6);
+  await expect(page.locator('#project-detail')).not.toContainText('Independent offer 02');
+  await expect(page.locator('#project-detail')).not.toContainText('PRIVATE');
+  await expect(page.locator('#console-location')).toHaveText('studio-north');
+  for (const width of [360, 768, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    await page.screenshot({ path: path.join(output, `project-detail-${width}.png`), fullPage: true });
+  }
+  await context.setOffline(true);
+  await expect(page.locator('[data-environment-observation]')).toHaveText('Offline');
+  await page.reload();
+  await expect(page.locator('#project-heading')).toHaveText('studio-north');
+  // Chromium may reset navigator.onLine after a service-worker navigation; no observation is retained.
+  await expect(page.locator('[data-environment-observation]')).toHaveText(/^(Offline|Not checked)$/);
+  assert.equal(await page.evaluate(() => fetch('./readyz').then(() => false, () => true)), true);
+  await context.setOffline(false);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.getByRole('button', { name: 'Search projects' }).click();
+  await expect(page.locator('#project-query')).toBeFocused();
+  await page.goBack();
+  await expect(page.locator('#project-heading')).toHaveText('studio-north');
+  await page.keyboard.press('ControlOrMeta+k');
+  await expect(page.locator('#project-query')).toBeFocused();
+  await page.goto(url + '#admin-project?project=missing');
+  await expect(page.locator('#project-heading')).toHaveText('Project unavailable');
+  await expect(page.locator('#project-detail .project-card')).toHaveCount(0);
+  await page.getByRole('link', { name: 'All projects', exact: true }).click();
+  await expect(page.locator('#project-list .project-card')).toHaveCount(2);
   await page.screenshot({ path: path.join(output, 'admin-desktop.png'), fullPage: true });
   await page.getByRole('link', { name: 'Launch reviews', exact: true }).click();
   await page.locator('#admin-query').fill('offer 03');
@@ -107,6 +147,9 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await page.getByRole('button', { name: 'Review launch', exact: true }).click();
   await expect(page.locator('#launch-review')).toBeVisible();
   await expect(page.locator('#export-launch')).toBeDisabled();
+  await page.getByRole('link', { name: 'Admin', exact: true }).click();
+  await page.getByRole('link', { name: 'Create offer', exact: true }).click();
+  await expect(page.getByLabel('What are you creating?')).toHaveValue('');
   await context.setOffline(true);
   for (const [role, hash] of [['shopper', 'shop'], ['vendor', 'vendor'], ['admin', 'admin']]) {
     await page.goto(url + '#' + hash); await page.reload();
