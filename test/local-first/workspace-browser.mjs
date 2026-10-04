@@ -30,7 +30,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await page.getByText('Offline access is ready.', { exact: false }).waitFor();
   await page.screenshot({ path: path.join(output, 'shopper-empty-desktop.png'), fullPage: true });
   await page.getByRole('link', { name: 'Admin', exact: true }).click();
-  await page.getByRole('link', { name: 'Environment', exact: true }).click();
+  await page.locator('#admin').getByRole('link', { name: 'Environment', exact: true }).click();
   await expect(page.locator('#environment-badge')).toHaveText('Not checked');
   await context.setOffline(true); await context.setOffline(false);
   await expect(page.locator('#environment-status')).not.toContainText('Offline.');
@@ -68,7 +68,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   releaseRead(); await page.unrouteAll({ behavior: 'wait' });
   await expect(page.locator('#environment-badge')).toHaveText('Unknown');
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.getByRole('link', { name: 'Data & portability', exact: true }).click();
+  await page.locator('#admin').getByRole('link', { name: 'Data & portability', exact: true }).click();
   const now = Date.now();
   const drafts = Array.from({ length: 13 }, (_, index) => ({
     id: `12345678-1234-1234-1234-${String(index).padStart(12, '0')}`,
@@ -106,6 +106,35 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   assert.equal(await page.locator('#shop-grid img').count(), 0);
   assert.equal(await page.evaluate(() => window.injected), undefined);
   await page.screenshot({ path: path.join(output, 'shopper-desktop.png'), fullPage: true });
+  // The three roles share one shell while retaining their own data and keyboard destinations.
+  for (const width of [360, 768, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(url + '#admin-tools');
+    await expect(page.locator('#workspace-run')).toBeEnabled();
+    const reference = await page.locator('#admin .workspace-content').boundingBox();
+    for (const role of ['shop', 'vendor']) {
+      await page.getByRole('navigation', { name: 'Workspace', exact: true })
+        .getByRole('link', { name: role === 'shop' ? 'Shopper' : 'Vendor', exact: true }).click();
+      await expect(page.locator('#' + role)).toBeVisible();
+      const content = await page.locator('#' + role + ' .workspace-content').boundingBox();
+      assert.equal(content.x, reference.x); assert.equal(content.width, reference.width);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+      await expect(page.getByRole('navigation', { name: 'Workspace location' })).toBeVisible();
+      await page.keyboard.press('ControlOrMeta+k');
+      await expect(page.locator('#' + role + '-query')).toBeFocused();
+      await page.locator('#' + role + '-query').fill('absent offer');
+      await expect(page.locator(role === 'shop' ? '#shop-empty' : '#vendor-table')).toContainText(role === 'shop' ? 'No offers match' : 'No matching offers');
+      await page.locator('#' + role + '-query').fill('');
+      await page.screenshot({ path: path.join(output, `aligned-${role}-${width}.png`) });
+    }
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto(url + '#vendor-editor');
+  await page.keyboard.press('ControlOrMeta+k');
+  await expect(page.locator('#vendor-query')).toBeFocused();
+  await page.goto(url + '#shop-sandbox');
+  await expect(page.locator('#live-offer-heading')).toBeInViewport();
+
   await page.getByRole('link', { name: 'Admin', exact: true }).click();
   await expect(page.locator('#admin-reviewable')).toHaveText('12');
   await expect(page.locator('#admin-attention')).toHaveText('1');
@@ -150,7 +179,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await expect(page.locator('#project-detail .project-card')).toHaveCount(0);
   await page.getByRole('link', { name: 'All projects', exact: true }).click();
   await expect(page.locator('#project-list .project-card')).toHaveCount(2);
-  await page.getByRole('link', { name: 'Tools & commands', exact: true }).click();
+  await page.locator('#admin').getByRole('link', { name: 'Tools & commands', exact: true }).click();
   await page.locator('#workspace-run').click();
   await expect(page.locator('#workspace-result')).toContainText('browser-local');
   await expect(page.locator('#workspace-result')).toContainText('studio-north');
@@ -212,7 +241,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await context.setOffline(false);
   await page.locator('.console-sidebar').getByRole('link', { name: 'Projects', exact: true }).click();
   await page.screenshot({ path: path.join(output, 'admin-desktop.png'), fullPage: true });
-  await page.getByRole('link', { name: 'Launch reviews', exact: true }).click();
+  await page.locator('#admin').getByRole('link', { name: 'Launch reviews', exact: true }).click();
   await page.locator('#admin-query').fill('offer 03');
   await expect(page.locator('#admin-table tbody tr')).toHaveCount(1);
   await page.getByRole('link', { name: 'Review offer ↗', exact: true }).click();

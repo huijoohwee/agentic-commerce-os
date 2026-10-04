@@ -9,25 +9,25 @@
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
-  <div class="announcement">Your business, taking shape. <span>Private workspace · Saved on this device</span></div>
   <header class="topbar">
     <a class="brand" href="#shop" aria-label="Airvio Commerce home">airvio<span>commerce</span></a>
-    <nav id="console-breadcrumb" class="console-breadcrumb" aria-label="Project location" hidden><a href="#admin">Projects</a><span aria-hidden="true">/</span><span id="console-location">All projects</span></nav>
+    <nav id="console-breadcrumb" class="console-breadcrumb" aria-label="Workspace location" hidden><a id="console-root" href="#admin">Projects</a><span aria-hidden="true">/</span><span id="console-location">All projects</span></nav>
     <nav class="role-nav" aria-label="Workspace"><a href="#shop" data-role="shop" aria-current="page">Shopper</a><a href="#vendor" data-role="vendor">Vendor</a><a href="#admin" data-role="admin">Admin</a></nav>
     <span id="connection" class="badge">Local workspace</span>
   </header>
   <main id="main" tabindex="-1">
     <p id="status" class="global-status" role="status" aria-live="polite"></p>
-    <section id="workspace-context" class="workspace-context" aria-label="Workspace context" hidden><div><span class="eyebrow">COMMERCE WORKSPACE</span><strong>Private offer preparation</strong><span id="workspace-scope">No merchant selected · This device</span></div><a class="button secondary" href="#admin-runtime">Inspect environment ↗</a></section>
     <section id="shop" data-role-panel="shop" aria-labelledby="shop-heading">
-      <div class="shop-hero"><div><p class="eyebrow">INDEPENDENT BY DESIGN</p><h1 id="shop-heading" tabindex="-1">Good ideas.<br>Ready to take shape.</h1><p>Explore your offers through a customer’s eyes. One clear outcome. One thoughtful next step.</p><a class="button" href="#collection">Explore offers <span aria-hidden="true">↗</span></a></div><div class="hero-object" aria-hidden="true"><div class="paper paper-back"></div><div class="paper paper-front"><span>AIRVIO / INDEPENDENT</span><strong>Made<br>with purpose.</strong><span>YOUR NEXT CHAPTER &nbsp; ↗</span></div><span class="object-caption">A small start. A world of possibility.</span></div></div>
-      <div class="benefits"><span>01 &nbsp; Your offers, your terms</span><span>02 &nbsp; Human review before launch</span><span>03 &nbsp; Private and portable</span></div>
-      <section class="collection" aria-labelledby="live-offer-heading">
-        <div class="section-heading"><div><p class="eyebrow">TRY THE COMPLETE LOOP</p><h2 id="live-offer-heading">Start with something useful.</h2></div><span class="badge quiet">Sandbox · No real money</span></div>
-        <article class="panel live-offer"><div><p class="eyebrow">AIRVIO.CO</p><h3>__OFFER_TITLE__</h3><p>A practical launch guide and reusable worksheets for your first agentic commerce offer.</p><p class="footnote">Open educational content · Markdown download · Free sandbox example</p></div><div><p class="preview-price">__OFFER_PRICE__ · Test mode</p><a class="button" href="#checkout">Try sandbox checkout ↗</a><p class="footnote">Stripe sandbox · No real money</p></div></article>
-      </section>
-      <section id="collection" class="collection" aria-labelledby="collection-heading">
-        <div class="section-heading"><div><p class="eyebrow">THE COLLECTION</p><h2 id="collection-heading">Your storefront preview</h2></div><span class="badge quiet">Preview · Only on this device</span></div>
+      <div class="workspace-shell">
+        <aside class="sidebar console-sidebar" aria-label="Shopper navigation"><button class="console-search secondary" type="button" data-workspace-search><span aria-hidden="true">⌕</span> Search offers <kbd>⌘ K</kbd></button>
+          <p class="sidebar-label">Storefront</p><a href="#shop" data-view="shop"><span aria-hidden="true">◫</span> Offer collection</a><a href="#shop-sandbox"><span aria-hidden="true">▧</span> Sandbox example</a>
+          <p class="sidebar-label">Workspace</p><a href="#vendor"><span aria-hidden="true">▤</span> Manage offers</a><a href="#admin-tools"><span aria-hidden="true">⌘</span> Tools &amp; commands</a><a href="#admin-runtime"><span class="status-dot" aria-hidden="true"></span> Environment</a>
+          <div class="sidebar-note"><span class="status-dot" aria-hidden="true"></span><strong>Private storefront preview</strong><p>Explore saved offers on this device.<br>Preview prices are estimates.</p></div>
+        </aside>
+        <div class="workspace-content">
+          <div class="console-heading"><div><h1 id="shop-heading" tabindex="-1">Storefront preview</h1><p>Explore your saved offers through a customer's eyes.</p></div><span class="badge quiet">Preview · Only on this device</span></div>
+      <section id="collection" class="panel collection" aria-labelledby="collection-heading">
+        <div class="section-heading"><div><h2 id="collection-heading">Your offers</h2></div></div>
         <p class="muted">Saved offers with complete launch terms appear here. Prices are estimates; this preview does not accept orders or payments.</p>
         <form id="shop-search" class="catalog-toolbar" role="search"><label class="search-field"><span class="sr-only">Search preview offers</span><input id="shop-query" type="search" placeholder="Search offers or stores" maxlength="120"></label><label>Store<select id="shop-store"><option value="">All stores</option></select></label><label>Sort by<select id="shop-sort"><option value="recent">Recently updated</option><option value="name">Name, A–Z</option></select></label></form>
         <div class="results-heading"><p id="shop-count" role="status"></p><a href="#vendor-editor">Create an offer ↗</a></div>
@@ -35,6 +35,11 @@
         <div id="shop-empty" class="empty-state"><span class="empty-mark" aria-hidden="true">＋</span><h3>Your collection starts with one offer.</h3><p>Create an offer and complete its launch terms to see your storefront take shape.</p><a class="button" href="#vendor-editor">Create your first offer</a></div>
         <div class="pagination" id="shop-pagination" hidden><button id="shop-previous" type="button" class="secondary">Previous</button><span id="shop-page"></span><button id="shop-next" type="button" class="secondary">Next</button></div>
       </section>
+          <section id="shop-sandbox" class="panel live-offer" aria-labelledby="live-offer-heading">
+            <div><h2 id="live-offer-heading">Try the sandbox</h2><h3>__OFFER_TITLE__</h3><p>A practical launch guide and reusable worksheets for your first agentic commerce offer.</p><p class="footnote">Open educational content · Markdown download · Free sandbox example</p></div><div><span class="badge quiet">Sandbox · No real money</span><p class="preview-price">__OFFER_PRICE__ · Test mode</p><a class="button secondary" href="#checkout">Try sandbox checkout ↗</a><p class="footnote">Stripe sandbox · No real money</p></div>
+          </section>
+        </div>
+      </div>
     </section>
     <section id="checkout" data-role-panel="checkout" hidden aria-labelledby="checkout-heading">
       <div class="collection"><a href="#shop">← Back to shop</a><div class="section-heading"><div><p class="eyebrow">SANDBOX ORDER</p><h1 id="checkout-heading" tabindex="-1">Review. Try. Get started.</h1></div></div>
@@ -53,13 +58,18 @@
     </section>
     <section id="vendor" data-role-panel="vendor" hidden>
       <div class="workspace-shell">
-        <aside class="sidebar"><p class="eyebrow">VENDOR WORKSPACE</p><a href="#vendor" data-view="vendor">Offers</a><a href="#vendor-editor" data-view="vendor-editor">Offer editor</a><a href="#vendor-preview" data-view="vendor-preview">Storefront preview</a><div class="sidebar-note"><strong>One offer to first sale</strong><p>Define your buyer, check your costs, and review the launch.</p><a href="#admin-data">Back up your work ↗</a></div></aside>
+        <aside class="sidebar console-sidebar" aria-label="Vendor navigation"><button class="console-search secondary" type="button" data-workspace-search><span aria-hidden="true">⌕</span> Search offers <kbd>⌘ K</kbd></button>
+          <p class="sidebar-label">Catalog</p><a href="#vendor" data-view="vendor"><span aria-hidden="true">▤</span> Offers</a><a href="#vendor-editor" data-view="vendor-editor"><span aria-hidden="true">＋</span> Offer editor</a><a href="#vendor-preview" data-view="vendor-preview"><span aria-hidden="true">◫</span> Storefront preview</a>
+          <p class="sidebar-label">Workspace</p><a href="#admin-reviews"><span aria-hidden="true">✓</span> Launch reviews</a><a href="#admin-data"><span aria-hidden="true">⇄</span> Data &amp; portability</a><a href="#admin-tools"><span aria-hidden="true">⌘</span> Tools &amp; commands</a><a href="#admin-runtime"><span class="status-dot" aria-hidden="true"></span> Environment</a>
+          <div class="sidebar-note"><span class="status-dot" aria-hidden="true"></span><strong>Local-first workspace</strong><p>Private drafts on this device.<br>Human review before publication.</p></div>
+        </aside>
         <div class="workspace-content">
-          <section data-view-panel="vendor"><div class="section-heading"><div><p class="eyebrow">YOUR BUSINESS</p><h1 tabindex="-1">Offers</h1><p class="muted">Manage your catalog, from first draft to launch review.</p></div><a class="button" id="create-offer" href="#vendor-editor">＋ Create offer</a></div>
+          <section data-view-panel="vendor"><div class="console-heading"><div><h1 tabindex="-1">Offers</h1><p class="muted">Manage your catalog, from first draft to launch review.</p></div><a class="button" id="create-offer" href="#vendor-editor">＋ Create offer</a></div>
+            <div id="workspace-context" class="console-summary" aria-label="Workspace context" hidden><span id="workspace-scope">No merchant selected · This device</span><span>Private offer preparation</span></div>
             <div class="metrics"><article><span>Saved offers</span><strong id="vendor-total">0</strong></article><article><span>Terms complete</span><strong id="vendor-complete">0</strong></article><article><span>Sales channel</span><strong class="metric-text">Not connected</strong><small>Offers are private drafts</small></article></div>
             <div class="panel"><div class="table-tools"><label class="search-field"><span class="sr-only">Search vendor offers</span><input id="vendor-query" type="search" placeholder="Search your offers" maxlength="120"></label><label>Status<select id="vendor-state"><option value="">All offers</option><option value="draft">Draft</option><option value="reviewable">Ready for review</option><option value="revise">Revise costs</option></select></label></div><div id="vendor-table"></div><p id="vendor-count" class="footnote"></p></div>
           </section>
-          <section data-view-panel="vendor-editor" hidden><div class="section-heading"><div><p class="eyebrow">OFFER DETAILS</p><h1 tabindex="-1">Make it useful. Make it yours.</h1></div><a href="#vendor">Back to offers</a></div>
+          <section data-view-panel="vendor-editor" hidden><div class="console-heading"><div><h1 tabindex="-1">Offer editor</h1><p>Prepare one clear outcome, then review your saved terms.</p></div><a href="#vendor">Back to offers</a></div>
             <div class="editor-layout"><aside class="panel draft-panel" aria-labelledby="draft-heading"><div class="panel-heading"><h2 id="draft-heading">Your drafts <span id="draft-count">0</span></h2><button id="new-draft" class="small" type="button">+ New</button></div><div id="draft-list" aria-label="Saved drafts"></div><p id="empty-state" class="muted">No drafts yet. Start with one idea.</p></aside>
       <section class="panel editor" aria-labelledby="editor-heading">
         <div class="panel-heading"><h2 id="editor-heading">New offer draft</h2><span class="badge quiet">Private draft</span></div>
@@ -96,7 +106,7 @@
       </section>
             </div>
           </section>
-          <section data-view-panel="vendor-preview" hidden><div class="section-heading"><div><p class="eyebrow">STOREFRONT</p><h1 tabindex="-1">See what your customer sees.</h1></div></div><div class="panel preview-explainer"><h2>Clear offers build confidence.</h2><p>Your shopper preview shows the offer title, outcome, audience, store and planned price. Private idea notes, price notes and cost estimates stay in the vendor workspace.</p><a class="button" href="#shop">Open shopper preview ↗</a><p class="footnote">Previewing is local. A reviewed launch pack is the next step toward an authorized storefront.</p></div></section>
+          <section data-view-panel="vendor-preview" hidden><div class="console-heading"><div><h1 tabindex="-1">Storefront preview</h1><p>See how your saved offers appear to a shopper.</p></div></div><div class="panel preview-explainer"><h2>Clear offers build confidence.</h2><p>Your shopper preview shows the offer title, outcome, audience, store and planned price. Private idea notes, price notes and cost estimates stay in the vendor workspace.</p><a class="button" href="#shop">Open shopper preview ↗</a><p class="footnote">Previewing is local. A reviewed launch pack is the next step toward an authorized storefront.</p></div></section>
         </div>
       </div>
     </section>

@@ -3,7 +3,7 @@ import { listDrafts, groupProjects } from './drafts.js';
 const $ = selector => document.querySelector(selector);
 const views = new Set(['shop', 'checkout', 'vendor', 'vendor-editor', 'vendor-preview', 'admin', 'admin-reviews', 'admin-data', 'admin-runtime', 'admin-project', 'admin-tools']);
 const channel = typeof BroadcastChannel === 'function' ? new BroadcastChannel('commerce-local-drafts') : null;
-let drafts = [], draftsLoaded = false, launch, editor, editorPromise, generation = 0, navigation = 0, shopPage = 0, detailId = null, projectSearchRequested = false;
+let drafts = [], draftsLoaded = false, launch, editor, editorPromise, generation = 0, navigation = 0, shopPage = 0, detailId = null, searchRequested = null;
 const tablePages = { vendor: 0, admin: 0 };
 const node = (tag, text, className) => {
   const element = document.createElement(tag);
@@ -134,9 +134,12 @@ function renderCurrent() {
 }
 async function route() {
   const revision = ++navigation, hash = location.hash.slice(1), requested = hash.split('?')[0], view = views.has(requested) ? requested : 'shop', role = view.split('-')[0];
-  document.body.classList.toggle('console-mode', role === 'admin');
-  $('#console-breadcrumb').hidden = role !== 'admin';
-  $('#console-location').textContent = ({ admin: 'All projects', 'admin-project': 'Project', 'admin-runtime': 'Environment', 'admin-reviews': 'Launch reviews', 'admin-data': 'Data & portability', 'admin-tools': 'Tools & commands' })[view] || '';
+  document.body.classList.toggle('console-mode', role !== 'checkout');
+  document.body.dataset.workspaceRole = role;
+  $('#console-breadcrumb').hidden = role === 'checkout';
+  const root = $('#console-root'); root.href = '#' + role;
+  root.textContent = ({ shop: 'Storefront', vendor: 'Catalog', admin: 'Projects' })[role] || 'Shopper';
+  $('#console-location').textContent = ({ shop: 'Storefront preview', vendor: 'Offers', 'vendor-editor': 'Offer editor', 'vendor-preview': 'Storefront preview', admin: 'All projects', 'admin-project': 'Project', 'admin-runtime': 'Environment', 'admin-reviews': 'Launch reviews', 'admin-data': 'Data & portability', 'admin-tools': 'Tools & commands' })[view] || '';
   document.querySelectorAll('[data-role-panel]').forEach(panel => { panel.hidden = panel.dataset.rolePanel !== role; });
   document.querySelectorAll('[data-view-panel]').forEach(panel => { panel.hidden = panel.dataset.viewPanel !== view; });
   document.querySelectorAll('[data-role]').forEach(link => { if (link.dataset.role === (role === 'checkout' ? 'shop' : role)) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current'); });
@@ -149,8 +152,9 @@ async function route() {
   if (revision !== navigation) return;
   if (view === 'checkout') await (await import('./checkout.js')).openCheckout();
   renderCurrent();
-  if (role === 'admin') window.scrollTo({ top: 0, behavior: 'instant' });
-  if (projectSearchRequested && view === 'admin') { projectSearchRequested = false; $('#project-query').focus(); return; }
+  if (hash === 'collection' || hash === 'shop-sandbox') document.getElementById(hash)?.scrollIntoView({ block: 'start' });
+  else if (hash !== 'main') window.scrollTo({ top: 0, behavior: 'instant' });
+  if (searchRequested && view === role) { const target = searchRequested; searchRequested = null; $(target).focus(); return; }
   if (hash !== 'collection' && hash !== 'main') document.querySelector(`#${role} [data-view-panel="${view}"] h1, #${role}-heading`)?.focus({ preventScroll: true });
 }
 $('#shop-search').addEventListener('submit', event => event.preventDefault());
@@ -241,14 +245,19 @@ function renderProjects() {
   detail.append(activity);
 }
 $('#project-query').addEventListener('input', renderProjects);
-async function focusProjectSearch() {
-  if (location.hash === '#admin') { $('#project-query').focus(); return; }
-  projectSearchRequested = true; location.hash = 'admin';
+async function focusWorkspaceSearch() {
+  const role = document.body.dataset.workspaceRole;
+  const target = ({ shop: '#shop-query', vendor: '#vendor-query', admin: '#project-query' })[role];
+  if (!target) return;
+  if (location.hash === '#' + role) { $(target).focus(); return; }
+  searchRequested = target; location.hash = role;
 }
-$('#project-search-shortcut').addEventListener('click', () => void focusProjectSearch().catch(message));
+for (const button of document.querySelectorAll('#project-search-shortcut, [data-workspace-search]')) {
+  button.addEventListener('click', () => void focusWorkspaceSearch().catch(message));
+}
 window.addEventListener('keydown', event => {
   if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k' && document.body.classList.contains('console-mode')) {
-    event.preventDefault(); void focusProjectSearch().catch(message);
+    event.preventDefault(); void focusWorkspaceSearch().catch(message);
   }
 });
 const sourceRevision = document.querySelector('meta[name="commerce-source"]').content;
