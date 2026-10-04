@@ -1,50 +1,50 @@
 ---
-title: "Reference Implementation — Edge Commerce Sandbox and First-Dollar Boundary"
+title: "Reference Implementation — Native Commerce, Workspaces and First-Dollar Boundary"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "edge-commerce-agent-mvp"
-revision: "0.6.0"
-version: "0.6.1"
-prd_revision: "0.6.0"
-tad_revision: "0.6.0"
-adr_revision: "0.6.0"
-mvp_revision: "0.6.0"
-gtm_revision: "0.6.0"
-date: "2026-09-12"
+revision: "0.7.0"
+version: "0.7.0"
+prd_revision: "0.7.0"
+tad_revision: "0.7.0"
+adr_revision: "0.7.0"
+mvp_revision: "0.7.0"
+gtm_revision: "0.7.0"
+date: "2026-10-04"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Commerce product architecture"
-local_rung: "runtime-ready"
-delivered_rung: "production-verified"
-readiness_scope: "EC-01–EC-07 local-first drafts and sandbox checkout; EC-08–EC-10 are separate Dev and documentation capabilities"
+local_rung: "undocumented"
+delivered_rung: "undocumented"
+readiness_scope: "Whole 0.7.0 includes proposed CW-01–CW-07; historical EC slice evidence remains scoped below"
 lane: "authoring"
 universal_scope: false
 load_policy: "on-demand"
 runtime_readiness_policy: "fail-closed"
-lifecycle_status: "accepted"
+lifecycle_status: "proposed"
 demand_status: "unvalidated"
-worktree_id: "katrinas-macbook-pro.local--planning-v27"
-agent_id: "codex-01a0940a"
-source_revision: "50cc1d7e1a81af4ca89c2c4584bc50aee89ec55f"
-guideline_revision: "2.7.0"
-guideline_source_revision: "e8d2a10a8d3e5735c43edf350a22523df05fdf91"
+worktree_id: "device-0232231d4a19--commerce-workspace-plan"
+agent_id: "codex-commerce-workspace-plan"
+source_revision: "f2284eff42d3903d8c72d23cc919d3d72aadba9c"
+guideline_revision: "3.4.0"
+guideline_source_revision: "82835ac37d524643faa6b9703cb077ea9474ab15"
 related_continuity_id: "PRD-TAD-ADR-COMMERCE-MVP-GTM-001"
 agenticOsCanvasRenderMode: "2d"
 agenticOsCanvas2dRenderer: "d3"
 surfaces: ["2D Renderer: D3 Graph"]
-reviewed_source_revision: "37d1e2a2e3a0efa4f9c5f44c457efa3234d86ad9"
+reviewed_source_revision: "f2284eff42d3903d8c72d23cc919d3d72aadba9c"
 ---
 
-# Reference implementation — Edge Commerce sandbox and first-dollar boundary
+# Reference implementation — native commerce, workspaces and first-dollar boundary
 
 The approved [durable listing fulfillment](durable-fulfillment.md) extension joins the existing draft,
 review and sandbox owners. Its candidate runtime and rollback gates have separate evidence; they do
 not inherit the production verification recorded below.
 
 The proposed [native commerce transfer ecosystem](prd-tad-adr-mvp-gtm-native-commerce-transfer.md)
-at `NATIVE-COMMERCE-TRANSFER-001@0.1.0` specifies MainPanel, transfer and policy-evidence enhancements.
+at `NATIVE-COMMERCE-TRANSFER-001@0.2.1` specifies MainPanel, transfer and policy-evidence enhancements.
 It consumes this sandbox baseline and inherits no implementation, payment or deployment readiness.
 
-`edge-commerce-agent-mvp@0.6.0` joins [PRD](#prd), [TAD](#tad), [ADR](#adr), [MVP](#mvp)
+`edge-commerce-agent-mvp@0.7.0` joins [PRD](#prd), [TAD](#tad), [ADR](#adr), [MVP](#mvp)
 and [GTM](#gtm). PRD owns criteria; TAD consumes that exact revision; ADR binds the design;
 MVP and GTM consume their checks and outcomes. This document describes concrete choices for
 this reference implementation, not universal vendor requirements. Shared [guidelines][guideline]
@@ -52,17 +52,32 @@ and the [CID contract][cid] own grammar; no new command or continuity schema is 
 
 The legacy sandbox section anchor is retained for existing 0.5.0 companion links.
 0.6.0 reconciles documentation with the deployed 0.5.0 implementation; it changes no runtime or
-wire contract. The current operator instruction is **sandbox payment only, complete autonomously**.
+wire contract. The historical operator instruction was **sandbox payment only, complete autonomously**.
 A later deployment still requires its own exact-candidate authority. Protected merge is not deployment.
 The [first-dollar sprint][sprint] owns actual customer validation and collection at
 `PRD-TAD-ADR-COMMERCE-MVP-GTM-001@1.2.0`; it consumes this sandbox, not the reverse.
 
-**Context:** [ER-SB-01–07][evidence] show offline drafts and a publicly verified provider test loop.
-**Intent:** let a solo operator rehearse a reviewed offer through verified sample delivery.
-**Directive:** document the existing sandbox, bind each criterion to its source and evidence, and
-keep unvalidated customer demand, live payment and full-agent production behind their own gates.
-**Role/Subject:** Commerce product architect. **Action:** the architect documents the verified sandbox.
-**Outcome:** one current criterion-to-source-to-check chain. **Verb/Object:** documents / the verified sandbox.
+**Context:** [ER-SB-01–07][evidence] record the historical sandbox; current source owners support the workspace increment.
+**Intent:** let a solo operator prepare an offer and understand its next permitted action and actual outcome.
+**Directive:** specify native workspace enhancements, bind each criterion to source and evidence, and
+keep unvalidated demand, live payment and full-agent production behind their own gates.
+**Role/Subject:** Commerce product architect. **Action:** specify native workspace enhancements over the historical sandbox.
+**Outcome:** one current criterion-to-source-to-check chain. **Verb/Object:** specify / the native commerce increment.
+
+## Current workspace increment — reference implementation
+
+The [workspace companion](prd-tad-adr-mvp-gtm-commerce-workspaces.md) is the size-bounded
+CW-01–CW-07 extension of this same `edge-commerce-agent-mvp@0.7.0` join. It owns the new
+project/environment read projection, native admin recovery journey, capability boundaries,
+five flows, C01–C16 coverage and next bounded tasks. It adds no independent product or roadmap.
+The five section roles below retain EC-01–EC-10; each consumes its matching companion section
+for CW requirements/design/decisions/MVP/GTM. Historical receipts remain at their recorded revisions.
+The 0.6.0 sandbox earned scoped evidence; the expanded 0.7.0 product has no new runtime proof,
+so its whole-document rungs remain `undocumented`. This is not a withdrawal of historical receipts.
+
+This turn authorizes documentation and source review. Feature implementation, outreach, deployment,
+financial effects and automatic infrastructure provisioning are separate, ungranted effects.
+No reference implementation, assets, dependency or hosted service is imported for this increment.
 
 ## Codebase grounding — reference implementation
 
@@ -81,6 +96,8 @@ remains preserved as input. It is not a second implementation owner. Material cl
 | Returning from hosted checkout proves payment | contradicted | `checkout.ts` re-reads the exact provider session; only `complete` and `paid` enables sample delivery |
 | Free quotas or synthetic settlement establish zero TCO, demand or revenue | unverified | No account bill, priced customer conversation or actual collection evidence; none is used for a readiness or WTP claim |
 | Wallet availability, fee tables and account quotas justify a new rail | unverified | Not needed for this increment; recheck with the payment owner before adopting a rail, rather than copying historical pricing assumptions |
+
+Historical sandbox source bindings; current CW bindings are in the companion.
 
 | Owner and exact source | Owned capability / join |
 |---|---|
@@ -102,7 +119,7 @@ this documentation revision neither rewrites exported packs nor treats that comp
 
 ## PRD
 
-**Join:** `edge-commerce-agent-mvp@0.6.0`.
+**Join:** `edge-commerce-agent-mvp@0.7.0`.
 
 **PP-01 — unvalidated:** a solo service operator cannot easily test an offer-to-delivery journey
 without rebuilding payment integration. Impact and frequency are hypotheses; no priced prospect
@@ -114,7 +131,8 @@ review so I can prepare an offer without publishing research. As a shopper testi
 I want clear test terms and an explicit confirmation so I know no real money moves. As an admin,
 I want truthful readiness and failure states so I do not mistake role navigation for authority.
 
-**Must:** EC-01–EC-07, the already deployed dependency-closed rehearsal. **Should:** a timed actual
+**Must (historical sandbox):** EC-01–EC-07, the dependency-closed rehearsal recorded in ER-SB.
+**Must (proposed workspace increment):** CW-01–CW-07 in the companion, with separate acceptance. **Should:** a timed actual
 prospect walkthrough and priced pilot under the sprint owner. **Could:** additional supported role
 workflows once a buyer need is evidenced. **Won't (this increment):** real charges, subscriptions,
 inventory, shipping, payouts, customer accounts, multi-item carts, autonomous price/payment writes,
@@ -154,7 +172,9 @@ retroactive runtime acceptance results. Customer adoption remains below sign-off
 
 ## TAD
 
-**Join:** TAD consumes exactly PRD `edge-commerce-agent-mvp@0.6.0`; ADR binds these components.
+**Join:** TAD consumes exactly PRD `edge-commerce-agent-mvp@0.7.0`; ADR binds these components.
+CW requirements consume W1–W5 in the companion. The following rungs are historical EC evidence,
+not fresh verification of the October source or the proposed workspace views.
 
 | Component | Single owner / contract / bounds | Local / delivered rung |
 |---|---|---|
@@ -352,7 +372,7 @@ change edits neither mirror nor route. Route evidence never grants another compo
 
 ## ADR
 
-**Join:** ADR `edge-commerce-agent-mvp@0.6.0` binds this PRD/TAD. Accepted decisions:
+**Join:** ADR `edge-commerce-agent-mvp@0.7.0` binds this PRD/TAD. Accepted decisions:
 
 - **EC-A1 — reuse native owners.** Existing drafts, themes and checkout avoid a second store or
   application. A new cart/database was rejected for this single-offer rehearsal; recovery preserves
@@ -366,9 +386,9 @@ change edits neither mirror nor route. Route evidence never grants another compo
   automatic sync service. Review digests protect content integrity, not identity or payment authority.
 - **EC-A4 — full-profile role boundaries.** Reuse operator fencing, public/agent tool allowlists and
   staged proposals. Public role pages grant no credentials; no agent fabricates human presence.
-- **EC-A5 — native UX patterns.** Mercur and commerce-agents are inspiration only; reuse semantic
-  HTML, CSS, dialogs and existing actions. [Coverage and gaps](mercur-experience-parity.md) at 0.5.0
-  remain historical behavior evidence. Inventory, payouts and complete framework parity are unclaimed.
+- **EC-A5 — native UX patterns.** Reuse semantic HTML, CSS, dialogs and existing actions.
+  [Native workspace coverage](native-commerce-workspaces.md) remains historical behavior evidence.
+  CW-A1 extends these owners; inventory, payouts and complete platform parity remain unclaimed.
 - **EC-A6 — source-owned documentation and exact release.** Remove the deferred-checkout conflict,
   join the sprint/evidence companion and retain dated observations. No runtime/schema changes or
   replayed deployment authority; full-profile trust gates remain unchanged.
@@ -431,7 +451,8 @@ never enroll fabricated payer evidence from this sandbox. [The sprint][sprint] o
 
 ## Alignment and maintenance — reference implementation
 
-The evidence companion consumes this implementation at 0.6.0 and the sprint at 1.2.0. Current
+The historical evidence companion consumes 0.6.0 and the sprint at 1.2.0; it is not silently
+re-stamped as October evidence. The workspace companion records this 0.7.0 authoring checkpoint. Historical
 five-role joins, source links, schema owners, five flow inventories, deployment boundaries and
 monetization separation are the bounded documentation review. Existing source checks validate
 syntax, links, limits and projection; they do not certify every advisory statement in the guideline.
@@ -458,19 +479,19 @@ contains zero advisory rules and is not an exhaustive guideline conformance cert
 
 Known 0.5.0/1.1.0 issues resolved: `status-conflict` (deferred versus deployed test checkout),
 `artifact-naming-noncompliant` (mixed revision joins), `missing-frontmatter-key` (handoff), and
-`cid-composition-divergence` (different CID/RAO/SVO actions). Current bounded review: 0 blocker,
+`cid-composition-divergence` (different CID/RAO/SVO actions). Historical 2026-09-12 bounded review: 0 blocker,
 2 tracked major, 0 minor; other selected finding types are zero. No runtime-ready claim is made
 for the pending research or full production capabilities. Recheck after any upstream criterion,
 source or evidence revision; at most three alignment cycles, stop/replan if blockers do not decrease.
 
-[guideline]: https://github.com/huijoohwee/huijoohwee.github.io/blob/c83b43bd7fd018e0ac41629787e0e713db9a1e13/guidelines/prd-tad-adr-mvp-gtm-guidelines.md
-[cid]: https://github.com/huijoohwee/huijoohwee.github.io/blob/c83b43bd7fd018e0ac41629787e0e713db9a1e13/guidelines/cid-guidelines.md#shared-field-contract
+[guideline]: https://github.com/huijoohwee/huijoohwee.github.io/blob/82835ac37d524643faa6b9703cb077ea9474ab15/guidelines/prd-tad-adr-mvp-gtm-guidelines.md
+[cid]: https://github.com/huijoohwee/huijoohwee.github.io/blob/82835ac37d524643faa6b9703cb077ea9474ab15/guidelines/cid-guidelines.md#shared-field-contract
 [source]: https://github.com/huijoohwee/agentic-commerce-os/tree/50cc1d7e1a81af4ca89c2c4584bc50aee89ec55f
 [evidence]: prd-tad-adr-mvp-gtm-handoff.md#mvp
 [sprint]: prd-tad-adr-mvp-gtm-20260909T1320Z-solopreneur-mvp-gtm.md
 
 ## Experience assessment — reference implementation
 
-This assessment consumes `edge-commerce-agent-mvp@0.6.0` and the unchanged criterion and evidence scopes above. Core Requirements & Functionality, Innovation & Theme Alignment, Technical Execution & Integration, and Usefulness & Agentic Experience are **unassessed**: no criterion-scored user observation is attached to this planning revision. Existing sandbox and authoring receipts retain their recorded source, environment and expiry; this assessment neither renews them nor changes their readiness scope.
+This assessment consumes `edge-commerce-agent-mvp@0.7.0` and the separately scoped EC/CW criteria and evidence above. Core Requirements & Functionality, Innovation & Theme Alignment, Technical Execution & Integration, and Usefulness & Agentic Experience are **unassessed**: no criterion-scored user observation is attached to this planning revision. Existing sandbox and authoring receipts retain their recorded source, environment and expiry; this assessment neither renews them nor changes their readiness scope.
 
 The document owner must capture one timed pilot in the buyer’s existing workspace, record the four observations using the shared maturity rubric, and measure accepted outcome, actual payment, repeat use and delivery/support cost separately. A successful sandbox checkout proves its declared mechanism only; it cannot establish willingness to pay, a commercial winner or collected customer revenue. Append the learn-loop result as a successor Context through the shared planning owner.
