@@ -8,9 +8,9 @@ on:
         required: true
         type: string
       rehearse_rollback:
-        description: Rehearse the retained reader and restore the exact candidate around one actual listing job; no payment
+        description: Required for fulfillment releases; rehearse the retained reader and restore the exact candidate around one actual listing job; no payment
         required: false
-        default: false
+        default: true
         type: boolean
       retained_baseline:
         description: Optional exact retained deployment, version, source and failed run IDs for a restored bootstrap

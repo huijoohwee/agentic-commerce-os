@@ -1,6 +1,32 @@
 import { createHash } from 'node:crypto';
 const delay = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
 
+// Fulfillment activation must produce its own recovery evidence, before completion.
+export function requireRollbackRehearsal(selection, fulfillment) {
+  if (!['true', 'false', undefined].includes(selection)) throw Error('Invalid rollback rehearsal selection');
+  if (fulfillment && selection !== 'true') throw Error('Fulfillment release requires exact-candidate rollback rehearsal');
+  if (!fulfillment && selection === 'true') throw Error('Rollback rehearsal requires the retained reader and authenticated fulfillment host');
+  return selection === 'true';
+}
+
+export function assertFulfillmentRollbackProof(proof, { revision, active, reader }) {
+  const job = proof?.retainedJob;
+  if (proof?.schema !== 'commerce.fulfillment-provider-rollback/v1' || proof.status !== 'complete'
+    || proof.sourceRevision !== revision || proof.readerVerified !== true || proof.restoredVerified !== true
+    || proof.writeResultUnknown !== false || proof.realMoney !== false
+    || !active?.versionId || !active.deploymentId || proof.candidate?.versionId !== active.versionId
+    || proof.restoredDeployment?.versionId !== active.versionId || proof.restoredDeployment?.deploymentId !== active.deploymentId
+    || proof.reader?.sourceRevision !== reader.sourceRevision || proof.reader?.versionId !== reader.versionId
+    || proof.reader?.runId !== reader.runId || proof.readerDeployment?.versionId !== reader.versionId
+    || reader.versionId === active.versionId || !proof.readerDeployment?.deploymentId
+    || !/^listing-[a-f0-9]{64}$/.test(job?.runId ?? '') || !/^[a-f0-9]{64}$/.test(job?.outputDigest ?? '')
+    || !/^[a-f0-9]{64}$/.test(job?.draftDigest ?? '') || job?.transport !== 'actual-public-browser'
+    || job?.executor !== 'pinned-device-host' || job?.paymentSubmitted !== false) {
+    throw Error('Exact-candidate fulfillment rollback proof missing or incomplete');
+  }
+  return proof;
+}
+
 async function boundedBody(response) {
   const reader = response.body?.getReader(), chunks = [];
   let bytes = 0, truncated = false;

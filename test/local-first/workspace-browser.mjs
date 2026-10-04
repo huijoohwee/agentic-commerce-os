@@ -51,6 +51,21 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   const sourceRevision = await page.locator('meta[name="commerce-source"]').getAttribute('content');
   const readiness = { ok: true, profile: 'local-first', storage: 'browser-only', realMoney: false,
     checkout: 'sandbox', paymentStorage: 'stripe-test', paymentProvider: 'stripe', workerVersionId: null, sourceRevision };
+  await page.route('**/readyz', route => route.fulfill({ status: 503, contentType: 'application/json',
+    body: JSON.stringify({ ...readiness, ok: false, readinessScope: 'configured-capabilities', fulfillment: 'unavailable' }) }));
+  await page.locator('#environment-refresh').click();
+  await expect(page.locator('#environment-badge')).toHaveText('Degraded');
+  await expect(page.locator('#environment-checkout')).toContainText('Configured');
+  await expect(page.locator('#environment-status')).toContainText('fulfillment host is unavailable');
+  await page.screenshot({ path: path.join(output, 'environment-degraded.png'), fullPage: true });
+  await page.unroute('**/readyz');
+  await page.route('**/readyz', route => route.fulfill({ status: 200, contentType: 'application/json',
+    body: JSON.stringify({ ...readiness, readinessScope: 'configured-capabilities', fulfillment: 'ready' }) }));
+  await page.locator('#environment-refresh').click();
+  await expect(page.locator('#environment-badge')).toHaveText('Sandbox configured');
+  await expect(page.locator('#environment-status')).toContainText('host responded');
+  await expect(page.locator('#environment-status')).toContainText('No real payment');
+  await page.unroute('**/readyz');
   for (const body of [JSON.stringify({ ...readiness, sourceRevision: 'f'.repeat(40) }), '{', ' '.repeat(32769)]) {
     await page.route('**/readyz', route => route.fulfill({ status: 200, contentType: 'application/json', body }));
     await page.locator('#environment-refresh').click();

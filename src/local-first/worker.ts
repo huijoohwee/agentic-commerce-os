@@ -50,7 +50,8 @@ export async function fetchLocalFirst(request: Request, env: LocalFirstEnv, tran
     if (url.pathname === WORKSPACE_PACK_PATH && ['GET', 'HEAD'].includes(request.method)) {
       url.pathname += '/'; url.search = ''; return finish(Response.redirect(url.href, 308))
     }
-    const workspace = await handleWorkspaceService(request, env.RELEASE_CANDIDATE_SHA, () => readiness(env))
+    const workspace = await handleWorkspaceService(request, env.RELEASE_CANDIDATE_SHA,
+      signal => readiness(env, runtime, signal ?? request.signal))
     if (workspace) return finish(workspace)
     const pack = await handleWorkspacePack(request, env.RELEASE_CANDIDATE_SHA)
     if (pack) return finish(pack)
@@ -72,7 +73,7 @@ export async function fetchLocalFirst(request: Request, env: LocalFirstEnv, tran
       return finish(Response.redirect(url.href, 308));
     }
     if (relative === '/readyz') {
-      const value = readiness(env)
+      const value = await readiness(env, runtime, request.signal)
       return finish(Response.json(value, { status: value.ok ? 200 : 503 }))
     }
     const versionPrefix = `/assets/${env.RELEASE_CANDIDATE_SHA}/`
@@ -92,9 +93,24 @@ export async function fetchLocalFirst(request: Request, env: LocalFirstEnv, tran
     }
     return finish(response)
 }
-function readiness(env: LocalFirstEnv) {
+async function readiness(env: LocalFirstEnv, runtime: FulfillmentRuntime | undefined, signal: AbortSignal) {
   const valid = /^[0-9a-f]{40}$/u.test(env.RELEASE_CANDIDATE_SHA) && checkoutConfigured(env)
-  return { ok: valid, profile: 'local-first', checkout: valid ? 'sandbox' : 'unavailable',
+  let fulfillment: 'disabled' | 'ready' | 'unavailable' = runtime ? 'unavailable' : 'disabled'
+  if (valid && runtime?.ready && !signal.aborted) {
+    // Only the existing relay verifies host identity. No session, job or model call is created.
+    const deadline = new AbortController(), probe = AbortSignal.any([signal, deadline.signal])
+    const timer = setTimeout(() => deadline.abort(), 3000)
+    let cancel: () => void = () => {}
+    const aborted = new Promise<never>((_, reject) => {
+      cancel = () => reject(Error('fulfillment_readiness_unavailable'))
+      probe.addEventListener('abort', cancel, { once: true })
+    })
+    try { await Promise.race([runtime.ready(probe), aborted]); if (!probe.aborted) fulfillment = 'ready' }
+    catch { /* Availability is public; transport errors, credentials and host pins are not. */ }
+    finally { clearTimeout(timer); probe.removeEventListener('abort', cancel) }
+  }
+  return { ok: valid && fulfillment !== 'unavailable' && !signal.aborted,
+    readinessScope: 'configured-capabilities', fulfillment, profile: 'local-first', checkout: valid ? 'sandbox' : 'unavailable',
     storage: 'browser-only', paymentStorage: 'stripe-test', paymentProvider: 'stripe', realMoney: false,
     sourceRevision: env.RELEASE_CANDIDATE_SHA, workerVersionId: env.CF_VERSION_METADATA?.id ?? null }
 }

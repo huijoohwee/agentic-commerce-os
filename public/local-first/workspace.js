@@ -390,20 +390,28 @@ async function checkEnvironment(signal) {
     const response = await fetch(url, { credentials: 'omit', cache: 'no-store', redirect: 'error', signal: controller.signal });
     httpStatus = response.status;
     const value = await readEnvironment(response);
+    const scoped = value.readinessScope === 'configured-capabilities';
     if (controller.signal.aborted) throw Error('cancelled');
     if (value.profile !== 'local-first' || value.sourceRevision !== sourceRevision || value.storage !== 'browser-only'
       || value.realMoney !== false || !['sandbox', 'unavailable'].includes(value.checkout) || typeof value.ok !== 'boolean'
-      || value.ok !== (response.status === 200) || value.ok !== (value.checkout === 'sandbox')
+      || ![200, 503].includes(response.status) || value.ok !== (response.status === 200)
+      || (scoped ? !['disabled', 'ready', 'unavailable'].includes(value.fulfillment)
+        || value.ok !== (value.checkout === 'sandbox' && value.fulfillment !== 'unavailable')
+        : value.ok !== (value.checkout === 'sandbox'))
       || (sourceRevision !== 'local-unreleased' && !/^[a-f0-9]{40}$/.test(sourceRevision))
       || (value.ok && (value.paymentProvider !== 'stripe' || value.paymentStorage !== 'stripe-test'))
       || (value.workerVersionId !== null && (typeof value.workerVersionId !== 'string' || !/^[a-zA-Z0-9._-]{1,128}$/.test(value.workerVersionId)))) {
       throw Error('Evidence does not match this page and profile. Reload the page, then check again.');
     }
     evidence = value;
-    observation = { time: Date.now(), label: value.ok ? 'Sandbox configured' : 'Unavailable',
-      checkout: value.ok ? 'Configured · Test mode only' : 'Unavailable · Drafts still work', version: value.workerVersionId,
-      message: value.ok ? 'Sandbox configuration observed. No real payment, offer publication or fulfillment is proved by this check.'
-        : 'The sandbox is unavailable here. Continue preparing drafts; the runtime owner must resolve its configuration.' };
+    const degraded = scoped && value.checkout === 'sandbox' && value.fulfillment === 'unavailable';
+    observation = { time: Date.now(), label: degraded ? 'Degraded' : value.ok ? 'Sandbox configured' : 'Unavailable',
+      checkout: value.checkout === 'sandbox' ? 'Configured · Test mode only' : 'Unavailable · Drafts still work', version: value.workerVersionId,
+      message: degraded ? 'The fulfillment host is unavailable. Drafts still work; the runtime owner must restore the host before starting new jobs.'
+        : value.ok ? (scoped && value.fulfillment === 'ready' ? 'The fulfillment host responded during this check. Device-session availability can change. No real payment or completed job is proved.'
+          : scoped ? 'Sandbox configuration observed. Fulfillment is not enabled here. No real payment, offer publication or completed job is proved by this check.'
+            : 'Sandbox configuration observed. No real payment, offer publication or fulfillment is proved by this check.')
+          : 'The sandbox is unavailable here. Continue preparing drafts; the runtime owner must resolve its configuration.' };
   } catch (error) {
     observation = { time: Date.now(), label: 'Unknown', checkout: 'Unknown · Check again',
       message: controller.signal.aborted ? 'Check cancelled or timed out. The outcome is unknown; you can explicitly check again.'
@@ -412,7 +420,7 @@ async function checkEnvironment(signal) {
   if (generation !== environmentGeneration) return;
   Object.assign(observation, { id: generation, durationMs: Math.max(0, Math.round(performance.now() - started)), httpStatus,
     result: evidence ? (evidence.ok ? 'configured' : 'unavailable') : 'unknown',
-    evidence: evidence ? Object.fromEntries(['ok', 'profile', 'checkout', 'storage', 'paymentStorage', 'paymentProvider', 'realMoney', 'sourceRevision', 'workerVersionId'].map(key => [key, evidence[key]])) : null });
+    evidence: evidence ? Object.fromEntries(['ok', 'profile', 'checkout', 'storage', 'paymentStorage', 'paymentProvider', 'realMoney', 'sourceRevision', 'workerVersionId', 'readinessScope', 'fulfillment'].map(key => [key, evidence[key]])) : null });
   environmentController = null; environmentObservation = observation;
   $('#environment-status').textContent = observation.message;
   environmentHistoryPage = 0; environmentHistory.unshift(observation); environmentHistory.length = Math.min(20, environmentHistory.length);

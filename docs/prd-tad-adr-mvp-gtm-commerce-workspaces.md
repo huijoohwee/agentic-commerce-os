@@ -2,13 +2,13 @@
 title: "Reference Implementation — Native Commerce Workspace Increment"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "edge-commerce-agent-mvp"
-revision: "0.15.0"
-version: "0.15.0"
-prd_revision: "0.15.0"
-tad_revision: "0.15.0"
-adr_revision: "0.15.0"
-mvp_revision: "0.15.0"
-gtm_revision: "0.15.0"
+revision: "0.16.0"
+version: "0.16.0"
+prd_revision: "0.16.0"
+tad_revision: "0.16.0"
+adr_revision: "0.16.0"
+mvp_revision: "0.16.0"
+gtm_revision: "0.16.0"
 date: "2026-10-04"
 lang: "en-US"
 frontmatter_contract: "required"
@@ -35,7 +35,7 @@ surfaces: ["2D Renderer: D3 Graph"]
 # Reference implementation — native commerce workspace increment
 
 This on-demand companion extends the [product owner](prd-tad-adr-mvp-gtm-edge-commerce-agent.md)
-at **`edge-commerce-agent-mvp@0.15.0`**. PRD, TAD, ADR, MVP and GTM below share that join.
+at **`edge-commerce-agent-mvp@0.16.0`**. PRD, TAD, ADR, MVP and GTM below share that join.
 The split preserves the <600-line limit and leaves dated sandbox evidence in its original owner.
 No second platform, roadmap, capability registry or release controller is introduced.
 The [first-dollar sprint](prd-tad-adr-mvp-gtm-20260909T1320Z-solopreneur-mvp-gtm.md)
@@ -193,11 +193,11 @@ acceptance remain gaps; screenshots and layout checks are not an accessibility c
 
 ### Five flows and inventories
 
-All diagrams are proposed CW projections at version 0.15.0, dated 2026-10-04. Rectangles are native
+All diagrams are proposed CW projections at version 0.16.0, dated 2026-10-04. Rectangles are native
 components/stages; rounded nodes are people. No diagram asserts production readiness. Text inventories
 provide the mobile/offline alternative; canvas projection is parse-only and consumes zero model tokens.
 
-**Diagram CW-J** · Class: Journey stage map · Notation: flowchart LR · Version: 0.15.0
+**Diagram CW-J** · Class: Journey stage map · Notation: flowchart LR · Version: 0.16.0
 **Caption:** the merchant reaches a reviewed local offer before choosing any remote effect.
 ```mermaid
 flowchart LR
@@ -212,7 +212,7 @@ flowchart LR
 | J3 | Exact revision and permitted action / CW-03,04,06 |
 | J4 | Preview, payment and fulfillment states / CW-05 |
 
-**Diagram CW-W** · Class: User workflow · Notation: sequenceDiagram · Version: 0.15.0
+**Diagram CW-W** · Class: User workflow · Notation: sequenceDiagram · Version: 0.16.0
 **Caption:** only a reviewed request reaches the existing owner; an unknown result remains unresolved.
 ```mermaid
 sequenceDiagram
@@ -232,7 +232,7 @@ sequenceDiagram
 | V | Match current version / cancel / preserve unresolved, CW-01,07 |
 | O | Existing CAS receipt / already applied / stale version rejected, CW-04,05 |
 
-**Diagram CW-D** · Class: Data flow · Notation: flowchart LR · Version: 0.15.0
+**Diagram CW-D** · Class: Data flow · Notation: flowchart LR · Version: 0.16.0
 **Caption:** draft content and runtime observations remain distinct inputs to the visible review.
 ```mermaid
 flowchart LR
@@ -248,7 +248,7 @@ flowchart LR
 | D3 | Presentation only, J3; no new ledger, CW-05,07 |
 | D4 | Existing theme/checkout/fulfillment authority, J4; no cross-effect success inference, CW-04,05 |
 
-**Diagram CW-H** · Class: Orchestration / harness flow · Notation: flowchart LR · Version: 0.15.0
+**Diagram CW-H** · Class: Orchestration / harness flow · Notation: flowchart LR · Version: 0.16.0
 **Caption:** an optional agent can discover and prepare only through the admitted owner contract.
 ```mermaid
 flowchart LR
@@ -263,7 +263,7 @@ flowchart LR
 | H3 | S3/S6 executor; existing effect limits, no agent-created presence receipt |
 | H4 | W1–W5 readback at J4; W3 proposed 5 s deadline, no retry loop |
 
-**Diagram CW-T** · Class: Runtime topology · Notation: flowchart TB · Version: 0.15.0
+**Diagram CW-T** · Class: Runtime topology · Notation: flowchart TB · Version: 0.16.0
 **Caption:** the local browser remains useful alone; online profiles preserve their existing trust boundaries.
 ```mermaid
 flowchart TB
@@ -405,7 +405,7 @@ as finished.
 
 ## From-0-to-1 coverage — reference implementation
 
-All rows bind `edge-commerce-agent-mvp@0.15.0`. Coverage is a disposition, not readiness or validation.
+All rows bind `edge-commerce-agent-mvp@0.16.0`. Coverage is a disposition, not readiness or validation.
 Dispositioned **16/16**; covered applicable **11/16**; deferred **5**; not applicable **0**.
 
 | Domain | Decision / exact source section in this revision | Accountable owner / evidence or gap / next check |
@@ -465,7 +465,7 @@ Cleanup keeps the reviewable worktree and preview; integration/deployment need t
 paths, 60 active-minute cap, 90 KB diff cap, 0 new modules/packages/services and $0 new spend.
 The inherited 0.7.0 plan is commit `e305f61bd6ecdf14f65eceb44c894ec4dc0636f8` / PR #94;
 its protected Integration Gate passed. That result does not certify this successor's changed code.
-**Production Release:** none for 0.15.0. **Runtime:** local loopback and test fixtures only; no new live
+**Production Release:** none for 0.16.0. **Runtime:** local loopback and test fixtures only; no new live
 deployment, payment or customer receipt. Historical EC evidence keeps its own source and expiry.
 
 | Criterion / native owner | Implemented source and check disposition | Remaining acceptance |
@@ -582,7 +582,7 @@ stop after three alignment cycles or two without blocker reduction.
 
 | PRD-TAD-ADR-MVP-GTM | CID | RAO | Updated Date |
 |---|---|---|---|
-| Console navigation source handoff | edge-commerce-agent-mvp@0.15.0 / CW-D09 | UI owner → retain environment context and provide collapsible navigation → scoped lane with responsive UI and invocation regression checks | 2026-10-04 |
+| Console navigation source handoff | edge-commerce-agent-mvp@0.16.0 / CW-D09 | UI owner → retain environment context and provide collapsible navigation → scoped lane with responsive UI and invocation regression checks | 2026-10-04 |
 | Next authorized planning action | Same join / CW-P1 | Product → identify one reachable merchant and proposed priced outcome → E1 inputs; prerequisite: explicit contact authority, recheck on supplied prospect | 2026-10-04 |
 | Next acceptance action | Same join / CW-01–08 | Product/QA → run five human baseline tasks and resolve full-runtime prerequisites → independently bound acceptance; recheck when participants/runtime are available | 2026-10-04 |
 
@@ -591,3 +591,5 @@ stop after three alignment cycles or two without blocker reduction.
 [verification]: https://github.com/huijoohwee/huijoohwee.github.io/blob/82835ac37d524643faa6b9703cb077ea9474ab15/guidelines/prd-tad-adr-mvp-gtm-verification.md
 
 [design]: https://github.com/huijoohwee/huijoohwee.github.io/blob/82835ac37d524643faa6b9703cb077ea9474ab15/guidelines/design-theme-contract.md
+
+The current join also includes [RR-D10 production readiness recovery](prd-tad-adr-mvp-gtm-edge-commerce-agent.md#rr-d10--production-readiness-recovery-reference-implementation): bounded host observations, explicit degraded UI and required candidate-bound rollback proof. Source verification and the unresolved tunnel/integration/deployment prerequisites remain separate.
