@@ -111,11 +111,43 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
     await page.setViewportSize({ width, height: 900 });
     await page.goto(url + '#admin-tools');
     await expect(page.locator('#workspace-run')).toBeEnabled();
+    const navigationToggle = page.locator('#workspace-navigation-toggle');
+    await expect(navigationToggle).toHaveAttribute('aria-controls', 'admin-navigation');
+    await expect(navigationToggle).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.locator('#admin-navigation')).toBeVisible();
+    const expanded = await page.locator('#admin .workspace-content').boundingBox();
+    await navigationToggle.click();
+    await expect(navigationToggle).toHaveAttribute('aria-expanded', 'false');
+    await expect(page.locator('#admin-navigation')).toBeHidden();
+    const collapsed = await page.locator('#admin .workspace-content').boundingBox();
+    assert(width <= 680 ? collapsed.y < expanded.y : collapsed.width > expanded.width);
+    // The preference follows role changes without adding device-persistent state.
+    for (const [role, label] of [['shop', 'Shopper'], ['vendor', 'Vendor'], ['admin', 'Admin']]) {
+      await page.getByRole('navigation', { name: 'Workspace', exact: true })
+        .getByRole('link', { name: label, exact: true }).click();
+      await expect(page.locator('#' + role)).toBeVisible();
+      await expect(navigationToggle).toHaveAttribute('aria-controls', role + '-navigation');
+      await expect(navigationToggle).toHaveAttribute('aria-expanded', 'false');
+      await expect(page.locator('#' + role + '-navigation')).toBeHidden();
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    }
+    await navigationToggle.click();
+    await expect(navigationToggle).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.locator('#admin-navigation')).toBeVisible();
     const reference = await page.locator('#admin .workspace-content').boundingBox();
     for (const role of ['shop', 'vendor']) {
       await page.getByRole('navigation', { name: 'Workspace', exact: true })
         .getByRole('link', { name: role === 'shop' ? 'Shopper' : 'Vendor', exact: true }).click();
       await expect(page.locator('#' + role)).toBeVisible();
+      await expect(navigationToggle).toHaveAttribute('aria-controls', role + '-navigation');
+      await expect(navigationToggle).toHaveAttribute('aria-expanded', 'true');
+      const sidebar = page.locator('#' + role + '-navigation');
+      await expect(sidebar).toBeVisible();
+      if (width <= 680) {
+        const links = sidebar.locator(':scope > a');
+        const first = await links.nth(0).boundingBox(), second = await links.nth(1).boundingBox();
+        assert(Math.abs(first.y - second.y) < 1 && second.x >= first.x + first.width);
+      }
       const content = await page.locator('#' + role + ' .workspace-content').boundingBox();
       assert.equal(content.x, reference.x); assert.equal(content.width, reference.width);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
@@ -128,6 +160,11 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
       await page.screenshot({ path: path.join(output, `aligned-${role}-${width}.png`) });
     }
   }
+  await page.locator('#workspace-navigation-toggle').click();
+  await expect(page.locator('#workspace-navigation-toggle')).toHaveAttribute('aria-expanded', 'false');
+  await page.reload();
+  await expect(page.locator('#workspace-navigation-toggle')).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.locator('#vendor-navigation')).toBeVisible();
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(url + '#vendor-editor');
   await page.keyboard.press('ControlOrMeta+k');
@@ -251,6 +288,20 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await expect(page.locator('#project-query')).toBeFocused();
   await page.getByLabel('Project', { exact: true }).selectOption('store:solo-studio');
   await expect(page.locator('#project-heading')).toHaveText('solo-studio');
+  for (const section of ['', 'checks']) {
+    await page.goto(url + '#admin-runtime?project=store%3Astudio-north' + (section ? '&section=' + section : ''));
+    for (const [project, name] of [['store:solo-studio', 'solo-studio'], ['', 'All projects']]) {
+      await page.locator('#admin-project-select').selectOption(project);
+      await expect(page.locator('#environment-scope')).toHaveText(name);
+      const [view, query] = new URL(page.url()).hash.slice(1).split('?'), params = new URLSearchParams(query);
+      assert.equal(view, 'admin-runtime');
+      assert.equal(params.get('project'), project || null);
+      assert.equal(params.get('section'), section || null);
+      await expect(page.locator('#admin-project-select')).toHaveValue(project);
+      await expect(page.locator('.environment-overview')).toBeVisible();
+      if (section) await expect(page.locator('#admin-environment-history-link')).toHaveAttribute('aria-current', 'location');
+    }
+  }
   await page.goto(url + '#admin-runtime?project=missing');
   await expect(page.locator('#environment-context')).toContainText('Project unavailable');
   await expect(page.locator('.environment-overview')).toBeHidden();

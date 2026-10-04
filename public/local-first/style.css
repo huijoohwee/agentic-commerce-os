@@ -19,8 +19,8 @@ dialog{border:1px solid var(--line);border-radius:8px;width:min(570px,calc(100% 
 /* Shared console shell for shopper, vendor and admin; one theme and responsive owner. */
 body.console-mode{--ink:#202024;--muted:#727279;--line:#e5e5e8;--paper:#fafafa;background:var(--paper)}
 .console-mode .announcement{display:none}
-.console-mode .topbar{position:sticky;top:0;z-index:3;min-height:56px;padding:0 18px;gap:20px;background:#fff}
-.console-mode .brand{min-height:44px;align-items:center;font-size:1.3rem;min-width:184px;letter-spacing:-.055em}
+.console-mode .topbar{position:sticky;top:0;z-index:3;min-height:56px;padding:0 18px;gap:12px;background:#fff}
+.console-mode .brand{min-height:44px;align-items:center;font-size:1.3rem;min-width:126px;letter-spacing:-.055em}
 .console-mode .brand span{font-size:.58rem}
 .console-breadcrumb{display:flex;align-items:center;gap:16px;min-width:0;flex:1;font-size:.78rem;color:var(--muted)}
 .console-breadcrumb a{display:inline-flex;align-items:center;min-height:44px;text-decoration:none;color:var(--ink);flex-shrink:0}
@@ -98,8 +98,8 @@ body.console-mode{--ink:#202024;--muted:#727279;--line:#e5e5e8;--paper:#fafafa;b
 .project-records>.muted{font-size:.75rem}
 .console-mode>footer{margin:0 0 0 220px;max-width:none;padding:22px 40px;gap:22px;font-size:.66rem;background:#fff}
 .console-mode>footer .brand{font-size:1.1rem}
-@media(max-width:1100px){.console-mode .workspace-content{padding:28px 24px}.console-heading{align-items:flex-start;flex-wrap:wrap}.console-mode #connection{display:none}.console-mode .brand{min-width:176px}.console-preview{padding:20px}.project-copy{padding:20px}.console-sandbox{flex-wrap:wrap}.console-sandbox>div:first-child{flex-basis:50%}}
-@media(max-width:850px){.console-mode .workspace-shell{grid-template-columns:180px minmax(0,1fr)}.console-mode .brand{min-width:140px}.console-mode .console-sidebar{padding:16px 8px}.console-search kbd{display:none}.console-mode>footer{margin-left:180px}.console-mode .global-status:not(:empty){margin-left:204px}.project-card{grid-template-columns:minmax(0,1fr)}.console-preview{min-height:200px;border-right:0;border-bottom:1px solid var(--line);padding:20px}.mini-storefront{max-width:242px}.console-sandbox>.button{width:100%}}
+@media(max-width:1100px){.console-mode .workspace-content{padding:28px 24px}.console-heading{align-items:flex-start;flex-wrap:wrap}.console-mode #connection{display:none}.console-mode .brand{min-width:118px}.console-preview{padding:20px}.project-copy{padding:20px}.console-sandbox{flex-wrap:wrap}.console-sandbox>div:first-child{flex-basis:50%}}
+@media(max-width:850px){.console-mode .workspace-shell{grid-template-columns:180px minmax(0,1fr)}.console-mode .brand{min-width:82px}.console-mode .console-sidebar{padding:16px 8px}.console-search kbd{display:none}.console-mode>footer{margin-left:180px}.console-mode .global-status:not(:empty){margin-left:204px}.project-card{grid-template-columns:minmax(0,1fr)}.console-preview{min-height:200px;border-right:0;border-bottom:1px solid var(--line);padding:20px}.mini-storefront{max-width:242px}.console-sandbox>.button{width:100%}}
 @media(max-width:680px){.console-mode .topbar{position:static;padding:8px 16px;gap:4px 16px;flex-wrap:wrap;min-height:56px}.console-mode .brand{min-width:0}.console-mode .brand span{display:none}.console-breadcrumb{font-size:.7rem;gap:10px;justify-content:flex-end}.console-mode .role-nav{order:3;width:100%;padding-top:4px;margin-top:4px}.console-mode .role-nav a{padding:12px 6px}.console-mode .workspace-shell{display:block;min-height:0}.console-mode .console-sidebar{position:static;height:auto;display:flex;flex-direction:row;overflow:auto;padding:8px 12px;gap:4px}.console-mode .console-sidebar>a{flex-shrink:0;padding:10px;font-size:.7rem}.console-sidebar .sidebar-label,.console-sidebar .sidebar-note,.console-search{display:none}.console-mode .workspace-content{padding:24px 16px 32px}.console-heading{gap:16px;margin-bottom:18px}.console-heading-actions{width:100%;gap:8px;flex-wrap:wrap}.console-query{flex:1;min-width:140px}.console-query input{width:100%}.console-summary{gap:8px 16px;font-size:.67rem}.project-list{gap:16px}.project-facts{grid-template-columns:90px minmax(0,1fr);gap:9px;font-size:.7rem}.project-copy{padding:20px}.project-actions{padding:12px}.console-sandbox{padding:18px;gap:14px}.console-sandbox>div:first-child{flex-basis:100%}.console-sandbox>.button{width:auto;margin-left:auto}.project-records{padding:18px}.console-mode>footer{margin-left:0;padding:22px 16px}.console-mode .global-status:not(:empty){margin:12px 16px 0}.console-mode .environment-grid .panel{padding:18px}.console-mode h1{font-size:1.2rem}}
 
 /* Native capability runner shares the compact console panels and responsive grid. */
@@ -221,3 +221,11 @@ body:has(#workspace-agent-drawer[open]){overflow:hidden}
 .environment-check-detail pre{font-size:.72rem;white-space:pre-wrap;overflow-wrap:anywhere;max-height:250px;overflow:auto}
 @media(max-width:1000px){.environment-history-filters{flex-wrap:wrap}.environment-history .data-table th{white-space:normal}}
 @media(max-width:680px){.environment-history-filters{width:100%}.environment-history-filters>label{flex:1;min-width:0}.environment-history-filters select{width:100%}.environment-history-filters .console-query{flex-basis:100%}.environment-check-detail .readiness{grid-template-columns:1fr;gap:5px}.environment-check-detail dd{margin-bottom:10px}}
+
+/* Navigation visibility is a tab-local view preference shared by the role shells. */
+.console-mode .navigation-toggle{width:44px;height:44px;padding:10px;flex-shrink:0;border-color:transparent}
+.console-mode .navigation-toggle:hover{background:#f0f0f2}
+.console-mode.navigation-collapsed .workspace-shell{grid-template-columns:minmax(0,1fr)}
+.console-mode.navigation-collapsed>footer{margin-left:0}
+.console-mode.navigation-collapsed .global-status:not(:empty){margin-left:24px}
+@media(max-width:680px){.console-mode .topbar{gap:4px 10px}.console-mode.navigation-collapsed .global-status:not(:empty){margin-left:16px}}

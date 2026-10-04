@@ -136,6 +136,7 @@ async function route() {
   const revision = ++navigation, hash = location.hash.slice(1), requested = hash.split('?')[0], view = views.has(requested) ? requested : 'shop', role = view.split('-')[0];
   document.body.classList.toggle('console-mode', role !== 'checkout');
   document.body.dataset.workspaceRole = role;
+  renderNavigation(role);
   $('#workspace-agent-open').hidden = role !== 'admin';
   $('#console-breadcrumb').hidden = role === 'checkout';
   const root = $('#console-root'); root.href = '#' + role;
@@ -300,7 +301,21 @@ function renderAdminContext(projects) {
   if (location.hash.startsWith('#admin-runtime')) $('#console-location').textContent = (selected ? (project?.name || 'Project unavailable') + ' / ' : '') + 'Environment';
 }
 $('#admin-project-select').addEventListener('change', event => {
-  location.hash = event.target.value ? 'admin-project?project=' + encodeURIComponent(event.target.value) : 'admin';
+  const params = new URLSearchParams(), environment = location.hash.split('?')[0] === '#admin-runtime';
+  if (event.target.value) params.set('project', event.target.value);
+  if (environment && new URLSearchParams(location.hash.split('?')[1]).get('section') === 'checks') params.set('section', 'checks');
+  location.hash = (environment ? 'admin-runtime' : event.target.value ? 'admin-project' : 'admin') + (params.size ? '?' + params : '');
+});
+function renderNavigation(role = document.body.dataset.workspaceRole) {
+  const toggle = $('#workspace-navigation-toggle'), expanded = !document.body.classList.contains('navigation-collapsed');
+  toggle.hidden = role === 'checkout';
+  toggle.setAttribute('aria-controls', (role === 'checkout' ? 'shop' : role) + '-navigation');
+  toggle.setAttribute('aria-expanded', String(expanded));
+  toggle.setAttribute('aria-label', expanded ? 'Hide navigation' : 'Show navigation'); toggle.title = toggle.getAttribute('aria-label');
+  for (const sidebar of document.querySelectorAll('.console-sidebar')) sidebar.hidden = !expanded;
+}
+$('#workspace-navigation-toggle').addEventListener('click', () => {
+  document.body.classList.toggle('navigation-collapsed'); renderNavigation();
 });
 $('#project-query').addEventListener('input', renderProjects);
 async function focusWorkspaceSearch() {
