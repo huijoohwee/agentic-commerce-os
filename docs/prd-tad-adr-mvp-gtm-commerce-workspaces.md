@@ -2,13 +2,13 @@
 title: "Reference Implementation — Native Commerce Workspace Increment"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "edge-commerce-agent-mvp"
-revision: "0.12.0"
-version: "0.12.0"
-prd_revision: "0.12.0"
-tad_revision: "0.12.0"
-adr_revision: "0.12.0"
-mvp_revision: "0.12.0"
-gtm_revision: "0.12.0"
+revision: "0.13.0"
+version: "0.13.0"
+prd_revision: "0.13.0"
+tad_revision: "0.13.0"
+adr_revision: "0.13.0"
+mvp_revision: "0.13.0"
+gtm_revision: "0.13.0"
 date: "2026-10-04"
 lang: "en-US"
 frontmatter_contract: "required"
@@ -35,7 +35,7 @@ surfaces: ["2D Renderer: D3 Graph"]
 # Reference implementation — native commerce workspace increment
 
 This on-demand companion extends the [product owner](prd-tad-adr-mvp-gtm-edge-commerce-agent.md)
-at **`edge-commerce-agent-mvp@0.12.0`**. PRD, TAD, ADR, MVP and GTM below share that join.
+at **`edge-commerce-agent-mvp@0.13.0`**. PRD, TAD, ADR, MVP and GTM below share that join.
 The split preserves the <600-line limit and leaves dated sandbox evidence in its original owner.
 No second platform, roadmap, capability registry or release controller is introduced.
 The [first-dollar sprint](prd-tad-adr-mvp-gtm-20260909T1320Z-solopreneur-mvp-gtm.md)
@@ -193,11 +193,11 @@ acceptance remain gaps; screenshots and layout checks are not an accessibility c
 
 ### Five flows and inventories
 
-All diagrams are proposed CW projections at version 0.12.0, dated 2026-10-04. Rectangles are native
+All diagrams are proposed CW projections at version 0.13.0, dated 2026-10-04. Rectangles are native
 components/stages; rounded nodes are people. No diagram asserts production readiness. Text inventories
 provide the mobile/offline alternative; canvas projection is parse-only and consumes zero model tokens.
 
-**Diagram CW-J** · Class: Journey stage map · Notation: flowchart LR · Version: 0.12.0
+**Diagram CW-J** · Class: Journey stage map · Notation: flowchart LR · Version: 0.13.0
 **Caption:** the merchant reaches a reviewed local offer before choosing any remote effect.
 ```mermaid
 flowchart LR
@@ -212,7 +212,7 @@ flowchart LR
 | J3 | Exact revision and permitted action / CW-03,04,06 |
 | J4 | Preview, payment and fulfillment states / CW-05 |
 
-**Diagram CW-W** · Class: User workflow · Notation: sequenceDiagram · Version: 0.12.0
+**Diagram CW-W** · Class: User workflow · Notation: sequenceDiagram · Version: 0.13.0
 **Caption:** only a reviewed request reaches the existing owner; an unknown result remains unresolved.
 ```mermaid
 sequenceDiagram
@@ -232,7 +232,7 @@ sequenceDiagram
 | V | Match current version / cancel / preserve unresolved, CW-01,07 |
 | O | Existing CAS receipt / already applied / stale version rejected, CW-04,05 |
 
-**Diagram CW-D** · Class: Data flow · Notation: flowchart LR · Version: 0.12.0
+**Diagram CW-D** · Class: Data flow · Notation: flowchart LR · Version: 0.13.0
 **Caption:** draft content and runtime observations remain distinct inputs to the visible review.
 ```mermaid
 flowchart LR
@@ -248,7 +248,7 @@ flowchart LR
 | D3 | Presentation only, J3; no new ledger, CW-05,07 |
 | D4 | Existing theme/checkout/fulfillment authority, J4; no cross-effect success inference, CW-04,05 |
 
-**Diagram CW-H** · Class: Orchestration / harness flow · Notation: flowchart LR · Version: 0.12.0
+**Diagram CW-H** · Class: Orchestration / harness flow · Notation: flowchart LR · Version: 0.13.0
 **Caption:** an optional agent can discover and prepare only through the admitted owner contract.
 ```mermaid
 flowchart LR
@@ -263,7 +263,7 @@ flowchart LR
 | H3 | S3/S6 executor; existing effect limits, no agent-created presence receipt |
 | H4 | W1–W5 readback at J4; W3 proposed 5 s deadline, no retry loop |
 
-**Diagram CW-T** · Class: Runtime topology · Notation: flowchart TB · Version: 0.12.0
+**Diagram CW-T** · Class: Runtime topology · Notation: flowchart TB · Version: 0.13.0
 **Caption:** the local browser remains useful alone; online profiles preserve their existing trust boundaries.
 ```mermaid
 flowchart TB
@@ -405,7 +405,7 @@ as finished.
 
 ## From-0-to-1 coverage — reference implementation
 
-All rows bind `edge-commerce-agent-mvp@0.12.0`. Coverage is a disposition, not readiness or validation.
+All rows bind `edge-commerce-agent-mvp@0.13.0`. Coverage is a disposition, not readiness or validation.
 Dispositioned **16/16**; covered applicable **11/16**; deferred **5**; not applicable **0**.
 
 | Domain | Decision / exact source section in this revision | Accountable owner / evidence or gap / next check |
@@ -465,7 +465,7 @@ Cleanup keeps the reviewable worktree and preview; integration/deployment need t
 paths, 60 active-minute cap, 90 KB diff cap, 0 new modules/packages/services and $0 new spend.
 The inherited 0.7.0 plan is commit `e305f61bd6ecdf14f65eceb44c894ec4dc0636f8` / PR #94;
 its protected Integration Gate passed. That result does not certify this successor's changed code.
-**Production Release:** none for 0.12.0. **Runtime:** local loopback and test fixtures only; no new live
+**Production Release:** none for 0.13.0. **Runtime:** local loopback and test fixtures only; no new live
 deployment, payment or customer receipt. Historical EC evidence keeps its own source and expiry.
 
 | Criterion / native owner | Implemented source and check disposition | Remaining acceptance |
@@ -517,45 +517,15 @@ sync remain separate effects. Recheck on changed source, CI evidence, runtime pr
 
 ### CW-D04 — Existing workspace capabilities across invocation surfaces
 
-**PRD / CW-06:** an operator inspects projects, exact offer readiness and runtime configuration
-through the compact console, browser tools or a headless client. Acceptance: the same capability
-returns the same data for the same snapshot, unknown inputs fail explicitly, no surface approves
-or publishes, and mobile/offline reads preserve the existing draft workflow. Customer pain and
-willingness to pay remain hypotheses; hosted infrastructure management is outside this increment.
+**PRD / CW-06:** an operator inspects projects, exact offer readiness and runtime configuration through the compact console, browser tools or a headless client. Acceptance: the same capability returns the same data for the same snapshot, unknown inputs fail explicitly, no surface approves or publishes, and mobile/offline reads preserve the existing draft workflow. Customer pain and willingness to pay remain hypotheses; hosted infrastructure management is outside this increment.
 
-**TAD / W4:** `workspace-capabilities.js` owns four schemas and read handlers: projects list,
-project read, offer review and environment read. `drafts.js` owns merchant grouping;
-`launch.js` owns economics; the existing readiness owner supplies runtime observations.
-`workspace-tools.js` loads only on Tools & commands and registers optional native WebMCP only
-after Enable. Disable/page exit aborts registration; schema drift refuses invocation.
-`workspace-service.ts` exposes `/services/workspace/{service.json,api,invoke,mcp}` under the
-existing application prefix. The locked MCP SDK provides stateless Streamable HTTP.
+**TAD / W4:** `workspace-capabilities.js` owns four schemas and read handlers: projects list, project read, offer review and environment read. `drafts.js` owns merchant grouping; `launch.js` owns economics; the existing readiness owner supplies runtime observations. `workspace-tools.js` loads only when Tools & commands or Agent tools opens and registers optional native WebMCP only after Enable. Disable/page exit aborts registration; schema drift refuses invocation. `workspace-service.ts` exposes `/services/workspace/{service.json,api,invoke,mcp}` under the existing application prefix. The locked MCP SDK provides stateless Streamable HTTP.
 
-**ADR / CW-A5:** reuse the existing token-map owner for `/tool.route @mcp-gateway #mcp`, followed
-by an exact workspace tool name. This local service does not claim admission to the protected
-full-runtime registry. Browser execution defaults to current IndexedDB; headless execution requires
-an explicit `commerce.workspace-snapshot/v1`. Snapshot preparation is local and intentional;
-it excludes idea/price notes and workflow output but includes titles, launch terms and estimates.
-Results distinguish `browser-local`, `provided-snapshot` and `runtime-observation`. Offer review
-requires the saved revision and never substitutes for the human-reviewed launch-pack owner.
+**ADR / CW-A5:** reuse the existing token-map owner for `/tool.route @mcp-gateway #mcp`, followed by an exact workspace tool name. This local service does not claim admission to the protected full-runtime registry. Browser execution defaults to current IndexedDB; headless execution requires an explicit `commerce.workspace-snapshot/v1`. Snapshot preparation is local and intentional; it excludes idea/price notes and workflow output but includes titles, launch terms and estimates. Results distinguish `browser-local`, `provided-snapshot` and `runtime-observation`. Offer review requires the saved revision and never substitutes for the human-reviewed launch-pack owner.
 
-**MVP / evidence:** four real MCP tools are checked through SDK initialize/list/call in workerd
-against HTTP results; negative tests cover stale revisions, private/unknown fields, credentials,
-foreign origins, size limits, invalid sigils and cancellation. The browser harness exercises
-local reads, prepared requests, WebMCP registration/disposal, offline reload and 360/768/1280
-layouts. Its WebMCP contract fixture accepts native JSON-string schema metadata. Live browser
-verification successfully registered and invoked native project tools; it does not prove production availability. The full local-first browser harness and both dry runs pass.
-Requests/results are capped at 196,608 bytes, snapshots at 100 offers and a smaller byte bound;
-operations use a five-second deadline. No snapshot persistence, external service, new package or
-paid resource is added. Cached capability modules and source-bound discovery enable offline use;
-environment reads remain online observations. New modules remain below 600 lines.
+**MVP / evidence:** four real MCP tools are checked through SDK initialize/list/call in workerd against HTTP results; negative tests cover stale revisions, private/unknown fields, credentials, foreign origins, size limits, invalid sigils and cancellation. The browser harness exercises local reads, prepared requests, WebMCP registration/disposal, offline reload and 360/768/1280 layouts. Its WebMCP contract fixture accepts native JSON-string schema metadata. Live browser verification successfully registered and invoked native project tools; it does not prove production availability. The full local-first browser harness and both dry runs pass. Requests/results are capped at 196,608 bytes, snapshots at 100 offers and a smaller byte bound; operations use a five-second deadline. No snapshot persistence, external service, new package or paid resource is added. Cached capability modules and source-bound discovery enable offline use; environment reads remain online observations. New modules remain below 600 lines.
 
-**GTM / first-dollar:** reuse this increment to demonstrate one merchant's saved offer and cost
-readiness before an authorized buyer study. It introduces no billable plan or payment claim.
-Sprint bound: 45 active-minute estimate, 60-minute implementation cap, 14 changed files,
-110 KB diff; validation/provider waits are separately observed. Exact clean source, CI and release
-outcomes belong to the native candidate receipts; no protected merge or deployment is authorized
-by these checks. Recheck when source, native API, runtime prerequisites or authority changes.
+**GTM / first-dollar:** reuse this increment to demonstrate one merchant's saved offer and cost readiness before an authorized buyer study. It introduces no billable plan or payment claim. Sprint bound: 45 active-minute estimate, 60-minute implementation cap, 14 changed files, 110 KB diff; validation/provider waits are separately observed. Exact clean source, CI and release outcomes belong to the native candidate receipts; no protected merge or deployment is authorized by these checks. Recheck when source, native API, runtime prerequisites or authority changes.
 
 ### CW-D05 — Shared shopper and vendor console
 
@@ -574,6 +544,14 @@ by these checks. Recheck when source, native API, runtime prerequisites or autho
 **MVP / evidence:** typecheck and the existing full browser harness pass before publication. Added coverage verifies project context, activity search/pagination, check-history filtering, unavailable project refusal, mobile geometry and offline reload. Exact clean candidate and CI results belong to native publication/check receipts; screenshots contain local fixtures and prove no deployment.
 **GTM / bounds:** reduce navigation friction in the same first-offer demonstration. TTV and willingness to pay remain unvalidated. Estimate 30 active minutes; 45-minute cap, 8 files / 90 KB diff, zero new modules/packages/spend. Recheck when source, runtime or authority changes; source publication remains separate from integration and deployment.
 
+### CW-D07 — Contextual native agent tools
+
+**PRD / CW-06,07:** open Agent tools from Admin without losing the current project or environment. Saved-offer Inspect carries the exact ID and revision. Opening the panel performs no capability call; operators explicitly run, prepare or enable browser tools. Missing projects fail visibly without selecting another project.
+**TAD / W4:** move the existing lazy tool runner into a native dialog and restore it on close; one DOM, schema set and handler owner serve both entry points. Project and environment context select their existing capabilities; close aborts work, disables WebMCP and restores keyboard focus. Prepared project/offer MCP snapshots validate the target and include only its matching offers; discovery includes the supplied collection.
+**ADR / CW-A8:** reuse the existing four capabilities and `/tool.route @mcp-gateway #mcp` grammar across UI, WebMCP and MCP. No assistant simulation, imported assets, hosted infrastructure, new modules, packages or storage. Read-only tool use retains human launch approval and explicit environment observations.
+**MVP / evidence:** browser coverage checks context, no automatic result, exact revision refusal, scoped request bytes, WebMCP result parity/disposal, Escape/focus, offline reads and 360/768/1280 layouts. Live local browser registration/invocation and close disposal passed separately; fixture coverage alone does not establish native support. Typecheck, authored limits, terminology, invocation/WebMCP checks and the full browser harness pass before publication. Exact candidate test/CI outcomes belong to publication receipts; no production claim follows from local checks.
+**GTM / bounds:** reduce manual ID entry during the same first-offer demonstration; buyer pain, TTV and willingness to pay remain unvalidated. Estimate 30 active minutes; 45-minute cap, 8 files / 90 KB diff, zero added modules/packages/spend. Provider waits remain separate; recheck on source/API/runtime/authority drift.
+
 | Finding Type | Severity / Rule ID and rule text | Artifact / evidence | Owner and remediation |
 |---|---|---|---|
 | missing-economics-metric | major / time-to-value#2: validate TTV in a clean environment | PRD: baseline unmeasured | UX; run E2 before baseline sign-off |
@@ -586,7 +564,7 @@ stop after three alignment cycles or two without blocker reduction.
 
 | PRD-TAD-ADR-MVP-GTM | CID | RAO | Updated Date |
 |---|---|---|---|
-| Project and environment console source handoff | edge-commerce-agent-mvp@0.12.0 / CW-D06 | UI owner → align project/environment views and verify native navigation → bounded successor with scoped checks and remaining gaps | 2026-10-04 |
+| Contextual agent tools source handoff | edge-commerce-agent-mvp@0.13.0 / CW-D07 | UI owner → expose current project/environment/offer through the existing runner → bounded successor with scoped UI, invocation and cleanup checks | 2026-10-04 |
 | Next authorized planning action | Same join / CW-P1 | Product → identify one reachable merchant and proposed priced outcome → E1 inputs; prerequisite: explicit contact authority, recheck on supplied prospect | 2026-10-04 |
 | Next acceptance action | Same join / CW-01–08 | Product/QA → run five human baseline tasks and resolve full-runtime prerequisites → independently bound acceptance; recheck when participants/runtime are available | 2026-10-04 |
 

@@ -13,6 +13,7 @@
     <a class="brand" href="#shop" aria-label="Airvio Commerce home">airvio<span>commerce</span></a>
     <nav id="console-breadcrumb" class="console-breadcrumb" aria-label="Workspace location" hidden><a id="console-root" href="#admin">Projects</a><span aria-hidden="true">/</span><span id="console-location">All projects</span></nav>
     <nav class="role-nav" aria-label="Workspace"><a href="#shop" data-role="shop" aria-current="page">Shopper</a><a href="#vendor" data-role="vendor">Vendor</a><a href="#admin" data-role="admin">Admin</a></nav>
+    <button id="workspace-agent-open" class="secondary console-agent-button" type="button" aria-label="Agent tools" aria-haspopup="dialog" aria-expanded="false" hidden><span aria-hidden="true">⌘</span><span class="agent-button-label">Agent tools</span></button>
     <span id="connection" class="badge">Local workspace</span>
   </header>
   <main id="main" tabindex="-1">
@@ -137,7 +138,7 @@
           </section>
           <section data-view-panel="admin-tools" hidden aria-labelledby="tools-heading">
             <div class="console-heading"><div><h1 id="tools-heading" tabindex="-1">Tools &amp; commands</h1><p class="muted">Inspect your workspace through the same native capabilities.</p></div><span class="badge quiet">Read only</span></div>
-            <div class="environment-grid"><section class="panel workspace-tool-panel"><h2>Run a capability</h2>
+            <div id="workspace-tools-home"><div id="workspace-tools-body"><div class="environment-grid"><section class="panel workspace-tool-panel"><h2>Run a capability</h2>
               <label for="workspace-tool">Capability</label><select id="workspace-tool"></select><p id="workspace-tool-description" class="muted"></p>
               <label for="workspace-invocation">Invocation · / command · @ binding · # intent</label><input id="workspace-invocation" maxlength="300" spellcheck="false" autocomplete="off">
               <label for="workspace-arguments">Arguments · JSON</label><textarea id="workspace-arguments" rows="5" maxlength="4096" spellcheck="false"></textarea>
@@ -147,13 +148,17 @@
             </section><section class="panel workspace-tool-panel"><h2>Connect your agent</h2><h3>Browser · WebMCP</h3>
               <p id="workspace-webmcp-status" role="status">Checking browser support…</p><button id="workspace-webmcp-enable" type="button" class="secondary" disabled>Enable browser tools</button><button id="workspace-webmcp-disable" type="button" class="secondary" hidden>Disable browser tools</button>
               <h3>Headless · MCP</h3><p class="footnote">Connect using Streamable HTTP. Headless tools require an explicit offer snapshot; they cannot read this browser's storage.</p><code id="workspace-mcp-endpoint" class="evidence-value"></code>
-              <p class="footnote">Prepare a request to preview the selected capability and its snapshot. It includes offer titles, launch terms and cost estimates. Private idea notes, price notes and workflow output are excluded.</p><button id="workspace-prepare" type="button" disabled class="secondary">Prepare MCP request</button>
-            </section></div><section class="panel workspace-tool-output"><h2>Result or prepared request</h2><pre id="workspace-result" tabindex="0" aria-label="Workspace capability output"></pre></section>
+              <p class="footnote">Prepare a request to preview the selected capability and its snapshot. Project and offer requests include only their matching offers; project discovery includes the full supplied collection. Snapshots include titles, launch terms and cost estimates. Private idea notes, price notes and workflow output are excluded.</p><button id="workspace-prepare" type="button" disabled class="secondary">Prepare MCP request</button>
+            </section></div><section class="panel workspace-tool-output"><h2>Result or prepared request</h2><pre id="workspace-result" tabindex="0" aria-label="Workspace capability output"></pre></section></div></div>
           </section>
           <section data-view-panel="admin-data" hidden><div class="section-heading"><div><p class="eyebrow">DATA &amp; PORTABILITY</p><h1 tabindex="-1">Your work goes with you.</h1></div></div><div class="panel preview-explainer"><h2>Back up or move your offers</h2><p>Exports include your private notes. Keep your backup somewhere safe. Imports preserve existing drafts and refuse conflicting records.</p><div class="transfer"><button id="export" type="button" disabled>Export drafts</button><label class="button secondary" for="import">Import JSON</label><input id="import" disabled class="file-input" type="file" accept="application/json,.json"></div><p class="footnote">Clearing browser data removes local drafts. No account or cloud sync is connected.</p></div></section>
         </div>
       </div>
     </section>
+    <dialog id="workspace-agent-drawer" class="agent-drawer" aria-labelledby="workspace-agent-heading" aria-describedby="workspace-agent-context">
+      <div class="agent-drawer-heading"><div><h2 id="workspace-agent-heading">Agent tools</h2><p id="workspace-agent-context"></p></div><button id="workspace-agent-close" type="button" class="secondary" aria-label="Close agent tools" autofocus>✕</button></div>
+      <p class="agent-drawer-note">Inspect current state with native capabilities. Choose Run locally to execute; nothing runs when this panel opens. Browser tools are disabled when the panel closes.</p><p id="workspace-agent-status" role="status" aria-live="polite"></p><div id="workspace-agent-content"></div>
+    </dialog>
     <dialog id="offer-detail" aria-labelledby="detail-heading"><div class="dialog-top"><span class="eyebrow">OFFER PREVIEW</span><button id="close-detail" class="secondary" type="button" autofocus aria-label="Close offer details">✕</button></div><div id="detail-content"></div></dialog>
     <noscript><p class="panel">Enable JavaScript to open your private offers. Saved drafts remain in this browser.</p></noscript>
   </main>

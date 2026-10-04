@@ -136,6 +136,7 @@ async function route() {
   const revision = ++navigation, hash = location.hash.slice(1), requested = hash.split('?')[0], view = views.has(requested) ? requested : 'shop', role = view.split('-')[0];
   document.body.classList.toggle('console-mode', role !== 'checkout');
   document.body.dataset.workspaceRole = role;
+  $('#workspace-agent-open').hidden = role !== 'admin';
   $('#console-breadcrumb').hidden = role === 'checkout';
   const root = $('#console-root'); root.href = '#' + role;
   root.textContent = ({ shop: 'Storefront', vendor: 'Catalog', admin: 'Projects' })[role] || 'Shopper';
@@ -166,7 +167,7 @@ for (const role of ['vendor', 'admin']) for (const field of ['query', 'state']) 
 for (const link of document.querySelectorAll('#create-offer, [data-create-offer]')) link.addEventListener('click', event => {
   event.preventDefault(); void loadEditor().then(app => { if (app.newDraft()) location.hash = 'vendor-editor'; }).catch(message);
 });
-window.addEventListener('hashchange', () => { if ($('#offer-detail').open) $('#offer-detail').close(); void route().catch(message); });
+window.addEventListener('hashchange', () => { if ($('#workspace-agent-drawer').open) $('#workspace-agent-drawer').close(); if ($('#offer-detail').open) $('#offer-detail').close(); void route().catch(message); });
 document.addEventListener('commerce:drafts-updated', () => { channel?.postMessage('changed'); void refresh().catch(message); });
 if (channel) channel.onmessage = () => { void refresh().catch(message); void editor?.externalChange().catch(message); };
 function connection() { $('#connection').textContent = navigator.onLine ? 'Local workspace · Online' : 'Offline · Drafts available'; }
@@ -251,7 +252,12 @@ function offerRecords(offers, label) {
       const rows = filtered.slice(page * 10, page * 10 + 10).map(offer => {
         const title = node('span', offer.title); title.append(node('small', offer.launch?.merchantId || 'Personal workspace'));
         const status = node('span', stateLabel(stateOf(offer)), 'state-badge state-' + stateOf(offer));
-        return [title, status, node('span', 'v' + offer.revision), node('span', new Date(offer.updatedAt).toLocaleDateString()), offerLink(offer, 'Open offer')];
+        const actions = node('div', undefined, 'record-actions'), inspect = node('button', 'Inspect', 'secondary'); inspect.type = 'button';
+        inspect.setAttribute('aria-label', 'Inspect ' + offer.title + ' with agent tools');
+        inspect.addEventListener('click', () => void openAgentTools({ name: 'commerce.workspace.offer.review',
+          input: { offerId: offer.id, expectedRevision: offer.revision }, label: 'Offer · ' + offer.title + ' · v' + offer.revision }));
+        actions.append(offerLink(offer, 'Open offer'), inspect);
+        return [title, status, node('span', 'v' + offer.revision), node('span', new Date(offer.updatedAt).toLocaleDateString()), actions];
       });
       content.append(recordTable(['Offer', 'Review status', 'Revision', 'Updated', 'Action'], rows, label));
     }
@@ -406,11 +412,45 @@ window.addEventListener('online', renderEnvironment);
 window.addEventListener('focus', renderEnvironment);
 window.addEventListener('pagehide', () => { environmentGeneration++; environmentController?.abort(); environmentController = null; clearTimeout(environmentExpiry); });
 window.addEventListener('pageshow', renderEnvironment);
-let toolsPromise;
+let toolsPromise, toolsApi, agentGeneration = 0, agentTrigger;
 function loadTools() {
-  toolsPromise ??= import('./workspace-tools.js').then(module => module.mountWorkspaceTools({ checkEnvironment, sourceRevision })).catch(error => { toolsPromise = null; throw error; });
+  toolsPromise ??= import('./workspace-tools.js').then(module => module.mountWorkspaceTools({ checkEnvironment, sourceRevision })).then(api => { toolsApi = api; return api; }).catch(error => { toolsPromise = null; throw error; });
   return toolsPromise;
 }
+function agentContext() {
+  const view = location.hash.slice(1).split('?')[0], projectId = new URLSearchParams(location.hash.split('?')[1] || '').get('project');
+  if (view === 'admin-runtime') return { name: 'commerce.workspace.environment.read', input: {}, label: 'Environment · Shared local runtime' };
+  if (view === 'admin-project') {
+    const project = projectId === null ? groupProjects(drafts)[0] : groupProjects(drafts).find(item => item.id === projectId);
+    if (!project) throw Error('This project is unavailable. Return to All projects or import its backup.');
+    return { name: 'commerce.workspace.project.read', input: { projectId: project.id }, label: 'Project · ' + project.name };
+  }
+  return { name: 'commerce.workspace.projects.list', input: {}, label: 'Workspace · Projects on this device' };
+}
+async function openAgentTools(preset) {
+  const generation = ++agentGeneration, drawer = $('#workspace-agent-drawer'); agentTrigger = document.activeElement;
+  $('#workspace-agent-context').textContent = 'Native workspace capabilities';
+  $('#workspace-agent-status').textContent = 'Loading tools…'; $('#workspace-agent-open').setAttribute('aria-expanded', 'true');
+  drawer.showModal();
+  try {
+    const api = await loadTools();
+    if (!drawer.open || generation !== agentGeneration) return;
+    if (!draftsLoaded) await refresh();
+    const current = preset ?? agentContext(); await api.configure(current.name, current.input);
+    if (!drawer.open || generation !== agentGeneration) return;
+    $('#workspace-agent-context').textContent = current.label;
+    $('#workspace-agent-content').append($('#workspace-tools-body'));
+    $('#workspace-agent-status').textContent = ''; $('#workspace-tool').focus();
+  } catch (error) { if (drawer.open && generation === agentGeneration) $('#workspace-agent-status').textContent = error.message; }
+}
+$('#workspace-agent-open').addEventListener('click', () => void openAgentTools());
+$('#workspace-agent-close').addEventListener('click', () => $('#workspace-agent-drawer').close());
+$('#workspace-agent-drawer').addEventListener('close', () => {
+  agentGeneration++; toolsApi?.deactivate(); $('#workspace-tools-home').append($('#workspace-tools-body'));
+  $('#workspace-agent-open').setAttribute('aria-expanded', 'false');
+  if (agentTrigger?.isConnected) agentTrigger.focus({ preventScroll: true });
+});
+window.addEventListener('pagehide', () => { if ($('#workspace-agent-drawer').open) $('#workspace-agent-drawer').close(); });
 void Promise.all([refresh(), route()]).catch(message);
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js', { scope: './', updateViaCache: 'none' })

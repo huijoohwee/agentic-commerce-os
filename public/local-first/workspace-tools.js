@@ -1,4 +1,4 @@
-import { listDrafts } from './drafts.js';
+import { listDrafts, groupProjects } from './drafts.js';
 import { WORKSPACE_TOOLS, workspaceSnapshot, invokeWorkspace, parseWorkspaceInvocation, validateWorkspaceInput, workspaceWait } from './workspace-capabilities.js';
 
 const $ = id => document.getElementById(id);
@@ -26,16 +26,16 @@ export async function mountWorkspaceTools({ checkEnvironment, sourceRevision }) 
   const toolSelect = $('workspace-tool'), args = $('workspace-arguments'), expression = $('workspace-invocation');
   toolSelect.replaceChildren(...WORKSPACE_TOOLS.map(tool => new Option(tool.title, tool.name)));
   $('workspace-mcp-endpoint').textContent = new URL(descriptor.mcp, location.origin).href;
-  let runController, registration, registerPending;
+  let runController, runTask, registration, registerPending;
   function selected() { return WORKSPACE_TOOLS.find(tool => tool.name === toolSelect.value); }
-  function reset() {
+  function reset(initial) {
     const tool = selected(); expression.value = prefix + tool.name;
-    args.value = JSON.stringify(tool.name.endsWith('.project.read') ? { projectId: 'local:unassigned' }
-      : tool.name.endsWith('.offer.review') ? { offerId: '', expectedRevision: 1 } : {}, null, 2);
+    args.value = JSON.stringify(initial ?? (tool.name.endsWith('.project.read') ? { projectId: 'local:unassigned' }
+      : tool.name.endsWith('.offer.review') ? { offerId: '', expectedRevision: 1 } : {}), null, 2);
     $('workspace-tool-description').textContent = tool.description;
     $('workspace-result').textContent = ''; $('workspace-tool-status').textContent = 'Ready. Uses device drafts unless you supply a snapshot.';
   }
-  toolSelect.addEventListener('change', reset); reset();
+  toolSelect.addEventListener('change', () => reset()); reset();
   $('workspace-run').disabled = false; $('workspace-prepare').disabled = false;
   function input() {
     const name = parseWorkspaceInvocation(expression.value, routing);
@@ -53,7 +53,15 @@ export async function mountWorkspaceTools({ checkEnvironment, sourceRevision }) 
       const request = input();
       let result;
       if (prepare) {
-        if (!request.name.endsWith('.environment.read') && !request.arguments.snapshot) request.arguments.snapshot = await workspaceWait(context.snapshot(), controller.signal);
+        if (!request.name.endsWith('.environment.read')) {
+          const snapshot = request.arguments.snapshot ?? await workspaceWait(context.snapshot(), controller.signal);
+          // Validate the exact requested object before reducing the transport snapshot.
+          await invokeWorkspace(request.name, { ...request.arguments, snapshot }, { signal: controller.signal });
+          const offers = request.name.endsWith('.project.read')
+            ? groupProjects(snapshot.offers).find(project => project.id === request.arguments.projectId).offers
+            : request.name.endsWith('.offer.review') ? snapshot.offers.filter(offer => offer.id === request.arguments.offerId) : snapshot.offers;
+          request.arguments.snapshot = { ...snapshot, offers };
+        }
         result = { jsonrpc: '2.0', id: 1, method: 'tools/call', params: request };
       } else result = await invokeWorkspace(request.name, request.arguments, { ...context, signal: controller.signal });
       if (controller.signal.aborted) throw Error('Cancelled or timed out. Run again to obtain a current result.');
@@ -64,8 +72,8 @@ export async function mountWorkspaceTools({ checkEnvironment, sourceRevision }) 
     } catch (error) { $('workspace-tool-status').textContent = controller.signal.aborted ? 'Cancelled or timed out. The result is unknown.' : error.message; }
     finally { clearTimeout(timer); runController = null; $('workspace-run').disabled = false; $('workspace-prepare').disabled = false; $('workspace-cancel').hidden = true; }
   }
-  $('workspace-run').addEventListener('click', () => void run());
-  $('workspace-prepare').addEventListener('click', () => void run(true));
+  $('workspace-run').addEventListener('click', () => { runTask = run(); });
+  $('workspace-prepare').addEventListener('click', () => { runTask = run(true); });
   $('workspace-cancel').addEventListener('click', () => runController?.abort());
   const modelContext = document.modelContext;
   const canonical = value => value === null || typeof value !== 'object' ? JSON.stringify(value)
@@ -110,4 +118,11 @@ export async function mountWorkspaceTools({ checkEnvironment, sourceRevision }) 
   $('workspace-webmcp-enable').addEventListener('click', () => void enableWebMCP());
   $('workspace-webmcp-disable').addEventListener('click', disable); disable();
   window.addEventListener('pagehide', () => { runController?.abort(); disable(); });
+  return {
+    async configure(name, input) {
+      runController?.abort(); await runTask;
+      validateWorkspaceInput(name, input); toolSelect.value = name; reset(input);
+    },
+    deactivate() { runController?.abort(); disable(); },
+  };
 }

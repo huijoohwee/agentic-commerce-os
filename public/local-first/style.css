@@ -176,3 +176,28 @@ body.console-mode{--ink:#202024;--muted:#727279;--line:#e5e5e8;--paper:#fafafa;b
 .environment-support details[open]{padding-bottom:20px}
 @media(max-width:1000px){.environment-overview{grid-template-columns:minmax(0,1fr)}#environment-preview>.console-preview{min-height:230px;border-right:0;border-bottom:1px solid var(--line)}.environment-card-actions>a{white-space:normal}.records-heading{align-items:flex-start;flex-wrap:wrap}.project-records .data-table th{white-space:normal}}
 @media(max-width:680px){.project-selector{width:165px;flex-shrink:0;margin:0 8px 0 0}.project-selector select{margin-top:2px;min-height:44px}.console-section-toolbar{margin-top:20px;padding-top:18px}.console-section-toolbar .console-query{flex:0 1 170px;min-width:0}.environment-overview .project-facts{grid-template-columns:100px minmax(0,1fr)}.environment-card-heading{flex-wrap:wrap}.environment-card-actions{padding:12px}.environment-card-actions>a{flex-basis:100%}.records-heading{margin:-18px -18px 0;padding:14px 18px}.records-heading .console-query,.records-heading input{width:100%}.project-records .pagination{margin:0 -18px -18px;padding:12px;flex-wrap:wrap;justify-content:space-between}#environment-checks{scroll-margin-top:16px}.environment-support details.panel{padding:8px 18px}}
+
+/* One lazy native tool runner can be opened beside the current Admin context. */
+.console-agent-button{white-space:nowrap;flex-shrink:0;min-height:44px}
+.console-agent-button>span:first-child{font-size:1rem}
+body:has(#workspace-agent-drawer[open]){overflow:hidden}
+.agent-drawer{inset:0 0 0 auto;margin:0;width:min(460px,100%);height:100dvh;max-width:100%;max-height:100dvh;border:0;border-left:1px solid var(--line);border-radius:0;padding:0;background:var(--paper);color:var(--ink);overflow:auto;box-shadow:-8px 0 32px #2020241a}
+.agent-drawer::backdrop{background:#20202426}
+.agent-drawer-heading{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:16px;background:#fff;border-bottom:1px solid var(--line);padding:12px 20px}
+.agent-drawer-heading h2{margin:0;font-size:.95rem}
+.agent-drawer-heading p{font-size:.7rem;color:var(--muted);margin:5px 0 0;overflow-wrap:anywhere}
+.agent-drawer-heading>div{min-width:0}
+.agent-drawer-heading button{flex-shrink:0;width:44px;height:44px}
+.agent-drawer-note,#workspace-agent-status{font-size:.73rem;line-height:1.6;margin:16px 20px;color:var(--muted)}
+#workspace-agent-status:empty{display:none}
+#workspace-agent-content{padding:0 16px 20px}
+.agent-drawer .environment-grid{display:block}
+.agent-drawer .panel{padding:18px;margin-top:14px;min-width:0}
+.agent-drawer .workspace-tool-panel h2{margin:0 0 12px}
+.agent-drawer .workspace-tool-panel label{font-size:.72rem}
+.agent-drawer .workspace-tool-panel input,.agent-drawer .workspace-tool-panel select,.agent-drawer .workspace-tool-panel textarea{font-size:.75rem}
+.agent-drawer .workspace-tool-panel .muted,.agent-drawer .workspace-tool-panel .footnote,.agent-drawer #workspace-tool-status,.agent-drawer #workspace-webmcp-status{font-size:.72rem;line-height:1.6}
+.agent-drawer .workspace-tool-output pre{font-size:.7rem;max-height:320px}
+.record-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.record-actions button{min-height:44px}
+@media(max-width:680px){.console-agent-button{margin-left:auto;width:44px;padding:8px!important}.agent-button-label{display:none}.agent-drawer{width:100%;border-left:0}.agent-drawer-heading{padding:10px 16px}.agent-drawer-note,#workspace-agent-status{margin:14px 16px}#workspace-agent-content{padding:0 12px 20px}}
