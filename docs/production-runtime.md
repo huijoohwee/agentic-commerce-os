@@ -41,11 +41,15 @@ observation is available through the read-only workspace environment tool. Neith
 creates a session, job or model call, and it proves no completed fulfillment or payment.
 The environment UI shows a degraded host separately from checkout configuration.
 
-On 2026-10-04, the retained VM/model/host were restored locally and authenticated host readiness
-matched the deployed pins. Public admission remained 503 because current tunnel ingress could not
-be verified with available credentials. Obtain current ingress evidence before starting the retained
-connector: the historical 5191 target conflicts with another app; the pinned listing host uses 5192.
-Do not repoint, expose, or start a tunnel using an unverified historical target.
+On 2026-10-04, the existing VM/model/host and connector were restored with retained data and limits.
+Verified tunnel v3 preserves both pinned 5192 paths and replaces only the stale 5191 fallback with
+HTTP 404. Native public probes returned host/session 200 and unknown-path 404. No new resource,
+DNS/credential change or model job was part of that repair; before/after checks retain the API's
+non-atomic configuration limitation. Protected [release 37214188137](https://github.com/huijoohwee/agentic-commerce-os/actions/runs/37214188137)
+then completed for source `cb06ee94bcb484d8b62ab48de633a367bb868846`, including actual-listing rollback
+and exact candidate restoration. [RR-D10](prd-tad-adr-mvp-gtm-edge-commerce-agent.md#rr-d10--production-readiness-recovery-reference-implementation)
+owns the source/artifact/v3 completion identities. Availability remains device-session; device sleep
+or process loss interrupts fulfillment. Full-profile independent evaluation and provider gates remain open.
 An ambiguous mutation is preserved rather than replayed; an exactly observed failed
 bootstrap can remove its own new route while retaining the uploaded Worker.
 
