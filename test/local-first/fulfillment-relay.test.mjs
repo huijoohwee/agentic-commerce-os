@@ -2,7 +2,7 @@ import { listingPlanFixture } from './fulfillment-fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {randomBytes} from 'node:crypto';
-import {mkdtempSync,rmSync} from 'node:fs';
+import {cpSync,mkdtempSync,rmSync,statSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {createServer} from 'node:http';
@@ -79,6 +79,86 @@ test('host requires service credentials and exact pins, seals principal ownershi
   assert.throws(()=>createListingHostRelay({pins,token},{...config,sourceRevision:'e'.repeat(40)}));
 });
 
+function probeFixture(){
+  const checks=[];
+  const host=createListingHostRelay({pins,token},{sourceRevision:source,sessionSecret:secret,
+    modelAuthorization:'Bearer '+randomBytes(32).toString('hex'),
+    verifyArtifacts({signal}){return new Promise((resolve,reject)=>checks.push({signal,resolve,reject}));}});
+  const request=signal=>new Request(pins.origin+LISTING_HOST_READY_PATH,
+    {headers:listingHostHeaders(pins,token),...(signal?{signal}:{})});
+  return {checks,host,request};
+}
+
+test('host coalesces only overlapping authenticated probes, bounds waiters and never caches success',async()=>{
+  const {checks,host,request}=probeFixture();
+  const calls=Array.from({length:4},()=>host.ready(request()));
+  await Promise.resolve();assert.equal(checks.length,1);
+  const excess=await host.ready(request());assert.equal(excess.status,429);
+  assert.equal((await excess.json()).code,'listing_host_probe_capacity');
+  assert.equal(excess.headers.get('cache-control'),'no-store');
+  const unauthorized=await host.ready(new Request(request(),{headers:{authorization:'Bearer wrong'}}));
+  assert.equal(unauthorized.status,403);assert.equal(checks.length,1);
+  checks[0].resolve();
+  const responses=await Promise.all(calls);
+  for(const response of responses){
+    assert.equal(response.status,200);assert.equal(response.headers.get('cache-control'),'no-store');
+    assert.deepEqual(await response.json(),listingHostIdentity(pins));
+  }
+  const fresh=host.ready(request());await Promise.resolve();assert.equal(checks.length,2);
+  checks[1].reject(Error('model changed'));
+  assert.equal((await fresh).status,503);
+});
+
+test('one canceled observer leaves the shared verification available to another',async()=>{
+  const {checks,host,request}=probeFixture(),controller=new AbortController();
+  const canceled=host.ready(request(controller.signal)),remaining=host.ready(request());
+  await Promise.resolve();assert.equal(checks.length,1);
+  controller.abort();assert.equal((await canceled).status,503);
+  assert.equal(checks[0].signal.aborted,false);
+  checks[0].resolve();assert.equal((await remaining).status,200);
+  const preAborted=await host.ready(request(controller.signal));
+  assert.equal(preAborted.status,503);assert.equal(checks.length,1);
+});
+
+test('canceling every observer aborts the verifier and refuses retries until it settles',async()=>{
+  const {checks,host,request}=probeFixture(),a=new AbortController(),b=new AbortController();
+  const first=host.ready(request(a.signal)),second=host.ready(request(b.signal));
+  await Promise.resolve();a.abort();b.abort();
+  assert.deepEqual((await Promise.all([first,second])).map(response=>response.status),[503,503]);
+  assert.equal(checks[0].signal.aborted,true);
+  assert.equal((await host.ready(request())).status,503);assert.equal(checks.length,1);
+  // A verifier that ignores cancellation may finish later; that result is not reusable.
+  checks[0].resolve();await Promise.resolve();await Promise.resolve();await Promise.resolve();
+  const fresh=host.ready(request());await Promise.resolve();assert.equal(checks.length,2);
+  checks[1].resolve();assert.equal((await fresh).status,200);
+});
+
+test('shared verifier failures fail every observer and permit a fresh verification',async()=>{
+  const {checks,host,request}=probeFixture();
+  const first=host.ready(request()),second=host.ready(request());await Promise.resolve();
+  checks[0].reject(Error('verification failed'));
+  assert.deepEqual((await Promise.all([first,second])).map(response=>response.status),[503,503]);
+  const fresh=host.ready(request());await Promise.resolve();assert.equal(checks.length,2);
+  checks[1].resolve();assert.equal((await fresh).status,200);
+});
+
+test('the shared deadline bounds noncooperative verification and late observers cannot extend it',async t=>{
+  t.mock.timers.enable({apis:['setTimeout']});
+  const {checks,host,request}=probeFixture();
+  const first=host.ready(request());await Promise.resolve();
+  t.mock.timers.tick(14999);
+  const late=host.ready(request());await Promise.resolve();assert.equal(checks.length,1);
+  assert.equal(checks[0].signal.aborted,false);
+  t.mock.timers.tick(1);
+  assert.deepEqual((await Promise.all([first,late])).map(response=>response.status),[503,503]);
+  assert.equal(checks[0].signal.aborted,true);
+  assert.equal((await host.ready(request())).status,503);assert.equal(checks.length,1);
+  checks[0].reject(Error('late cancellation'));
+  await Promise.resolve();await Promise.resolve();await Promise.resolve();
+  const fresh=host.ready(request());await Promise.resolve();assert.equal(checks.length,2);
+  checks[1].resolve();assert.equal((await fresh).status,200);
+});
+
 test('concurrent relay calls retain separate server principals and reject principal injection in JSON',async()=>{
   const owners=[context(),context()],seen=[];
   const relay=createFulfillmentRelay(env,async(input,init)=>{
@@ -103,8 +183,9 @@ test('concurrent relay calls retain separate server principals and reject princi
   }
 });
 
-test('real HTTP relay resumes one SQLite job after host restart and denies another browser',async t=>{
+test('real HTTP relay restores a stopped SQLite copy without rerun and rejects changed signing authority',async t=>{
   const directory=mkdtempSync(join(tmpdir(),'listing-relay-'));t.after(()=>rmSync(directory,{recursive:true,force:true}));
+  const recovered=mkdtempSync(join(tmpdir(),'listing-recovered-'));t.after(()=>rmSync(recovered,{recursive:true,force:true}));
   let executions=0,host;
   const modelAuthorization='Bearer '+randomBytes(32).toString('hex');
   const model=createServer(async(req,res)=>{
@@ -148,7 +229,13 @@ test('real HTTP relay resumes one SQLite job after host restart and denies anoth
     await new Promise(resolve=>setTimeout(resolve,25));
   }while(Date.now()<deadline);
   assert.equal(completed.status,'completed',JSON.stringify(observations.slice(-3)));assert.equal(executions,1);
-  await host.close();host=null;host=await startListingHost(config);
+  // Closing the product host drains ingress/worker activity and both OS SQLite
+  // handles. Only then copy the complete private directory; never copy a live WAL.
+  await host.close();host=null;
+  cpSync(directory,recovered,{recursive:true,force:false,errorOnExist:true});
+  assert.equal(statSync(recovered).mode&0o077,0);
+  assert.equal(statSync(join(recovered,'swarm.sqlite')).mode&0o077,0);
+  host=await startListingHost({...config,directory:recovered});
   assert.deepEqual(await (await owner('status',{runId:accepted.runId})).json(),completed);
   assert.equal((await peer('status',{runId:accepted.runId})).status,403);
   const query=await (await owner('query',{})).json();assert.equal(query.items[0].runId,accepted.runId);
@@ -160,6 +247,13 @@ test('real HTTP relay resumes one SQLite job after host restart and denies anoth
     evidence:{id:'actual-listing',digest:trace.subjectDigest},subjectDigest:trace.subjectDigest})).json();
   assert.equal(evaluated.evaluation.status,'reported');assert.equal(evaluated.evaluation.score,1);
   assert.equal((await (await owner('start',draft)).json()).runId,accepted.runId);assert.equal(executions,1);
+  await host.close();host=null;
+  host=await startListingHost({...config,directory:recovered,sessionSecret:randomBytes(32).toString('hex')});
+  assert.equal((await owner('status',{runId:accepted.runId})).status,403);
+  assert.equal(executions,1);
+  await host.close();host=null;host=await startListingHost({...config,directory:recovered});
+  assert.deepEqual(await (await owner('status',{runId:accepted.runId})).json(),completed);
+  assert.equal(executions,1);
   await host.close();host=null;
   const unavailable=await fetchLocalFirst(new Request(base+'session'),env,undefined,relay);
   assert.equal(unavailable.status,503);assert.equal(unavailable.headers.has('set-cookie'),false);

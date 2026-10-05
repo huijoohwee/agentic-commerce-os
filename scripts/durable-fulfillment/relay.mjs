@@ -13,6 +13,44 @@ export function createListingHostRelay(config,{sourceRevision,sessionSecret,mode
     ||modelAuthorization==='Bearer '+config.token)throw Error('listing_relay_identity_invalid');
   const authenticated=headers=>!headers.has('origin')&&!headers.has('cookie')
     &&[...expected].every(([key,value])=>key==='content-type'||equal(headers.get(key),value));
+  let probe=null;
+  function startProbe(){
+    const current={controller:new AbortController(),waiters:new Set(),settled:false};
+    probe=current;
+    const timer=setTimeout(()=>current.controller.abort(),15000);
+    current.controller.signal.addEventListener('abort',()=>clearTimeout(timer),{once:true});
+    const settle=ok=>{
+      current.settled=true;clearTimeout(timer);
+      if(probe===current)probe=null;
+      for(const finish of [...current.waiters])finish(ok&&!current.controller.signal.aborted?200:503);
+    };
+    // Retain an aborted flight until its verifier settles: an uncooperative verifier
+    // must not allow retries to create concurrent unbounded artifact reads.
+    void Promise.resolve().then(()=>{
+      current.controller.signal.throwIfAborted();
+      return verifyArtifacts({signal:current.controller.signal});
+    }).then(()=>settle(true),()=>settle(false));
+    return current;
+  }
+  function observe(signal){
+    if(signal.aborted||probe?.controller.signal.aborted)return Promise.resolve(503);
+    if(probe?.waiters.size>=4)return Promise.resolve(429);
+    const current=probe??startProbe();
+    return new Promise(resolve=>{
+      const cancel=()=>finish(503);
+      const finish=status=>{
+        if(!current.waiters.delete(finish))return;
+        signal.removeEventListener('abort',cancel);
+        current.controller.signal.removeEventListener('abort',cancel);
+        resolve(status);
+        if(!current.settled&&!current.waiters.size)current.controller.abort();
+      };
+      current.waiters.add(finish);
+      signal.addEventListener('abort',cancel,{once:true});
+      current.controller.signal.addEventListener('abort',cancel,{once:true});
+      if(signal.aborted||current.controller.signal.aborted)cancel();
+    });
+  }
   return Object.freeze({
     applies(headers){return Object.keys(headers).some(key=>key.startsWith('x-commerce-host-')||key.startsWith('x-commerce-principal-'))
       ||headers.authorization==='Bearer '+config.token;},
@@ -29,8 +67,8 @@ export function createListingHostRelay(config,{sourceRevision,sessionSecret,mode
       if(request.method!=='GET'||url.search)return failure(400,'listing_host_probe_invalid');
       if(!authenticated(request.headers)||request.headers.has('x-commerce-principal-id')
         ||request.headers.has('x-commerce-principal-expires'))return failure(403,'listing_host_probe_forbidden');
-      try{await verifyArtifacts({signal:AbortSignal.any([request.signal,AbortSignal.timeout(15000)])});}
-      catch{return failure(503,'listing_host_unavailable');}
+      const status=await observe(request.signal);
+      if(status!==200)return failure(status,status===429?'listing_host_probe_capacity':'listing_host_unavailable');
       return Response.json(listingHostIdentity(pins),{headers:{'cache-control':'no-store'}});
     },
   });

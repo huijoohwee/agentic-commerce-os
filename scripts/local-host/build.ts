@@ -20,6 +20,11 @@ function listingPlan() {
   const committed = git('show', revision + ':' + file);
   if (bytes.length !== committed.length || bytes.some((byte, index) => byte !== committed[index]))
     throw new Error('listing_plan_changed');
+  return { repository: 'github.com/huijoohwee/agentic-commerce-os', path: file, revision,
+    digest: createHash('sha256').update(bytes).digest('hex'), ...listingPlanJoin(bytes) };
+}
+
+export function listingPlanJoin(bytes: Uint8Array) {
   const frontmatter = /^---\n([\s\S]*?)\n---(?:\n|$)/.exec(new TextDecoder('utf-8', { fatal: true }).decode(bytes))?.[1];
   if (!frontmatter) throw new Error('listing_plan_missing');
   const read = (key: string) => {
@@ -30,10 +35,9 @@ function listingPlan() {
   };
   const continuityId = read('continuity_id'), version = read('version');
   const revisions = Object.fromEntries(['prd', 'tad', 'adr', 'mvp', 'gtm'].map(role => [role, read(role + '_revision')]));
-  if (continuityId !== 'DURABLE-LISTING-FULFILLMENT-001' || version !== '0.2.0'
-    || Object.values(revisions).some(value => value !== version)) throw new Error('listing_plan_join_invalid');
-  return { repository: 'github.com/huijoohwee/agentic-commerce-os', path: file, revision,
-    digest: createHash('sha256').update(bytes).digest('hex'), continuityId, revisions };
+  if (continuityId !== 'DURABLE-LISTING-FULFILLMENT-001' || !/^0\.2\.(?:0|[1-9]\d*)$/.test(version)
+    || Object.values(revisions).some(value => value !== '0.2.0')) throw new Error('listing_plan_join_invalid');
+  return { continuityId, revisions };
 }
 
 export async function buildLocalHost(directory: string, profile: 'sandbox' | 'listing' | 'catalog' = 'sandbox'): Promise<string> {

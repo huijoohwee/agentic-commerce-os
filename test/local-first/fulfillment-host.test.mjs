@@ -1,11 +1,42 @@
 import { listingPlanFixture } from './fulfillment-fixture.mjs';
 import test from 'node:test';import assert from 'node:assert/strict';
-import {mkdtempSync,rmSync} from 'node:fs';import {tmpdir} from 'node:os';import {join} from 'node:path';
+import {mkdtempSync,rmSync,symlinkSync} from 'node:fs';import {tmpdir} from 'node:os';import {join} from 'node:path';
+import {spawnSync} from 'node:child_process';import {fileURLToPath} from 'node:url';
 import {createServer} from 'node:http';
 import {randomBytes} from 'node:crypto';
 import {createAgentSwarmWorker} from 'agentic-os/agents/worker';
 import {startListingHost} from '../../scripts/durable-fulfillment/host.mjs';
+import {createListingEventSink} from '../../scripts/durable-fulfillment/main.mjs';
 import {LISTING_DEFINITION} from '../../src/local-first/fulfillment-definition.ts';
+
+test('direct and symlinked CLI entry refuse missing private configuration',t=>{
+  const directory=mkdtempSync(join(tmpdir(),'listing-cli-'));t.after(()=>rmSync(directory,{recursive:true,force:true}));
+  const main=fileURLToPath(new URL('../../scripts/durable-fulfillment/main.mjs',import.meta.url));
+  const alias=join(directory,'listing-host.mjs');symlinkSync(main,alias);
+  for(const entry of [main,alias]){
+    const result=spawnSync(process.execPath,[entry],{encoding:'utf8',timeout:10000});
+    assert.equal(result.status,1);assert.match(result.stderr,/Listing host unavailable/);assert.equal(result.stdout,'');
+  }
+});
+
+test('CLI host events redact sensitive fields and bound volume and stream backpressure',()=>{
+  let now=0;const lines=[],stream={writableNeedDrain:false,write(line){lines.push(line);return true;}};
+  const sink=createListingEventSink({stream,now:()=>now});
+  const event={type:'worker',status:'idle',reasonCode:'secret_token',principalId:'private-principal',
+    input:'private-input',error:'private-error',runs:[{runId:'private-job',status:'completed',output:'private-output'},
+      {status:'blocked'},{status:'paused'}],awaitingAuthorization:3};
+  sink(event);
+  assert.deepEqual(JSON.parse(lines[0]),{schema:'commerce.listing-host-event/v1',type:'worker',status:'idle',
+    runCount:3,completed:1,blocked:1,paused:1,awaitingAuthorization:3,suppressed:0});
+  assert.doesNotMatch(lines[0],/private|secret/);
+  for(let i=0;i<80;i++)sink(event);
+  assert.equal(lines.length,60);
+  now=60000;stream.writableNeedDrain=true;sink(event);assert.equal(lines.length,60);
+  stream.writableNeedDrain=false;sink({type:'request',status:'failed',reasonCode:'run_response_unavailable'});
+  assert.equal(lines.length,61);assert.equal(JSON.parse(lines[60]).suppressed,22);
+  assert.equal(JSON.parse(lines[60]).reasonCode,'run_response_unavailable');
+  stream.write=()=>{throw Error('sink failed');};assert.doesNotThrow(()=>sink(event));
+});
 
 async function listen(handler){const server=createServer(handler);await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
   return {origin:'http://127.0.0.1:'+server.address().port,async close(){server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}};}
