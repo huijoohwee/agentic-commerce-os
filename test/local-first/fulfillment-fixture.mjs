@@ -7,7 +7,7 @@ export const listingPlanFixture = (revision = 'a'.repeat(40)) => ({
   repository: 'github.com/huijoohwee/agentic-commerce-os', path: 'docs/durable-fulfillment.md', revision,
   digest: createHash('sha256').update('listing-plan-fixture:' + revision).digest('hex'),
   continuityId: 'DURABLE-LISTING-FULFILLMENT-001',
-  revisions: Object.fromEntries(['prd', 'tad', 'adr', 'mvp', 'gtm'].map(role => [role, '0.2.0'])),
+  revisions: Object.fromEntries(['prd', 'tad', 'adr', 'mvp', 'gtm'].map(role => [role, '0.3.0'])),
 });
 export const listingInputFixture = (suffix = '1') => ({ runId: 'listing-' + suffix.repeat(64),
   conversationId: '12345678-1234-1234-1234-123456789012', agent: FULFILLMENT_AGENT,
