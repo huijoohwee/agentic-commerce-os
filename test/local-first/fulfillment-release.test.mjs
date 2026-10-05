@@ -100,7 +100,11 @@ test('a late public host failure restores the exact reader without overwriting p
     const route = { id: 'b'.repeat(32), pattern: 'airvio.co/agentic-commerce-os*', script: 'agentic-commerce-edge-production', state: 'bound' };
     let active = before; const calls = [], journal = {};
     const provider = { active: async () => active, route: async () => route,
-      version: async (_id, _source, _checkout, pins) => assert.deepEqual(pins, config.pins),
+      version: async (id, _source, _checkout, pins) => {
+        if (id === before.versionId) return { sourceRevision: config.reader.sourceRevision, fulfillmentPins: null };
+        assert.equal(id, candidate.versionId); assert.deepEqual(pins, config.pins);
+        return { sourceRevision: source, fulfillmentPins: config.pins };
+      },
       exposure: async () => ({ enabled: false, previews_enabled: false }) };
     await assert.rejects(deployLocalFirst({ provider, before: { active: before, route }, journal,
       routeAuthority: { schema: 'agentic-commerce-production-route-authority/v2', mode: 'steady-state',
