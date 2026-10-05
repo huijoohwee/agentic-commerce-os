@@ -1,4 +1,7 @@
 /** Sandbox example only. Draft estimates never become payment authority. */
+declare global {
+  interface ImportMeta { readonly commerceLiveCheckout?: boolean }
+}
 export const CHECKOUT_OFFER = Object.freeze({
   id: 'price_1UEcrJGzH0w0k4VU6HbApj39',
   title: 'Education materials — sandbox',

@@ -2,9 +2,9 @@
   "schema": "commerce.fulfillment-release/v1",
   "pins": {
     "origin": "https://commerce-executor.airvio.co",
-    "bundleSha256": "ca9b82e9edfba49135a49e3570fb54631db878f7a23986ec78e40bf4ca530293",
+    "bundleSha256": "8f7734144d8ae426fddf11b81ead8bab4c9284a849e8278504d53c338862dbdd",
     "imageId": "adbc645ef5a186f4f3466a7d1eb77bd852fcd7eec5e366a277bc439cabe4238c",
-    "sourceRevision": "f015d40c8caae51503136be92f3b2315be8245e8"
+    "sourceRevision": "57418b3807a547de5083cdbd3254a19732f07c97"
   },
   "reader": {
     "sourceRevision": "38662008dae8b3fc20905c7fb09d67036c878611",

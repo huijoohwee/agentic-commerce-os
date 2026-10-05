@@ -11,6 +11,11 @@ The 2026-10-05 runtime-readiness correction also locks compatible `fast-uri` 3.1
 No new dependency, override or always-loaded module is introduced. These are
 source corrections until the exact lockfile reaches its protected runtime release.
 
+The subsequent advisory refresh requires the compatible development-only `undici`
+7.29.1 patch through a root override. Keep the supported Wrangler and Workers test
+versions unchanged. This two-file dependency correction is bounded to 5kB and ten
+active minutes; retain the current audit observation and affected Worker checks.
+
 Validate with `npm ci --ignore-scripts`, `npm audit`, the Worker tests, and the
 production bundle check. Audit status is an observation of the current advisory
 database; it does not replace protected integration or runtime release evidence.

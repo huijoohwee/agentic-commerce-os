@@ -11,6 +11,25 @@ const require = createRequire(new URL('../../package.json', import.meta.url))
 const wranglerRequire = createRequire(require.resolve('wrangler/package.json'))
 const esbuild: typeof import('esbuild') = wranglerRequire('esbuild')
 
+export async function optimizeListingBundle(source: string, signal: AbortSignal, createContext = esbuild.context) {
+  if (signal.aborted) throw new Error('local_host_build_cancelled')
+  const context = await createContext({ stdin: { contents: source, sourcefile: 'listing-final.mjs' },
+    write: false, format: 'esm', target: 'node22', minify: true, treeShaking: true,
+    charset: 'utf8', legalComments: 'none' })
+  const cancel = () => { void context.cancel().catch(() => {}) }
+  signal.addEventListener('abort', cancel, { once: true })
+  let bytes: Uint8Array
+  try {
+    if (signal.aborted) { cancel(); throw new Error('local_host_build_cancelled') }
+    const result = await context.rebuild()
+    if (signal.aborted) throw new Error('local_host_build_cancelled')
+    if (result.outputFiles?.length !== 1) throw new Error('local_host_bundle_output_invalid')
+    bytes = result.outputFiles[0]!.contents
+  } finally { signal.removeEventListener('abort', cancel); await context.dispose() }
+  if (signal.aborted) throw new Error('local_host_build_cancelled')
+  return bytes
+}
+
 function listingPlan() {
   const git = (...args: string[]) => execFileSync('git', args, { cwd: root, timeout: 20000 });
   const revision = git('rev-parse', 'HEAD').toString().trim(), file = 'docs/durable-fulfillment.md';
@@ -63,17 +82,22 @@ export async function buildLocalHost(directory: string, profile: 'sandbox' | 'li
     produce: async ({ signal }) => {
       const context = await esbuild.context({ absWorkingDir: root,
         entryPoints: [entry], outfile, write: false,
-        ...(plan ? { define: { __COMMERCE_LISTING_PLAN__: JSON.stringify(plan) } } : {}),
+        ...(plan ? { define: { __COMMERCE_LISTING_PLAN__: JSON.stringify(plan), 'import.meta.commerceLiveCheckout': 'false' } } : {}),
         bundle: true, platform: 'node', format: 'esm', target: 'node22', minify: true, legalComments: 'none',
         ...(profile === 'catalog' ? { packages: 'external' as const } : {}),
       })
-      const cancel = () => { void context.cancel() }
+      const cancel = () => { void context.cancel().catch(() => {}) }
       signal.addEventListener('abort', cancel, { once: true })
       try {
         if (signal.aborted) throw new Error('local_host_build_cancelled')
         const result = await context.rebuild()
         if (result.outputFiles?.length !== 1) throw new Error('local_host_bundle_output_invalid')
-        return result.outputFiles[0]!.contents
+        if (!plan) return result.outputFiles[0]!.contents
+        // Final whole-program simplification removes code made unreachable by the
+        // sandbox-only device capability. The one returned artifact stays bounded
+        // and hash-bound by generateFile; no external code chunk is introduced.
+        if (signal.aborted) throw new Error('local_host_build_cancelled')
+        return await optimizeListingBundle(result.outputFiles[0]!.text, signal)
       } finally { signal.removeEventListener('abort', cancel); await context.dispose() }
     },
   })

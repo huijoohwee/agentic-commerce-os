@@ -4,6 +4,19 @@ import { parseRetainedBaseline } from './retained-baseline.mjs';
 import { LIVE_CHECKOUT_PROFILE_SHA256 } from '../../src/local-first/checkout-offer.ts';
 
 const same = (left, right) => JSON.stringify(left) === JSON.stringify(right);
+
+// A changed host cannot serve its predecessor's exact pins. The already verified
+// no-relay reader is the only compatible failure target for this sandbox transition.
+export function selectFailureRecovery({ checkout = 'sandbox', mode, predecessor, fulfillment }) {
+  if (checkout !== 'sandbox') return null;
+  if (predecessor?.checkout && predecessor.checkout !== 'sandbox')
+    throw Error('A sandbox release cannot replace an existing live buyer reader');
+  if (mode !== 'steady-state' || !predecessor?.fulfillmentPins || !fulfillment
+    || same(predecessor.fulfillmentPins, fulfillment.pins)) return null;
+  return structuredClone({ scope: 'reader-only-no-new-execution', reader: fulfillment.reader,
+    previousPins: predecessor.fulfillmentPins, candidatePins: fulfillment.pins });
+}
+
 export async function observeBefore(provider, authority, retainedInput = null) {
   const retained = parseRetainedBaseline(retainedInput);
   const before = { active: await provider.active(), route: await provider.route(authority.pattern) };
@@ -23,7 +36,8 @@ export async function observeBefore(provider, authority, retainedInput = null) {
 
 // Context, candidate, preparation and human-review guards run in execute.mjs before this sequence.
 export async function deployLocalFirst({ provider, routeAuthority, before, journal, revision,
-  checkMain, record, wrangler, verifyLive, secretsFile, fulfillment = null, checkout = 'sandbox', secretSetDigest }) {
+  checkMain, record, wrangler, verifyLive, secretsFile, fulfillment = null, checkout = 'sandbox', secretSetDigest,
+  failureRecovery = null, verifyFailureReader }) {
   const { pattern, mode } = routeAuthority;
   const live = ['live-reader','live'].includes(checkout);
   if (!['sandbox','live-reader','live'].includes(checkout) || live && (mode !== 'steady-state'
@@ -31,9 +45,19 @@ export async function deployLocalFirst({ provider, routeAuthority, before, journ
   let ownedVersion = false;
   try {
     checkMain();
+    const predecessor = before.active ? await provider.version(before.active.versionId) : null;
+    const expectedRecovery = selectFailureRecovery({ checkout, mode, predecessor, fulfillment });
+    if (!same(failureRecovery, expectedRecovery)) throw Error('Host transition failure recovery mismatch');
+    if (failureRecovery) {
+      if (typeof verifyFailureReader !== 'function') throw Error('Failure reader readiness verifier required');
+      const reader = failureRecovery.reader;
+      await provider.version(reader.versionId, reader.sourceRevision, 'sandbox', null);
+      journal.failureRecovery = failureRecovery;
+    }
     if (!same(await provider.active(), before.active) || !same(await provider.route(pattern), before.route)) {
       throw Error('Provider state changed before upload');
     }
+    checkMain();
     if (!secretsFile) throw Error('Checkout signing secret file required');
     record(live ? 'deploy-' + checkout + '-worker' : 'deploy-sandbox-worker');
     // Bootstrap is unrouted. An existing local-first route activates immediately on deploy.
@@ -78,12 +102,30 @@ export async function deployLocalFirst({ provider, routeAuthority, before, journ
           if ((await provider.route(pattern)).state !== 'absent') throw Error('Route restoration unconfirmed');
           journal.outcome = 'failed-route-restored-worker-retained';
         } else if (mode === 'steady-state' && same(currentRoute, before.route)) {
-          await activateLocalFirstVersion(wrangler, before.active.versionId);
-          if ((await provider.active())?.versionId !== before.active.versionId) throw Error('Version restoration unconfirmed');
-          journal.outcome = 'failed-previous-version-restored';
+          if (failureRecovery) {
+            journal.recovery = { ...failureRecovery, deployment: null, readinessVerified: false };
+            const restored = await restoreLocalFirstVersion({ provider, pattern, route: before.route,
+              expected: journal.active, target: { ...failureRecovery.reader, checkout: 'sandbox', pins: null },
+              checkMain, record, wrangler });
+            journal.active = restored; journal.route = before.route;
+            journal.recovery.deployment = restored;
+            record('failure-reader-active');
+            await verifyFailureReader(restored);
+            if (!same(await provider.active(), restored) || !same(await provider.route(pattern), before.route))
+              throw Error('Failure reader provider identity drift');
+            journal.recovery.readinessVerified = true;
+            journal.outcome = 'failed-compatible-reader-restored';
+          } else {
+            await activateLocalFirstVersion(wrangler, before.active.versionId);
+            if ((await provider.active())?.versionId !== before.active.versionId) throw Error('Version restoration unconfirmed');
+            journal.outcome = 'failed-previous-version-restored';
+          }
         }
       }
-    } catch (restorationError) { journal.restorationError = restorationError.message; }
+    } catch (restorationError) {
+      journal.restorationError = restorationError.message;
+      journal.writeResultUnknown ||= restorationError.writeResultUnknown === true;
+    }
     record('failed');
     throw error;
   }

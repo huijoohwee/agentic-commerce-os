@@ -7,13 +7,13 @@ import { WORKER, sourceManifest, assertCleanCandidate, git, digest } from './art
 import { createProvider } from './provider.mjs';
 import { parseLocalFirstAuthorization } from './authorization.mjs';
 import { parseProductionRouteAuthority } from '../production-release/route-authority.ts';
-import { observeBefore, deployLocalFirst, rehearseLocalFirstRollback } from './deployment.mjs';
+import { observeBefore, deployLocalFirst, rehearseLocalFirstRollback, selectFailureRecovery } from './deployment.mjs';
 import { verifyRetainedBaseline } from './retained-baseline.mjs';
 import { assertBrowserProof, assertLiveBrowserProof } from './browser-proof.mjs';
 import { LIVE_CHECKOUT_PROFILE_SHA256 } from '../../src/local-first/checkout-offer.ts';
 import { readCheckoutRelease, verifyLiveReleasePrerequisites, LIVE_COMPLETION_SCHEMA } from './live-profile.mjs';
 import { readFulfillmentRelease, verifyFulfillmentRelease } from './fulfillment.mjs';
-import { requireRollbackRehearsal, assertFulfillmentRollbackProof } from './readiness.mjs';
+import { requireRollbackRehearsal, assertFulfillmentRollbackProof, waitForReadiness } from './readiness.mjs';
 import { readJsonResponse } from '../../src/shared/http.ts';
 
 const env = process.env, revision = env.CANDIDATE_SHA, runId = Number(env.GITHUB_RUN_ID);
@@ -54,20 +54,35 @@ const rehearsal = live ? false : requireRollbackRehearsal(env.LOCAL_FIRST_ROLLBA
 const verifyHost = () => verifyFulfillmentRelease(fulfillment, { provider, routeAuthority,
   token: env.GH_TOKEN, bearer: env.LISTING_HOST_BEARER });
 const fulfillmentProof = await verifyHost();
+const failureRecovery = selectFailureRecovery({ checkout: selection.checkout, mode, predecessor,
+  fulfillment: fulfillmentProof?.config ?? null });
 const livePrerequisites = live ? await verifyLiveReleasePrerequisites(selection,{env,provider,routeAuthority,evidenceDir:output}) : null;
 const plan = { schema: live ? 'commerce.local-first-live-release-plan/v1' : 'commerce.local-first-release-plan/v2', sourceRevision: revision,
   artifactDigest: artifact.artifactDigest, runId, profile: 'local-first', checkout: selection.checkout,
   before, retainedBaseline, routeAuthority, authorization, fulfillmentProof,
+  ...(failureRecovery ? { failureRecovery } : {}),
   ...(live ? {livePrerequisites} : {}), createdAt: new Date().toISOString() };
 write('plan.json', plan);
 const journal = { schema: 'commerce.local-first-release-journal/v1', planDigest: digest(JSON.stringify(plan)),
-  stage: 'prepared', outcome: 'pending', active: null, route: null };
+  stage: 'prepared', outcome: 'pending', active: null, route: null,
+  ...(failureRecovery ? { failureRecovery } : {}) };
 const record = stage => { journal.stage = stage; write('journal.json', journal); };
 function wrangler(args) {
   execFileSync(process.execPath, ['node_modules/wrangler/bin/wrangler.js', ...args], {
     stdio: 'inherit', timeout: 180000, env: { ...env, CI: 'true' },
   });
 }
+const verifyFailureReader = failureRecovery ? async active => {
+  const evidence = { ...failureRecovery, deployment: active, verified: false, observations: [] };
+  try {
+    if (active.versionId !== failureRecovery.reader.versionId) throw Error('Failure reader version mismatch');
+    evidence.identity = await waitForReadiness({ url: 'https://airvio.co/agentic-commerce-os/readyz',
+      revision: failureRecovery.reader.sourceRevision, versionId: active.versionId, checkout: 'sandbox',
+      observe: observation => evidence.observations.push(observation) });
+    evidence.verified = true;
+  } catch (error) { evidence.error = error.message; throw error; }
+  finally { write('failure-reader-readiness.json', evidence); }
+} : undefined;
 const verifyLive = async active => {
   execFileSync(process.execPath, ['scripts/local-first-release/check.mjs', '--base-url=https://airvio.co'], {
     stdio: 'inherit', timeout: 180000, env: { ...env, LOCAL_FIRST_EVIDENCE_DIR: path.join(output, 'live'),
@@ -112,7 +127,7 @@ try {
       CHECKOUT_RECOVERY_SECRET:env.CHECKOUT_RECOVERY_SECRET} : {}),
     ...(fulfillment ? { LISTING_HOST_BEARER: env.LISTING_HOST_BEARER } : {}) }), { mode: 0o600, flag: 'wx' });
   await deployLocalFirst({ provider, routeAuthority, before, journal, revision, checkMain, record, wrangler, verifyLive, secretsFile, fulfillment,
-    checkout:selection.checkout,secretSetDigest:livePrerequisites?.secretSetDigest });
+    checkout:selection.checkout,secretSetDigest:livePrerequisites?.secretSetDigest, failureRecovery, verifyFailureReader });
 } finally { fs.rmSync(secretDir, { recursive: true }); }
 if (rehearsal) {
   const { createRollbackBrowserObservation } = await import('./rollback-browser.mjs');

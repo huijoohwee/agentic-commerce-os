@@ -4,7 +4,9 @@ import fs from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { assertLocalFirstConfig, WORKER } from '../../scripts/local-first-release/artifact.mjs';
 import { createProvider } from '../../scripts/local-first-release/provider.mjs';
-import { observeBefore, deployLocalFirst } from '../../scripts/local-first-release/deployment.mjs';
+import { observeBefore, deployLocalFirst, selectFailureRecovery } from '../../scripts/local-first-release/deployment.mjs';
+import { waitForReadiness } from '../../scripts/local-first-release/readiness.mjs';
+import { LISTING_DEFINITION } from '../../src/local-first/fulfillment-definition.ts';
 import { validateLocalFirstAuthorization, parseLocalFirstAuthorization } from '../../scripts/local-first-release/authorization.mjs';
 import { validateHumanAuthorization, parseHumanAuthorizationReceipt } from '../../scripts/production-release/human-authorization.ts';
 import { parseRetainedBaseline, validateRetainedRun } from '../../scripts/local-first-release/retained-baseline.mjs';
@@ -16,6 +18,11 @@ const absent = { id: null, pattern: authority.pattern, script: null, state: 'abs
 const bound = { id: routeId, pattern: authority.pattern, script: WORKER, state: 'bound' };
 const candidate = { deploymentId: 'candidate-deployment', versionId: 'candidate-version' };
 const prior = { deploymentId: 'prior-deployment', versionId: 'prior-version' };
+const reader = { sourceRevision: 'd'.repeat(40), versionId: '11111111-1111-1111-1111-111111111111', runId: 42 };
+const readerDeployment = { deploymentId: 'reader-deployment', versionId: reader.versionId };
+const candidatePins = { origin: 'https://commerce-executor.airvio.co', bundleSha256: 'e'.repeat(64),
+  imageId: LISTING_DEFINITION.imageDigest.slice(7), sourceRevision: revision };
+const oldPins = { ...candidatePins, bundleSha256: '1'.repeat(64), sourceRevision: '2'.repeat(40) };
 
 test('local-first configuration refuses provider bindings, paid resources and premature routes', () => {
   const config = JSON.parse(fs.readFileSync('wrangler.local-first.jsonc'));
@@ -60,25 +67,59 @@ test('provider readback refuses foreign source tags and any additional binding',
 
 function fixture(mode = 'bootstrap', options = {}) {
   let active = mode === 'bootstrap' ? null : prior, route = mode === 'bootstrap' ? absent : bound;
-  const calls = [], journal = { outcome: 'pending', active: null, route: null };
+  const calls = [], writes = [], journal = { outcome: 'pending', active: null, route: null };
+  const fulfillment = options.transition ? { pins: candidatePins, reader } : null;
+  const predecessor = { fulfillmentPins: options.transition
+    ? Object.hasOwn(options, 'previousPins') ? options.previousPins : oldPins : null,
+    ...(options.livePredecessor ? { checkout: options.livePredecessor } : {}) };
   const provider = {
     active: async () => active, route: async () => route,
-    version: async (_id, sha) => { if (sha && options.foreignVersion) throw Error('source mismatch'); },
+    version: async (id, sha, checkout, pins) => {
+      if (id === prior.versionId) return predecessor;
+      if (id === reader.versionId) {
+        calls.push('reader-binding-check');
+        assert.equal(sha, reader.sourceRevision); assert.equal(checkout, 'sandbox'); assert.equal(pins, null);
+        if (options.invalidReader) throw Error(options.invalidReader);
+        return { sourceRevision: sha, fulfillmentPins: null };
+      }
+      if (sha && options.foreignVersion) throw Error('source mismatch');
+    },
     exposure: async () => ({ enabled: false, previews_enabled: false }),
     bindRoute: async () => { calls.push('bind'); route = bound; if (options.lostRouteResponse) throw Error('route response lost'); },
     removeRoute: async () => { calls.push('remove'); route = absent; },
   };
-  return { provider, journal, revision, calls, secretsFile: '/fixture/secrets.json', routeAuthority: { ...authority, mode, routeId: mode === 'bootstrap' ? null : routeId },
-    checkMain() { calls.push('source-check'); }, record(stage) { calls.push(stage); },
+  return { provider, journal, revision, calls, writes, fulfillment,
+    failureRecovery: options.livePredecessor ? null : selectFailureRecovery({ mode, predecessor, fulfillment }),
+    secretsFile: '/fixture/secrets.json', routeAuthority: { ...authority, mode, routeId: mode === 'bootstrap' ? null : routeId },
+    checkMain() { calls.push('source-check'); if (options.sourceDrift && calls.includes('browser')) throw Error('source changed'); },
+    record(stage) { calls.push(stage); },
     wrangler(args) {
-      calls.push(args[0]);
+      calls.push(args[0]); writes.push(args);
       if (args[0] === 'deploy') { active = candidate; if (options.lostUploadResponse) throw Error('upload response lost'); }
-      else active = prior;
+      else {
+        active = args[2] === reader.versionId + '@100%' ? readerDeployment : prior;
+        if (options.lostRestoreResponse) throw Error('restore response lost');
+      }
     },
     async verifyLive() {
       calls.push('browser');
       if (options.peer) active = { deploymentId: 'peer-deployment', versionId: 'peer-version' };
+      if (options.routeDrift) route = { ...bound, script: 'peer' };
       if (options.browserFailure || options.peer) throw Error('browser failure');
+    },
+    async verifyFailureReader(observed) {
+      assert.deepEqual(observed, readerDeployment); assert.deepEqual(journal.active, readerDeployment);
+      assert.equal(journal.recovery.readinessVerified, false); calls.push('reader-ready');
+      if (options.readerFailure) throw Error('reader unavailable');
+      await waitForReadiness({ url: 'https://airvio.co/agentic-commerce-os/readyz',
+        revision: reader.sourceRevision, versionId: reader.versionId, fetchImpl: async (_url, request) => {
+          assert.equal(request.method, undefined); assert.equal(request.redirect, 'manual');
+          return Response.json({ ok: true, profile: 'local-first', checkout: 'sandbox', storage: 'browser-only',
+            paymentStorage: 'stripe-test', paymentProvider: 'stripe', realMoney: false,
+            sourceRevision: reader.sourceRevision, workerVersionId: reader.versionId });
+        } });
+      if (options.peerAfterReader) active = { deploymentId: 'peer-deployment', versionId: 'peer-version' };
+      if (options.routeAfterReader) route = { ...bound, script: 'peer' };
     },
   };
 }
@@ -117,6 +158,90 @@ test('bootstrap cannot reuse an existing Worker and steady state cannot adopt a 
   const input = fixture('steady-state');
   await assert.rejects(observeBefore({ ...input.provider, route: async () => absent }, authority), /Bootstrap Worker already exists/);
   await assert.rejects(observeBefore({ ...input.provider, version: async () => { throw Error('owned local-first profile required'); } }, input.routeAuthority), /local-first profile/);
+});
+
+test('a changed host restores the verified no-execution reader and still fails the candidate release', async () => {
+  const input = fixture('steady-state', { transition: true, browserFailure: true });
+  input.before = await observeBefore(input.provider, input.routeAuthority);
+  await assert.rejects(deployLocalFirst(input), /browser failure/);
+  assert.deepEqual(input.writes.filter(args => args[0] === 'versions').map(args => args[2]), [reader.versionId + '@100%']);
+  assert.equal(input.journal.outcome, 'failed-compatible-reader-restored');
+  assert.deepEqual(input.journal.active, readerDeployment); assert.deepEqual(input.journal.route, bound);
+  assert.deepEqual(input.journal.failureRecovery, { scope: 'reader-only-no-new-execution', reader,
+    previousPins: oldPins, candidatePins });
+  assert.equal(input.journal.recovery.readinessVerified, true);
+  assert(input.calls.indexOf('reader-binding-check') < input.calls.indexOf('deploy'));
+  assert.equal(input.calls.filter(call => call === 'reader-binding-check').length, 2);
+  assert(input.calls.indexOf('failure-reader-active') < input.calls.indexOf('reader-ready'));
+  assert(!input.calls.includes('complete'));
+});
+
+test('host recovery selection is mandatory, exact, sandbox-only and verified before upload', async () => {
+  const mutations = [
+    input => { input.failureRecovery = null; },
+    input => { input.failureRecovery.reader = { ...reader, sourceRevision: 'f'.repeat(40) }; },
+    input => { input.failureRecovery.previousPins = candidatePins; },
+    input => { input.failureRecovery.candidatePins = oldPins; },
+    input => { input.failureRecovery.scope = 'execute'; },
+    input => { delete input.verifyFailureReader; },
+    ...['live', 'live-reader'].map(checkout => input => { input.checkout = checkout; input.secretSetDigest = 'a'.repeat(64); }),
+  ];
+  for (const mutate of mutations) {
+    const input = fixture('steady-state', { transition: true }); mutate(input);
+    input.before = await observeBefore(input.provider, input.routeAuthority);
+    await assert.rejects(deployLocalFirst(input)); assert.deepEqual(input.writes, []);
+  }
+  for (const options of [{ invalidReader: 'reader source mismatch' }, { invalidReader: 'reader has relay bindings' },
+    { livePredecessor: 'live' }, { livePredecessor: 'live-reader' }]) {
+    const input = fixture('steady-state', { transition: true, ...options });
+    input.before = await observeBefore(input.provider, input.routeAuthority);
+    await assert.rejects(deployLocalFirst(input)); assert.deepEqual(input.writes, []);
+  }
+});
+
+test('host recovery preserves ambiguous uploads, foreign candidates and peer/source/route changes', async () => {
+  for (const options of [{ lostUploadResponse: true }, { foreignVersion: true }, { peer: true },
+    { routeDrift: true }, { sourceDrift: true }]) {
+    const input = fixture('steady-state', { transition: true, browserFailure: true, ...options });
+    input.before = await observeBefore(input.provider, input.routeAuthority);
+    await assert.rejects(deployLocalFirst(input));
+    assert.equal(input.journal.outcome, 'preserve-required');
+    assert.equal(input.writes.filter(args => args[0] === 'deploy').length, 1);
+    assert.equal(input.writes.filter(args => args[0] === 'versions').length, 0);
+  }
+});
+
+test('unknown reader activation and failed or stale reader readiness never claim recovered availability', async () => {
+  for (const options of [{ lostRestoreResponse: true }, { readerFailure: true },
+    { peerAfterReader: true }, { routeAfterReader: true }]) {
+    const input = fixture('steady-state', { transition: true, browserFailure: true, ...options });
+    input.before = await observeBefore(input.provider, input.routeAuthority);
+    await assert.rejects(deployLocalFirst(input), /browser failure/);
+    assert.equal(input.writes.filter(args => args[0] === 'versions').length, 1);
+    assert.equal(input.journal.outcome, 'preserve-required');
+    assert.equal(input.journal.recovery.readinessVerified, false);
+    assert.deepEqual(input.journal.recovery.previousPins, oldPins);
+    if (options.lostRestoreResponse) {
+      assert.equal(input.journal.writeResultUnknown, true);
+      assert.deepEqual(input.journal.active, candidate); assert.equal(input.journal.recovery.deployment, null);
+      assert(!input.calls.includes('reader-ready'));
+    } else {
+      assert.deepEqual(input.journal.active, readerDeployment);
+      assert.deepEqual(input.journal.recovery.deployment, readerDeployment);
+    }
+  }
+});
+
+test('unchanged pins and no-host predecessors keep exact-prior recovery', async () => {
+  for (const previousPins of [candidatePins, null]) {
+    const input = fixture('steady-state', { transition: true, browserFailure: true, previousPins });
+    assert.equal(input.failureRecovery, null);
+    input.before = await observeBefore(input.provider, input.routeAuthority);
+    await assert.rejects(deployLocalFirst(input), /browser failure/);
+    assert.equal(input.journal.outcome, 'failed-previous-version-restored');
+    assert.deepEqual(input.writes.filter(args => args[0] === 'versions').map(args => args[2]), [prior.versionId + '@100%']);
+    assert(!input.calls.includes('reader-ready'));
+  }
 });
 
 function ownerApprovalFixture() {
@@ -220,6 +345,11 @@ test('candidate readback requires both sandbox secrets and never accepts the def
   bindings = [...legacy, { name: 'CHECKOUT_MODE', type: 'plain_text', text: 'sandbox' },
     { name: 'STOREFRONT_SESSION_SECRET', type: 'secret_text' }, { name: 'STRIPE_TEST_SECRET_KEY', type: 'secret_text' }];
   await provider.version('version', revision, 'sandbox');
+  await provider.version('version', revision, 'sandbox', null);
+  bindings.push({ name: 'LISTING_HOST_PINS_JSON', type: 'plain_text', text: JSON.stringify(candidatePins) },
+    { name: 'LISTING_HOST_BEARER', type: 'secret_text' });
+  await assert.rejects(provider.version('version', revision, 'sandbox', null), /fulfillment pins mismatch/);
+  bindings.splice(6);
   bindings[3].text = 'live'; await assert.rejects(provider.version('version', revision, 'sandbox'));
   bindings[3].text = 'sandbox'; bindings[5] = { name: 'PAYMENTS', type: 'service' };
   await assert.rejects(provider.version('version', revision, 'sandbox'));
