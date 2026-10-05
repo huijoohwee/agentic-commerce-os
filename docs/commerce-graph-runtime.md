@@ -49,7 +49,7 @@ entire operator application or copying its canvas into Commerce.
 ## Native data-view component — reference implementation
 
 **Accepted scope, 2026-10-05:** the user selected “Embed the native table in Commerce.”
-The current `edge-commerce-agent-mvp@0.21.0` join and Graph's `PLAN-AGENTIC-GRAPH-AGENTIC-COMMERCE-PLATFORM-PRD-TAD-ADR-MVP-GTM@0.4.0`
+The native-reuse `edge-commerce-agent-mvp@0.21.0` join and Graph's `PLAN-AGENTIC-GRAPH-AGENTIC-COMMERCE-PLATFORM-PRD-TAD-ADR-MVP-GTM@0.4.0`
 bind this source change. Vendor/Admin/project offer lists and selected-record properties use the
 Graph-owned native table core. The existing Commerce edit/review button opens its native editor.
 This read-only presentation adapter adds no inventory, channel, media or checkout feature.
@@ -113,8 +113,8 @@ exists. Exact native alignment to protected `0204010637b0671a1b8a3415c0018c29d62
 at `blocked-lane-alignment-overlap`. Predecessor 9f2e629 and squash 020401 have identical trees, but
 the native owner permits only disjoint alignment. Preserve the lane and its evidence for a supported
 alignment-owner repair; recheck on that owner result, with no manual bypass. Graph PR1563 /
-Integration run37284086847 remains in progress at authoring; Commerce integration and runtime
-activation are unproved. This bounded read-only adapter does not expose all Graph editing/media features
+Integration run37284086847 passed at 2026-10-05T08:41:13Z; no merge is inferred. Commerce
+integration and runtime activation remain unproved. This bounded read-only adapter does not expose all Graph editing/media features
 or establish physical-device/customer acceptance. Every chunk stays <500,000 bytes; authored files
 <600 lines. No new paid plan/addon/overage or serving-model token cost; existing locked FOSS only.
 
@@ -123,6 +123,35 @@ separately authorized production deployment. Revert the host projection, artifac
 manifest together; persisted drafts and checkout formats do not migrate. Full workspace navigation
 and document iframe contracts retain their own owners. No deployment, payment or data transfer is
 performed by this adapter. See the [workspace plan](prd-tad-adr-mvp-gtm-commerce-workspaces.md).
+
+## Offer setup checklist — reference implementation
+
+CW-D12 joins `edge-commerce-agent-mvp@0.22.0` over source
+`739024517b6d64dc9251c8e5359ab4f1e6561d6c`; Graph a9a2e31 and generated assets remain unchanged.
+The existing editor gains one inline checklist, with the canonical Graph design guide/tokens and
+native Commerce control semantics. No `DESIGN.md`, separate theme, wizard store or approval tool.
+
+| Step | Completion contract |
+|---|---|
+| Description | Current title, audience and outcome pass existing required-text/bounds validation. |
+| Identifiers | Merchant and agent IDs satisfy existing syntax; this does not prove registration, authority or availability. |
+| Economics | Currency plus price, delivery cost, provider fee, agent cost, acquisition cost and one-time fixed cost are explicitly entered, valid and bounded. Zero is explicit, not an empty-field default; estimated per-sale contribution must be positive. |
+| Saved review | The exact persisted revision is saved/read, reviewed and explicitly acknowledged through the existing review control. Current edits, any error or stale revision invalidate completion; save and review again. |
+
+`drafts.js` owns validation; `inspectLaunchInput`/`parseLaunchInput` share normalization.
+Pure `evaluateOfferSetup` returns three value-based steps through the editor and existing
+`commerce.workspace.offer.review` MCP/WebMCP `/ @ #` handler, always requiring human review.
+It adds no acknowledgment, mutation or registration check. Saved review remains UI-owned.
+
+Fifteen affected tests, workerd MCP parity, typecheck, authored limits, invocation12 and WebMCP6
+pass. Browser proof covers offline review/export, all 14 field invalidations, storage abort/retry,
+stale BroadcastChannel recovery, keyboard focus and 200% text at 320/768/1280. Final regressions
+pass (5.3 seconds, zero page errors): conflict without BroadcastChannel offers Reload preserving
+unsaved/stored data; delayed `openSavedDraft` disables controls before awaiting storage, then
+restores the current revision without acknowledgment. Exact committed-source verification is recorded separately in the release handoff.
+Bound: 35–45 active minutes, 12 files, ≤55 kB authored bytes, zero new runtime modules/dependencies;
+<600 lines/file and <500,000 bytes/chunk. Native publication's stale-base/overlap blocker remains.
+Protected integration/deployment are separate; local setup is no sales, provider or customer proof.
 
 ## Historical full-runtime transport — reference implementation
 

@@ -273,3 +273,17 @@ body:has(#workspace-agent-drawer[open]){overflow:hidden}
 .graph-record-detail .record-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
 .graph-record-detail .record-actions>*{min-height:44px}.graph-record-fields{margin-top:12px}
 @media(min-width:1100px){.graph-record-layout.has-selection{grid-template-columns:minmax(0,1fr) minmax(340px,.8fr)}}
+
+/* Offer setup uses the existing editor boundary and Graph typography/border tokens. */
+#offer-setup{margin-bottom:28px;font-size:.875rem;overflow-wrap:anywhere}
+.setup-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.setup-heading h3{margin:0}.setup-heading span{color:var(--muted)}
+#setup-status{margin:10px 0 16px}
+#offer-setup details{border-top:1px solid var(--line);margin:0;padding:0 0 12px}
+#offer-setup summary{cursor:pointer;min-height:44px;padding:12px 0;line-height:1.6}
+#offer-setup summary strong{font-weight:550}
+#offer-setup [data-step-status]{display:inline-block;margin-left:12px;color:var(--muted);font-size:.8125rem}
+#offer-setup p{margin-bottom:12px}#offer-setup details p{color:var(--muted)}
+#offer-setup>.footnote{border-top:1px solid var(--line);padding-top:12px;margin-bottom:0}
+#offer-setup button{max-width:100%;white-space:normal}
+@media(max-width:400px){#offer-setup [data-step-status]{display:block;margin-left:0}}

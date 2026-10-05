@@ -1,5 +1,5 @@
 import { groupProjects, validDraft, validLaunchTerms, LIMITS as DRAFT_LIMITS } from './drafts.js';
-import { evaluateLaunch } from './launch.js';
+import { evaluateOfferSetup } from './launch.js';
 
 export const WORKSPACE_LIMITS = Object.freeze({ requestBytes: 196608, resultBytes: 196608, deadlineMs: 5000 });
 const SNAPSHOT = 'commerce.workspace-snapshot/v1';
@@ -89,7 +89,7 @@ export async function invokeWorkspace(name, input, context = {}) {
     const snapshot = args.snapshot ?? (context.snapshot ? await workspaceWait(context.snapshot(), context.signal) : fail('snapshot_required'));
     const offers = validateSnapshot(snapshot).offers, projects = groupProjects(offers);
     provenance = args.snapshot ? 'provided-snapshot' : 'browser-local';
-    const status = offer => !offer.launch ? 'draft' : evaluateLaunch(offer.launch).selection;
+    const status = offer => evaluateOfferSetup(offer).status;
     const summary = project => ({ id: project.id, name: project.name, offerCount: project.offers.length,
       reviewableCount: project.offers.filter(offer => status(offer) === 'reviewable').length });
     if (name.endsWith('.projects.list')) {
@@ -105,8 +105,9 @@ export async function invokeWorkspace(name, input, context = {}) {
       const offer = offers.find(offer => offer.id === args.offerId);
       if (!offer) fail('offer_missing');
       if (offer.revision !== args.expectedRevision) fail('revision_changed');
-      value = { id: offer.id, title: offer.title, revision: offer.revision, status: status(offer),
-        economics: offer.launch ? evaluateLaunch(offer.launch) : null, humanReview: 'still-required' };
+      const setup = evaluateOfferSetup(offer);
+      value = { id: offer.id, title: offer.title, revision: offer.revision, status: setup.status,
+        economics: setup.economics, humanReview: 'still-required', setup };
     }
   }
   if (context.signal?.aborted) fail('cancelled');

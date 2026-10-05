@@ -2,28 +2,28 @@
 title: "Reference Implementation — Native Commerce Workspace Increment"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "edge-commerce-agent-mvp"
-revision: "0.21.0"
-version: "0.21.1"
-prd_revision: "0.21.0"
-tad_revision: "0.21.0"
-adr_revision: "0.21.0"
-mvp_revision: "0.21.0"
-gtm_revision: "0.21.0"
+revision: "0.22.0"
+version: "0.22.0"
+prd_revision: "0.22.0"
+tad_revision: "0.22.0"
+adr_revision: "0.22.0"
+mvp_revision: "0.22.0"
+gtm_revision: "0.22.0"
 date: "2026-10-05"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Commerce product architecture"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
-readiness_scope: "CW-D11 implemented; clean local checks pass at 5f25ff6, native source publication blocked, human/runtime acceptance open"
+readiness_scope: "CW-D12 implemented; bounded checks pass, exact proof in release handoff, inherited native publication blocker"
 lane: "authoring"
 universal_scope: false
 load_policy: "on-demand"
 lifecycle_status: "active"
 runtime_readiness_policy: "fail-closed"
 worktree_id: "device-0232231d4a19--commerce-fidelity-plan"
-agent_id: "codex-commerce-graph-design"
-source_revision: "9f2e6292ad77c52d480060453dde8087967ff02e"
+agent_id: "codex-commerce-offer-setup"
+source_revision: "739024517b6d64dc9251c8e5359ab4f1e6561d6c"
 guideline_revision: "3.4.0"
 guideline_source_revision: "82835ac37d524643faa6b9703cb077ea9474ab15"
 guideline_sha256: "9707ee2355d4d60b8f7a759441fbe67c8235e8762ab9cb0a46dd070a5f02b84a"
@@ -35,30 +35,29 @@ surfaces: ["2D Renderer: D3 Graph"]
 # Reference implementation — native commerce workspace increment
 
 This on-demand companion extends the [product owner](prd-tad-adr-mvp-gtm-edge-commerce-agent.md)
-at **`edge-commerce-agent-mvp@0.21.0`**. PRD, TAD, ADR, MVP and GTM below share that join.
+at **`edge-commerce-agent-mvp@0.22.0`**. PRD, TAD, ADR, MVP and GTM below share that join.
 The split preserves the <600-line limit and leaves dated sandbox evidence in its original owner.
 No second platform, roadmap, capability registry or release controller is introduced.
 The [first-dollar sprint](prd-tad-adr-mvp-gtm-20260909T1320Z-solopreneur-mvp-gtm.md)
 remains the customer-validation and payment owner. The implementation disposition below distinguishes shipped source, local checks and remaining acceptance.
 
-**Context:** the existing role console and invocation owners already serve local offers; Graph owns
-reusable multi-dimensional table visuals. **Intent:** preserve one native list/detail experience.
-**Directive CW-D11:** embed the native Graph table and record properties in Commerce.
-**Role / action / outcome:** Graph UI and Commerce integration owners extract and consume one
-portable rendering core, retaining host storage/effects and $0 new spend. The user selected
-“Embed the native table in Commerce”; this covers source implementation and local verification.
-Deployment, payment, outreach and complete workspace embedding retain their separate gates.
+**Context:** native offer editing, exact revision review and Graph table reuse exist, but setup
+requirements lack a single inline path. **Directive CW-D12:** add an Offer setup checklist to the
+existing editor. **Role / action / outcome:** Commerce UI/domain owners guide description,
+format-only identifiers, explicit economics and saved-revision acknowledgment through existing
+owners. First-three-step completion may reflect current edits; final completion requires the exact
+persisted revision reviewed and explicitly acknowledged. No sale-readiness or new authority follows.
 
 ## Codebase grounding — reference implementation
 
 S0 = Commerce Git commit `77bb835287909c3bc8c260a4304b131c0062258b`, inspected 2026-10-05.
 Plan candidate `149b8b1035080e080f899ccd5666c8fbc5b7b8a2` / [PR118](https://github.com/huijoohwee/agentic-commerce-os/pull/118) grounds the native successor `agent/device-0232231d4a19/commerce-fidelity-ui`; canonical stays read-only.
-Current baseline C0 is `9f2e6292ad77c52d480060453dde8087967ff02e`, protected in PR120 as `0204010637b0671a1b8a3415c0018c29d62aab85`; Graph G0 is `e551c50c7ad74a99af8a3169409aff36d31642bf`. These are source snapshots, not new runtime observations. Historical CW-D02–09 evidence is retained
+D12 baseline C1 is `739024517b6d64dc9251c8e5359ab4f1e6561d6c`; the Graph artifact pin remains a9a2e31. Historical baseline C0 is `9f2e6292ad77c52d480060453dde8087967ff02e`, protected in PR120 as `0204010637b0671a1b8a3415c0018c29d62aab85`; Graph G0 is `e551c50c7ad74a99af8a3169409aff36d31642bf`. These are source snapshots, not new runtime observations. Historical CW-D02–09 evidence is retained
 below and in the exact predecessor document at S0; it is not re-dated or used to pass CW-D10.
 Shared authoring: [guideline 3.4.0][guideline], [templates 1.5.0][templates], [verification][verification].
 OS runtime source inspected at `38d0fa4a778316232e1bf34ae4e190db93ff3a6a`; the consumer
 [package](../package.json) pins `44da26e7beb7d9aa5da271480f2e0ef34846dfaa`.
-Package locks stay unchanged. The source-owned Graph browser artifact/CSS/provenance pin is new; its contract is documented in [runtime composition](commerce-graph-runtime.md#native-data-view-component--reference-implementation).
+Package locks stay unchanged. The source-owned Graph browser artifact/CSS/provenance pin remains unchanged; its contract is documented in [runtime composition](commerce-graph-runtime.md#native-data-view-component--reference-implementation).
 
 | ID / exact S0 source | Inspected behavior / disposition | Reuse decision, minimal delta and check |
 |---|---|---|
@@ -98,7 +97,7 @@ and an operator are secondary users. Reachable prospects, geography and willingn
 | CW-P2: readiness and failures are easy to confuse across profiles; S2/S4 show different owners | Inspect runtime/API/release evidence manually; target ≤60 seconds to identify profile, source and next blocked action | 2: enables honest operation of the same offer; no proven support savings yet |
 | CW-P3: integrations can overstate tool authority; S5 exposes differing surfaces | Read individual schemas and retry unsupported actions; target ≤15 minutes to first correct read/prepare invocation | 3: developer support after merchant comprehension; API breadth alone is not buyer value |
 
-CW-01–CW-08 remain the requirement owners; CW-D10 refinements remain required and CW-D11 adds native reuse. Should: a priced prospect walkthrough of the existing
+CW-01–CW-08 remain the requirement owners; CW-D10/D11 remain required; CW-D12 adds the inline setup path. Should: a priced prospect walkthrough of the existing
 sandbox. Could: additional native read projections after observed need. **Won't this increment:**
 managed infrastructure signup/provisioning, team IAM, organization billing, secrets editing, new SDKs,
 new cart/order/ledger stores, inventory, tax, promotions, returns/refunds, shipping, subscriptions,
@@ -115,9 +114,9 @@ payouts, multi-currency expansion, autonomous payment, remote draft sync or new 
 | CW-07: user operates across devices and abilities | Given keyboard, 200% zoom, touch and offline mode, when navigating/recovering, then all review fields/errors are perceivable, focus returns correctly, and actions retain ≥44 px targets; no horizontal page overflow at 360 px | W1,W2 / CW-A1,A3 / existing browser harness extended for dimensions, focus, text status, cancellation and offline reload; physical-device study separately required |
 | CW-08: operator locates a merchant project | Given saved drafts, when searching projects and opening a detail, then a compact console shows only that merchant’s offers, original native preview, local storage and explicit environment observation; navigation works offline with no foreign assets or hosted-state invention | W1,W3 / CW-A5 / native workspace browser suite: grouping, filtering, escaped text, detail URL, history, keyboard focus, absent project and responsive offline reload |
 
-### CW-D10/D11 acceptance refinements — reference implementation
+### CW-D10–D12 acceptance refinements — reference implementation
 
-F1–F5 retain D10 and F6/F7 add D11. Each consumes an existing CW criterion; none claims whole acceptance or a new registry.
+F1–F5 retain D10, F6/F7 retain D11, and F8 adds D12. Each consumes an existing CW criterion; none claims whole acceptance or a new registry.
 Pain/hook/break/fix/close: CW-P1/P2 → review one real draft → status ambiguity → native state and hierarchy
 refinement → exact review with a next action; CW-P3 → inspect one capability → raw arguments/results →
 schema-led assistance → correct read. Reuse W1/W3/W4; buyer impact and WTP are still unvalidated.
@@ -131,11 +130,12 @@ schema-led assistance → correct read. Reuse W1/W3/W4; buyer impact and WTP are
 | F5 private, equivalent handoff / CW-03,06 | For the same selected offer/revision, local UI, optional WebMCP, HTTP, MCP and sigil calls return equal `value` and deliberate provenance differences. Prepared snapshots expose only the selected scope, with field/offer counts visible before sharing; no private notes, cookies, persisted payload or automatic transmission. Extend existing parity tests and browser request assertions; invalid aliases, unknown properties, missing snapshots and cancellation still fail. |
 | F6 native list/detail reuse / CW-03,07,08 | Vendor, Admin and project offer lists render through Graph's shared table core; selecting a record shows its property orientation through the same core and the existing edit/review action. Native wrappers also delegate to that core. Keyboard activation, labels, 360/768/1024/1280 px and 200% text resize pass; no duplicate table renderer/theme. |
 | F7 bounded local composition / CW-01,03,06 | Lazy mount/update/destroy uses validated plain data and exact pinned local module/CSS. Loading, failure, stale state and disposal races remain explicit; offline after priming works. Generated provenance/byte checks pass; no Graph stores, media, remote calls or authority transfers. Existing MCP/WebMCP `/ @ #` behavior remains unchanged. |
+| F8 offer setup / CW-03,06,07 | Description needs title/audience/outcome; identifiers check merchant/agent format only; economics needs currency, six explicit bounded amounts and positive estimated contribution. Current edits may complete these three steps. Step four requires saved exact revision + review + explicit acknowledgment; editing, storage error or stale revision invalidates it. UI and existing `offer.review` share pure three-step assessment; agents cannot acknowledge. Verify missing/invalid/zero amounts, currency precision, negative contribution, stale review, keyboard focus and MCP/WebMCP/sigil parity. |
 
 F1/F2 rank first for the nearest offer-review journey, F3/F4 next for correct integration, F5 preserves
 the same handoff boundary. Rank is provisional because no validated WTP differentiates these pains.
 These outcomes fit the existing five flows: F1/F2 at J1–J3, F3/F4 at J3–J4 and H1–H4, F5 at D1–D4;
-F6/F7 reuse the same journey/data flows inside T1 through the native component; T2–T4 effect ownership stays unchanged. No channel/catalog/inventory/order/fulfillment expansion is implied.
+F6/F7 use native T1 presentation; F8 follows edit → save → exact review → acknowledgment and shared read assessment; T2–T4 effect ownership stays unchanged. No channel/catalog/inventory/order/fulfillment expansion is implied.
 
 All eight VCCs retain **pending human acceptance**. Source checks below prove their named bounded paths,
 not whole-product or physical-device acceptance. Acceptance needs surfaced check output and an independent evaluator mechanism.
@@ -224,11 +224,11 @@ CW-D11 adds one lazy Commerce projection with no domain state; Graph owns the sh
 
 ### Five flows and inventories
 
-All diagrams are CW design projections at version 0.21.0, dated 2026-10-05; topology is unchanged. Rectangles are native
+All diagrams are CW design projections at version 0.22.0, dated 2026-10-05; topology is unchanged. Rectangles are native
 components/stages; rounded nodes are people. No diagram asserts production readiness. Text inventories
 provide the mobile/offline alternative; canvas projection is parse-only and consumes zero model tokens.
 
-**Diagram CW-J** · Class: Journey stage map · Notation: flowchart LR · Version: 0.21.0
+**Diagram CW-J** · Class: Journey stage map · Notation: flowchart LR · Version: 0.22.0
 **Caption:** the merchant reaches a reviewed local offer before choosing any remote effect.
 ```mermaid
 flowchart LR
@@ -243,7 +243,7 @@ flowchart LR
 | J3 | Exact revision and permitted action / CW-03,04,06 |
 | J4 | Preview, payment and fulfillment states / CW-05 |
 
-**Diagram CW-W** · Class: User workflow · Notation: sequenceDiagram · Version: 0.21.0
+**Diagram CW-W** · Class: User workflow · Notation: sequenceDiagram · Version: 0.22.0
 **Caption:** only a reviewed request reaches the existing owner; an unknown result remains unresolved.
 ```mermaid
 sequenceDiagram
@@ -263,7 +263,7 @@ sequenceDiagram
 | V | Match current version / cancel / preserve unresolved, CW-01,07 |
 | O | Existing CAS receipt / already applied / stale version rejected, CW-04,05 |
 
-**Diagram CW-D** · Class: Data flow · Notation: flowchart LR · Version: 0.21.0
+**Diagram CW-D** · Class: Data flow · Notation: flowchart LR · Version: 0.22.0
 **Caption:** draft content and runtime observations remain distinct inputs to the visible review.
 ```mermaid
 flowchart LR
@@ -279,7 +279,7 @@ flowchart LR
 | D3 | Presentation only, J3; no new ledger, CW-05,07 |
 | D4 | Existing theme/checkout/fulfillment authority, J4; no cross-effect success inference, CW-04,05 |
 
-**Diagram CW-H** · Class: Orchestration / harness flow · Notation: flowchart LR · Version: 0.21.0
+**Diagram CW-H** · Class: Orchestration / harness flow · Notation: flowchart LR · Version: 0.22.0
 **Caption:** an optional agent can discover and prepare only through the admitted owner contract.
 ```mermaid
 flowchart LR
@@ -294,7 +294,7 @@ flowchart LR
 | H3 | S3/S6 executor; existing effect limits, no agent-created presence receipt |
 | H4 | W1–W5 readback at J4; W3 proposed 5 s deadline, no retry loop |
 
-**Diagram CW-T** · Class: Runtime topology · Notation: flowchart TB · Version: 0.21.0
+**Diagram CW-T** · Class: Runtime topology · Notation: flowchart TB · Version: 0.22.0
 **Caption:** the local browser remains useful alone; online profiles preserve their existing trust boundaries.
 ```mermaid
 flowchart TB
@@ -342,6 +342,7 @@ Revert only changed views/tests on comprehension or parity regression; draft sch
 revisions and effect permissions stay intact. Revisit only on observed buyer need for a missing read.
 
 **CW-A12 / accepted for CW-D11:** the user selected an in-page native table. Extract G1 once for its native row and column wrappers plus Commerce; host callbacks keep editing/review in existing owners. A full-app iframe adds unrelated stores/runtime, copying JSX/CSS creates drift, and a new grid package adds a competing owner. Revert generated pin and projection together; no draft migration. This narrow extraction supersedes CW-A11’s no-extraction choice only for the existing table structure.
+**CW-A13 / CW-D12:** extend existing `drafts.js` validation and `launch.js` inspection/evaluation, not a wizard store or duplicated validator. `inspectLaunchInput` and `parseLaunchInput` share normalization; `evaluateOfferSetup` returns only three value-based steps plus human-review-required. UI owns acknowledgment against the existing saved-review identity. Add no mutation/tool, registry or provider check; revert checklist views and result projection together without changing stored schema.
 Manual diagnostics and the proposed projection are economically incomparable until the study measures
 support time; the plan does not invent a weighted commercial score. No contested vendor selection is
 needed. Stop decision refinement after three cycles or two cycles without reducing blockers.
@@ -355,10 +356,10 @@ The historical sandbox mechanism remains usable within its separate authority, n
 
 | Phase / buyer outcome | Reuse / smallest delta / owner | Exit and prerequisite | Active bounds / recovery / recheck |
 |---|---|---|---|
-| R0 reviewable plan / historical; current D11 below | S1–S8; parent + this companion / architect | Eight VCC joins, exact source, five flows, checks and gaps recorded | Original 30 min estimate, 40 min cap; 2 Markdown files/60 KB changed bytes; current bounds in D11 |
-| R1 reviewed offer and honest context / historical implemented slice | W1–W3/W5; existing view extensions / commerce UI owner | Historical implementation follow-up; five human baseline walkthroughs remain an acceptance gap; CW-01–05,07 | Historical estimate ≤45 active min, cap 60 min; 12 files/90 KB diff, 0 new runtime modules; current execution uses D11 |
+| R0 reviewable plan / historical; current D12 below | S1–S8; parent + this companion / architect | Eight VCC joins, exact source, five flows, checks and gaps recorded | Original 30 min estimate, 40 min cap; 2 Markdown files/60 KB changed bytes; current bounds in D12 |
+| R1 reviewed offer and honest context / historical implemented slice | W1–W3/W5; existing view extensions / commerce UI owner | Historical implementation follow-up; five human baseline walkthroughs remain an acceptance gap; CW-01–05,07 | Historical estimate ≤45 active min, cap 60 min; 12 files/90 KB diff, 0 new runtime modules; current execution uses D12 |
 | R1b project navigation / CW-08 | W1/S8 native hash view and CSS / UI owner | Original list/detail, actual merchant scope, no copied assets; search, keyboard, offline and narrow layouts checked | Estimate 40 active min, cap 50 min; ≤7 files/90 KB diff, 0 new modules/packages/services; preserve drafts when reverting UI |
-| R2 equivalent agent preparation / historical contract | W4 existing schema/adapters / integration owner | Three merchant browser tools and four workspace reads remain separate implemented contracts; CW-D04 evidence below | Historical 4 active hours estimate, 1-day cap; ≤4 modules/30 KB; current execution uses D11 |
+| R2 equivalent agent preparation / historical contract | W4 existing schema/adapters / integration owner | Three merchant browser tools and four workspace reads remain separate implemented contracts; CW-D04 evidence below | Historical 4 active hours estimate, 1-day cap; ≤4 modules/30 KB; current execution uses D12 |
 | R3 priced setup pilot / conditional | Existing first-dollar sprint and native demo / product owner | Named consenting prospect, accepted priced deliverable and explicit outreach/collection authority | ≤2 hours preparation, ≤1 hour delivery target; 0 runtime modules/$0 new infrastructure; prospect wait rechecked when response/authority arrives |
 
 Each phase has a maximum of three implementation/alignment iterations. Runtime serving-token cap is
@@ -444,7 +445,7 @@ as finished.
 
 ## From-0-to-1 coverage — reference implementation
 
-All rows bind `edge-commerce-agent-mvp@0.21.0`. Coverage is a disposition, not readiness or validation.
+All rows bind `edge-commerce-agent-mvp@0.22.0`. Coverage is a disposition, not readiness or validation.
 Dispositioned **16/16**; covered applicable **11/16**; deferred **5**; not applicable **0**.
 
 | Domain | Decision / exact source section in this revision | Accountable owner / evidence or gap / next check |
@@ -499,13 +500,15 @@ Production was unchanged; those results do not pass the new F6/F7 criteria or hu
 views for Vendor/Admin/project offers, with the existing Commerce edit/review actions. The Graph
 [0.4.0 plan][graph-plan] and [1.2.0 embed contract][graph-embed] own the shared component; this
 five-role join owns host integration. User authorization is the explicit embed option selected in chat.
-Clean Graph source `a9a2e31f78e84b984e5176a6f761e5c737ad6ea3` is pinned in [config/graph-data-view.json](../config/graph-data-view.json), including input/output hashes and MIT notices. JS/CSS/token CSS are 168,142/52,697/6,088 bytes. [Graph PR1563](https://github.com/huijoohwee/agentic-graph/pull/1563) is published; protected [run37284086847](https://github.com/huijoohwee/agentic-graph/actions/runs/37284086847) remains pending at authoring.
+Clean Graph source `a9a2e31f78e84b984e5176a6f761e5c737ad6ea3` is pinned in [config/graph-data-view.json](../config/graph-data-view.json), including input/output hashes and MIT notices. JS/CSS/token CSS are 168,142/52,697/6,088 bytes. [Graph PR1563](https://github.com/huijoohwee/agentic-graph/pull/1563) is published; protected [run37284086847](https://github.com/huijoohwee/agentic-graph/actions/runs/37284086847) passed at 2026-10-05T08:41:13Z; no merge or deployment is inferred.
 Graph's ten selected native regressions, four adapter tests, typecheck and repeated byte-identical build pass; two unchanged lazy-media fixtures reproduce at G0, as retained in its plan. This read-only portable subset is not full Graph parity.
 Commerce passes six projection/provenance tests, typecheck, authored limits (490 files), invocation (12), WebMCP (6) and real MCP/HTTP/sigil parity (5).
 Clean Commerce `5f25ff69f2b7fee4a5c4f089103ec17e673747b2` passes 215 local unit tests and all 11 browser groups plus Program Pack/durable listing at 2026-10-05T08:36:17Z; artifact digest `9ea580c5887a334eaf3179ff427fa58428ba5791e7875515d168fd6a7ce76cf0`. Scope: native list/detail at 360/768/1280 px, 14 px text, Enter/Space and return focus, offline rows/properties, 200% text resize at 360/768/1024/1280 px, storage recovery and no private remote writes. This supersedes the working-source observation only for those checks.
 The existing workspace owner now awaits route completion before restoring scroll/focus; checkout assertions pass after this race correction, with no added module.
 Evidence patch 0.21.1 retains all five acceptance roles at 0.21.0. Native publication committed 5f25ff6, then stopped at `blocked-publication-stale-base`; no Commerce PR was created. Exact native alignment to `0204010637b0671a1b8a3415c0018c29d62aab85` stopped at `blocked-lane-alignment-overlap`, despite verified equality of predecessor 9f2e629 and squash 020401 trees. The native owner supports only disjoint alignment; preserve this lane for its alignment-owner repair and recheck when that owner supplies a supported transition. No manual bypass or cleanup is authorized by this result.
-Graph protected CI, Commerce publication/integration and deployment remain separate open gates. Full-profile local workerd/evaluator prerequisites remain baseline limitations. Physical-device, human/TTV and customer acceptance are unobserved; deployment needs its own approval and retained-reader recovery.
+Graph protected CI is green; Commerce publication/integration and deployment remain separate open gates. Full-profile local workerd/evaluator prerequisites remain baseline limitations. Physical-device, human/TTV and customer acceptance are unobserved; deployment needs its own approval and retained-reader recovery.
+
+**CW-D12 / 0.22.0:** C1 implementation uses shared validation for the four-step editor and three-step `offer.review` assessment; exact saved-revision acknowledgment remains human/UI-owned (F8/CW-A13). Fifteen setup/launch/invocation tests pass, including workerd MCP; typecheck, authored limits, invocation12 and WebMCP6 pass. Targeted browser checks pass offline review/export, all 14 field invalidations, IndexedDB abort/retry, stale BroadcastChannel recovery, keyboard focus and 200% text at 320/768/1280. Final regressions pass: `draft_revision_conflict` exposes Reload without BroadcastChannel while preserving unsaved/stored data; serialized `openSavedDraft` disables controls before delayed storage reads and restores the current revision without acknowledgment. Those regressions took 5.3 seconds with zero page errors. Exact committed-source verification is recorded separately in the release handoff. Graph pin/design ownership remain unchanged. Native publication is attempted once final source is ready; any inherited alignment blocker remains with its owner. No readiness-to-sell, provider, physical-device or customer acceptance follows.
 
 ### Existing invocation contract, reference implementation
 
@@ -532,12 +535,10 @@ confirmation are added. Exact sigil spelling/order is required; standalone alias
 
 ### Bounded next increment and first-dollar path
 
-CW-D11: 60–75 active minutes, 25 admitted paths across Graph and Commerce, ≤140 kB authored
-changed bytes excluding generated dependency artifacts/provenance; report generated bytes separately.
-Three new runtime owners: Graph core/adapter and Commerce projection; one Graph-owned generator.
-Every authored file <600 lines; every chunk <500,000 bytes; zero new paid plans/addons/overages,
-serving-model tokens or runtime service prerequisites. Existing locked FOSS dependencies only.
-Lazy-load the view on relevant surfaces; cache exact local artifacts for offline use after priming.
+CW-D12: 35–45 active minutes, 12 admitted Commerce files, ≤55 kB authored changed bytes,
+zero new runtime modules/dependencies; every file <600 lines and chunk <500,000 bytes.
+No new paid plans/addons/overages, serving-model tokens, hosted service or always-load module.
+Reuse the existing editor, validation, exact saved review and capability; Graph artifacts stay pinned.
 Three review cycles; refresh the cap on drift. Provider waits name a missing receipt and recheck on
 results/source drift, without a delivery ETA. Human acceptance waits for E1/E2 actual observations.
 
@@ -563,7 +564,7 @@ stop after three alignment cycles or two without blocker reduction.
 | PRD-TAD-ADR-MVP-GTM | CID | RAO | Updated Date |
 |---|---|---|---|
 | Historical console delivery handoff | edge-commerce-agent-mvp@0.16.0 / CW-D09, RR-D10 | UI/runtime owners → retain exact source and delivery receipts → Development: cb06 protected integration; Production Release: successful run 37214188137/v3 receipt; Runtime: public browser and actual-listing recovery passed; human acceptance remains open | 2026-10-04 |
-| CW-D11 native reuse | edge-commerce-agent-mvp@0.21.0 / F6–F7 | Graph/Commerce owners → one core and pinned local adapter → clean 5f25 local checks pass; native source publication blocked on alignment-owner repair, runtime/human acceptance separate | 2026-10-05 |
+| CW-D12 offer setup | edge-commerce-agent-mvp@0.22.0 / F8 | Commerce UI/domain owners → shared checklist and exact saved review → bounded checks pass, exact proof in release handoff; inherited publication blocker and separate runtime/human gates | 2026-10-05 |
 | Next authorized planning action | Same join / CW-P1 | Product → identify one reachable merchant and proposed priced outcome → E1 inputs; prerequisite: explicit contact authority, recheck on supplied prospect | 2026-10-04 |
 | Next acceptance action | Same join / CW-01–08 | Product/QA → run five human baseline tasks and resolve full-runtime prerequisites → independently bound acceptance; recheck when participants/runtime are available | 2026-10-04 |
 

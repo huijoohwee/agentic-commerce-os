@@ -10,6 +10,7 @@ import { waitForReadiness } from './readiness.mjs';
 import { waitForAssets } from './availability.mjs';
 import { checkRoleWorkspace } from '../../test/local-first/workspace-browser.mjs';
 import { checkMerchantLaunch } from '../../test/local-first/merchant-browser.mjs';
+import { checkOfferSetup } from '../../test/local-first/offer-setup-browser.mjs';
 import { BROWSER_CHECKS, BROWSER_PROOF_SCHEMA, completeBrowserChecks, assertBrowserProof,
   LIVE_BROWSER_PROOF_SCHEMA, completeLiveBrowserChecks, assertLiveBrowserProof } from './browser-proof.mjs';
 import { LIVE_CHECKOUT_PROFILE_SHA256 } from '../../src/local-first/checkout-offer.ts';
@@ -164,6 +165,7 @@ try {
   assert.equal(await imported.evaluate(() => window.injected), undefined);
   await checkRoleWorkspace({ browser, url, output, observeContext, record });
   await checkMerchantLaunch({ browser, url, output, observeContext, record });
+  await checkOfferSetup({ browser, url, output, observeContext });
   assert.deepEqual(failures.filter(failure => failure.type === 'page'), []);
   assert(requests.every(request => request.method === 'GET' && new URL(request.url).origin === origin));
   record(BROWSER_CHECKS.privacy);

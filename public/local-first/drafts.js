@@ -24,16 +24,28 @@ export function validWorkflow(value) {
     && (value.reviewedDigest === null || value.status === 'completed' && value.reviewedDigest === value.outputDigest);
 }
 
-export function validLaunchTerms(value) {
-  return value && typeof value === 'object' && !Array.isArray(value)
-    && Object.keys(value).sort().join() === TERMS_KEYS.join()
-    && ['merchantId', 'agentId'].every(key => typeof value[key] === 'string' && /^[a-z0-9][a-z0-9._-]{0,127}$/.test(value[key]))
-    && ['audience', 'outcome'].every(key => typeof value[key] === 'string'
-      && value[key].trim() === value[key] && value[key].length > 0 && value[key].length <= 280)
-    && typeof value.currency === 'string' && /^[A-Z]{3}$/.test(value.currency)
-    && MONEY_KEYS.every(key => Number.isSafeInteger(value[key]) && value[key] >= 0 && value[key] <= MAXIMUM_AMOUNT_MINOR)
-    && value.priceMinor > 0;
+export function launchFieldIssues(value) {
+  const issues = [], issue = (field, message) => issues.push({ field, message });
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    issue('launch', 'Use the supported launch fields.'); value = {};
+  } else if (Object.keys(value).sort().join() !== TERMS_KEYS.join()) issue('launch', 'Use all supported launch fields without extra properties.');
+  for (const key of ['merchantId', 'agentId']) {
+    if (typeof value[key] !== 'string' || !/^[a-z0-9][a-z0-9._-]{0,127}$/.test(value[key]))
+      issue(key, 'Use 1–128 lowercase letters, numbers, dots, underscores or hyphens, starting with a letter or number.');
+  }
+  for (const key of ['audience', 'outcome']) {
+    if (typeof value[key] !== 'string' || value[key].trim() !== value[key] || !value[key].length || value[key].length > 280)
+      issue(key, 'Add 1–280 characters without leading or trailing spaces.');
+  }
+  if (typeof value.currency !== 'string' || !/^[A-Z]{3}$/.test(value.currency)) issue('currency', 'Use a three-letter currency code.');
+  for (const key of MONEY_KEYS) {
+    if (!Number.isSafeInteger(value[key]) || value[key] < 0 || value[key] > MAXIMUM_AMOUNT_MINOR)
+      issue(key, 'Use a non-negative whole minor-unit amount within the supported limit.');
+    else if (key === 'priceMinor' && value[key] === 0) issue(key, 'Planned price must be greater than zero.');
+  }
+  return issues;
 }
+export function validLaunchTerms(value) { return launchFieldIssues(value).length === 0; }
 
 export function validDraft(value, legacy = false) {
   return value && typeof value === 'object' && !Array.isArray(value)
@@ -108,7 +120,8 @@ export function saveDraft(input, expectedRevision = null, { allowNewWorkflow = f
       let previous;
       try { previous = read.result ? normalizeStored(read.result) : null; } catch (error) { fail(error); return; }
       if ((previous?.revision ?? null) !== expectedRevision) {
-        fail(Error('This draft changed in another tab. Export or copy your edits, then reopen the saved draft.')); return;
+        fail(Object.assign(Error('This draft changed in another tab. Export or copy your edits, then reopen the saved draft.'),
+          { code: 'draft_revision_conflict' })); return;
       }
       if (input.workflow && !previous?.workflow && allowNewWorkflow !== true) {
         fail(Error('Reconnect to the execution host before preparing a new listing. Your draft was kept.')); return;
