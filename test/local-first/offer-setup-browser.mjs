@@ -163,8 +163,9 @@ export async function checkOfferSetup({ browser, url, output, observeContext }) 
     await expect(launcher).toHaveAttribute('aria-expanded', 'false');
     await expect(guide(page)).toHaveCount(0);
     await launcher.focus(); await page.keyboard.press('Enter');
-    await openGuide(page);
-    await expect.poll(() => guide(page).evaluate(host => Boolean(host.shadowRoot?.activeElement))).toBe(true);
+    await expect(launcher).toHaveAttribute('aria-expanded', 'true');
+    await expect(guide(page).getByRole('heading', { name: 'Offer setup', exact: true })).toBeFocused();
+    await expect(guide(page).locator('button[data-step-id]')).toHaveCount(4);
     await progress(page, 0);
     for (const name of steps) await expect(step(page, name)).toContainText('Needs attention');
     await selectStep(page, 'review');
