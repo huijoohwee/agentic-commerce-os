@@ -4,27 +4,27 @@ doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "DURABLE-LISTING-FULFILLMENT-001"
 upstream_continuity_id: "DURABLE-AGENT-WORKFLOWS-001"
 upstream_revision: "0.2.0"
-version: "0.2.0"
+version: "0.2.1"
 prd_revision: "0.2.0"
 tad_revision: "0.2.0"
 adr_revision: "0.2.0"
 mvp_revision: "0.2.0"
 gtm_revision: "0.2.0"
-date: "2026-09-16"
+date: "2026-10-05"
 lang: "en-US"
 owner: "agentic-commerce-os"
 frontmatter_contract: "required"
 load_policy: "on-demand"
 local_rung: "documented"
 delivered_rung: "undocumented"
-readiness_scope: "v0.2.0 source implementation; historical public release unchanged; current runtime and rollback proof pending"
+readiness_scope: "v0.2.0 source hardening and cold-copy recovery fixture; deployed host retains independent historical pins"
 lane: "authoring"
 universal_scope: false
-worktree_id: "device-0232231d4a19--agent-economics-fulfillment"
-agent_id: "codex-01a0a823"
+worktree_id: "device-0232231d4a19--commerce-runtime-completion"
+agent_id: "codex-01a1076a"
 guideline_revision: "2.7.0"
 guideline_source_revision: "e9675f27d1eb1e30ae6b8f82669ff7e546d85c65"
-reviewed_source_revision: "0162872948dbf27d9811daea9e59ffc0b81f9cf3"
+reviewed_source_revision: "173e994784cca2befb458868a6fb01d456d75628"
 ---
 
 # Durable listing fulfillment
@@ -184,6 +184,41 @@ The browser receives a signed HttpOnly session and a separate CSRF value. Missin
 leave listing preparation available and return an explicit checkout-unavailable response.
 SIGINT/SIGTERM drain the host. Stopping the host preserves the SQLite directory and browser drafts.
 This is the existing device-session availability policy, not an always-on availability claim.
+
+### Quiesced recovery and diagnostics — 2026-10-05 evidence
+
+This evidence amendment preserves the five-role 0.2.0 requirement join. The swarm and toolkit
+adapters share the OS-owned `swarm.sqlite` in the configured directory. For an operator recovery copy:
+
+1. Stop admission and await a successful host close; it drains the native host before closing both
+   SQLite handles. Confirm no other process owns that directory. A timeout is not a quiescence proof.
+2. Copy the complete stopped private directory into a new private location, preserving ownership
+   and permissions. Retain the original unchanged; do not copy just a live database or WAL file.
+3. Separately retain the private signing secret and exact source, bundle, model and relay configuration.
+   Start one compatible host over the copy, then read the original browser's completed run and output
+   digest before resuming admission. Do not run two writable hosts over the same recovered state.
+
+`fulfillment-relay.test.mjs` performs this sequence with real HTTP and temporary SQLite stores:
+the original browser reads the identical completed result from a fresh directory, another browser
+is denied, repeated start does not rerun inference, and changing the host signing secret denies
+the original principal. Restoring that secret recovers access with the model request count still one.
+This is synthetic cold-copy recovery evidence, not a production backup, lost-device drill or automatic
+off-device retention. An expired/lost browser session still needs its separate recovery contract;
+draft JSON does not restore transaction authority. No RPO, RTO or unattended availability is asserted.
+
+Authenticated overlapping host probes share one artifact verification with at most four observers
+and one 15-second deadline. Each caller can cancel independently; losing all observers aborts the
+verification. An aborted verifier that has not settled refuses retries. Success is never cached;
+the next sequential probe and every inference still verify artifacts. Sequential probe load and
+host-wide audience/resource admission remain separate qualification work.
+
+The CLI now emits sanitized diagnostic counts/reasons to stderr, at most 60 records per minute,
+with bounded suppression reporting and stream backpressure handling. It excludes prompts, outputs,
+principal/run IDs and credentials. The sink cannot control execution; it is not an independent alert.
+The host/relay suites pass 13 tests, including direct/symlinked CLI startup refusal and event redaction.
+The lockfile corrects `fast-uri` to 3.1.8, `hono` to 4.13.13 and `ip-address` to 10.7.3;
+the current production-dependency audit reports zero findings. These source observations require
+protected integration and fresh host/edge pins before they describe a deployed runtime.
 
 ### Authenticated edge connection
 

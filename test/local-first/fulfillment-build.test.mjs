@@ -4,7 +4,18 @@ import {mkdtempSync,rmSync,readFileSync,realpathSync} from 'node:fs';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {spawnSync} from 'node:child_process';
-import {buildLocalHost} from '../../scripts/local-host/build.ts';
+import {buildLocalHost,listingPlanJoin} from '../../scripts/local-host/build.ts';
+
+test('evidence patch versions preserve the accepted five-role listing plan',()=>{
+  const plan=readFileSync(new URL('../../docs/durable-fulfillment.md',import.meta.url),'utf8');
+  const bytes=text=>new TextEncoder().encode(text);
+  const accepted=listingPlanJoin(bytes(plan));
+  assert.deepEqual(Object.values(accepted.revisions),Array(5).fill('0.2.0'));
+  assert.deepEqual(listingPlanJoin(bytes(plan.replace(/version: "[^"]+"/,'version: "0.2.7"'))),accepted);
+  for(const changed of [plan.replace(/version: "[^"]+"/,'version: "0.3.0"'),
+    plan.replace('tad_revision: "0.2.0"','tad_revision: "0.2.1"')])
+    assert.throws(()=>listingPlanJoin(bytes(changed)),/listing_plan_join_invalid/);
+});
 
 test('installed durable host builds within budget and rejects absent private configuration',async t=>{
   const directory=realpathSync(mkdtempSync(join(tmpdir(),'listing-build-')));
