@@ -1,6 +1,6 @@
 {
   "schema": "agentic-graph/data-view-artifact/v1",
-  "sourceRevision": "12a1fe81db1585bd516f71f25653bf0ec87b520b",
+  "sourceRevision": "bf70fc3f33114bc0a4f971ad44b84d43bf25bb56",
   "sourceDirty": false,
   "entry": "canvas/src/features/markdown/ui/dataViewBrowserAdapter.tsx",
   "browserExport": "mountDataView",

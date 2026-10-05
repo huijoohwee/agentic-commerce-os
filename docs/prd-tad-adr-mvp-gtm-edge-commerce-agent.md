@@ -72,7 +72,7 @@ and exact saved-revision review/acknowledgment. The first three steps may follow
 the final step requires persisted exact review and explicit acknowledgment, invalidated by edit/error/staleness.
 `drafts.js` validation and `launch.js` inspection/assessment stay shared with existing `offer.review`
 through MCP/WebMCP `/ @ #`; agents receive three-step assessment, never approval authority.
-D13 pins clean Graph12a1fe81: one native shell/step owner and generated styles; guide5/native-sequence39/table4 and full Commerce browser checks pass. Four broader Graph source guards fail identically at predecessor a9a2e31. Commerce rules remain shared. Canvas OS remains a consumer; future ownership migration must move every caller together. OS adds generic declared ownership/generation checks; publication and runtime remain separate gates. Exact receipts live in the handoff.
+D13 pins clean Graphbf70fc3f: one native shell/step owner and generated styles; guide5/native-sequence39/table4 and full Commerce browser checks pass. CI-selected guards pass15/15; three broader guards fail identically at predecessor a9a2e31. Commerce rules remain shared. Canvas OS remains a consumer; future ownership migration must move every caller together. OS adds generic declared ownership/generation checks; publication and runtime remain separate gates. Exact receipts live in the handoff.
 The five section roles below retain EC-01–EC-10; each consumes its matching companion section
 for CW requirements/design/decisions/MVP/GTM. Historical receipts remain at their recorded revisions.
 The 0.6.0 sandbox retains its scoped evidence. Revision 0.14.0 adds a compact project console and merchant detail views over saved local drafts,
