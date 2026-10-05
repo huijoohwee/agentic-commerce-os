@@ -2,8 +2,8 @@
 title: "Reference Implementation — Native Commerce, Workspaces and First-Dollar Boundary"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "edge-commerce-agent-mvp"
-revision: "0.17.2"
-version: "0.17.2"
+revision: "0.17.3"
+version: "0.17.3"
 prd_revision: "0.17.0"
 tad_revision: "0.17.0"
 adr_revision: "0.17.0"
@@ -15,7 +15,7 @@ frontmatter_contract: "required"
 owner: "Commerce product architecture"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
-readiness_scope: "LC-01–LC-07 live static-asset checkout implementation; activation and delivered proof pending"
+readiness_scope: "Sandbox production verified at eb85; LC-01–LC-07 live checkout dev-proven, activation pending"
 lane: "authoring"
 universal_scope: false
 load_policy: "on-demand"
@@ -580,3 +580,9 @@ The document owner must capture one timed pilot in the buyer’s existing worksp
 **Operator gate / next action:** leave the current host healthy through preparation and approval. Cut over only after this run's actual owner approval, successful authorization step and running sandbox deployment step, with at least 180 seconds remaining under `deployment-step.started_at + 300 seconds`; otherwise retain the old host and fail closed. Drain the exact process, preserve complete stopped current state, start qualified H574 over a fresh copy, then retain local/public identity and actual-listing/reader-rollback receipts. Startup/provider failure remains possible: pre-upload failure requires preserved-state forward recovery, never an old writer on upgraded data. Live-reader/live need separate approvals, Stripe Accounts Read, verified account/offer, controlled webhook provisioning and private secret installation. No charge, activation or unattended availability is claimed here. Recheck external CI/permission/approval waits on their result, without an ETA.
 
 **Local validation:** 52 affected fulfillment/release/rollback tests, typecheck, 480-file authored limits, 16 evidence-contract, eight convergence and 11 deploy-boundary assertions passed; independent review has no remaining P1/P2. Successor publication and exact protected CI remain the next source gates.
+
+**Sandbox delivered / 0.17.3:** supersedes prior gates. PR113 integrated `eb85af25eed19af667abd940f17cae2c4454e62d`. After owner approval, [run 37253499869](https://github.com/huijoohwee/agentic-commerce-os/actions/runs/37253499869) succeeded at 2026-10-05T02:08:49.787Z: Worker `7906c7f6-b4e8-4746-a19d-1cd65362eb3d`, restored deployment `d3dc8ef4-988a-4cee-baee-e3c6efa2444a`, completion receipt `8e655d4bf8ed39548f13b9ed1d2d39c28c38457125c735e1f0d530d89d9cd2b7`, rollback proof `2a0c2aa3cc2bf0d3d43538a29cc37835a20e1474ac244565657b971a65a645d5`; JSON in run artifacts.
+
+**Recovery:** old host drained; backup retained; H574 started on a fresh state copy with retained row unchanged. Candidate refusal/old-host readiness → temporary 502 → exact H574 readiness took 113 seconds within 300. Actual public-browser listing survived no-execution reader `1c04f403-9cc1-4b45-9dbb-a83e5f3ce7b4` and exact restore; both verified, unknown write and payment false. Public readiness: 200, eb85, fulfillment ready. Device-session only; no always-on/off-device recovery or customer/revenue proof.
+
+**Live / source handoff:** LC remains dev-proven. Account read returns 403 `more_permissions_required`; manual Accounts Read, account/offer verification, controlled webhook provisioning and private secrets precede separately approved live-reader/live releases. No new endpoint/live GitHub secrets. This document is outside artifact entries/listing build inputs: no deployment; runtime stays eb85. Scope: 10min/4kB/zero modules; document checks, protected integration.
