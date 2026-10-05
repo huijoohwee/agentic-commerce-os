@@ -23,7 +23,7 @@
     <section id="shop" data-role-panel="shop" aria-labelledby="shop-heading">
       <div class="workspace-shell">
         <aside id="shop-navigation" class="sidebar console-sidebar" aria-label="Shopper navigation"><button class="console-search secondary" type="button" data-workspace-search><span aria-hidden="true">⌕</span> Search offers <kbd>⌘ K</kbd></button>
-          <p class="sidebar-label">Storefront</p><a href="#shop" data-view="shop"><span aria-hidden="true">◫</span> Offer collection</a><a id="shop-checkout-nav" href="#shop-sandbox"><span aria-hidden="true">▧</span> Sandbox example</a>
+          <p class="sidebar-label">Storefront</p><a href="#shop" data-view="shop"><span aria-hidden="true">◫</span> Offer collection</a><a id="shop-checkout-nav" href="#shop-sandbox"><span aria-hidden="true">▧</span> Sandbox example</a><a href="#checkout" data-view="checkout"><span aria-hidden="true">▤</span> Checkout</a>
           <p class="sidebar-label">Workspace</p><a href="#vendor"><span aria-hidden="true">▤</span> Manage offers</a><a href="#admin-tools"><span aria-hidden="true">⌘</span> Tools &amp; commands</a><a href="#admin-runtime"><span class="status-dot" aria-hidden="true"></span> Environment</a>
           <div class="sidebar-note"><span class="status-dot" aria-hidden="true"></span><strong>Private storefront preview</strong><p>Explore saved offers on this device.<br>Preview prices are estimates.</p></div>
         </aside>
@@ -45,7 +45,8 @@
       </div>
     </section>
     <section id="checkout" data-role-panel="checkout" hidden aria-labelledby="checkout-heading">
-      <div class="collection"><a href="#shop">← Back to shop</a><div class="section-heading"><div><p id="checkout-kind" class="eyebrow">SANDBOX ORDER</p><h1 id="checkout-heading" tabindex="-1">Review. Try. Get started.</h1></div></div>
+      <div class="workspace-shell"><div class="workspace-content">
+        <div class="console-heading"><div><h1 id="checkout-heading" tabindex="-1">Review. Try. Get started.</h1><p>Review the offer, confirm checkout, and keep access to your download.</p></div><span id="checkout-kind" class="badge quiet">SANDBOX ORDER</span></div>
         <div class="editor-layout"><article class="panel"><p id="checkout-offer-kind" class="eyebrow">AIRVIO.CO · SANDBOX EXAMPLE</p><h2 id="checkout-title">__OFFER_TITLE__</h2><p id="checkout-description">A practical launch guide and reusable worksheets for your first agentic commerce offer.</p><p id="checkout-price" class="preview-price">__OFFER_PRICE__ · Test mode</p>
           <h3>What you receive</h3><ul><li>A focused guide to designing and validating your first offer</li><li>Reusable buyer interview, unit economics and launch worksheets</li><li>A human review checklist for agent-assisted commerce</li></ul>
           <p id="checkout-terms" class="footnote">No charge. This sandbox uses Stripe test mode and provides a sample download. Your sandbox session stays on this device for seven days; save the file if you want to keep it. The content is open and its source is public. This does not include a hosted agent service.</p>
@@ -58,7 +59,7 @@
           <section id="checkout-recovery" hidden aria-labelledby="checkout-recovery-heading"><h3 id="checkout-recovery-heading">Keep access to your purchase</h3><p class="footnote">Save your recovery file before continuing to Stripe. Anyone with this file can access your order and download after payment. Keep it private. Restore it here if browser data is cleared or you change devices; restoring switches this browser to that order.</p><button id="checkout-save-recovery" class="secondary" type="button" disabled>Save recovery file ↓</button><label class="button secondary" for="checkout-restore-recovery">Restore recovery file</label><input id="checkout-restore-recovery" class="file-input" type="file" accept="application/json,.json"><p id="checkout-recovery-status" class="footnote" role="status"></p></section>
           <p id="checkout-payment-note" class="footnote">Use Stripe test card 4242 4242 4242 4242 with any future expiry and three-digit CVC. A declined test uses 4000 0000 0000 0002. Do not enter real payment details. Test results are not revenue. Returning from Stripe does not confirm payment; this page verifies it with Stripe.</p>
         </section></div>
-      </div>
+      </div></div>
     </section>
     <section id="vendor" data-role-panel="vendor" hidden>
       <div class="workspace-shell">

@@ -10,7 +10,17 @@ dialog{border:1px solid var(--line);border-radius:8px;width:min(570px,calc(100% 
 
 .live-offer{display:flex;align-items:center;justify-content:space-between;gap:2rem}.live-offer h3{font-size:1.6rem}.live-offer>div:last-child{min-width:12rem}#checkout .panel>button,#checkout .panel>a.button{margin:.4rem .4rem .4rem 0}#checkout-status{min-height:3rem}#checkout li{margin:.6rem 0}#checkout-order{overflow-wrap:anywhere}@media(max-width:600px){.live-offer{display:block}.live-offer>div:last-child{margin-top:1.5rem}}
 #checkout-recovery:has(.file-input:focus-visible) label{outline:3px solid #7c9466;outline-offset:3px}
-@media(min-width:1001px){#checkout .editor-layout{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);align-items:start}}
+#checkout .editor-layout{grid-template-columns:minmax(0,1fr);align-items:start}
+#checkout .panel{min-width:0}
+#checkout .panel p,#checkout .panel li,#checkout .panel>a:not(.button){font-size:.76rem;line-height:1.7}
+#checkout .panel h3{font-size:.82rem;margin:22px 0 10px}
+#checkout .panel .footnote{font-size:.7rem;color:var(--muted)}
+#checkout .panel .preview-price{font-size:1.1rem;font-weight:600;margin:20px 0}
+#checkout ul{padding-left:20px}
+#checkout-status{padding:12px 14px;background:var(--paper);border:1px solid var(--line);border-radius:6px;overflow-wrap:anywhere}
+#checkout-recovery{border-top:1px solid var(--line);margin-top:20px;padding-top:2px}
+#checkout-recovery .button,#checkout-recovery button{margin:4px 4px 4px 0}
+@media(min-width:1200px){#checkout .editor-layout{grid-template-columns:minmax(0,1fr) minmax(0,1.1fr)}}
 
 #listing-output,#listing-dialog h3{overflow-wrap:anywhere}
 

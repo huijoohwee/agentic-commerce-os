@@ -2,13 +2,13 @@
 title: "Reference Implementation — Native Commerce, Workspaces and First-Dollar Boundary"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "edge-commerce-agent-mvp"
-revision: "0.17.3"
-version: "0.17.3"
-prd_revision: "0.17.0"
-tad_revision: "0.17.0"
-adr_revision: "0.17.0"
-mvp_revision: "0.17.0"
-gtm_revision: "0.17.0"
+revision: "0.18.0"
+version: "0.18.0"
+prd_revision: "0.18.0"
+tad_revision: "0.18.0"
+adr_revision: "0.18.0"
+mvp_revision: "0.18.0"
+gtm_revision: "0.18.0"
 date: "2026-10-05"
 lang: "en-US"
 frontmatter_contract: "required"
@@ -22,7 +22,7 @@ load_policy: "on-demand"
 runtime_readiness_policy: "fail-closed"
 lifecycle_status: "proposed"
 demand_status: "unvalidated"
-worktree_id: "device-0232231d4a19--live-education-checkout"
+worktree_id: "device-0232231d4a19--checkout-shop-parity"
 agent_id: "codex-01a1076a"
 source_revision: "173e994784cca2befb458868a6fb01d456d75628"
 guideline_revision: "3.4.0"
@@ -44,7 +44,7 @@ The proposed [native commerce transfer ecosystem](prd-tad-adr-mvp-gtm-native-com
 at `NATIVE-COMMERCE-TRANSFER-001@0.2.1` specifies MainPanel, transfer and policy-evidence enhancements.
 It consumes this sandbox baseline and inherits no implementation, payment or deployment readiness.
 
-`edge-commerce-agent-mvp@0.17.0` joins [PRD](#prd), [TAD](#tad), [ADR](#adr), [MVP](#mvp)
+`edge-commerce-agent-mvp@0.18.0` joins [PRD](#prd), [TAD](#tad), [ADR](#adr), [MVP](#mvp)
 and [GTM](#gtm). PRD owns criteria; TAD consumes that exact revision; ADR binds the design;
 MVP and GTM consume their checks and outcomes. This document describes concrete choices for
 this reference implementation, not universal vendor requirements. Shared [guidelines][guideline]
@@ -586,3 +586,8 @@ The document owner must capture one timed pilot in the buyer’s existing worksp
 **Recovery:** old host drained; backup retained; H574 started on a fresh state copy with retained row unchanged. Candidate refusal/old-host readiness → temporary 502 → exact H574 readiness took 113 seconds within 300. Actual public-browser listing survived no-execution reader `1c04f403-9cc1-4b45-9dbb-a83e5f3ce7b4` and exact restore; both verified, unknown write and payment false. Public readiness: 200, eb85, fulfillment ready. Device-session only; no always-on/off-device recovery or customer/revenue proof.
 
 **Live / source handoff:** LC remains dev-proven. Account read returns 403 `more_permissions_required`; manual Accounts Read, account/offer verification, controlled webhook provisioning and private secrets precede separately approved live-reader/live releases. No new endpoint/live GitHub secrets. This document is outside artifact entries/listing build inputs: no deployment; runtime stays eb85. Scope: 10min/4kB/zero modules; document checks, protected integration.
+
+**Checkout continuity / 0.18.0 — PRD:** CX-01 requires checkout and shop to retain the same header, navigation, breadcrumb, panel typography and responsive shell; navigation collapse persists across both, and shopper search returns focus to the existing offer search. CX-02 preserves confirmation, offline refusal, sandbox/live/reader distinctions, recovery-before-payment and verified downloads. Existing tool discovery and MCP/WebMCP `/ @ #` owners remain the invocation contract. The scope is this checkout journey; it does not assert full-platform equivalence.
+**TAD / ADR:** ground on integrated `9bcd091c1807ed5af00a153a8a00e9fb7aec15e4`; reuse `public/local-first/{index.html,workspace.js,style.css}` and the single shopper navigation DOM node. Keep checkout's payment route and lazy module, map its navigation/search context to shopper, and use readable paired desktop panels with a mobile stack. No new theme, dependency, backend or module. All five section roles consume 0.18.0; earlier receipt sections retain their historical acceptance joins.
+**MVP / GTM:** extend the existing checkout browser check for shared geometry, active location, collapse/search navigation and mobile overflow; run existing sandbox, live and reader fixtures for behavioral regression, plus authored limits, typecheck and invocation contracts. Bound: 30 active minutes, four UI owners maximum, one affected test and this document, 25kB diff, zero modules, every file <600 lines and chunk <500kB. Improve continuity for the existing offer without changing price, terms or claiming conversion/revenue evidence.
+**Handoff:** local sandbox, live and reader browser fixtures passed, including CX-01 shared shell/collapse/search and CX-02 confirmation/recovery/offline/download checks; no hosted payment was submitted. Typecheck, 480-file authored limits, evidence-contract16, invocation12 and WebMCP6 passed; independent review found no P1/P2. Local visual review covered desktop and mobile. Five files changed, three UI owners, zero modules; source receipts and screenshots are retained in `checkout-shop-parity-evidence.json` in the operator workspace. Current production remains release22/eb85. Owner: Commerce UI/release operator; next action: exact protected integration and native closeout, then separately authorized deployment. Accounts Read and actual live activation remain unresolved; recheck external CI/permission results without an ETA.
