@@ -1,0 +1,296 @@
+{
+  "schema": "agentic-graph/data-view-artifact/v1",
+  "sourceRevision": "a9a2e31f78e84b984e5176a6f761e5c737ad6ea3",
+  "sourceDirty": false,
+  "entry": "canvas/src/features/markdown/ui/dataViewBrowserAdapter.tsx",
+  "browserExport": "mountDataView",
+  "cssScope": "shadow-root",
+  "hostTokens": "graph-ui-tokens.css",
+  "dependencies": {
+    "esbuild": "0.25.12",
+    "tailwindcss": "4.3.3",
+    "@tailwindcss/node": "4.3.3",
+    "@tailwindcss/oxide": "4.3.3",
+    "postcss": "8.5.26",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "scheduler": "0.23.2"
+  },
+  "licenses": [
+    {
+      "package": "react",
+      "path": "node_modules/react/LICENSE",
+      "license": "MIT"
+    },
+    {
+      "package": "react-dom",
+      "path": "node_modules/react-dom/LICENSE",
+      "license": "MIT"
+    },
+    {
+      "package": "scheduler",
+      "path": "node_modules/react-dom/node_modules/scheduler/LICENSE",
+      "license": "MIT"
+    },
+    {
+      "package": "tailwindcss",
+      "path": "node_modules/tailwindcss/LICENSE",
+      "license": "MIT"
+    }
+  ],
+  "inputDigest": "c2ddb0baf35e7962c7d3dcdf862ab3b15ea20928ac3cdb27e4d8a28d16373bb7",
+  "inputs": [
+    {
+      "path": "canvas/package.json",
+      "bytes": 13450,
+      "sha256": "674dc066cadda95b23d2cbb9d7ceb6af8986f51143e3b35eecf0ae732bad6230"
+    },
+    {
+      "path": "canvas/scripts/build-data-view-adapter.mjs",
+      "bytes": 10977,
+      "sha256": "ffb085f4a4604e1e6afb14b8955fda82574ed0c8f8fff6663510fd88019ab1bf"
+    },
+    {
+      "path": "canvas/src/features/markdown/ui/MarkdownDataViewTableCore.tsx",
+      "bytes": 3890,
+      "sha256": "7cea2b033ba4d826f0e4b0cba40fb68f3e5ed7f93b33b38488f1a1f7c667817f"
+    },
+    {
+      "path": "canvas/src/features/markdown/ui/dataViewBrowserAdapter.tsx",
+      "bytes": 8028,
+      "sha256": "69288893866a9400845a517a0e67b950e6c67b84ee879943f08dd71002ed3b28"
+    },
+    {
+      "path": "canvas/src/features/markdown/ui/markdownDataViewColumnSizing.ts",
+      "bytes": 597,
+      "sha256": "92e799898bc8833e3fb2b1e8222598e2a5300e5eb2431d6ec349bb5d216f3967"
+    },
+    {
+      "path": "canvas/src/features/markdown/ui/markdownDataViewTableClasses.ts",
+      "bytes": 99,
+      "sha256": "b567c00da0f759181cc61ae69aab3afc683b05e792cc05225e8eea687849eda1"
+    },
+    {
+      "path": "canvas/src/index.css",
+      "bytes": 17576,
+      "sha256": "8b40f685689e917b7376ea6082f5074097f6b37f990d2f8fd6cd31cf70f5a0c2"
+    },
+    {
+      "path": "canvas/src/lib/ui/responsiveElementClasses.ts",
+      "bytes": 34575,
+      "sha256": "9587cf49e545c01ec05e5e5a75d1c33ea522074b0de1581d2df2799a1f59e031"
+    },
+    {
+      "path": "canvas/src/styles/application-typography.css",
+      "bytes": 612,
+      "sha256": "d707cf4607d6409bd778194ed2c364cc43e10e321843a4ce3ca8c8e5359d3196"
+    },
+    {
+      "path": "canvas/src/styles/markdown-data-view-table.css",
+      "bytes": 4170,
+      "sha256": "75a026836d9387935213f5bfa7c51abc1ccb6fda19c02ca25e391e16303cab6d"
+    },
+    {
+      "path": "canvas/src/styles/responsive-toolbar.css",
+      "bytes": 99027,
+      "sha256": "14f850f4459cf3359e176125b5b7efb18c4762447fa126adbba9559b7198f1d4"
+    },
+    {
+      "path": "canvas/src/styles/shared-borders.css",
+      "bytes": 2377,
+      "sha256": "829701ef1acc40dc1dc95de5b5d928d97ac76093bed8bca0b3222ab149a6bdd3"
+    },
+    {
+      "path": "canvas/src/styles/tailwind-theme.css",
+      "bytes": 1309,
+      "sha256": "4f2984eb181ffd7c0600f3df41e46c2e6b28ad6d3fb8a536b8f7618e3f2667a7"
+    },
+    {
+      "path": "grph-shared/package.json",
+      "bytes": 20986,
+      "sha256": "73bd3ceed04209202e462c146d9f17b307de4bc027b0714131385ebeb639b08b"
+    },
+    {
+      "path": "grph-shared/src/hash/stringHash.ts",
+      "bytes": 566,
+      "sha256": "9363a93a7115854eece0a87cc3f4a9eec9e7f26a35bc7a3a179edc51acbecc78"
+    },
+    {
+      "path": "grph-shared/src/ui/fontStacks.js",
+      "bytes": 354,
+      "sha256": "27fe9d5fb35e866c662a28551162a3451604aea43b93ecaf7ba457cb8c356916"
+    },
+    {
+      "path": "grph-shared/src/ui/intentTokens.ts",
+      "bytes": 1726,
+      "sha256": "a05beeccb61baf0738de6b1abe987864bcaa599bb7e36a66c7beb64d39f470e5"
+    },
+    {
+      "path": "grph-shared/src/ui/kgTokenContract.ts",
+      "bytes": 8808,
+      "sha256": "0c7557443e001f0bd1af27e14cfaabd62c801addf2f518b2dc3df241858c9710"
+    },
+    {
+      "path": "grph-shared/src/ui/kgTokens.ts",
+      "bytes": 10429,
+      "sha256": "aa79a7ff896366b68ad7858d6c2469be5ead5aa505336978ad5f58b362a7a20f"
+    },
+    {
+      "path": "grph-shared/src/ui/selectedRowClasses.ts",
+      "bytes": 1144,
+      "sha256": "3913017751b8b928faaef5731c103a09acb83cfda15e0a7296abe03197ab2118"
+    },
+    {
+      "path": "grph-shared/src/ui/themeTokens.ts",
+      "bytes": 10257,
+      "sha256": "51bcb3e8f117a4648ea16fa1ecaad81211bb79a16c2563a0e318e892e944703f"
+    },
+    {
+      "path": "grph-shared/src/ui/typography.ts",
+      "bytes": 1780,
+      "sha256": "82d83deb9cba2ae5549069780e028849ee7365d46d97dff2574cdd1a00df8047"
+    },
+    {
+      "path": "node_modules/@tailwindcss/node/package.json",
+      "bytes": 1247,
+      "sha256": "2afa932dc85e4edc27126e83f8b31df2d5ec5b15f86b5033182d6a82466ed43f"
+    },
+    {
+      "path": "node_modules/@tailwindcss/oxide/package.json",
+      "bytes": 2221,
+      "sha256": "d57385a0a2f680b35a488f9a9816490a6580cc7a989a430e3e426b4c24af212e"
+    },
+    {
+      "path": "node_modules/esbuild/package.json",
+      "bytes": 1490,
+      "sha256": "cb7d5b1fe478f8cbaae566a86031b6fdf5f7d444354f35d1cb3cba9adf6d2935"
+    },
+    {
+      "path": "node_modules/postcss/package.json",
+      "bytes": 2497,
+      "sha256": "e0f23518d0e8fc0570ac68438eff7ecc7554774de3194af6f54f502e33f0c25b"
+    },
+    {
+      "path": "node_modules/react-dom/LICENSE",
+      "bytes": 1086,
+      "sha256": "52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85"
+    },
+    {
+      "path": "node_modules/react-dom/cjs/react-dom.production.min.js",
+      "bytes": 131685,
+      "sha256": "cbf7fe6b9726ee65f8bcd5715289cc5161c8dacf74d0b8aaa0d29412516f5f47"
+    },
+    {
+      "path": "node_modules/react-dom/client.js",
+      "bytes": 619,
+      "sha256": "a510041dfc40d69b3aa574e5e111864186c711fbeb3db41aa2f27196b27c429f"
+    },
+    {
+      "path": "node_modules/react-dom/index.js",
+      "bytes": 1363,
+      "sha256": "f26fcb81b5d1dc32c6edea34645c75b60d259916293d3208c8be48ac33e882e4"
+    },
+    {
+      "path": "node_modules/react-dom/node_modules/scheduler/LICENSE",
+      "bytes": 1086,
+      "sha256": "52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85"
+    },
+    {
+      "path": "node_modules/react-dom/node_modules/scheduler/cjs/scheduler.production.min.js",
+      "bytes": 4235,
+      "sha256": "f6cb8cf42696980c702f6b879417ab8bd489660485eb012b46f67e92e18a78ee"
+    },
+    {
+      "path": "node_modules/react-dom/node_modules/scheduler/index.js",
+      "bytes": 198,
+      "sha256": "b413b3aac7bd209fd82cbe2241fda1467558daaef830744f45ed8396fac9185e"
+    },
+    {
+      "path": "node_modules/react-dom/node_modules/scheduler/package.json",
+      "bytes": 700,
+      "sha256": "0893643a24576d727174e639586b8833a53f2a7b4a2199a719b9cfcebe9bae88"
+    },
+    {
+      "path": "node_modules/react-dom/package.json",
+      "bytes": 1353,
+      "sha256": "d2f29e31bd48b833e48cd7bbf41f192e8ee4ff8da249fdbe10d4ac4114b8b12e"
+    },
+    {
+      "path": "node_modules/react/LICENSE",
+      "bytes": 1086,
+      "sha256": "52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85"
+    },
+    {
+      "path": "node_modules/react/cjs/react-jsx-runtime.production.min.js",
+      "bytes": 859,
+      "sha256": "76e3364c46895ed2c4a8d5cc332e5e4ef31d6f732d35b1e56826dc5895245452"
+    },
+    {
+      "path": "node_modules/react/cjs/react.production.min.js",
+      "bytes": 6930,
+      "sha256": "4b35e378f469c4f492c7514bb106b5833746dbbae80496bd4aa9acc6e9ac4b42"
+    },
+    {
+      "path": "node_modules/react/index.js",
+      "bytes": 190,
+      "sha256": "a216c390bf956cbb906c66d29fdb2e2ad6999464a5ca83e476533a6f25ad0ef3"
+    },
+    {
+      "path": "node_modules/react/jsx-runtime.js",
+      "bytes": 214,
+      "sha256": "28170e60f2ff0bc045bc7d175f5849e86f68dd02d76d7255369420718b30295a"
+    },
+    {
+      "path": "node_modules/react/package.json",
+      "bytes": 999,
+      "sha256": "d4e68a5c96babb20cad1daafea8b78822eae45b341552cf5418d06a5304fa64c"
+    },
+    {
+      "path": "node_modules/tailwindcss/LICENSE",
+      "bytes": 1071,
+      "sha256": "60e0b68c0f35c078eef3a5d29419d0b03ff84ec1df9c3f9d6e39a519a5ae7985"
+    },
+    {
+      "path": "node_modules/tailwindcss/package.json",
+      "bytes": 2493,
+      "sha256": "3dc86b46c511947ca00838aa3f1776243abe923ac347c092e60a0cbc7ae68559"
+    },
+    {
+      "path": "node_modules/tailwindcss/preflight.css",
+      "bytes": 8489,
+      "sha256": "ace8310eed6dc5568a56fc16e1d695cf58da7528d81d66d81649e93cce644df6"
+    },
+    {
+      "path": "node_modules/tailwindcss/theme.css",
+      "bytes": 19586,
+      "sha256": "443d7af364200f8ec8352dc78e39485a118a1840d498c97967bf0ae402b39167"
+    },
+    {
+      "path": "package-lock.json",
+      "bytes": 632582,
+      "sha256": "9099f411c600d139056d529ff8b7f1da1a16bf1a7d01485ddd451c21af76f4a3"
+    },
+    {
+      "path": "package.json",
+      "bytes": 50115,
+      "sha256": "efe852908b84907f65360d0a163dba976ac8c17d681b9f11b06ceb4a25787c80"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "graph-data-view.js",
+      "bytes": 168142,
+      "sha256": "b48facffb1e4c732b1746d25e1e12afee66e860b4065532d0a6adb492955dcc5"
+    },
+    {
+      "path": "graph-data-view.css",
+      "bytes": 52697,
+      "sha256": "76c3cb9d50ad028a0d6b0e864f171ab25d8446f098cd06fda365000758e88356"
+    },
+    {
+      "path": "graph-ui-tokens.css",
+      "bytes": 6088,
+      "sha256": "b19ba82c124c2c0edb7c6ff9543ec0291d2567eb8e2ba9f086cf610acb617cac"
+    }
+  ]
+}

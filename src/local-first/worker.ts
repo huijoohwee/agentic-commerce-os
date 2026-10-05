@@ -15,6 +15,7 @@ export type LocalFirstEnv = Readonly<CheckoutEnv & ListingRelayEnv & {
 const ASSET_PATHS = new Map([
   ['/', '/index.html'], ['/app.js', '/app.js'], ['/drafts.js', '/drafts.js'],
   ['/checkout.js', '/checkout.js'], ['/launch.js', '/launch.js'], ['/workspace.js', '/workspace.js'],
+  ...['workspace-graph.js', 'graph-data-view.js', 'graph-data-view.css', 'graph-ui-tokens.css'].map(file => ['/' + file, '/' + file] as [string, string]),
   ['/style.css', '/style.css'], ['/sw.js', '/sw.js'],
   ['/workflow.js', '/workflow.js'],
   ['/workspace-capabilities.js', '/workspace-capabilities.js'], ['/workspace-tools.js', '/workspace-tools.js'],

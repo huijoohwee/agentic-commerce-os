@@ -2,7 +2,7 @@ const CACHE_PREFIX = 'agentic-commerce-local-first-';
 const RELEASE = '__RELEASE__';
 const CACHE = CACHE_PREFIX + RELEASE;
 const SCOPE = new URL(self.registration.scope);
-const FILES = ['', 'workspace.js', 'workspace-capabilities.js', 'workspace-tools.js', 'services/workspace/service.json', 'app.js', 'drafts.js', 'launch.js', 'checkout.js', 'workflow.js', 'style.css'];
+const FILES = ['', 'workspace.js', 'workspace-capabilities.js', 'workspace-tools.js', 'workspace-graph.js', 'graph-data-view.js', 'graph-data-view.css', 'graph-ui-tokens.css', 'services/workspace/service.json', 'app.js', 'drafts.js', 'launch.js', 'checkout.js', 'workflow.js', 'style.css'];
 const assetUrl = file => new URL(file.startsWith('services/') ? file : file ? `assets/${RELEASE}/${file}` : '', SCOPE);
 const PATHS = new Set(FILES.map(file => assetUrl(file).pathname));
 self.addEventListener('install', event => event.waitUntil((async () => {
