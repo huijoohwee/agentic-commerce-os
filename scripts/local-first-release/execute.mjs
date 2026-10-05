@@ -51,9 +51,13 @@ if (!live && predecessor?.checkout)
   throw Error('A sandbox release cannot replace an existing live buyer reader');
 const fulfillment = readFulfillmentRelease();
 const rehearsal = live ? false : requireRollbackRehearsal(env.LOCAL_FIRST_ROLLBACK_REHEARSAL, fulfillment);
-const verifyHost = () => verifyFulfillmentRelease(fulfillment, { provider, routeAuthority,
-  token: env.GH_TOKEN, bearer: env.LISTING_HOST_BEARER });
-const fulfillmentProof = await verifyHost();
+const verifyHost = (rendezvous = null) => verifyFulfillmentRelease(fulfillment, { provider, routeAuthority,
+  token: env.GH_TOKEN, bearer: env.LISTING_HOST_BEARER, rendezvous });
+// Only the first approved sandbox host transition may wait for the operator's
+// exact pinned host. All live and post-deployment checks remain single attempts.
+const hostTransition = selectFailureRecovery({ checkout: selection.checkout, mode, predecessor, fulfillment });
+const fulfillmentProof = await verifyHost(hostTransition ? { previousPins: hostTransition.previousPins,
+  observe: evidence => write('host-rendezvous.json', evidence) } : null);
 const failureRecovery = selectFailureRecovery({ checkout: selection.checkout, mode, predecessor,
   fulfillment: fulfillmentProof?.config ?? null });
 const livePrerequisites = live ? await verifyLiveReleasePrerequisites(selection,{env,provider,routeAuthority,evidenceDir:output}) : null;
