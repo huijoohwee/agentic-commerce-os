@@ -82,11 +82,7 @@
         <section id="offer-setup" aria-labelledby="setup-heading">
           <div class="setup-heading"><h3 id="setup-heading">Offer setup</h3><span id="setup-count">0 of 4 steps complete</span></div>
           <p id="setup-status" class="muted" role="status"></p>
-          <details data-setup-step="describe" open><summary><strong>Describe the offer</strong><span data-step-status>Needs attention</span></summary><p>Add a title, the buyer's problem and one outcome you will deliver.</p><button type="button" class="secondary" data-setup-edit="describe">Edit description</button></details>
-          <details data-setup-step="identity"><summary><strong>Set storefront identifiers</strong><span data-step-status>Needs attention</span></summary><p>Enter the merchant and discovery agent IDs. This checks their format; connecting them is a separate step.</p><button type="button" class="secondary" data-setup-edit="identity">Edit identifiers</button></details>
-          <details data-setup-step="economics"><summary><strong>Estimate price and costs</strong><span data-step-status>Needs attention</span></summary><p>Choose a currency and enter every estimate, including zero costs. The price must exceed costs per sale. These estimates do not validate demand.</p><button type="button" class="secondary" data-setup-edit="economics">Edit estimates</button></details>
-          <details data-setup-step="review"><summary><strong>Save and review</strong><span data-step-status>Needs attention</span></summary><p>Save the offer, read its cost review and acknowledge that saved version. Editing it requires a fresh review.</p><button id="setup-review-action" type="button" class="secondary">Save offer</button></details>
-          <p class="footnote">Local setup only. Publication, live pricing and payment require the authorized Commerce runtime.</p>
+          <button id="open-setup-guide" type="button" class="secondary" aria-expanded="false" aria-controls="setup-guide-panel">Open setup guide</button>
         </section>
         <form id="draft-form"><fieldset id="editor-fields" disabled>
           <label for="title">What are you creating?</label><input id="title" name="title" maxlength="120" required placeholder="An offer, a product, a service…" autocomplete="off">

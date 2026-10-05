@@ -1,9 +1,13 @@
 {
   "schema": "agentic-graph/data-view-artifact/v1",
-  "sourceRevision": "a9a2e31f78e84b984e5176a6f761e5c737ad6ea3",
+  "sourceRevision": "12a1fe81db1585bd516f71f25653bf0ec87b520b",
   "sourceDirty": false,
   "entry": "canvas/src/features/markdown/ui/dataViewBrowserAdapter.tsx",
   "browserExport": "mountDataView",
+  "browserExports": [
+    "mountDataView",
+    "mountSequenceGuide"
+  ],
   "cssScope": "shadow-root",
   "hostTokens": "graph-ui-tokens.css",
   "dependencies": {
@@ -14,7 +18,8 @@
     "postcss": "8.5.26",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "scheduler": "0.23.2"
+    "scheduler": "0.23.2",
+    "lucide-react": "0.562.0"
   },
   "licenses": [
     {
@@ -33,12 +38,17 @@
       "license": "MIT"
     },
     {
+      "package": "lucide-react",
+      "path": "node_modules/lucide-react/LICENSE",
+      "license": "ISC AND MIT"
+    },
+    {
       "package": "tailwindcss",
       "path": "node_modules/tailwindcss/LICENSE",
       "license": "MIT"
     }
   ],
-  "inputDigest": "c2ddb0baf35e7962c7d3dcdf862ab3b15ea20928ac3cdb27e4d8a28d16373bb7",
+  "inputDigest": "e30e5f49aea0c7301b6d36401556f5f15f10dc7691e6da122edfe14f385b13dc",
   "inputs": [
     {
       "path": "canvas/package.json",
@@ -47,8 +57,13 @@
     },
     {
       "path": "canvas/scripts/build-data-view-adapter.mjs",
-      "bytes": 10977,
-      "sha256": "ffb085f4a4604e1e6afb14b8955fda82574ed0c8f8fff6663510fd88019ab1bf"
+      "bytes": 13595,
+      "sha256": "efd6b71f3c2c6dadf7fcc71d6905e26f9b7894584154a82e520d8efbdced1081"
+    },
+    {
+      "path": "canvas/src/components/ui/FloatingPanel.tsx",
+      "bytes": 5418,
+      "sha256": "b2eec78de6680ba306491b6389c402e41de2ca0c63ac513ac37e7d1245bb4eeb"
     },
     {
       "path": "canvas/src/features/markdown/ui/MarkdownDataViewTableCore.tsx",
@@ -57,8 +72,8 @@
     },
     {
       "path": "canvas/src/features/markdown/ui/dataViewBrowserAdapter.tsx",
-      "bytes": 8028,
-      "sha256": "69288893866a9400845a517a0e67b950e6c67b84ee879943f08dd71002ed3b28"
+      "bytes": 8108,
+      "sha256": "f0bae0a847ce805f2a66d6c9036da2adc52aff99ddab95e1fbd56e9a6c90c12a"
     },
     {
       "path": "canvas/src/features/markdown/ui/markdownDataViewColumnSizing.ts",
@@ -71,14 +86,44 @@
       "sha256": "b567c00da0f759181cc61ae69aab3afc683b05e792cc05225e8eea687849eda1"
     },
     {
+      "path": "canvas/src/features/sequence/SequenceFlow.css",
+      "bytes": 6518,
+      "sha256": "dee7f126b4edbbf199686c43abb10ce5686fc60907d004c879d584e8d394974d"
+    },
+    {
+      "path": "canvas/src/features/sequence/SequenceInspectorView.tsx",
+      "bytes": 1609,
+      "sha256": "0fc7d224b7d15aaffa679d2c706364639d1fc17798cecdbd1ae3affbda55c667"
+    },
+    {
+      "path": "canvas/src/features/sequence/sequenceGuideBrowserAdapter.tsx",
+      "bytes": 7282,
+      "sha256": "54db3fbf41c753d9ab2272f1d1c87a912ec1882d28973ff13a2d73490a0408ef"
+    },
+    {
+      "path": "canvas/src/features/toolbar/ui/toolbarStyles.ts",
+      "bytes": 4043,
+      "sha256": "c27cd4649997afc00ee980874b1314593f2b866038cefe43a85a9ef92bd1f176"
+    },
+    {
       "path": "canvas/src/index.css",
       "bytes": 17576,
       "sha256": "8b40f685689e917b7376ea6082f5074097f6b37f990d2f8fd6cd31cf70f5a0c2"
     },
     {
+      "path": "canvas/src/lib/ui/floatingPanelGeometry.ts",
+      "bytes": 2186,
+      "sha256": "e53b11d030cd458c7b12e19e8fc17b6f49196c9bcd848cf8844609ce19a24ce3"
+    },
+    {
       "path": "canvas/src/lib/ui/responsiveElementClasses.ts",
       "bytes": 34575,
       "sha256": "9587cf49e545c01ec05e5e5a75d1c33ea522074b0de1581d2df2799a1f59e031"
+    },
+    {
+      "path": "canvas/src/lib/ui/theme-tokens.ts",
+      "bytes": 43,
+      "sha256": "e137c3cfae44b31618b538dc553b797461bbbe38290569b1d040febac5f61f20"
     },
     {
       "path": "canvas/src/styles/application-typography.css",
@@ -136,6 +181,11 @@
       "sha256": "aa79a7ff896366b68ad7858d6c2469be5ead5aa505336978ad5f58b362a7a20f"
     },
     {
+      "path": "grph-shared/src/ui/panelTypography.ts",
+      "bytes": 4117,
+      "sha256": "382792d93c6fa3b47d00a2d226f0fdfa58c0bac8bbf598c21431f3a15f1528ed"
+    },
+    {
       "path": "grph-shared/src/ui/selectedRowClasses.ts",
       "bytes": 1144,
       "sha256": "3913017751b8b928faaef5731c103a09acb83cfda15e0a7296abe03197ab2118"
@@ -164,6 +214,41 @@
       "path": "node_modules/esbuild/package.json",
       "bytes": 1490,
       "sha256": "cb7d5b1fe478f8cbaae566a86031b6fdf5f7d444354f35d1cb3cba9adf6d2935"
+    },
+    {
+      "path": "node_modules/lucide-react/LICENSE",
+      "bytes": 2004,
+      "sha256": "3c57143f22dac950efebf84002e360bba5458c7b90fe583b0667aaaef1a7256e"
+    },
+    {
+      "path": "node_modules/lucide-react/dist/esm/Icon.js",
+      "bytes": 1118,
+      "sha256": "15b6cdf8c76f697e666fb331044c3da5ba1becdd1ae6c96abfc57c36362c0977"
+    },
+    {
+      "path": "node_modules/lucide-react/dist/esm/createLucideIcon.js",
+      "bytes": 838,
+      "sha256": "cfdbb9304bb48ee2643e40304293715f27cae9e49ff64529cb1a50a3689ccaa7"
+    },
+    {
+      "path": "node_modules/lucide-react/dist/esm/defaultAttributes.js",
+      "bytes": 493,
+      "sha256": "aeafb38d6464355ef7bbfd158e92920fb168356ae08bae2b00c6132eb855c82a"
+    },
+    {
+      "path": "node_modules/lucide-react/dist/esm/icons/x.js",
+      "bytes": 462,
+      "sha256": "983c84224bd0eed0b27887dc788d1198b89d77d13d1c9a047881f13b3ecbcc94"
+    },
+    {
+      "path": "node_modules/lucide-react/dist/esm/shared/src/utils.js",
+      "bytes": 1032,
+      "sha256": "ef8e3127855f42c3566f1d8bc37203fee46cfa91d1e75b33f904ec6c4803057f"
+    },
+    {
+      "path": "node_modules/lucide-react/package.json",
+      "bytes": 2481,
+      "sha256": "fc04d9363ba3f8403287b181f66fd6a276c9cc9e2a0b3836ac46d64f6807079c"
     },
     {
       "path": "node_modules/postcss/package.json",
@@ -279,18 +364,18 @@
   "outputs": [
     {
       "path": "graph-data-view.js",
-      "bytes": 168142,
-      "sha256": "b48facffb1e4c732b1746d25e1e12afee66e860b4065532d0a6adb492955dcc5"
+      "bytes": 182924,
+      "sha256": "394ff2cc52a95e2aca0a0e629a5ee2f4ef0377ada362f13547b2561edf2c2006"
     },
     {
       "path": "graph-data-view.css",
-      "bytes": 52697,
-      "sha256": "76c3cb9d50ad028a0d6b0e864f171ab25d8446f098cd06fda365000758e88356"
+      "bytes": 57710,
+      "sha256": "a0ac2dff01a3c40f70b1de68f8674132d4954a1b5c89eb5d4c2f3e209c5ea656"
     },
     {
       "path": "graph-ui-tokens.css",
-      "bytes": 6088,
-      "sha256": "b19ba82c124c2c0edb7c6ff9543ec0291d2567eb8e2ba9f086cf610acb617cac"
+      "bytes": 6606,
+      "sha256": "7de3534da7a0db24c20ae3b66ce2a41696b47583caae1e068fbfe88839c5b082"
     }
   ]
 }

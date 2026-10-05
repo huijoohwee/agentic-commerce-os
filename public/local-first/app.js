@@ -5,6 +5,13 @@ const $ = selector => document.querySelector(selector);
 let selected = null, dirty = false, busy = false;
 let reviewed = null;
 let stale = false, actionFailed = false;
+let setupGuide, setupGeneration = 0, selectedSetupStep = 'describe', setupProjection;
+const setupItems = [
+  { id: 'describe', label: 'Describe the offer', detail: "Add a title, the buyer's problem and one outcome you will deliver.", actionLabel: 'Edit description' },
+  { id: 'identity', label: 'Set storefront identifiers', detail: 'Enter the merchant and discovery agent IDs. This checks their format; connecting them is a separate step.', actionLabel: 'Edit identifiers' },
+  { id: 'economics', label: 'Estimate price and costs', detail: 'Choose a currency and enter every estimate, including zero costs. The price must exceed costs per sale. These estimates do not validate demand.', actionLabel: 'Edit estimates' },
+  { id: 'review', label: 'Save and review', detail: 'Save the offer, read its cost review and acknowledge that saved version. Editing it requires a fresh review.' },
+];
 const textFields = { merchantId: '#merchant-id', agentId: '#agent-id', audience: '#audience', outcome: '#outcome', currency: '#currency' };
 const moneyFields = { priceMinor: '#sale-price', deliveryCostMinor: '#delivery-cost', providerFeeMinor: '#provider-fee',
   agentCostMinor: '#agent-cost', acquisitionCostMinor: '#acquisition-cost', fixedCostMinor: '#fixed-cost' };
@@ -19,22 +26,26 @@ function renderSetup() {
   const acknowledged = Boolean(currentReview && $('#approve-launch').checked);
   const steps = [...setup.steps, { id: 'review', complete: acknowledged }];
   $('#setup-count').textContent = `${steps.filter(step => step.complete).length} of 4 steps complete`;
-  for (const step of steps) {
-    const row = $(`[data-setup-step="${step.id}"]`);
-    row.dataset.complete = String(step.complete);
-    row.querySelector('[data-step-status]').textContent = step.complete ? 'Complete' : 'Needs attention';
-  }
-  $('#setup-status').textContent = busy ? 'Checking this offer…' : actionFailed ? 'The action could not finish. Your editor text is still here; check the message above.'
+  $('#setup-status').textContent = busy ? 'Checking this offer…' : actionFailed ? `The action could not finish. Your editor text is still here. ${$('#status').textContent}`
     : stale ? 'The saved offer changed. Reload its latest version before review.'
-    : dirty || !selected ? 'Your current inputs are checked below. Save them before review.'
+    : dirty || !selected ? 'Your current inputs are checked in the setup guide. Save them before review.'
     : acknowledged ? `Revision ${selected.revision} reviewed on this device. You can export its setup.`
     : currentReview ? `Read the review for revision ${selected.revision}, then acknowledge it below.`
     : `Revision ${selected.revision} saved on this device. Review it when the first three steps are complete.`;
-  const action = $('#setup-review-action');
-  action.textContent = stale ? 'Reload saved offer' : !saved ? 'Save offer' : acknowledged ? 'Export reviewed setup'
+  const reviewAction = stale ? 'reload' : !saved ? 'save' : acknowledged ? 'export' : currentReview ? 'acknowledge' : 'review';
+  const actionLabel = stale ? 'Reload saved offer' : !saved ? 'Save offer' : acknowledged ? 'Export reviewed setup'
     : currentReview ? 'Read and acknowledge review' : 'Review saved offer';
-  action.dataset.action = stale ? 'reload' : !saved ? 'save' : acknowledged ? 'export' : currentReview ? 'acknowledge' : 'review';
-  action.disabled = busy || action.dataset.action === 'review' && setup.status !== 'reviewable';
+  setupProjection = { title: 'Offer setup', closeLabel: 'Close offer setup', summary: $('#setup-count').textContent,
+    status: $('#setup-status').textContent, selectedId: selectedSetupStep, busy,
+    items: setupItems.map((item, index) => ({ ...item, meta: steps[index].complete ? 'Complete' : 'Needs attention',
+      actionLabel: item.id === 'review' ? actionLabel : item.actionLabel,
+      actionDisabled: busy || item.id === 'review' && reviewAction === 'review' && setup.status !== 'reviewable' })),
+    notice: 'Local setup only. Publication, live pricing and payment require the authorized Commerce runtime.',
+    onSelect(id) { if (!busy && setupItems.some(item => item.id === id)) { selectedSetupStep = id; renderSetup(); } },
+    onAction(id) { if (!busy) activateSetupStep(id, reviewAction); },
+    onClose() { setupGuide?.close(); },
+  };
+  setupGuide?.update(setupProjection);
   $('#export-launch').disabled = busy || !acknowledged;
 }
 function edited() { dirty = true; actionFailed = false; $('#save-state').textContent = 'Unsaved changes'; invalidateReview(); renderSetup(); }
@@ -178,22 +189,36 @@ export function newDraft() {
   if (busy || !mayLeave()) return false;
   show(null); void refresh().catch(error => { actionFailed = true; message(error.message, true); renderSetup(); }); return true;
 }
-for (const button of document.querySelectorAll('[data-setup-edit]')) button.addEventListener('click', () => {
-  const id = button.dataset.setupEdit;
-  const defaults = { describe: 'title', identity: 'merchantId', economics: 'currency' };
-  const field = setupState().steps.find(step => step.id === id).fields[0] || defaults[id];
-  $('#launch-fields').open = true;
-  $(({ title: '#title', ...textFields, ...moneyFields })[field] || '#title').focus();
-});
-$('#setup-review-action').addEventListener('click', () => {
-  if (busy) return;
-  switch ($('#setup-review-action').dataset.action) {
-    case 'save': $('#draft-form').requestSubmit(); break;
+function activateSetupStep(id, action) {
+  if (id !== 'review') {
+    const defaults = { describe: 'title', identity: 'merchantId', economics: 'currency' };
+    const step = setupState().steps.find(item => item.id === id);
+    if (!step) return;
+    const field = step.fields[0] || defaults[id];
+    setupGuide?.close(false); $('#launch-fields').open = true;
+    $(({ title: '#title', ...textFields, ...moneyFields })[field] || '#title').focus();
+    return;
+  }
+  switch (action) {
+    case 'save': if (!$('#draft-form').checkValidity()) setupGuide?.close(false); $('#draft-form').requestSubmit(); break;
     case 'review': $('#review-launch').click(); break;
-    case 'acknowledge': $('#approve-launch').focus(); break;
+    case 'acknowledge': setupGuide?.close(false); $('#approve-launch').focus(); break;
     case 'export': $('#export-launch').click(); break;
     case 'reload': void openSavedDraft(selected.id).catch(error => { actionFailed = true; message(error.message, true); renderSetup(); }); break;
   }
+}
+$('#open-setup-guide').addEventListener('click', async () => {
+  if (busy) return;
+  const ticket = ++setupGeneration;
+  try {
+    const { createCommerceSetupGuide } = await import('./workspace-graph.js');
+    if (ticket !== setupGeneration || location.hash !== '#vendor-editor') return;
+    setupGuide ??= createCommerceSetupGuide({ launcher: $('#open-setup-guide') });
+    await setupGuide.open(setupProjection);
+  } catch (error) { if (ticket === setupGeneration) message(error.message || 'Could not open the setup guide.', true); }
+});
+window.addEventListener('hashchange', () => {
+  if (location.hash !== '#vendor-editor') { setupGeneration++; setupGuide?.close(false); }
 });
 window.addEventListener('beforeunload', event => { if (dirty) { event.preventDefault(); event.returnValue = ''; } });
 void refresh().catch(error => { actionFailed = true; message(error.message, true); renderSetup(); });

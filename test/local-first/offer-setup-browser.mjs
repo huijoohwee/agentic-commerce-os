@@ -5,21 +5,47 @@ import { expect } from '@playwright/test';
 
 const steps = ['describe', 'identity', 'economics', 'review'];
 const amounts = ['#delivery-cost', '#provider-fee', '#agent-cost', '#acquisition-cost', '#fixed-cost'];
-const step = (page, name) => page.locator(`[data-setup-step="${name}"]`);
+const guide = page => page.locator('#setup-guide-panel');
+const step = (page, name) => guide(page).locator(`button[data-step-id="${name}"]`);
+const closeButton = page => guide(page).getByRole('button', { name: 'Close offer setup', exact: true });
 
-async function openStep(page, name) {
-  const row = step(page, name);
-  if (!await row.evaluate(element => element.open)) await row.locator('summary').click();
-  return row;
+async function openGuide(page) {
+  const launcher = page.locator('#open-setup-guide');
+  if (await launcher.getAttribute('aria-expanded') !== 'true') await launcher.click();
+  await expect(launcher).toHaveAttribute('aria-expanded', 'true');
+  await expect(guide(page).getByRole('heading', { name: 'Offer setup', exact: true })).toBeVisible();
+  await expect(guide(page).locator('button[data-step-id]')).toHaveCount(4);
+  return guide(page);
+}
+
+async function closeGuide(page) {
+  if (await page.locator('#open-setup-guide').getAttribute('aria-expanded') !== 'true') return;
+  await closeButton(page).click();
+  await expect(guide(page)).toHaveCount(0);
+  await expect(page.locator('#open-setup-guide')).toHaveAttribute('aria-expanded', 'false');
+}
+
+async function selectStep(page, name) {
+  await openGuide(page);
+  await step(page, name).click();
+  await expect(step(page, name)).toHaveAttribute('aria-pressed', 'true');
+  return guide(page);
+}
+
+async function stepStatus(page, name, status) {
+  await openGuide(page);
+  await expect(step(page, name)).toContainText(status);
+  await closeGuide(page);
 }
 
 async function action(page, name) {
-  return (await openStep(page, 'review')).getByRole('button', { name, exact: true });
+  return (await selectStep(page, 'review')).getByRole('button', { name, exact: true });
 }
 
 async function progress(page, count) {
   await expect(page.locator('#setup-count')).toHaveText(`${count} of 4 steps complete`);
-  await expect(step(page, 'review').locator('summary')).toContainText(count === 4 ? 'Complete' : 'Needs attention');
+  if (await page.locator('#open-setup-guide').getAttribute('aria-expanded') === 'true')
+    await expect(step(page, 'review')).toContainText(count === 4 ? 'Complete' : 'Needs attention');
 }
 
 async function savedDrafts(page) {
@@ -41,6 +67,8 @@ async function saveAndReview(page) {
 
 async function acknowledge(page) {
   await (await action(page, 'Read and acknowledge review')).click();
+  await expect(guide(page)).toHaveCount(0);
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   await expect(page.locator('#approve-launch')).toBeFocused();
   await expect(page.locator('#approve-launch')).not.toBeChecked();
   await expect(page.locator('#export-launch')).toBeDisabled();
@@ -58,30 +86,70 @@ async function responsiveGuide(page, output) {
     'Setup progress follows the native text scale at 200%');
   for (const width of [320, 768, 1280]) {
     await page.setViewportSize({ width, height: 900 });
-    for (const name of steps) await openStep(page, name);
-    const geometry = await page.locator('#offer-setup').evaluate(section => {
+    await selectStep(page, 'review');
+    await step(page, 'review').scrollIntoViewIfNeeded();
+    const panel = guide(page).locator('[data-kg-floating-panel-root="true"]');
+    const geometry = await panel.evaluate(section => {
       const bounds = element => {
         const rect = element.getBoundingClientRect();
-        return { width: rect.width, height: rect.height, left: rect.left, right: rect.right,
+        return { width: rect.width, height: rect.height, left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom,
           scrollWidth: element.scrollWidth, clientWidth: element.clientWidth };
       };
       return { pageFits: document.documentElement.scrollWidth <= innerWidth, section: bounds(section),
-        actions: [...section.querySelectorAll('button, summary')].map(bounds) };
+        actions: [...section.querySelectorAll('button')].map(bounds) };
     });
     assert.equal(geometry.pageFits, true, `No page overflow at ${width}px with doubled text`);
     assert(geometry.section.left >= 0 && geometry.section.right <= width + 1, `Setup stays within ${width}px`);
+    assert(geometry.section.top >= 0 && geometry.section.bottom <= 901, `Setup stays within the viewport height at ${width}px`);
     for (const bounds of geometry.actions) {
       assert(bounds.height >= 44 && bounds.width >= 44, `Setup targets remain at least 44px at ${width}px`);
       assert(bounds.scrollWidth <= bounds.clientWidth + 1, `Setup action text is not clipped at ${width}px`);
     }
-    await page.locator('#offer-setup').screenshot({ path: path.join(output, `offer-setup-${width}-200pct.png`) });
+    await expect(closeButton(page)).toBeInViewport();
+    await expect(step(page, 'review')).toBeInViewport();
+    await panel.screenshot({ path: path.join(output, `offer-setup-${width}-200pct.png`) });
+    await closeGuide(page);
   }
   await page.evaluate(() => { document.documentElement.style.fontSize = ''; });
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.setViewportSize({ width: 768, height: 900 });
 }
 
+async function delayedGuideLifecycle({ browser, url, observeContext }) {
+  const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' });
+  observeContext(context);
+  let release, requested = false;
+  const held = new Promise(resolve => { release = resolve; });
+  try {
+    await context.route('**/graph-data-view.js', async route => { requested = true; await held; await route.continue(); });
+    const page = await context.newPage();
+    await page.goto(url + '#vendor-editor');
+    const launcher = page.locator('#open-setup-guide');
+    await launcher.click();
+    await expect.poll(() => requested).toBe(true);
+    await expect(launcher).toHaveAttribute('aria-expanded', 'true');
+    await page.locator('#vendor-navigation a[data-view="vendor"]').click();
+    await expect(guide(page)).toHaveCount(0);
+    await expect(launcher).toHaveAttribute('aria-expanded', 'false');
+    release();
+    await page.evaluate(async () => {
+      const bootstrap = document.querySelector('script[type=module]').src;
+      await import(new URL('graph-data-view.js', bootstrap).href);
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    });
+    await expect(guide(page)).toHaveCount(0);
+    await page.locator('#vendor-navigation a[data-view="vendor-editor"]').click();
+    await openGuide(page);
+    await expect(guide(page)).toHaveCount(1);
+    await closeGuide(page);
+    await expect(launcher).toBeFocused();
+  } finally {
+    release(); await context.close();
+  }
+}
+
 export async function checkOfferSetup({ browser, url, output, observeContext }) {
+  await delayedGuideLifecycle({ browser, url, observeContext });
   const context = await browser.newContext({ viewport: { width: 768, height: 900 }, acceptDownloads: true });
   observeContext(context);
   try {
@@ -90,26 +158,55 @@ export async function checkOfferSetup({ browser, url, output, observeContext }) 
     await page.getByText('Offline access is ready.', { exact: false }).waitFor();
     await expect(page.locator('#offer-setup').getByRole('heading', { name: 'Offer setup', exact: true })).toBeVisible();
     await expect(page.locator('#setup-status')).toHaveAttribute('role', 'status');
-    await expect(page.locator('[data-setup-step]')).toHaveCount(4);
+    const launcher = page.locator('#open-setup-guide');
+    await expect(launcher).toHaveAttribute('aria-controls', 'setup-guide-panel');
+    await expect(launcher).toHaveAttribute('aria-expanded', 'false');
+    await expect(guide(page)).toHaveCount(0);
+    await launcher.focus(); await page.keyboard.press('Enter');
+    await openGuide(page);
+    await expect.poll(() => guide(page).evaluate(host => Boolean(host.shadowRoot?.activeElement))).toBe(true);
     await progress(page, 0);
-    for (const name of steps) await expect(step(page, name).locator('summary')).toContainText('Needs attention');
+    for (const name of steps) await expect(step(page, name)).toContainText('Needs attention');
+    await selectStep(page, 'review');
+    assert.equal((await savedDrafts(page)).length, 0, 'Selecting a guide step has no save effect');
+    await expect(page.locator('#launch-review')).toBeHidden();
+    await expect(page.locator('#approve-launch')).not.toBeChecked();
+    await closeButton(page).focus(); await page.keyboard.press('Escape');
+    await expect(guide(page)).toHaveCount(0);
+    await expect(launcher).toHaveAttribute('aria-expanded', 'false');
+    await expect(launcher).toBeFocused();
+    await openGuide(page); await closeGuide(page);
+    await expect(launcher).toBeFocused();
+    await openGuide(page);
+    await page.locator('#vendor-navigation a[data-view="vendor"]').click();
+    await expect(guide(page)).toHaveCount(0);
+    await expect(launcher).toHaveAttribute('aria-expanded', 'false');
+    await page.locator('#vendor-navigation a[data-view="vendor-editor"]').click();
+    await expect(guide(page)).toHaveCount(0);
+
+    await (await action(page, 'Save offer')).click();
+    await expect(guide(page)).toHaveCount(0);
+    await expect(page.locator('#title')).toBeFocused();
+    assert.equal((await savedDrafts(page)).length, 0, 'Invalid native form stays unsaved and visible');
 
     // A keyboard guide action opens native launch details and focuses the first missing field.
     await page.locator('#title').fill('Setup browser offer');
     await progress(page, 0);
-    const describe = await openStep(page, 'describe');
+    const describe = await selectStep(page, 'describe');
     await expect(page.locator('#launch-fields')).not.toHaveAttribute('open');
     await describe.getByRole('button', { name: 'Edit description', exact: true }).focus();
     await page.keyboard.press('Enter');
+    await expect(guide(page)).toHaveCount(0);
     await expect(page.locator('#launch-fields')).toHaveAttribute('open', '');
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     await expect(page.locator('#audience')).toBeFocused();
     await page.locator('#audience').fill('Independent makers who need one clear outcome');
     await progress(page, 0);
     await page.locator('#outcome').fill('One reviewed setup checklist');
     await progress(page, 1);
-    await expect(describe.locator('summary')).toContainText('Complete');
+    await stepStatus(page, 'describe', 'Complete');
 
-    const identity = await openStep(page, 'identity');
+    const identity = await selectStep(page, 'identity');
     await identity.getByRole('button', { name: 'Edit identifiers', exact: true }).click();
     await expect(page.locator('#merchant-id')).toBeFocused();
     await page.locator('#merchant-id').fill('INVALID STORE');
@@ -117,9 +214,9 @@ export async function checkOfferSetup({ browser, url, output, observeContext }) 
     await progress(page, 1);
     await page.locator('#merchant-id').fill('setup-store');
     await progress(page, 2);
-    await expect(identity.locator('summary')).toContainText('Complete');
+    await stepStatus(page, 'identity', 'Complete');
 
-    const economics = await openStep(page, 'economics');
+    const economics = await selectStep(page, 'economics');
     await economics.getByRole('button', { name: 'Edit estimates', exact: true }).click();
     await expect(page.locator('#currency')).toBeFocused();
     await page.locator('#currency').fill('USD');
@@ -128,13 +225,13 @@ export async function checkOfferSetup({ browser, url, output, observeContext }) 
     await progress(page, 2);
     for (const selector of amounts) await page.locator(selector).fill('0');
     await progress(page, 3);
-    await expect(economics.locator('summary')).toContainText('Complete');
+    await stepStatus(page, 'economics', 'Complete');
     await page.locator('#sale-price').fill('0');
     await progress(page, 2);
     await page.locator('#sale-price').fill('10.00');
     await page.locator('#delivery-cost').fill('12.00');
     await progress(page, 2);
-    await expect(economics.locator('summary')).toContainText('Needs attention');
+    await stepStatus(page, 'economics', 'Needs attention');
     await page.locator('#delivery-cost').fill('0');
     await progress(page, 3);
     assert.equal((await savedDrafts(page)).length, 0, 'Input completion does not save an offer');
@@ -162,6 +259,8 @@ export async function checkOfferSetup({ browser, url, output, observeContext }) 
     assert.equal(pack.review.grantsPaymentAuthority, false);
     assert.equal(JSON.stringify(pack).includes('PRIVATE'), false);
     await progress(page, 4);
+    await closeGuide(page); await stepStatus(page, 'review', 'Complete');
+    await expect(page.locator('#approve-launch')).toBeChecked();
 
     // Every persisted input, including private notes, invalidates the exact saved review.
     for (const [selector, changed] of [
@@ -289,6 +388,9 @@ export async function checkOfferSetup({ browser, url, output, observeContext }) 
       assert(await editorControls.count() > 15, 'The delayed read checks the complete editor controls');
       assert.equal(await editorControls.evaluateAll(elements => elements.every(element => element.disabled)), true,
         'Reload disables editing and actions before waiting for native storage');
+      assert.equal(await guide(page).locator('button[data-step-id]').evaluateAll(elements => elements.length === 4 && elements.every(element => element.disabled)), true,
+        'The portaled native guide disables every step during the same storage wait');
+      await expect(guide(page).getByRole('button', { name: 'Reload saved offer', exact: true })).toBeDisabled();
       await expect(page.locator('#title')).toHaveValue('Changed in setup peer');
       await expect(page.locator('#description')).toHaveValue('PRIVATE edits after unannounced revision');
     } finally {

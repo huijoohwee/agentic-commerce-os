@@ -138,7 +138,7 @@ try {
   await page.getByRole('button', { name: 'Save on this device' }).click();
   await page.getByText('Saved privately on this device.', { exact: true }).waitFor();
   await peer.getByRole('button', { name: 'Save on this device' }).click();
-  await peer.getByText('This draft changed in another tab.', { exact: false }).waitFor();
+  await peer.locator('#status').filter({ hasText: 'This draft changed in another tab.' }).waitFor();
   assert.equal(await peer.getByLabel('The idea').inputValue(), 'A stale editor must not overwrite');
   record(BROWSER_CHECKS.concurrency);
   await page.goto(url + '#admin-data');
@@ -154,7 +154,7 @@ try {
   await imported.goto(url + '#admin-data');
   const conflict = JSON.parse(exported); conflict.drafts[0].title = 'Conflicting import';
   await imported.locator('#import').setInputFiles({ name: 'conflict.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(conflict)) });
-  await imported.getByText('An imported draft conflicts', { exact: false }).waitFor();
+  await imported.locator('#status').filter({ hasText: 'An imported draft conflicts' }).waitFor();
   assert.equal(await imported.locator('#draft-count').textContent(), '1');
   record(BROWSER_CHECKS.portability);
   const payload = JSON.parse(exported); payload.drafts[0].id = '12345678-1234-1234-1234-123456789abc';

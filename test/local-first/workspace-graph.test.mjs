@@ -59,7 +59,11 @@ test('generated Graph assets match their bounded native manifest and remain self
   }
   for (const required of [pin.entry, 'canvas/scripts/build-data-view-adapter.mjs',
     'canvas/src/features/markdown/ui/MarkdownDataViewTableCore.tsx', 'grph-shared/src/ui/themeTokens.ts',
-    'grph-shared/src/ui/kgTokens.ts', 'grph-shared/src/ui/typography.ts']) assert(inputNames.includes(required), required);
+    'grph-shared/src/ui/kgTokens.ts', 'grph-shared/src/ui/typography.ts',
+    'canvas/src/components/ui/FloatingPanel.tsx', 'canvas/src/lib/ui/floatingPanelGeometry.ts',
+    'canvas/src/features/sequence/SequenceInspectorView.tsx',
+    'canvas/src/features/sequence/sequenceGuideBrowserAdapter.tsx',
+    'canvas/src/features/sequence/SequenceFlow.css']) assert(inputNames.includes(required), required);
   assert(!inputNames.some(file => file.startsWith('canvas/src/') && /(?:\/hooks\/|useGraphStore|\/storage\/|\/three\/|\/mermaid\/|\/rich-media\/)/.test(file)));
   assert.deepEqual(pin.outputs.map(output => output.path).sort(), [...assets].sort());
   for (const output of pin.outputs) {
@@ -73,6 +77,7 @@ test('generated Graph assets match their bounded native manifest and remain self
       assert.doesNotMatch(text, /\bimport\s*(?:\(|['"]|[^;\n]*?\bfrom\s*['"])/);
       assert.doesNotMatch(text, /\b(?:fetch|XMLHttpRequest|WebSocket|EventSource)\s*\(/);
       assert.match(text, /mountDataView/);
+      assert.match(text, /mountSequenceGuide/);
     }
   }
 });

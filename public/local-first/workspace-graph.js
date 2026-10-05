@@ -25,13 +25,21 @@ export function disposeTable(container) {
   if (!state) return;
   state.disposed = true; state.grid?.destroy(); state.detail?.destroy(); mounts.delete(container);
 }
-async function surface(host) {
+async function surface(host, signal) {
   const shadow = host.attachShadow({ mode: 'open' }), stylesheet = el('link'), target = el('div');
   stylesheet.rel = 'stylesheet'; stylesheet.href = cssUrl;
   const loaded = new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(Error('Shared table styles could not load.')), 8000);
-    stylesheet.onload = () => { clearTimeout(timer); resolve(); };
-    stylesheet.onerror = () => { clearTimeout(timer); reject(Error('Shared table styles could not load.')); };
+    const finish = error => {
+      clearTimeout(timer); stylesheet.onload = null; stylesheet.onerror = null;
+      signal?.removeEventListener('abort', abort);
+      if (error) reject(error); else resolve();
+    };
+    const abort = () => finish(new DOMException('Shared surface closed.', 'AbortError'));
+    const timer = setTimeout(() => finish(Error('Shared view styles could not load.')), 8000);
+    stylesheet.onload = () => finish();
+    stylesheet.onerror = () => finish(Error('Shared view styles could not load.'));
+    signal?.addEventListener('abort', abort, { once: true });
+    if (signal?.aborted) abort();
   });
   shadow.append(stylesheet, target);
   await loaded;
@@ -75,4 +83,37 @@ export async function mountCommerceTable(container, offers, presentation, action
     };
     state.grid = native.mountDataView(target, { columns: OFFER_COLUMNS, rows, ariaLabel: actions.label, onActivateRow: select });
   } catch (error) { if (!state.disposed && mounts.get(container) === state) { disposeTable(container); throw error; } }
+}
+
+/** Host lifecycle only; the native adapter owns the panel and sequence presentation. */
+export function createCommerceSetupGuide({ launcher }) {
+  let generation = 0, host, handle, latest, loading, requested = false;
+  const close = (restoreFocus = true) => {
+    generation++; requested = false; loading?.abort(); loading = null;
+    handle?.destroy(); handle = null; host?.remove(); host = null;
+    launcher.setAttribute('aria-expanded', 'false');
+    if (restoreFocus && launcher.isConnected && !launcher.disabled) launcher.focus();
+  };
+  return {
+    close,
+    update(state) { latest = state; handle?.update(state); },
+    async open(state) {
+      latest = state;
+      if (requested) { handle?.update(state); return; }
+      requested = true;
+      const ticket = ++generation;
+      host = el('div'); host.id = 'setup-guide-panel'; loading = new AbortController();
+      document.body.append(host);
+      launcher.setAttribute('aria-expanded', 'true');
+      try {
+        adapter ??= import('./graph-data-view.js').catch(error => { adapter = null; throw error; });
+        const [native, target] = await Promise.all([adapter, surface(host, loading.signal)]);
+        if (!requested || generation !== ticket) return;
+        handle = native.mountSequenceGuide(target, latest);
+      } catch (error) {
+        if (!requested || generation !== ticket) return;
+        close(); throw error;
+      }
+    },
+  };
 }
