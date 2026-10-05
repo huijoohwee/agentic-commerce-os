@@ -2,28 +2,28 @@
 title: "Reference Implementation — Native Commerce Workspace Increment"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "edge-commerce-agent-mvp"
-revision: "0.16.0"
-version: "0.16.1"
-prd_revision: "0.16.0"
-tad_revision: "0.16.0"
-adr_revision: "0.16.0"
-mvp_revision: "0.16.0"
-gtm_revision: "0.16.0"
-date: "2026-10-04"
+revision: "0.20.0"
+version: "0.20.0"
+prd_revision: "0.20.0"
+tad_revision: "0.20.0"
+adr_revision: "0.20.0"
+mvp_revision: "0.20.0"
+gtm_revision: "0.20.0"
+date: "2026-10-05"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Commerce product architecture"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
-readiness_scope: "CW context/environment/recovery implementation; human acceptance and deployed runtime proof open"
+readiness_scope: "CW fidelity and invocation refinement plan; source inspection only, new acceptance unproven"
 lane: "authoring"
 universal_scope: false
 load_policy: "on-demand"
 lifecycle_status: "active"
 runtime_readiness_policy: "fail-closed"
-worktree_id: "device-0232231d4a19--commerce-environment-fidelity"
-agent_id: "codex-commerce-environment-fidelity"
-source_revision: "ff97aa8274b9e00c1fda2a743aa5cdaba3c59e19"
+worktree_id: "device-0232231d4a19--commerce-fidelity-plan"
+agent_id: "codex-commerce-fidelity-plan"
+source_revision: "77bb835287909c3bc8c260a4304b131c0062258b"
 guideline_revision: "3.4.0"
 guideline_source_revision: "82835ac37d524643faa6b9703cb077ea9474ab15"
 guideline_sha256: "9707ee2355d4d60b8f7a759441fbe67c8235e8762ab9cb0a46dd070a5f02b84a"
@@ -35,45 +35,38 @@ surfaces: ["2D Renderer: D3 Graph"]
 # Reference implementation — native commerce workspace increment
 
 This on-demand companion extends the [product owner](prd-tad-adr-mvp-gtm-edge-commerce-agent.md)
-at **`edge-commerce-agent-mvp@0.16.0`**. PRD, TAD, ADR, MVP and GTM below share that join.
+at **`edge-commerce-agent-mvp@0.20.0`**. PRD, TAD, ADR, MVP and GTM below share that join.
 The split preserves the <600-line limit and leaves dated sandbox evidence in its original owner.
 No second platform, roadmap, capability registry or release controller is introduced.
 The [first-dollar sprint](prd-tad-adr-mvp-gtm-20260909T1320Z-solopreneur-mvp-gtm.md)
 remains the customer-validation and payment owner. The implementation disposition below distinguishes shipped source, local checks and remaining acceptance.
 
-**Context:** local source at S0 implements drafts, staged publication, sandbox checkout and bounded
-service execution, but splits their status across different profiles and views. **Intent:** help one
-operator prepare an offer, understand where it can run, and recover the next blocked step.
-**Directive CW-D03:** refine the local Admin project list/detail with original native composition,
-retaining CW-D02 environment/recovery behavior and verifying the live local UI.
-**Role/Subject:** Commerce UI owner. **Action/Verb:** implement and verify. **Object:** native workspace
-increment. **Outcome:** criterion → native owner → check → remaining-gap traceability, with $0 new spend.
-The follow-up “IMPLEMENT recommendations; live ui verification” grants implementation and local UI
-checks. The fidelity follow-up covers native layout, density and navigation; copying source, assets or brand
-content is excluded. Neither follow-up grants deployment, outreach, provisioning or money effects.
+**Context:** S0 already implements the role console and four workspace read capabilities, while
+loading, readable results and measured accessibility remain incomplete. **Intent:** shorten the same
+merchant's reviewed-offer handoff without adding a commerce platform or transport.
+**Directive CW-D10:** update the existing joined plan with native fidelity and invocation refinements.
+**Role/Subject:** Commerce product architect. **Action/Verb:** specify and verify source grounding.
+**Object/Outcome:** CW-01–08 acceptance refinements and the smallest owner changes, with $0 new spend.
+This request authorizes the two-document update and source-review workflow. The new CW-D10 runtime
+requirements are proposed; earlier implementation and runtime receipts retain their original scope.
 
 ## Codebase grounding — reference implementation
 
-S0 = Commerce Git commit `f2284eff42d3903d8c72d23cc919d3d72aadba9c`, inspected 2026-10-04.
-S0 grounds the plan; implementation starts from published plan commit
-`e305f61bd6ecdf14f65eceb44c894ec4dc0636f8` in successor branch
-`agent/device-0232231d4a19/commerce-workspace-ui`, then verification successor
-`agent/device-0232231d4a19/commerce-workspace-verification` from `9bb287ec89177fc60980732bc48806e4bfbb8016`.
-The current fidelity successor starts at `6c6a9d825431aee015a5bba8d45e3c5b4dfffbfd` in
-`agent/device-0232231d4a19/commerce-console-fidelity`. Implementation rows refer to the retained diff;
-the native publication receipt binds the final candidate without a self-referential commit hash.
-The parent retains older sandbox receipt pins; S0 is a code snapshot, not an observed deployment.
+S0 = Commerce Git commit `77bb835287909c3bc8c260a4304b131c0062258b`, inspected 2026-10-05.
+The native START lane is `agent/device-0232231d4a19/commerce-fidelity-plan`; canonical stays read-only.
+S0 is a source snapshot, not a new runtime observation. Historical CW-D02–09 evidence is retained
+below and in the exact predecessor document at S0; it is not re-dated or used to pass CW-D10.
 Shared authoring: [guideline 3.4.0][guideline], [templates 1.5.0][templates], [verification][verification].
-OS runtime source inspected at `1d3e803f9c28c33ab41f3bf6755e760426e1c956`; the consumer's
-[package](../package.json) remains pinned to `8a40d044fe09e2f5eef48407257dd08d0d385c88`.
-No pin or lockfile is changed. Cross-repository reuse uses declared exports or versioned protocols.
+OS runtime source inspected at `38d0fa4a778316232e1bf34ae4e190db93ff3a6a`; the consumer
+[package](../package.json) pins `44da26e7beb7d9aa5da271480f2e0ef34846dfaa`.
+No pin/lockfile changes; cross-repository reuse uses declared exports or versioned protocols.
 
 | ID / exact S0 source | Inspected behavior / disposition | Reuse decision, minimal delta and check |
 |---|---|---|
 | S1 [workspace.js](../public/local-first/workspace.js), [drafts.js](../public/local-first/drafts.js), [launch.js](../public/local-first/launch.js) | Existing local search, filters, pagination, offer preview, review and import/export; state is browser-local | extend-owner: add profile/project context around existing views; `test/local-first/workspace-browser.mjs`, `merchant-launch.test.mjs` |
 | S2 [merchant-page.ts](../src/edge/merchant-page.ts), [merchant.client.js](../src/edge/client/merchant.client.js), [merchant-state.client.js](../src/edge/client/merchant-state.client.js) | Existing full-profile vendor/admin navigation, tab-memory operator session, local proposals and recovery | extend-owner: surface exact proposal/version and recovery action; `test/browser/merchant-workspace.spec.ts` |
 | S3 [theme-deployment-store.ts](../src/core/theme-deployment-store.ts), [checkout-session.ts](../src/core/checkout-session.ts) | Existing durable fenced activation, checkout coordination and distinct effect owners | reuse: preserve CAS/claim and checkout semantics; `test/shared/theme-deployment.test.ts`, `test/e2e/dev-paid-loop.spec.ts` |
-| S4 [worker.ts](../src/local-first/worker.ts), [readiness.ts](../src/edge/readiness.ts), [release-boundary-projection.ts](../src/core/release-boundary-projection.ts) | Existing local profile source/version response and full-profile exact route readiness; no unified project/environment dashboard | extend-owner: bounded read projection only; `test/local-first/readiness.test.mjs`, `test/domain/production-route-proof.test.ts` |
+| S4 [worker.ts](../src/local-first/worker.ts), [readiness.ts](../src/edge/readiness.ts), [release-boundary-projection.ts](../src/core/release-boundary-projection.ts) | Existing local profile source/version response and full-profile exact route readiness; local project/environment views now present; authenticated release projection still absent | reuse: existing bounded readiness view; `test/local-first/readiness.test.mjs`, `test/domain/production-route-proof.test.ts` |
 | S5 [mcp.ts](../src/edge/mcp.ts), [webmcp-runtime.ts](../src/edge/client/webmcp-runtime.ts), [capability-map.ts](../src/invocation/capability-map.ts) | Existing authenticated MCP, optional browser tools and upstream sigil coverage; discovery is not authority | reuse: existing schemas/handlers; `check:invocation-surface`, `check:webmcp` |
 | S6 [workspace-pack.ts](../src/local-first/workspace-pack.ts), [fulfillment.ts](../src/local-first/fulfillment.ts), [workflow.js](../public/local-first/workflow.js) | Existing pack creation and session-bound workflow start/status/cancel/retry; pack conversion does not execute source | retain-local contracts: show existing service results distinctly; `test/local-first/workspace-pack.test.mjs`, `fulfillment.test.mjs` |
 | S7 [local release](../scripts/local-first-release/deployment.mjs), [full release](../scripts/production-release/production-controller.ts), [rollback browser proof](../scripts/local-first-release/rollback-browser.mjs) | Existing independent profile controllers and retained recovery evidence | reuse: read receipt summaries, never provision from the view; `test/local-first/release.test.mjs`, `rollback.test.mjs` |
@@ -105,7 +98,7 @@ and an operator are secondary users. Reachable prospects, geography and willingn
 | CW-P2: readiness and failures are easy to confuse across profiles; S2/S4 show different owners | Inspect runtime/API/release evidence manually; target ≤60 seconds to identify profile, source and next blocked action | 2: enables honest operation of the same offer; no proven support savings yet |
 | CW-P3: integrations can overstate tool authority; S5 exposes differing surfaces | Read individual schemas and retry unsupported actions; target ≤15 minutes to first correct read/prepare invocation | 3: developer support after merchant comprehension; API breadth alone is not buyer value |
 
-Must for R1: CW-01–CW-08 as bounded below. Should: a priced prospect walkthrough of the existing
+CW-01–CW-08 remain the requirement owners; CW-D10 refines their proposed next acceptance below. Should: a priced prospect walkthrough of the existing
 sandbox. Could: additional native read projections after observed need. **Won't this increment:**
 managed infrastructure signup/provisioning, team IAM, organization billing, secrets editing, new SDKs,
 new cart/order/ledger stores, inventory, tax, promotions, returns/refunds, shipping, subscriptions,
@@ -120,8 +113,27 @@ payouts, multi-currency expansion, autonomous payment, remote draft sync or new 
 | CW-05: shopper distinguishes outcomes | Given a draft, test checkout or execution result, when opening its details, then preview, test-payment verification and fulfillment each have separate state/receipt; redirects alone never establish success | W1,W2,W5 / CW-A2,A3 / existing checkout, fulfillment and workspace browser suites with incomplete/failed/pending outcomes |
 | CW-06: human and agent use the same capability | Given any advertised surface, when invoking a supported read/prepare operation, then schema/result match its owner; tools cannot publish or confirm merely because a human UI can | W4 / CW-A4 / invocation/WebMCP tests plus negative effect tests; unsupported surfaces produce a reason, not an invented alias |
 | CW-07: user operates across devices and abilities | Given keyboard, 200% zoom, touch and offline mode, when navigating/recovering, then all review fields/errors are perceivable, focus returns correctly, and actions retain ≥44 px targets; no horizontal page overflow at 360 px | W1,W2 / CW-A1,A3 / existing browser harness extended for dimensions, focus, text status, cancellation and offline reload; physical-device study separately required |
-
 | CW-08: operator locates a merchant project | Given saved drafts, when searching projects and opening a detail, then a compact console shows only that merchant’s offers, original native preview, local storage and explicit environment observation; navigation works offline with no imported assets or hosted-state invention | W1,W3 / CW-A5 / native workspace browser suite: grouping, filtering, escaped text, detail URL, history, keyboard focus, absent project and responsive offline reload |
+
+### CW-D10 acceptance refinements — proposed, reference implementation
+
+Each refinement consumes the existing CW criterion; none is a completed VCC or a new capability registry.
+Pain/hook/break/fix/close: CW-P1/P2 → review one real draft → status ambiguity → native state and hierarchy
+refinement → exact review with a next action; CW-P3 → inspect one capability → raw arguments/results →
+schema-led assistance → correct read. Reuse W1/W3/W4; buyer impact and WTP are still unvalidated.
+
+| Refinement / parent criterion | Observable end state, constraint and named check to extend |
+|---|---|
+| F1 truthful collection states / CW-01,03,08 | Given delayed or rejected local storage, Shopper/Vendor/Admin distinguish loading, empty, no matches and failure; stale retained rows are labelled. Retry is explicit, never clears drafts or renders a failure as zero offers. Extend `test/local-first/workspace-browser.mjs` with delayed/rejected IndexedDB and successful retry. Target ≤60 s to identify the next action. |
+| F2 readable native hierarchy / CW-07,08 | At 360/768/1280 CSS px and 200% text zoom, headings, offer amount/currency, revision and next action remain readable without page overflow; tables scroll within labelled regions. Computed text contrast ≥4.5:1 (large text ≥3:1), controls/focus ≥3:1; ≥44 px targets, keyboard focus, reduced motion and offline font fallback pass in the existing workspace browser suite. No external assets or appearance store. |
+| F3 capability discoverability / CW-06,07 | Opening the existing tools panel identifies browser-local vs supplied snapshot vs runtime observation and read-only vs prepare; each of the four tools exposes required fields and its exact invocation, with usable controls when native WebMCP is absent. No auto-invoke on open; extend the workspace browser suite with all four tools, unsupported API and keyboard traversal. Target first correct local read ≤60 s; headless ≤15 min. |
+| F4 recovery and result comprehension / CW-02,06 | Summaries use each existing result shape: project counts/list, offer review with revision/economics/human-review requirement, or environment observation; provenance is always visible, absent fields never invented, raw JSON remains inspectable. Errors retain their code and one safe next action; stale revision requires reopen/review, timeout/cancel remains unknown, schema drift disables tools. No automatic retry or intent substitution; extend browser and `workspace-invocation.test.mjs` negatives. |
+| F5 private, equivalent handoff / CW-03,06 | For the same selected offer/revision, local UI, optional WebMCP, HTTP, MCP and sigil calls return equal `value` and deliberate provenance differences. Prepared snapshots expose only the selected scope, with field/offer counts visible before sharing; no private notes, cookies, persisted payload or automatic transmission. Extend existing parity tests and browser request assertions; invalid aliases, unknown properties, missing snapshots and cancellation still fail. |
+
+F1/F2 rank first for the nearest offer-review journey, F3/F4 next for correct integration, F5 preserves
+the same handoff boundary. Rank is provisional because no validated WTP differentiates these pains.
+These outcomes fit the existing five flows: F1/F2 at J1–J3, F3/F4 at J3–J4 and H1–H4, F5 at D1–D4;
+all use T1–T4 without a new topology. No channel/catalog/inventory/order/fulfillment expansion is implied.
 
 All eight VCCs retain **pending human acceptance**. Source checks below prove their named bounded paths,
 not whole-product or physical-device acceptance. Acceptance needs surfaced check output and an independent evaluator mechanism.
@@ -139,11 +151,11 @@ transport adapter → view**. A read projection has no write capability and crea
 |---|---|---|
 | W1 local workspace / S1,S8 | Extend current hash navigation and offer tables with context and next-step details; use existing editor | Existing IndexedDB revision checks, 100-draft and 8 MB backup limits; explicit export/import only; no identity/secret storage |
 | W2 merchant/admin / S2,S3 | Extend existing proposal detail and unresolved-state controls; preserve operator session boundary | Existing 20-proposal cap and atomic consume; credentials in tab memory; reconnect/reload clears; preserve intent after unknown result |
-| W3 environment projection / S4,S7 | Read selected profile/route/candidate and safe receipt summary; single observed runtime shared by local merchant groups, no organization tenancy | Proposed ≤20 activity summaries, ≤32 KB response and 5 s read deadline; explicit refresh only; failure cancels and preserves Unknown; no timer polling |
+| W3 environment projection / S4,S7 | Read selected profile/route/candidate and safe receipt summary; single observed runtime shared by local merchant groups, no organization tenancy | Existing ≤20 tab observations, ≤32 KiB readiness response and 5 s read deadline; explicit refresh only; failure cancels and preserves Unknown; no timer polling |
 | W4 invocation projection / S5 | Reuse capability map, owner schemas and adapters; add no second dispatcher | Existing upstream sigil semantics; no new command tokens; cancellation propagates; secret values omitted from discovery |
 | W5 result detail / S6 | Project existing pack, checkout and fulfillment results without conflating them | Preserve source digest, run/session identity and existing bounds; cancelled/unresolved result cannot be marked delivered |
 
-**Proposed W3 read contract:** profile, merchant identifier, candidate SHA, active version, evidence
+**W3 contract boundary:** existing public observations cover profile/source/status; the richer authenticated projection remains proposed: profile, merchant identifier, candidate SHA, active version, evidence
 reference, observation timestamp, status reason and permitted next action; absent values remain absent.
 Prefer existing `/readyz` and `commerce.release.boundary.read` responses. Add fields to the owning
 read projection only when the existing contract cannot represent them; version and test that change.
@@ -151,7 +163,7 @@ A browser may not fetch arbitrary pasted URLs, expose protected logs or enumerat
 No public projection includes credentials, customer details, private repository data or unredacted logs.
 Cached context is explicitly stale and never authorizes writes. No remote draft migration is planned.
 
-### Invocation surface contract
+### Invocation Register — reference implementation
 
 This is a projection of S5/S6, not a new invocation register. Authoritative sigil mappings remain
 `src/invocation/capability-map.ts` plus the admitted upstream catalog; unresolved mappings fail closed.
@@ -160,8 +172,9 @@ A URL/hash used for navigation is not automatically a `/`, `@` or `#` capability
 | Capability identity / owner | Browser / HTTP / MCP | WebMCP and sigils / boundary |
 |---|---|---|
 | `commerce.merchant.catalog`, `commerce.merchant.theme.stage`, `commerce.merchant.proposals.read` / S2 | Existing browser actions; catalog uses public read; stage/queue are browser-local, no general MCP stage endpoint claimed | Existing optional WebMCP read/prepare; no publish tool, no newly invented sigil mapping |
-| `commerce.catalog.search`, `commerce.offer.select`, `commerce.checkout.initiate` / S5 | Existing shopper controls; full runtime owns discovery/checkout transports | Existing WebMCP prepare only; human confirmation remains separate; upstream mapping must resolve before dispatch |
-| `commerce.release.boundary.read` / S4,S5 | Existing authenticated full-runtime MCP read; W3 browser projection proposed | WebMCP projection unsupported this increment; sigils only if admitted upstream; reads grant no deploy authority |
+| `commerce.catalog.search`, `commerce.offer.select`, `commerce.checkout.initiate` / S5 | Browser-only identities sharing shopper handlers; no identical MCP or sigil alias | Optional WebMCP read/select/prepare; human confirmation remains separate; these names require no upstream admission |
+| `commerce.catalog.public.list`, `commerce.checkout.prepare`, `commerce.checkout.confirm` / S5 | Separate authenticated full-runtime MCP identities | Global token-map association required; checkout tools return visual-handoff/human-confirmation-required, not agent settlement; no implied browser-name equivalence |
+| `commerce.release.boundary.read` / S4,S5 | Existing authenticated full-runtime MCP read; this specific browser projection remains proposed | WebMCP projection unsupported this increment; sigils only if admitted upstream; reads grant no deploy authority |
 | `commerce.workspace.{projects.list,project.read,offer.review,environment.read}` / CW-D04 | Local-first runner, read-only HTTP and stateless MCP share `workspace-capabilities.js` | Optional native WebMCP; existing token-map `/ @ #` tuple; explicit snapshot required headlessly; no publish/payment authority |
 | `commerce.workspace.program-pack.create` / S6 | Existing service `/api`, `/mcp`, `/service.json` under `services/workspace-pack`; deterministic preparation | Native WebMCP exposure not asserted; no effect execution; service mapping must not be invented |
 | `commerce.theme.deploy` / S2,S3,S5 | Existing scoped operator action; visible review/claim/CAS path | Not exposed by merchant WebMCP; broad agent discovery never substitutes for operator scope or exact reviewed base |
@@ -176,11 +189,26 @@ is unsupported. These are reuse decisions, not a claim of design-token parity ac
 CW-07/08 supply focus, accessible names, status text and responsive checks. The adopted policy is
 [native design contract 1.1.0][design]. S8's `style.css` remains the token/rendering owner, `index.html`
 the Airvio identity/action-label owner, and S1 the state/projection owner; no appearance store exists.
-Console neutrals, density and sidebar/card composition are scoped to local Admin. Original previews
-reuse existing monograms and launch-safe text. The full-profile adapter is deliberately outside CW-08.
+Console neutrals, density and sidebar/card composition serve local Shopper, Vendor and Admin. Original previews
+reuse existing monograms and launch-safe text. The full-profile adapter remains outside this refinement.
 Numeric values remain in native CSS; the publication receipt pins final bytes. No remote font/icon,
 image, source code or runtime package is consumed. Full contrast, zoom and assistive-technology
 acceptance remain gaps; screenshots and layout checks are not an accessibility conformance claim.
+
+**CW-D10 owner deltas:** W1 `workspace.js` (`refresh`, `renderShop`, `renderTable`, `renderProjects`)
+gets an explicit shared load/error projection; W1/S8 `style.css` and `index.html` retain semantic
+colors, type, code typography, inline icons, labels and original monograms. Mode/palette preferences
+are unsupported, not invented. Existing hard-coded chrome values consolidate only within touched
+rules; changed computed styles must pass F2 before acceptance. No visual-fidelity result is claimed yet.
+W4 `workspace-tools.js` (`mountWorkspaceTools`, `run`) extends its existing form and result view from
+`WORKSPACE_TOOLS`; `workspace-capabilities.js` keeps sole schema/validation/handler ownership.
+No parallel parser, registry, SDK, store or effect handler. `workspace-service.ts` stays stateless.
+Its descriptor currently advertises `api`/`mcp` but omits the implemented `invoke` URL; F3 may add
+that derived URL and exact example to this owner, with descriptor/parity checks and no new route.
+F4 reuses `evaluateLaunch` reasons/contribution for the selected saved offer; focus the existing editor
+for missing terms or non-positive contribution. Never recalculate economics in the presentation layer.
+Move implementation out of an owner near 600 lines only into one lazy view helper with a single caller
+and no domain state; extraction requires measured line-budget need, not speculative reuse.
 
 | Failure or threat | Required behavior / owner check |
 |---|---|
@@ -193,11 +221,11 @@ acceptance remain gaps; screenshots and layout checks are not an accessibility c
 
 ### Five flows and inventories
 
-All diagrams are proposed CW projections at version 0.16.0, dated 2026-10-04. Rectangles are native
+All diagrams are CW design projections at version 0.20.0, dated 2026-10-05; topology is unchanged. Rectangles are native
 components/stages; rounded nodes are people. No diagram asserts production readiness. Text inventories
 provide the mobile/offline alternative; canvas projection is parse-only and consumes zero model tokens.
 
-**Diagram CW-J** · Class: Journey stage map · Notation: flowchart LR · Version: 0.16.0
+**Diagram CW-J** · Class: Journey stage map · Notation: flowchart LR · Version: 0.20.0
 **Caption:** the merchant reaches a reviewed local offer before choosing any remote effect.
 ```mermaid
 flowchart LR
@@ -212,7 +240,7 @@ flowchart LR
 | J3 | Exact revision and permitted action / CW-03,04,06 |
 | J4 | Preview, payment and fulfillment states / CW-05 |
 
-**Diagram CW-W** · Class: User workflow · Notation: sequenceDiagram · Version: 0.16.0
+**Diagram CW-W** · Class: User workflow · Notation: sequenceDiagram · Version: 0.20.0
 **Caption:** only a reviewed request reaches the existing owner; an unknown result remains unresolved.
 ```mermaid
 sequenceDiagram
@@ -232,7 +260,7 @@ sequenceDiagram
 | V | Match current version / cancel / preserve unresolved, CW-01,07 |
 | O | Existing CAS receipt / already applied / stale version rejected, CW-04,05 |
 
-**Diagram CW-D** · Class: Data flow · Notation: flowchart LR · Version: 0.16.0
+**Diagram CW-D** · Class: Data flow · Notation: flowchart LR · Version: 0.20.0
 **Caption:** draft content and runtime observations remain distinct inputs to the visible review.
 ```mermaid
 flowchart LR
@@ -248,7 +276,7 @@ flowchart LR
 | D3 | Presentation only, J3; no new ledger, CW-05,07 |
 | D4 | Existing theme/checkout/fulfillment authority, J4; no cross-effect success inference, CW-04,05 |
 
-**Diagram CW-H** · Class: Orchestration / harness flow · Notation: flowchart LR · Version: 0.16.0
+**Diagram CW-H** · Class: Orchestration / harness flow · Notation: flowchart LR · Version: 0.20.0
 **Caption:** an optional agent can discover and prepare only through the admitted owner contract.
 ```mermaid
 flowchart LR
@@ -263,7 +291,7 @@ flowchart LR
 | H3 | S3/S6 executor; existing effect limits, no agent-created presence receipt |
 | H4 | W1–W5 readback at J4; W3 proposed 5 s deadline, no retry loop |
 
-**Diagram CW-T** · Class: Runtime topology · Notation: flowchart TB · Version: 0.16.0
+**Diagram CW-T** · Class: Runtime topology · Notation: flowchart TB · Version: 0.20.0
 **Caption:** the local browser remains useful alone; online profiles preserve their existing trust boundaries.
 ```mermaid
 flowchart TB
@@ -302,6 +330,14 @@ MVP, <600 lines/file, <500,000 bytes/chunk, race-safe owner effects and no dupli
 | CW-A5 derive compact console from drafts | Accepted: existing hash views, merchant grouping and native CSS. Rejected: a second project store, fabricated hosted environments or imported implementation. Preserve semantic density using original content | Up to 100 groups from the existing 100-draft cap; detail shows 10 recent offers. Unknown project gives recovery. Revert views/CSS only; revisit after measured navigation friction |
 | CW-A4 reuse invocation owner | Pass: existing schema/handler adapters or contract-only adapter with equivalence proof. Fail: generic extraction/new SDK without two concrete consumers | No local sigil grammar fork; unsupported surfaces remain explicit. Revert adapter/pin together if bytes/errors differ; revisit after measured integration failures |
 
+**CW-A11 / proposed for CW-D10:** extend existing native views and schema-driven assistance.
+Direct reuse wins over a new headless engine, query API, design package or generic command palette:
+the current four read handlers already cover the selected journey, while replacements add owners,
+migration and unproven demand. Retain raw JSON as a disclosure for integrators, with a readable
+summary for merchants. Preserve exact input/result bytes and owner error codes across adapters.
+Revert only changed views/tests on comprehension or parity regression; draft schemas, reviewed
+revisions and effect permissions stay intact. Revisit only on observed buyer need for a missing read.
+
 Direct reuse outranks extraction on fewer owners and migration surfaces, given the hard constraints.
 Manual diagnostics and the proposed projection are economically incomparable until the study measures
 support time; the plan does not invent a weighted commercial score. No contested vendor selection is
@@ -316,10 +352,10 @@ The historical sandbox mechanism remains usable within its separate authority, n
 
 | Phase / buyer outcome | Reuse / smallest delta / owner | Exit and prerequisite | Active bounds / recovery / recheck |
 |---|---|---|---|
-| R0 reviewable plan / now | S1–S8; parent + this companion / architect | Seven VCC joins, exact source, five flows, checks and gaps recorded | 30 min estimate, 40 min cap after preflight; 2 Markdown files/60 KB changed bytes; 0 runtime modules, 0 always-load delta, $0; preserve lane on blocked release |
-| R1 reviewed offer and honest context / implemented slice | W1–W3/W5; existing view extensions / commerce UI owner | User follow-up grants implementation; five human baseline walkthroughs remain an acceptance gap; CW-01–05,07 | Current sprint estimate ≤45 active min, cap 60 min; 12 files/90 KB diff, 0 new runtime modules; zero new packages/services/model calls; revert view only on false status |
+| R0 reviewable plan / historical; current D10-P below | S1–S8; parent + this companion / architect | Eight VCC joins, exact source, five flows, checks and gaps recorded | Original 30 min estimate, 40 min cap; 2 Markdown files/60 KB changed bytes; current bounds in D10-P |
+| R1 reviewed offer and honest context / historical implemented slice | W1–W3/W5; existing view extensions / commerce UI owner | Historical implementation follow-up; five human baseline walkthroughs remain an acceptance gap; CW-01–05,07 | Historical estimate ≤45 active min, cap 60 min; 12 files/90 KB diff, 0 new runtime modules; current execution uses D10 |
 | R1b project navigation / CW-08 | W1/S8 native hash view and CSS / UI owner | Original list/detail, actual merchant scope, no copied assets; search, keyboard, offline and narrow layouts checked | Estimate 40 active min, cap 50 min; ≤7 files/90 KB diff, 0 new modules/packages/services; preserve drafts when reverting UI |
-| R2 equivalent agent preparation / existing contract retained | W4 existing schema/adapters / integration owner | Existing three merchant WebMCP tools exercised with visible proposals and no publication tool; no new route/sigil adapter | 4 active hours estimate, 1-day cap; ≤4 modules/30 KB; 0 new registries; stop on contract mismatch, preserve previous pin |
+| R2 equivalent agent preparation / historical contract | W4 existing schema/adapters / integration owner | Three merchant browser tools and four workspace reads remain separate implemented contracts; CW-D04 evidence below | Historical 4 active hours estimate, 1-day cap; ≤4 modules/30 KB; current execution uses D10 |
 | R3 priced setup pilot / conditional | Existing first-dollar sprint and native demo / product owner | Named consenting prospect, accepted priced deliverable and explicit outreach/collection authority | ≤2 hours preparation, ≤1 hour delivery target; 0 runtime modules/$0 new infrastructure; prospect wait rechecked when response/authority arrives |
 
 Each phase has a maximum of three implementation/alignment iterations. Runtime serving-token cap is
@@ -339,10 +375,10 @@ A fixture result cannot establish physical-device usability, demand or higher ex
 
 | Lane / effect | Authority and evidence required | Current disposition / recovery owner |
 |---|---|---|
-| Authoring → source review | User's implementation follow-up, native successor with 12 reserved paths, source-bound checks | Open for this implementation; RELEASE publishes exact candidate for review |
+| Authoring → source review | Current documentation request, native START with 2 reserved Markdown paths, source-bound checks | Open for this plan update; RELEASE publishes exact candidate for review |
 | Source review → protected main | Exact candidate plus required protected Integration Gate and integration receipt | Not inferred from local checks; use existing OS release owner |
 | Main → generated mirror | Separate consumer projection instruction and exact source join | Closed; no authored mirror edits |
-| Main → runtime | Product-owned changed-input analysis, cost/license proof, exact deployment authority and receipt | Closed for this turn; changed UI assets require separate exact-candidate production approval and readback |
+| Main → runtime | Product-owned changed-input analysis, cost/license proof, exact deployment authority and receipt | D10 changes no runtime inputs; future UI assets require separate exact-candidate production approval/readback |
 | Runtime → financial/customer effect | Exact effect instruction, current provider/principal/terms and outcome evidence | Closed; separate payment/fulfillment owners and recovery |
 
 Run START → affected checks → RELEASE. DEPLOY is conditional on its separate authority. Source
@@ -405,7 +441,7 @@ as finished.
 
 ## From-0-to-1 coverage — reference implementation
 
-All rows bind `edge-commerce-agent-mvp@0.16.0`. Coverage is a disposition, not readiness or validation.
+All rows bind `edge-commerce-agent-mvp@0.20.0`. Coverage is a disposition, not readiness or validation.
 Dispositioned **16/16**; covered applicable **11/16**; deferred **5**; not applicable **0**.
 
 | Domain | Decision / exact source section in this revision | Accountable owner / evidence or gap / next check |
@@ -413,7 +449,7 @@ Dispositioned **16/16**; covered applicable **11/16**; deferred **5**; not appli
 | C01 purpose/pain | covered / PRD | Product / S1–S4, unvalidated buyer pain / E1 |
 | C02 market/timing | deferred / economics | Product / geography and two-method sizing missing / before audience handoff after E1 |
 | C03 offer/alternatives | covered / GTM + ADR | Product / bounded offer and manual alternative, no price / E1 |
-| C04 product/experience | covered / PRD | UX / seven proposed VCCs, baseline absent / E2 |
+| C04 product/experience | covered / PRD | UX / eight VCCs with proposed refinements, baseline absent / E2 |
 | C05 architecture/data | covered / TAD | Architect / S1–S8, W1–W5 and five flows / source refresh before R1 |
 | C06 quality/security/AI | covered / TAD failures | Engineering / failure checks and zero-model design, execution pending / R1/R2 |
 | C07 decisions | covered / ADR | Architect / CW-A1–A4 / admission and fault results |
@@ -428,147 +464,94 @@ Dispositioned **16/16**; covered applicable **11/16**; deferred **5**; not appli
 | C16 learning | deferred / GTM | Product / no observed experiment result / E1–E4 successor Context |
 
 Deferrals keep planning review open and block only their dependent implementation/customer/audience
-transition. They are not silently waived. PRD→TAD criterion joins: 7/7; W1–W5→PRD owners: 5/5;
-ADR bindings: 7/7. These are authored traceability counts, not completed VCCs or whole-guideline compliance.
+transition. They are not silently waived. PRD→TAD criterion joins: 8/8; W1–W5→PRD owners: 5/5;
+ADR bindings: 8/8. These are authored traceability counts, not completed VCCs or whole-guideline compliance.
 
-## Console refinement checkpoint — reference implementation
+## Retained implementation evidence — reference implementation
 
-CW-D03 / CW-08 / CW-A5 extends the preceding verified source candidate `6c6a9d8`.
-Its [Integration Gate](https://github.com/huijoohwee/agentic-commerce-os/actions/runs/37171501366/job/111345188054)
-passed; that result is predecessor evidence, not proof for this new diff. The native successor's
-publication receipt and checks bind the current source without a self-referential commit hash.
+The [exact predecessor record](https://github.com/huijoohwee/agentic-commerce-os/blob/77bb835287909c3bc8c260a4304b131c0062258b/docs/prd-tad-adr-mvp-gtm-commerce-workspaces.md#implementation-and-evidence--reference-implementation)
+retains CW-D02–09's full source/check/receipt histories and older budgets. This consolidation removes
+contradictory current-tense rows; historical checks are scoped to their recorded candidates only.
 
-**Development:** compact sidebar and breadcrumb, searchable horizontal project cards, merchant-scoped
-detail and recent-offer table. Project identity is derived from existing launch merchant IDs; drafts
-without launch terms form Personal workspace. Empty storage shows a truthful starting workspace.
-No new persistent schema, organization, remote environment, deployment or membership is created.
-The detail separates browser storage from the shared example checkout. Environment state remains
-Not checked until explicit inspection, ages/stales under the existing policy and grants no effect.
+| Implemented increment / native owner | Retained evidence and present limitation |
+|---|---|
+| CW-D02/03 / W1–W3 | Profile/context, explicit bounded readiness, project grouping, recovery and mobile/offline views implemented. Previous browser and type checks recorded; initial dirty-head and platform-prerequisite failures remain in predecessor. Human, physical-device, zoom and contrast acceptance open. |
+| CW-D04 / W4 | Four read schemas/handlers, HTTP + real SDK MCP + sigil service and optional WebMCP implemented. Requests/results 196,608 bytes, snapshot ≤100 offers and ≤192,512 bytes, five-second deadline. Exact revision/private-field/origin/cancellation negatives recorded. Full-runtime registry admission is explicitly not claimed. |
+| CW-D05/06 / W1,W2 | Shared role shell, project-context navigation, native preview, saved-offer activity and environment history implemented; 360/768/1280 fixture coverage recorded. Full-profile visual equivalence and user TTV unproven. |
+| CW-D07/08 / W3,W4 | Contextual tools dialog and observation detail implemented; explicit run/prepare/enable, exact target scoping, close cancellation/disposal/focus, ≤20 tab-only observations. Historical native-browser checks do not establish support in every browser or current deployment. |
+| CW-D09 / W1 | Tab-local navigation collapse and context-preserving project selection implemented. Prior 123/124 local tests stopped on dirty-source binding; final source/runtime facts come only from the next row's receipts. |
+| RR-D10 / product owner | Parent retains protected `cb06ee94bcb484d8b62ab48de633a367bb868846`, successful release run `37214188137` and v3 recovery receipt. These historical profile-specific facts are not new CW-D10 runtime proof or payment/demand evidence. |
 
-**MVP/checks:** the existing browser suite adds two-merchant scoping, literal injected text, private-note
-exclusion, search/no results, unknown project recovery, history, search shortcut focus, fresh-offer
-creation, 360/768/1280 layouts and offline detail reload. A browser can reset its online hint on a
-service-worker reload; the check verifies network failure and an unobserved/offline status, never
-retained readiness. Live loopback inspection uses labelled sample data and the real unavailable
-sandbox response. Final clean check output belongs to the native handoff; fixture screenshots live
-under `node_modules/.cache/local-first-verification/projects-desktop.png` and `project-detail-*.png`.
+## CW-D10 plan and handoff — reference implementation
 
-**Production Release:** no activation or promotion. **Runtime:** agent-operated loopback plus browser
-fixtures; full-profile visual parity and production hosting are outside CW-08. **GTM:** this refinement
-supports CW-P1/E2 comprehension only; no measured buyer savings, demand or revenue is inferred.
-Next owner action: source review of CW-D03 and the five-person E2 study once participants are available.
-Cleanup keeps the reviewable worktree and preview; integration/deployment need their own receipts.
+**Development:** documentation-only refresh at S0; F1–F5 are proposed changes, not implemented UI.
+**Production Release:** none for this revision. **Runtime:** no new browser, deployment or payment
+observation. Historical sandbox/live/test-mode records in the parent retain their exact boundaries.
+Authoring checks: shared `scanFrontmatter` parser and all five-role joins pass; 32 relative file
+targets exist; both files remain <600 lines, patch <100 kB, and the restricted reference scan is clear.
+`check:authored-limits` (482 files), `check:terminology` (483), `check:invocation-surface` (12 assertions)
+and `check:webmcp` (6) pass. The existing `check-diagram-canvas-render.mjs` passes: 10 diagrams,
+37 projected nodes / 26 edges / 6 clusters, no findings. Mermaid bodies are byte-unchanged; no new
+visual-render proof is claimed. Two read-only source reviews resolved the browser-name and result-shape errors.
+`npm run check` selected 3/11 affected owners: ADLC passed in 3.17 s; evidence-contract in 0.39 s;
+named checks stopped in 18.47 s at `listing_source_must_be_exact_and_clean` (208/209 local tests passed).
+That guard requires a clean committed candidate; it is not waived. An earlier 34.90 s run became
+invalid when review edits changed inputs. These attempts prove no complete gate; clean-candidate
+verification belongs to native publication/CI receipts. No failing runtime owner is modified here.
+Release handoff: native publish commits these exact reserved paths; the resulting candidate/PR receipt
+is authoritative. Source integration remains pending its protected gate. Recheck the clean candidate,
+then let the release owner consume exact provider results; no merge/deploy success is prewritten.
 
-## Implementation and evidence — reference implementation
+### Existing invocation contract, reference implementation
 
-**Development:** CW-D02 reuses the native successor of the published documentation lane; 12 reserved
-paths, 60 active-minute cap, 90 KB diff cap, 0 new modules/packages/services and $0 new spend.
-The inherited 0.7.0 plan is commit `e305f61bd6ecdf14f65eceb44c894ec4dc0636f8` / PR #94;
-its protected Integration Gate passed. That result does not certify this successor's changed code.
-**Production Release:** none for 0.16.0. **Runtime:** local loopback and test fixtures only; no new live
-deployment, payment or customer receipt. Historical EC evidence keeps its own source and expiry.
+The single Invocation Register above projects S5 and the token-map owner; this is an executable
+example of that contract, not another route declaration. Read `service.json` to obtain exact schemas,
+source revision and routing tokens before invoking. Service base is `/agentic-commerce-os/services/workspace`.
+HTTP `/api` receives `name` and `arguments`; `/invoke` receives `invocation` and `arguments`; `/mcp`
+uses the locked SDK's initialize/list/call lifecycle. The UI prepares calls; it does not send them.
 
-| Criterion / native owner | Implemented source and check disposition | Remaining acceptance |
+```json
+{"invocation":"/tool.route @mcp-gateway #mcp commerce.workspace.projects.list","arguments":{"snapshot":{"schema":"commerce.workspace-snapshot/v1","offers":[]}}}
+```
+
+Empty data is a valid example yielding the local unassigned workspace; it is not customer evidence.
+`project.read` needs `projectId`; `offer.review` needs `offerId` and `expectedRevision`; both need
+a headless snapshot. `environment.read` accepts no snapshot and reads current runtime state.
+Browser-local reads can work offline after cache priming; HTTP/MCP need a reachable service, and
+environment observations need the configured runtime. Native WebMCP is optional and feature-detected;
+the ordinary tool runner remains available. No browser-version support promise is inferred from fixtures.
+The transport rejects foreign Origin, cookies and Authorization; clients send `credentials: omit`.
+Local prepared snapshots contain merchant titles, audience, outcome and cost estimates: review before
+sharing. Read-only is not confidential hosting. No writes, order submission, publication or payment
+confirmation are added. Exact sigil spelling/order is required; standalone aliases are unsupported.
+
+### Bounded next increment and first-dollar path
+
+| Task / existing role | Prerequisite → outcome/check | Active estimate and cap / recovery |
 |---|---|---|
-| CW-01 / W1,W2 | Existing local/vendor/admin views show profile and local merchant scope; environment exposes source and observation time. `workspace-browser.mjs` and `merchant-workspace.spec.ts` exercise both profiles | Five human first-use tasks and physical devices unmeasured |
-| CW-02 / W3 | Explicit same-origin GET `/readyz`; profile/source match (also lane/version in full profile), 5 s deadline, 32 KiB streamed cap, cancellation and stale/unknown states; ≤20 in-memory observations, no polling, credentials, writes or persisted release history | Authenticated release-boundary receipt projection deferred; public readiness is never deployment proof |
-| CW-03 / W1 | Existing draft/review/JSON transfer retained; role harness verifies durable offline reload, conflicts, exact review and private-note exclusions | No cloud synchronization or new portable schema |
-| CW-04 / W2 | Visible pending/unknown/confirmed recovery explanation reuses existing claim/CAS/readback; tests cover two tabs and a lost write response followed by one-minute wait and explicit matching readback | Full provider/container runtime acceptance remains separate |
-| CW-05 / W5 | Context, proposal outcome and environment copy distinguish draft, publication, test checkout, real payment and fulfillment; existing sandbox flow harness retained | Customer comprehension and real transaction evidence absent |
-| CW-06 / W4 | Existing three merchant browser tools retained; bounded staging visibly updates review queue, aborted calls do not stage, and no publication tool or credential is exposed | No new WebMCP/HTTP/MCP/sigil capability or authority; native-provider acceptance unchanged |
-| CW-07 / W1,W2 | Browser checks at 360/768/1280 CSS pixels; live local browser inspected with offline save/reload; status live region, focus routing and ≥44px existing/new actions retained | 200% browser zoom, assistive technology and physical-device study remain open |
+| D10-P / architect | S0 + guideline → two aligned docs, links/limits/source audit + native RELEASE | 20 min estimate, refreshed 30 min active cap; 2 files, <100 kB diff, 0 runtime modules, 0 always-load delta, 3 iterations, $0 new spend. Authoring tokens/cost unknown. |
+| D10-A / UI owner | Accept proposed F1/F2 baseline after E2 observations → extend W1/S8 and owning browser cases | 45 min estimate, 60 min cap, ≤4 owner/test files and 40 kB diff, 0 new modules; stop on unrelated checkout change; revert scoped view, preserve drafts. |
+| D10-B / integration owner | D10-A + confirmed tool-use friction → extend F3–F5 in W4 and parity/browser cases | 45 min estimate, 60 min cap, ≤5 files/45 kB diff, ≤1 lazy view helper only if required by line budget; no new schemas or dependencies. Stop on contract mismatch; restore preceding adapter/view. |
+| D10-C / product | Existing E1/E2 and authorized consenting prospect → one priced setup/recovery handoff | ≤60 min preparation; no runtime module or infrastructure spend. First collection ≥1 agreed currency unit requires authentic receipt; no payment or outreach performed here. |
 
-W3 stays inside the existing profile-specific bootstrap owners; each consumes its own incompatible
-readiness contract and never displays arbitrary backend detail. No shared registry, new always-load
-file, schema migration or background fetch is added. A result ages once at 60 s and also invalidates
-on offline; reconnect requires explicit refresh. A late cancelled response cannot replace the newer
-state. Unknown leaves drafts intact and gives an explicit next action.
+All implementation files stay <600 lines, each artifact/chunk <500,000 bytes; serving model-token
+budget is zero. No paid plans/addons/overages, new hosted prerequisite or automatic agent loop.
+For D10-A/B, max three iterations; authoring token telemetry remains unknown, active time bounds work.
+If the current large workspace owner cannot fit after simplifying, stop and justify the single lazy
+view split before adding it. Discovery/local read paths remain token-free and usable without AI.
+GTM ranking remains setup/recovery service → integration help → recurring hosting → take-rate.
+Measure E2 task time, repeated/failed actions and support minutes before/after; API count and passing
+fixtures are not revenue. Inventory, variants, channels, tax, promotions, subscriptions, returns,
+new checkout/settlement rails, auto-publication and remote sync remain Won't this increment.
 
-`npm run dev -- --local-first` now starts the existing asset Worker on a fresh loopback origin. The
-isolated origin avoids an earlier session's offline cache hiding edited assets; source remains
-`local-unreleased`, never a fabricated commit. Export drafts before ending a Dev session to carry them
-to its next origin. Restart Dev after asset edits. Full `npm run dev` keeps its existing verified
-container prerequisite; no container guard, dependency or production configuration was changed.
-
-Local browser findings repaired before handoff: stale cached development assets, reconnect copy that
-still said Offline, and cramped tablet cards. Agent-operated offline save/reload uses an explicitly
-labelled sample draft. It is not the five-person E2 study, demand validation or production evidence.
-
-Targeted evidence: five merchant browser cases pass; the existing local-first harness passes all
-role/offline/review/checkout/pack/durable-listing groups with the added environment assertions.
-At clean `9bb287ec8`, typecheck, 91 domain tests, unit tests, five merchant browser cases and the
-local-first browser harness passed. Worker tests passed 59/60: the remaining assertion required
-the retained “Release identity” label. This successor restores it in the environment disclosure; both invalid-configuration Worker cases
-and all five merchant browser cases pass after the correction.
-Both Dev and Production dry runs passed; largest measured chunk was 488,129 bytes (<500,000).
-Metadata/five-role joins, authored limits and terminology pass. The initial affected run stopped with
-`blocked-validation-input-drift` because source changed during validation; that run is not final proof.
-Exact clean-candidate integration,
-worker regression and dry-run outcomes must be read from the native publication/check receipt; local
-fixtures can identify the base HEAD while the checkout is dirty and must not be described as its
-clean release proof. Screenshot artifacts are under `node_modules/.cache/local-first-verification`.
-
-**Release handoff:** run affected checks, publish the reserved diff through the native owner, and
-retain exact-candidate PR/check evidence. The separate clean named-check run passed 119 local-first tests, its browser groups and source
-checks, then stopped at `podman_workerd_override_required` before full browser setup. This local
-platform prerequisite blocks that check;
-it does not justify weakening the guard. Protected integration, deployment, cleanup and canonical
-sync remain separate effects. Recheck on changed source, CI evidence, runtime prerequisite or grant.
-
-### CW-D04 — Existing workspace capabilities across invocation surfaces
-
-**PRD / CW-06:** an operator inspects projects, exact offer readiness and runtime configuration through the compact console, browser tools or a headless client. Acceptance: the same capability returns the same data for the same snapshot, unknown inputs fail explicitly, no surface approves or publishes, and mobile/offline reads preserve the existing draft workflow. Customer pain and willingness to pay remain hypotheses; hosted infrastructure management is outside this increment.
-
-**TAD / W4:** `workspace-capabilities.js` owns four schemas and read handlers: projects list, project read, offer review and environment read. `drafts.js` owns merchant grouping; `launch.js` owns economics; the existing readiness owner supplies runtime observations. `workspace-tools.js` loads only when Tools & commands or Agent tools opens and registers optional native WebMCP only after Enable. Disable/page exit aborts registration; schema drift refuses invocation. `workspace-service.ts` exposes `/services/workspace/{service.json,api,invoke,mcp}` under the existing application prefix. The locked MCP SDK provides stateless Streamable HTTP.
-
-**ADR / CW-A5:** reuse the existing token-map owner for `/tool.route @mcp-gateway #mcp`, followed by an exact workspace tool name. This local service does not claim admission to the protected full-runtime registry. Browser execution defaults to current IndexedDB; headless execution requires an explicit `commerce.workspace-snapshot/v1`. Snapshot preparation is local and intentional; it excludes idea/price notes and workflow output but includes titles, launch terms and estimates. Results distinguish `browser-local`, `provided-snapshot` and `runtime-observation`. Offer review requires the saved revision and never substitutes for the human-reviewed launch-pack owner.
-
-**MVP / evidence:** four real MCP tools are checked through SDK initialize/list/call in workerd against HTTP results; negative tests cover stale revisions, private/unknown fields, credentials, foreign origins, size limits, invalid sigils and cancellation. The browser harness exercises local reads, prepared requests, WebMCP registration/disposal, offline reload and 360/768/1280 layouts. Its WebMCP contract fixture accepts native JSON-string schema metadata. Live browser verification successfully registered and invoked native project tools; it does not prove production availability. The full local-first browser harness and both dry runs pass. Requests/results are capped at 196,608 bytes, snapshots at 100 offers and a smaller byte bound; operations use a five-second deadline. No snapshot persistence, external service, new package or paid resource is added. Cached capability modules and source-bound discovery enable offline use; environment reads remain online observations. New modules remain below 600 lines.
-
-**GTM / first-dollar:** reuse this increment to demonstrate one merchant's saved offer and cost readiness before an authorized buyer study. It introduces no billable plan or payment claim. Sprint bound: 45 active-minute estimate, 60-minute implementation cap, 14 changed files, 110 KB diff; validation/provider waits are separately observed. Exact clean source, CI and release outcomes belong to the native candidate receipts; no protected merge or deployment is authorized by these checks. Recheck when source, native API, runtime prerequisites or authority changes.
-
-### CW-D05 — Shared shopper and vendor console
-
-**PRD / CW-01,02,07:** switching roles retains a consistent header, breadcrumb, navigation, panel density and mobile layout while preserving catalog filters, offer editing and human review.
-**TAD / W1,W2:** reuse the existing console CSS owner and workspace hash router. Shopper uses a compact collection and sandbox panel; Vendor reuses its offer table/editor inside the same shell. Search buttons and Cmd/Ctrl+K focus the active role's query; subviews return to that role's list.
-**ADR / CW-A6:** remove the replaced decorative hero and banner styles; add no modules, packages, capability identities or data stores. Invocation capabilities and payment authority are unchanged.
-**MVP:** existing browser coverage checks shared content geometry at 360/768/1280 pixels, role search and subview keyboard routing, filters, previews, editing, offline persistence and sandbox access. Live local review covers empty states and mobile layouts; fixture images carry sample offers. Clean candidate/CI receipts own release proof; local checks do not prove deployment.
-**GTM:** reduce role-switch friction for the same first-offer demonstration; customer TTV and willingness to pay remain unvalidated. Sprint: 25 active-minute estimate, 40-minute cap, 6 files / 80 KB diff (compressed CSS expands review bytes), no always-load module additions. Recheck on source/API/authority drift.
-
-
-### CW-D06 — Project overview and environment detail alignment
-
-**PRD / CW-01,02,07:** project selection retains its merchant context through environment detail and back. Overview and project pages show searchable, paginated saved-offer activity; environment detail combines a local preview, observed status, explicit checks and searchable tab history. No hosted infrastructure management is added.
-**TAD / W1,W2:** the existing workspace router, project grouping, preview card and readiness owner remain authoritative. Query parameters carry project identity; unknown projects stay unavailable. One record-table renderer serves saved activity and check history. Local saved revisions and shared runtime observations remain separate facts.
-**ADR / CW-A7:** reuse current components and semantic controls; no imported design assets, new modules, packages, capability schemas or storage. Root, project and environment views share the console layout. The browser tools and MCP/sigil invocation contracts remain unchanged; observation expiry, cancellation and explicit refresh retain their current owner.
-**MVP / evidence:** typecheck and the existing full browser harness pass before publication. Added coverage verifies project context, activity search/pagination, check-history filtering, unavailable project refusal, mobile geometry and offline reload. Exact clean candidate and CI results belong to native publication/check receipts; screenshots contain local fixtures and prove no deployment.
-**GTM / bounds:** reduce navigation friction in the same first-offer demonstration. TTV and willingness to pay remain unvalidated. Estimate 30 active minutes; 45-minute cap, 8 files / 90 KB diff, zero new modules/packages/spend. Recheck when source, runtime or authority changes; source publication remains separate from integration and deployment.
-
-### CW-D07 — Contextual native agent tools
-
-**PRD / CW-06,07:** open Agent tools from Admin without losing the current project or environment. Saved-offer Inspect carries the exact ID and revision. Opening the panel performs no capability call; operators explicitly run, prepare or enable browser tools. Missing projects fail visibly without selecting another project.
-**TAD / W4:** move the existing lazy tool runner into a native dialog and restore it on close; one DOM, schema set and handler owner serve both entry points. Project and environment context select their existing capabilities; close aborts work, disables WebMCP and restores keyboard focus. Prepared project/offer MCP snapshots validate the target and include only its matching offers; discovery includes the supplied collection.
-**ADR / CW-A8:** reuse the existing four capabilities and `/tool.route @mcp-gateway #mcp` grammar across UI, WebMCP and MCP. No assistant simulation, imported assets, hosted infrastructure, new modules, packages or storage. Read-only tool use retains human launch approval and explicit environment observations.
-**MVP / evidence:** browser coverage checks context, no automatic result, exact revision refusal, scoped request bytes, WebMCP result parity/disposal, Escape/focus, offline reads and 360/768/1280 layouts. Live local browser registration/invocation and close disposal passed separately; fixture coverage alone does not establish native support. Typecheck, authored limits, terminology, invocation/WebMCP checks and the full browser harness pass before publication. Exact candidate test/CI outcomes belong to publication receipts; no production claim follows from local checks.
-**GTM / bounds:** reduce manual ID entry during the same first-offer demonstration; buyer pain, TTV and willingness to pay remain unvalidated. Estimate 30 active minutes; 45-minute cap, 8 files / 90 KB diff, zero added modules/packages/spend. Provider waits remain separate; recheck on source/API/runtime/authority drift.
-
-### CW-D08 — Inspectable environment activity
-
-**PRD / CW-06,07:** the environment overview offers compact status/preview panels and a direct history destination. Operators filter by result, search and paginate the latest 20 checks, then inspect the exact past observation without triggering a new request. The tab-local history resets on reload and does not represent deployment history.
-**TAD / W4:** extend the current readiness owner with elapsed time, HTTP status, sequence identity and a bounded projection of validated response fields. Reuse the existing table, native dialog and router; carry project context through the history link. Invalid/cancelled reads retain an unknown result with no verified payload. The existing environment capability remains the single read operation across UI, MCP, WebMCP and `/ @ #`.
-**ADR / CW-A9:** keep history in tab memory, preserve the 20-record bound and five-second request deadline, and label historical evidence explicitly. Ten-row pagination and result filtering do not introduce a second data owner. No copied assets, packages, storage systems, capability identities or hosted infrastructure controls. No always-load module additions; the existing workspace owner receives the bounded rendering code.
-**MVP / evidence:** browser coverage checks source identity, result filters, pagination/reset, retention, unknown responses, detail-dialog focus and mobile geometry. Existing malformed-response, stale-source and cancellation checks remain in force. Typecheck, source guards and the full local-first browser harness pass before publication. Live native WebMCP invocation populated the same environment history, with disposal on close; mobile detail inspection and focus restoration passed. Exact candidate/CI results belong to the publication handoff; fixture screenshots do not establish production availability.
-**GTM / bounds:** make one merchant's environment outcome easier to explain during the first-offer demonstration; buyer pain, TTV and willingness to pay remain unvalidated. Estimate 30 active minutes; 45-minute cap, eight files / 90 KB diff, zero new modules/packages/spend. Provider waits are separate; recheck after source/runtime/API/authority drift.
-
-### CW-D09 — Context-preserving console navigation
-
-**Grounding:** native base `ff97aa8274b9e00c1fda2a743aa5cdaba3c59e19`; W1's sidebar is always visible and its project selector always redirects to project overview. Operator-supplied public screens were inspected as conceptual navigation input only; no source, asset, identity, link or dependency is imported.
-**PRD / CW-01,07:** hide/show navigation while retaining the current workspace; switching projects from Environment or Check history preserves that destination and explicit shared-runtime scope. VCC: controls expose their state, collapsed links leave the focus order, current project/history survive selection, and 360/768/1280 layouts do not overflow. No readiness check runs as a navigation side effect.
-**TAD / W1:** extend the existing router and CSS owner, add sidebar IDs and one 44 px topbar control; a tab-memory class controls the current role's navigation, with no stored preference. Existing query parsing retains only supported project/check-history context. Journey: inspect → choose context → inspect; data: existing draft groups → URL → view; harness: user event → router → renderer; topology: same local module/asset path, existing five-flow diagrams still apply.
-**ADR / CW-A10:** reuse native semantic controls and existing responsive sidebar. Keep expanded navigation on initial load; collapse is explicit and reversible. Avoid a second mobile menu, dependency, state store or invocation owner. Always-load delta: one inline icon and bounded owner code/CSS, no new modules; other tools remain lazy.
-**MVP / evidence:** implementation in the admitted `commerce-environment-fidelity` lane; full local-first browser harness passes including 360/768/1280 geometry, keyboard toggle, role continuity, reload reset, environment context and existing offline/agent flows. Five invocation tests (including real SDK MCP/REST parity), typecheck, authored limits, terminology, invocation and WebMCP guards pass. Live loopback navigation collapse and project-context retention passed; read-only independent review found no actionable defects. No source integration, deployment or revenue is asserted. Shared tool identities and all four MCP/WebMCP/sigil capabilities remain unchanged; headless snapshot and effect limits still apply.
-**Verification limit:** initial `npm run check` passed ADLC, evidence-contract and typecheck; named checks reached 123/124 local tests and stopped at `listing_source_must_be_exact_and_clean` while the admitted diff was uncommitted. Clean-candidate checks and provider outcomes must be read from the native publication/CI receipt, never this dirty-head browser fixture. Screenshot/runtime logs remain under `node_modules/.cache/local-first-verification`; canonical checkout stayed read-only.
-**GTM / bounds:** supports the same first-offer walkthrough, with unvalidated pain/WTP and unmeasured TTV; expected context-switch task ≤15 seconds is a target only. Estimate 25 active minutes, cap 40 minutes / 8 files / 60 KB diff / 0 modules or dependencies / $0 spend; token use unknown. Next: UI owner validates affected checks, runs native RELEASE and records exact result; external gates recheck on provider evidence or authority changes, with no external ETA. Recovery: reviewed source revert; no stored data migration.
+**Release/no-deploy analysis:** reserved paths are only this companion and its parent. The local-first
+artifact's `sourceManifest` in `scripts/local-first-release/artifact.mjs` lists runtime/config/package
+and public asset inputs, not these documents. No changed executable/asset/schema requires a local-first
+runtime activation. Any external documentation mirror remains a separately owned, unverified delivery
+surface. Source review/protected integration, mirror publication, runtime and money effects retain
+separate authority/receipts. Source rollback is a reviewed two-file revert; no draft migration.
+Provider wait: required exact-candidate check/receipt; recheck on provider completion or source change,
+not a promised ETA. Human acceptance wait: E2 participants and observations; recheck when supplied.
 
 | Finding Type | Severity / Rule ID and rule text | Artifact / evidence | Owner and remediation |
 |---|---|---|---|
@@ -582,7 +565,7 @@ stop after three alignment cycles or two without blocker reduction.
 
 | PRD-TAD-ADR-MVP-GTM | CID | RAO | Updated Date |
 |---|---|---|---|
-| Console navigation delivery handoff | edge-commerce-agent-mvp@0.16.0 / CW-D09, RR-D10 | UI/runtime owners → retain exact source and delivery receipts → Development: cb06 protected integration; Production Release: successful run 37214188137/v3 receipt; Runtime: public browser and actual-listing recovery passed; human acceptance remains open | 2026-10-04 |
+| Historical console delivery handoff | edge-commerce-agent-mvp@0.16.0 / CW-D09, RR-D10 | UI/runtime owners → retain exact source and delivery receipts → Development: cb06 protected integration; Production Release: successful run 37214188137/v3 receipt; Runtime: public browser and actual-listing recovery passed; human acceptance remains open | 2026-10-04 |
 | Next authorized planning action | Same join / CW-P1 | Product → identify one reachable merchant and proposed priced outcome → E1 inputs; prerequisite: explicit contact authority, recheck on supplied prospect | 2026-10-04 |
 | Next acceptance action | Same join / CW-01–08 | Product/QA → run five human baseline tasks and resolve full-runtime prerequisites → independently bound acceptance; recheck when participants/runtime are available | 2026-10-04 |
 
@@ -592,4 +575,4 @@ stop after three alignment cycles or two without blocker reduction.
 
 [design]: https://github.com/huijoohwee/huijoohwee.github.io/blob/82835ac37d524643faa6b9703cb077ea9474ab15/guidelines/design-theme-contract.md
 
-The current join also includes [RR-D10 production readiness recovery](prd-tad-adr-mvp-gtm-edge-commerce-agent.md#rr-d10--production-readiness-recovery-reference-implementation): bounded host observations, explicit degraded UI and required candidate-bound rollback proof. That owner records cb06 integration, successful run 37214188137 and exact v3 artifact/recovery receipts. The pinned host remains device-session availability; human/WTP acceptance and full-profile evidence remain open. This evidence amendment consumes the unchanged 0.16.0 requirement join; MCP/WebMCP and `/ @ #` contracts are unchanged.
+The current join also includes [RR-D10 production readiness recovery](prd-tad-adr-mvp-gtm-edge-commerce-agent.md#rr-d10--production-readiness-recovery-reference-implementation): bounded host observations, explicit degraded UI and required candidate-bound rollback proof. That owner records cb06 integration, successful run 37214188137 and exact v3 artifact/recovery receipts. The pinned host remains device-session availability; human/WTP acceptance and full-profile evidence remain open. This historical evidence amendment consumed the 0.16.0 requirement join; MCP/WebMCP and `/ @ #` contracts are unchanged.
