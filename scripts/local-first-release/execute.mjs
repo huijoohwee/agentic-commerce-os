@@ -9,7 +9,9 @@ import { parseLocalFirstAuthorization } from './authorization.mjs';
 import { parseProductionRouteAuthority } from '../production-release/route-authority.ts';
 import { observeBefore, deployLocalFirst, rehearseLocalFirstRollback } from './deployment.mjs';
 import { verifyRetainedBaseline } from './retained-baseline.mjs';
-import { assertBrowserProof } from './browser-proof.mjs';
+import { assertBrowserProof, assertLiveBrowserProof } from './browser-proof.mjs';
+import { LIVE_CHECKOUT_PROFILE_SHA256 } from '../../src/local-first/checkout-offer.ts';
+import { readCheckoutRelease, verifyLiveReleasePrerequisites, LIVE_COMPLETION_SCHEMA } from './live-profile.mjs';
 import { readFulfillmentRelease, verifyFulfillmentRelease } from './fulfillment.mjs';
 import { requireRollbackRehearsal, assertFulfillmentRollbackProof } from './readiness.mjs';
 import { readJsonResponse } from '../../src/shared/http.ts';
@@ -27,27 +29,36 @@ const checkMain = () => {
   if (git('ls-remote', 'origin', 'refs/heads/main').split(/\s+/)[0] !== revision) throw Error('Protected main advanced');
 };
 checkMain();
-const artifact = sourceManifest(revision);
+const selection = readCheckoutRelease(), live = selection.checkout !== 'sandbox';
+const artifact = sourceManifest(revision,selection);
 if (JSON.stringify(read('artifact.json')) !== JSON.stringify(artifact)) throw Error('Prepared artifact changed');
-assertBrowserProof(read('browser-proof.json'), revision);
+if (live) assertLiveBrowserProof(read('browser-proof.json'),revision,{checkout:selection.checkout,
+  profileDigest:LIVE_CHECKOUT_PROFILE_SHA256,scope:'local-fixture'});
+else assertBrowserProof(read('browser-proof.json'), revision);
 const routeAuthority = parseProductionRouteAuthority(JSON.parse(env.PRODUCTION_ROUTE_AUTHORITY_JSON || '{}'));
 const mode = routeAuthority.mode;
 const authorization = parseLocalFirstAuthorization(read('human-authorization.json'), {
   candidateSha: revision, runId, runAttempt: 1, releaseMode: mode, artifactDigest: artifact.artifactDigest,
+  selection,
 });
 const provider = createProvider({ accountId: env.CLOUDFLARE_ACCOUNT_ID, zoneId: routeAuthority.zoneId,
   token: env.CLOUDFLARE_API_TOKEN });
 const retainedBaseline = await verifyRetainedBaseline(env.LOCAL_FIRST_RETAINED_BASELINE, env.GH_TOKEN);
 if (JSON.stringify(read('retained-baseline.json')) !== JSON.stringify(retainedBaseline)) throw Error('Retained baseline changed after preparation');
 const before = await observeBefore(provider, routeAuthority, retainedBaseline);
+const predecessor = before.active ? await provider.version(before.active.versionId) : null;
+if (!live && predecessor?.checkout)
+  throw Error('A sandbox release cannot replace an existing live buyer reader');
 const fulfillment = readFulfillmentRelease();
-const rehearsal = requireRollbackRehearsal(env.LOCAL_FIRST_ROLLBACK_REHEARSAL, fulfillment);
+const rehearsal = live ? false : requireRollbackRehearsal(env.LOCAL_FIRST_ROLLBACK_REHEARSAL, fulfillment);
 const verifyHost = () => verifyFulfillmentRelease(fulfillment, { provider, routeAuthority,
   token: env.GH_TOKEN, bearer: env.LISTING_HOST_BEARER });
 const fulfillmentProof = await verifyHost();
-const plan = { schema: 'commerce.local-first-release-plan/v2', sourceRevision: revision,
-  artifactDigest: artifact.artifactDigest, runId, profile: 'local-first', checkout: 'sandbox',
-  before, retainedBaseline, routeAuthority, authorization, fulfillmentProof, createdAt: new Date().toISOString() };
+const livePrerequisites = live ? await verifyLiveReleasePrerequisites(selection,{env,provider,routeAuthority,evidenceDir:output}) : null;
+const plan = { schema: live ? 'commerce.local-first-live-release-plan/v1' : 'commerce.local-first-release-plan/v2', sourceRevision: revision,
+  artifactDigest: artifact.artifactDigest, runId, profile: 'local-first', checkout: selection.checkout,
+  before, retainedBaseline, routeAuthority, authorization, fulfillmentProof,
+  ...(live ? {livePrerequisites} : {}), createdAt: new Date().toISOString() };
 write('plan.json', plan);
 const journal = { schema: 'commerce.local-first-release-journal/v1', planDigest: digest(JSON.stringify(plan)),
   stage: 'prepared', outcome: 'pending', active: null, route: null };
@@ -60,11 +71,17 @@ function wrangler(args) {
 const verifyLive = async active => {
   execFileSync(process.execPath, ['scripts/local-first-release/check.mjs', '--base-url=https://airvio.co'], {
     stdio: 'inherit', timeout: 180000, env: { ...env, LOCAL_FIRST_EVIDENCE_DIR: path.join(output, 'live'),
-      LOCAL_FIRST_EXPECTED_VERSION: active.versionId },
+      LOCAL_FIRST_EXPECTED_VERSION: active.versionId,
+      ...(live && predecessor ? {LOCAL_FIRST_PREVIOUS_READINESS_JSON:JSON.stringify({
+        sourceRevision:predecessor.sourceRevision,workerVersionId:before.active.versionId,
+        checkout:predecessor.checkout ?? 'sandbox'})} : {}) },
   });
+  if (live) assertLiveBrowserProof(JSON.parse(fs.readFileSync(path.join(output,'live/browser-proof.json'),'utf8')),
+    revision,{checkout:selection.checkout,profileDigest:LIVE_CHECKOUT_PROFILE_SHA256,scope:'live-read-only'});
   const ready = await fetch('https://airvio.co/agentic-commerce-os/readyz', { signal: AbortSignal.timeout(20000) });
   const identity = await ready.json();
-  if (!ready.ok || identity.sourceRevision !== revision || identity.workerVersionId !== active.versionId) {
+  if (!ready.ok || identity.sourceRevision !== revision || identity.workerVersionId !== active.versionId
+    || identity.checkout !== selection.checkout) {
     throw Error('Live source/version identity mismatch');
   }
   if (fulfillment) {
@@ -82,16 +99,20 @@ const verifyLive = async active => {
       host: fulfillmentProof.host, publicSessionVerified: true, verifiedAt: new Date().toISOString() });
   }
 };
-if (typeof env.STOREFRONT_SESSION_SECRET !== 'string' || env.STOREFRONT_SESSION_SECRET.length < 32) throw Error('Sandbox session signing secret required');
-if (!stripeTestKey(env.STRIPE_TEST_SECRET_KEY)) throw Error('Stripe test key required; live credentials forbidden');
-const secretDir = fs.mkdtempSync(path.join(os.tmpdir(), 'commerce-sandbox-release-'));
+if (typeof env.STOREFRONT_SESSION_SECRET !== 'string' || env.STOREFRONT_SESSION_SECRET.length < 32) throw Error('Checkout session signing secret required');
+if (!stripeTestKey(env.STRIPE_TEST_SECRET_KEY)) throw Error('Retained Stripe test key required');
+const secretDir = fs.mkdtempSync(path.join(os.tmpdir(), 'commerce-checkout-release-'));
 const secretsFile = path.join(secretDir, 'secrets.json');
 try {
-  if (fulfillment && [env.STOREFRONT_SESSION_SECRET, env.STRIPE_TEST_SECRET_KEY].includes(env.LISTING_HOST_BEARER)) throw Error('Listing credentials must be independent');
+  if (fulfillment && [env.STOREFRONT_SESSION_SECRET, env.STRIPE_TEST_SECRET_KEY,env.STRIPE_LIVE_SECRET_KEY,
+    env.STRIPE_LIVE_WEBHOOK_SECRET,env.CHECKOUT_RECOVERY_SECRET].includes(env.LISTING_HOST_BEARER)) throw Error('Listing credentials must be independent');
   fs.writeFileSync(secretsFile, JSON.stringify({ STOREFRONT_SESSION_SECRET: env.STOREFRONT_SESSION_SECRET,
     STRIPE_TEST_SECRET_KEY: env.STRIPE_TEST_SECRET_KEY,
+    ...(live ? {STRIPE_LIVE_SECRET_KEY:env.STRIPE_LIVE_SECRET_KEY,STRIPE_LIVE_WEBHOOK_SECRET:env.STRIPE_LIVE_WEBHOOK_SECRET,
+      CHECKOUT_RECOVERY_SECRET:env.CHECKOUT_RECOVERY_SECRET} : {}),
     ...(fulfillment ? { LISTING_HOST_BEARER: env.LISTING_HOST_BEARER } : {}) }), { mode: 0o600, flag: 'wx' });
-  await deployLocalFirst({ provider, routeAuthority, before, journal, revision, checkMain, record, wrangler, verifyLive, secretsFile, fulfillment });
+  await deployLocalFirst({ provider, routeAuthority, before, journal, revision, checkMain, record, wrangler, verifyLive, secretsFile, fulfillment,
+    checkout:selection.checkout,secretSetDigest:livePrerequisites?.secretSetDigest });
 } finally { fs.rmSync(secretDir, { recursive: true }); }
 if (rehearsal) {
   const { createRollbackBrowserObservation } = await import('./rollback-browser.mjs');
@@ -108,9 +129,10 @@ if (rehearsal) {
   } finally { await observation.close(); }
 }
 journal.outcome = 'production-complete'; record('complete');
-const body = { schema: 'commerce.local-first-production-completion/v3', status: 'production-complete',
-  profile: 'local-first', checkout: 'sandbox', sourceRevision: revision, artifactDigest: artifact.artifactDigest,
+const body = { schema: live ? LIVE_COMPLETION_SCHEMA : 'commerce.local-first-production-completion/v3', status: 'production-complete',
+  profile: 'local-first', checkout: selection.checkout, sourceRevision: revision, artifactDigest: artifact.artifactDigest,
   runId, worker: WORKER, deployment: journal.active, route: journal.route, fulfillment: fulfillmentProof,
+  ...(live ? {livePrerequisites} : {}),
   rollbackProofDigest: rehearsal ? digest(fs.readFileSync(path.join(output, 'fulfillment-rollback-proof.json'))) : null,
   completedAt: new Date().toISOString(), browserProofDigest: digest(fs.readFileSync(path.join(output, 'live/browser-proof.json'))) };
 write('completion.json', { ...body, receiptDigest: digest(JSON.stringify(body)) });

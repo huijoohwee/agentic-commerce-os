@@ -46,7 +46,14 @@ async function boundedBody(response) {
 
 // Poll only the public read endpoint; never replay deployment or route mutations.
 export async function waitForReadiness({ url, revision, versionId, observe = () => {},
-  fetchImpl = fetch, now = Date.now, sleep = delay, timeoutMs = 45000, intervalMs = 2000 }) {
+  fetchImpl = fetch, now = Date.now, sleep = delay, timeoutMs = 45000, intervalMs = 2000, checkout = 'sandbox', previous = null }) {
+  if (!['sandbox','live-reader','live'].includes(checkout)) throw Error('readiness_invalid_checkout');
+  if (previous && (Object.keys(previous).sort().join() !== 'checkout,sourceRevision,workerVersionId'
+    || !/^[a-f0-9]{40}$/u.test(previous.sourceRevision ?? '')
+    || !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/u.test(previous.workerVersionId ?? '')
+    || !['sandbox','live-reader','live'].includes(previous.checkout)
+    || !versionId || previous.workerVersionId === versionId)) throw Error('readiness_invalid_predecessor');
+  const live = checkout !== 'sandbox';
   const deadline = now() + timeoutMs;
   let attempt = 0;
   for (;;) {
@@ -63,11 +70,14 @@ export async function waitForReadiness({ url, revision, versionId, observe = () 
         bodyDigest: createHash('sha256').update(body.text).digest('hex') });
       if (response.status === 200) {
         try { identity = JSON.parse(body.text); } catch { terminal = 'readiness_invalid_json'; }
-        const legacy = identity?.checkout === 'deferred' && identity?.sourceRevision !== revision
+        const legacy = !live && identity?.checkout === 'deferred' && identity?.sourceRevision !== revision
           && /^[0-9a-f]{40}$/.test(identity?.sourceRevision ?? '') && identity?.storage === 'browser-only';
+        const knownPrevious = previous && identity?.sourceRevision === previous.sourceRevision
+          && identity?.workerVersionId === previous.workerVersionId && identity?.checkout === previous.checkout;
+        const observedCheckout = knownPrevious ? previous.checkout : checkout, observedLive = observedCheckout !== 'sandbox';
         if (!terminal && (body.truncated || identity?.ok !== true || identity?.profile !== 'local-first'
-          || !legacy && (identity?.checkout !== 'sandbox' || identity?.storage !== 'browser-only' || identity?.realMoney !== false
-          || identity?.paymentStorage !== 'stripe-test' || identity?.paymentProvider !== 'stripe'))) terminal = 'readiness_invalid_profile';
+          || !legacy && (identity?.checkout !== observedCheckout || identity?.storage !== 'browser-only' || identity?.realMoney !== observedLive
+          || identity?.paymentStorage !== (observedLive ? 'stripe-live' : 'stripe-test') || identity?.paymentProvider !== 'stripe'))) terminal = 'readiness_invalid_profile';
         if (!terminal) {
           observation.sourceRevision = identity.sourceRevision;
           observation.workerVersionId = identity.workerVersionId;

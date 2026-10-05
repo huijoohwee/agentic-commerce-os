@@ -3,14 +3,21 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { validateHumanAuthorization, parseHumanAuthorizationReceipt, fetchGitHubJson } from '../production-release/human-authorization.ts';
 import { CONFIG, assertLocalFirstConfig, sourceManifest } from './artifact.mjs';
+import { readCheckoutRelease, liveAuthorizationScope } from './live-profile.mjs';
 
 const SCHEMA = 'commerce.local-first-owner-authorization/v2';
 const REPOSITORY = 'huijoohwee/agentic-commerce-os';
 const keys = (value, expected) => assert.deepEqual(Object.keys(value).sort(), expected.sort(), 'Authorization shape mismatch');
 
 export function parseLocalFirstAuthorization(value, expected) {
-  keys(value, ['schema', 'profile', 'checkout', 'repository', 'owner', 'artifactDigest', 'approval']);
-  assert(value.schema === SCHEMA && value.profile === 'local-first' && value.checkout === 'sandbox', 'Local-first authorization required');
+  const selection = expected.selection ?? {checkout:'sandbox'}, live = liveAuthorizationScope(selection);
+  keys(value, ['schema', 'profile', 'checkout', 'repository', 'owner', 'artifactDigest', 'approval', ...(live ? ['live'] : [])]);
+  assert(value.schema === (live ? 'commerce.local-first-live-owner-authorization/v1' : SCHEMA)
+    && value.profile === 'local-first' && value.checkout === selection.checkout,'Exact local-first authorization required');
+  if (live) {
+    assert.equal(expected.releaseMode,'steady-state','Live authorization requires the existing route');
+    assert.deepEqual(value.live,live,'Live authorization profile, webhook or reader mismatch');
+  }
   assert.equal(value.repository, REPOSITORY);
   assert.match(value.artifactDigest, /^[a-f0-9]{64}$/);
   assert.equal(value.artifactDigest, expected.artifactDigest, 'Authorization artifact mismatch');
@@ -34,7 +41,10 @@ export function validateLocalFirstAuthorization(reviews, environment, run, confi
     assert(actor.type === 'User' && actor.id === owner.id && actor.login === owner.login, 'Owner workflow initiation required');
   }
   const approval = validateHumanAuthorization(reviews, environment, { ...expected, allowOwnerSelfReview: true });
-  return parseLocalFirstAuthorization({ schema: SCHEMA, profile: 'local-first', checkout: 'sandbox',
+  const selection = expected.selection ?? {checkout:'sandbox'}, live = liveAuthorizationScope(selection);
+  if (live) assert.equal(expected.releaseMode,'steady-state','Live authorization requires the existing route');
+  return parseLocalFirstAuthorization({ schema: live ? 'commerce.local-first-live-owner-authorization/v1' : SCHEMA,
+    profile: 'local-first', checkout: selection.checkout, ...(live ? {live} : {}),
     repository: REPOSITORY, owner: { login: owner.login, id: owner.id, type: owner.type },
     artifactDigest: expected.artifactDigest, approval }, expected);
 }
@@ -56,6 +66,7 @@ async function main() {
   ]);
   const receipt = validateLocalFirstAuthorization(reviews, environment, run, JSON.parse(fs.readFileSync(CONFIG)), {
     releaseMode, candidateSha, runId: Number(id), runAttempt: Number(attempt), artifactDigest: manifest.artifactDigest,
+    selection: readCheckoutRelease(),
   });
   fs.writeFileSync(output, JSON.stringify(receipt, null, 2) + '\n', { flag: 'wx' });
 }

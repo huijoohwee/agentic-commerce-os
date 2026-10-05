@@ -1,6 +1,16 @@
 import { listDrafts, groupProjects } from './drafts.js';
 
 const $ = selector => document.querySelector(selector);
+const checkoutMode = document.querySelector('meta[name="commerce-checkout-mode"]')?.content;
+const liveCheckout = ['live', 'live-reader'].includes(checkoutMode);
+if (liveCheckout) {
+  $('#shop-checkout-nav').textContent = 'Education materials'; $('#live-offer-heading').textContent = 'Education materials';
+  $('#shop-offer-note').textContent = 'Open educational content · Markdown download · One-time purchase';
+  $('#shop-checkout-badge').textContent = checkoutMode === 'live-reader' ? 'New purchases paused' : 'Live payment · SGD 8';
+  $('#shop-checkout-price').textContent = 'SGD 8.00 · One-time payment';
+  $('#shop-checkout-action').textContent = checkoutMode === 'live-reader' ? 'Restore a purchase ↗' : 'Review education materials ↗';
+  $('#shop-checkout-note').textContent = 'Education materials only · Save your recovery file before payment';
+}
 const views = new Set(['shop', 'checkout', 'vendor', 'vendor-editor', 'vendor-preview', 'admin', 'admin-reviews', 'admin-data', 'admin-runtime', 'admin-project', 'admin-tools']);
 const channel = typeof BroadcastChannel === 'function' ? new BroadcastChannel('commerce-local-drafts') : null;
 let drafts = [], draftsLoaded = false, launch, editor, editorPromise, generation = 0, navigation = 0, shopPage = 0, detailId = null, searchRequested = null;
@@ -229,7 +239,7 @@ function renderProjects() {
   if (!project) return;
   detail.append(node('p', 'Environments', 'console-section-label'), projectCard(project, true));
   const sandbox = node('article', undefined, 'console-sandbox');
-  const summary = node('div'); summary.append(node('h2', 'Sandbox checkout'), node('p', 'Shared example offer · Test mode only · No real money', 'muted'));
+  const summary = node('div'); summary.append(node('h2', liveCheckout ? 'Education checkout' : 'Sandbox checkout'), node('p', liveCheckout ? 'Separate education offer · Draft offers are not sold here' : 'Shared example offer · Test mode only · No real money', 'muted'));
   const observation = node('span', $('#environment-badge').textContent, 'state-badge'); observation.dataset.environmentObservation = '';
   const timestamp = node('small', '', 'muted'); timestamp.dataset.environmentTime = '';
   const evidence = node('div', undefined, 'sandbox-observation'); evidence.append(observation, timestamp);
@@ -391,27 +401,30 @@ async function checkEnvironment(signal) {
     httpStatus = response.status;
     const value = await readEnvironment(response);
     const scoped = value.readinessScope === 'configured-capabilities';
+    const configured = ['sandbox', 'live', 'live-reader'].includes(value.checkout);
     if (controller.signal.aborted) throw Error('cancelled');
     if (value.profile !== 'local-first' || value.sourceRevision !== sourceRevision || value.storage !== 'browser-only'
-      || value.realMoney !== false || !['sandbox', 'unavailable'].includes(value.checkout) || typeof value.ok !== 'boolean'
+      || value.realMoney !== liveCheckout || !['sandbox', 'live', 'live-reader', 'unavailable'].includes(value.checkout)
+      || configured && value.checkout !== (liveCheckout ? checkoutMode : 'sandbox') || typeof value.ok !== 'boolean'
       || ![200, 503].includes(response.status) || value.ok !== (response.status === 200)
       || (scoped ? !['disabled', 'ready', 'unavailable'].includes(value.fulfillment)
-        || value.ok !== (value.checkout === 'sandbox' && value.fulfillment !== 'unavailable')
-        : value.ok !== (value.checkout === 'sandbox'))
+        || value.ok !== (configured && value.fulfillment !== 'unavailable')
+        : value.ok !== configured)
       || (sourceRevision !== 'local-unreleased' && !/^[a-f0-9]{40}$/.test(sourceRevision))
-      || (value.ok && (value.paymentProvider !== 'stripe' || value.paymentStorage !== 'stripe-test'))
+      || (value.ok && (value.paymentProvider !== 'stripe' || value.paymentStorage !== (liveCheckout ? 'stripe-live' : 'stripe-test')))
       || (value.workerVersionId !== null && (typeof value.workerVersionId !== 'string' || !/^[a-zA-Z0-9._-]{1,128}$/.test(value.workerVersionId)))) {
       throw Error('Evidence does not match this page and profile. Reload the page, then check again.');
     }
     evidence = value;
-    const degraded = scoped && value.checkout === 'sandbox' && value.fulfillment === 'unavailable';
-    observation = { time: Date.now(), label: degraded ? 'Degraded' : value.ok ? 'Sandbox configured' : 'Unavailable',
-      checkout: value.checkout === 'sandbox' ? 'Configured · Test mode only' : 'Unavailable · Drafts still work', version: value.workerVersionId,
+    const degraded = scoped && configured && value.fulfillment === 'unavailable';
+    observation = { time: Date.now(), label: degraded ? 'Degraded' : value.ok ? (value.checkout === 'live-reader' ? 'Purchases paused' : liveCheckout ? 'Live checkout configured' : 'Sandbox configured') : 'Unavailable',
+      checkout: configured ? (value.checkout === 'live-reader' ? 'Recovery only · New purchases paused' : liveCheckout ? 'Configured · Real payments' : 'Configured · Test mode only') : 'Unavailable · Drafts still work', version: value.workerVersionId,
       message: degraded ? 'The fulfillment host is unavailable. Drafts still work; the runtime owner must restore the host before starting new jobs.'
+        : value.ok && liveCheckout ? 'Live education checkout configuration observed. ' + (value.checkout === 'live-reader' ? 'New purchases are paused; existing order recovery remains available. ' : 'Purchases require explicit confirmation. ') + 'This check does not prove a payment or completed download.'
         : value.ok ? (scoped && value.fulfillment === 'ready' ? 'The fulfillment host responded during this check. Device-session availability can change. No real payment or completed job is proved.'
           : scoped ? 'Sandbox configuration observed. Fulfillment is not enabled here. No real payment, offer publication or completed job is proved by this check.'
             : 'Sandbox configuration observed. No real payment, offer publication or fulfillment is proved by this check.')
-          : 'The sandbox is unavailable here. Continue preparing drafts; the runtime owner must resolve its configuration.' };
+          : 'Checkout is unavailable here. Continue preparing drafts; the runtime owner must resolve its configuration.' };
   } catch (error) {
     observation = { time: Date.now(), label: 'Unknown', checkout: 'Unknown · Check again',
       message: controller.signal.aborted ? 'Check cancelled or timed out. The outcome is unknown; you can explicitly check again.'
@@ -464,7 +477,7 @@ function renderEnvironmentHistory() {
     if (item === environmentHistory[0]) status.append(node('small', 'Latest check'));
     const inspect = node('button', 'Inspect', 'secondary'); inspect.type = 'button'; inspect.setAttribute('aria-label', 'Inspect environment check ' + item.id);
     inspect.addEventListener('click', () => inspectEnvironmentCheck(item));
-    return [identity, status, node('span', item.evidence?.checkout === 'sandbox' ? 'Test mode' : item.evidence ? 'Unavailable' : 'Unknown'),
+    return [identity, status, node('span', ({ sandbox: 'Test mode', live: 'Real payments', 'live-reader': 'Recovery only' })[item.evidence?.checkout] || (item.evidence ? 'Unavailable' : 'Unknown')),
       node('span', new Date(item.time).toLocaleTimeString()), node('span', item.durationMs + ' ms'), inspect];
   }), 'Environment check history'));
 }

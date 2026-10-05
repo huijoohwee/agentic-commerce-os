@@ -3,10 +3,11 @@ import fs from 'node:fs';
 import { createHash } from 'node:crypto';
 import { FILES, digest } from './artifact.mjs';
 const pause = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
-export function authoredAssets(revision) {
+export function authoredAssets(revision, checkout = 'sandbox') {
+  if (!['sandbox', 'live-reader', 'live'].includes(checkout)) throw Error('asset_checkout_invalid');
   return FILES.map(file => {
     let bytes = fs.readFileSync('public/local-first/' + file);
-    if (file === 'sw.js' || file === 'index.html') bytes = Buffer.from(renderStorefrontTemplate(bytes.toString(), revision));
+    if (file === 'sw.js' || file === 'index.html') bytes = Buffer.from(renderStorefrontTemplate(bytes.toString(), revision, checkout));
     return { path: file.startsWith('workspace-pack.') ? 'services/workspace-pack/' + (file.endsWith('.html') ? '' : file) : file === 'index.html' ? '' : file, bytes: bytes.length, digest: digest(bytes),
       contentType: file.endsWith('.js') ? /(?:application|text)\/javascript/ : file.endsWith('.css') ? /text\/css/ : /text\/html/ };
   });
@@ -24,10 +25,13 @@ async function readDigest(response) {
     return { bytes, digest: hash.digest('hex') };
   } finally { await reader?.cancel(); }
 }
-export async function waitForAssets({ baseUrl, revision, assets = authoredAssets(revision),
+export async function waitForAssets({ baseUrl, revision, checkout = 'sandbox', assets = authoredAssets(revision, checkout), previous = null,
   observe = () => {}, fetchImpl = fetch, now = Date.now, sleep = pause,
   timeoutMs = 60000, stableMs = 15000, intervalMs = 5000 }) {
   const deadline = now() + timeoutMs;
+  const predecessor = previous?.sourceRevision === revision && previous.checkout !== checkout
+    && typeof previous.workerVersionId === 'string' && previous.workerVersionId.length > 0
+    ? authoredAssets(revision, previous.checkout) : [];
   let stableSince = null, attempt = 0;
   for (;;) {
     const observation = { attempt: ++attempt, observedAt: new Date(now()).toISOString(), assets: [] };
@@ -44,9 +48,15 @@ export async function waitForAssets({ baseUrl, revision, assets = authoredAssets
         }
         if (item.sourceRevision !== revision) { item.error = 'asset_source_not_converged'; await response.body?.cancel(); return item; }
         Object.assign(item, await readDigest(response));
-        if (item.digest !== asset.digest || item.bytes !== asset.bytes || !asset.contentType.test(item.contentType ?? '')
-          || !/(?:^|,\s*)no-transform(?:,|$)/.test(response.headers.get('cache-control') ?? '')) item.terminal = 'asset_integrity_mismatch';
-        else item.matched = true;
+        const validHeaders = asset.contentType.test(item.contentType ?? '')
+          && /(?:^|,\s*)no-transform(?:,|$)/.test(response.headers.get('cache-control') ?? '');
+        if (item.digest === asset.digest && item.bytes === asset.bytes && validHeaders) item.matched = true;
+        else {
+          const prior = predecessor.find(row => row.path === asset.path);
+          if (validHeaders && prior?.digest === item.digest && prior.bytes === item.bytes)
+            item.error = 'asset_checkout_not_converged';
+          else item.terminal = 'asset_integrity_mismatch';
+        }
       } catch (error) {
         item.error = error.message;
         if (error.message === 'asset_body_over_budget') item.terminal = error.message;

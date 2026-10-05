@@ -1,6 +1,7 @@
 import { CONFIG, WORKER } from './artifact.mjs';
 import { validateProductionRouteAuthorityProof } from '../production-release/route-authority.ts';
 import { parseRetainedBaseline } from './retained-baseline.mjs';
+import { LIVE_CHECKOUT_PROFILE_SHA256 } from '../../src/local-first/checkout-offer.ts';
 
 const same = (left, right) => JSON.stringify(left) === JSON.stringify(right);
 export async function observeBefore(provider, authority, retainedInput = null) {
@@ -22,23 +23,29 @@ export async function observeBefore(provider, authority, retainedInput = null) {
 
 // Context, candidate, preparation and human-review guards run in execute.mjs before this sequence.
 export async function deployLocalFirst({ provider, routeAuthority, before, journal, revision,
-  checkMain, record, wrangler, verifyLive, secretsFile, fulfillment = null }) {
+  checkMain, record, wrangler, verifyLive, secretsFile, fulfillment = null, checkout = 'sandbox', secretSetDigest }) {
   const { pattern, mode } = routeAuthority;
+  const live = ['live-reader','live'].includes(checkout);
+  if (!['sandbox','live-reader','live'].includes(checkout) || live && (mode !== 'steady-state'
+    || !/^[a-f0-9]{64}$/u.test(secretSetDigest ?? ''))) throw Error('Exact live deployment profile required');
   let ownedVersion = false;
   try {
     checkMain();
     if (!same(await provider.active(), before.active) || !same(await provider.route(pattern), before.route)) {
       throw Error('Provider state changed before upload');
     }
-    if (!secretsFile) throw Error('Sandbox signing secret file required');
-    record('deploy-sandbox-worker');
+    if (!secretsFile) throw Error('Checkout signing secret file required');
+    record(live ? 'deploy-' + checkout + '-worker' : 'deploy-sandbox-worker');
     // Bootstrap is unrouted. An existing local-first route activates immediately on deploy.
-    wrangler(['deploy', '-c', CONFIG, '--minify', '--tag', revision, '--message', 'Reviewed native sandbox checkout; no real payments',
+    wrangler(['deploy', '-c', CONFIG, '--minify', '--tag', revision, '--message', live
+      ? 'Reviewed native ' + checkout + ' education checkout; no release-created payment' : 'Reviewed native sandbox checkout; no real payments',
       '--var', `RELEASE_CANDIDATE_SHA:${revision}`, '--secrets-file', secretsFile,
+      ...(live ? ['--var',`CHECKOUT_MODE:${checkout}`,'--var',`CHECKOUT_LIVE_PROFILE_SHA256:${LIVE_CHECKOUT_PROFILE_SHA256}`,
+        '--var',`CHECKOUT_SECRET_SET_SHA256:${secretSetDigest}`] : []),
       ...(fulfillment ? ['--var', `LISTING_HOST_PINS_JSON:${JSON.stringify(fulfillment.pins)}`] : [])]);
     journal.active = await provider.active();
     if (!journal.active) throw Error('Candidate deployment absent');
-    await provider.version(journal.active.versionId, revision, 'sandbox', fulfillment?.pins ?? null);
+    await provider.version(journal.active.versionId, revision, checkout, fulfillment?.pins ?? null, secretSetDigest);
     ownedVersion = true;
     const exposure = await provider.exposure();
     if (exposure.enabled !== false || exposure.previews_enabled !== false) throw Error('Unexpected public subdomain exposure');
