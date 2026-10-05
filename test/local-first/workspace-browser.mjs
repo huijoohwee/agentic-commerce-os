@@ -1,6 +1,7 @@
 import path from 'node:path';
 import assert from 'node:assert/strict';
 import { expect } from '@playwright/test';
+import { verifyWorkspaceToolRefinements } from './workspace-tools-browser.mjs';
 import { BROWSER_CHECKS } from '../../scripts/local-first-release/browser-proof.mjs';
 
 export async function checkRoleWorkspace({ browser, url, output, observeContext, record }) {
@@ -364,6 +365,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   const offerRequest = JSON.parse(await page.locator('#workspace-result').textContent());
   assert.equal(offerRequest.params.arguments.snapshot.offers.length, 1);
   assert.equal(offerRequest.params.arguments.offerId, drafts[3].id);
+  await page.locator('#workspace-advanced').evaluate(element => { element.open = true; });
   await page.locator('#workspace-arguments').fill(JSON.stringify({ offerId: drafts[3].id, expectedRevision: 99 }));
   await page.locator('#workspace-prepare').click();
   await expect(page.locator('#workspace-tool-status')).toHaveText('workspace_revision_changed');
@@ -409,9 +411,11 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   });
   assert.equal(explicit.provenance, 'provided-snapshot'); assert.equal(explicit.value.projects[0].offerCount, 0);
   await page.locator('#workspace-tool').selectOption('commerce.workspace.offer.review');
+  await page.locator('#workspace-advanced').evaluate(element => { element.open = true; });
   await page.locator('#workspace-arguments').fill(JSON.stringify({ offerId: drafts[1].id, expectedRevision: 999 }));
   await page.locator('#workspace-run').click();
   await expect(page.locator('#workspace-tool-status')).toHaveText('workspace_revision_changed');
+  await page.locator('#workspace-advanced').evaluate(element => { element.open = true; });
   await page.locator('#workspace-arguments').fill(JSON.stringify({ offerId: drafts[1].id, expectedRevision: 1 }));
   await page.locator('#workspace-run').click();
   await expect(page.locator('#workspace-result')).toContainText('still-required');
@@ -450,6 +454,8 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await page.locator('#workspace-run').click();
   await expect(page.locator('#workspace-tool-status')).toContainText(/workspace_environment_(busy_or_offline|unverified)/);
   await context.setOffline(false);
+  await verifyWorkspaceToolRefinements({ page, context, url, drafts });
+  await verifyWorkspaceFidelity({ page, context, url, drafts });
   await page.locator('.console-sidebar').getByRole('link', { name: 'Projects', exact: true }).click();
   await page.screenshot({ path: path.join(output, 'admin-desktop.png'), fullPage: true });
   await page.locator('#admin').getByRole('link', { name: 'Launch reviews', exact: true }).click();
@@ -478,4 +484,100 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   }
   record(BROWSER_CHECKS.roles);
   await context.close();
+}
+
+async function verifyWorkspaceFidelity({ page, context, url, drafts }) {
+  await page.goto(url + '#vendor');
+  // Hold a real IDB transaction to verify initial and retained loading without replacing the store API.
+  const holder = await context.newPage(); await holder.goto(url);
+  await holder.evaluate(() => new Promise((resolve, reject) => {
+    const request = indexedDB.open('agentic-commerce-local-drafts', 1);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      const db = request.result, tx = db.transaction('drafts', 'readwrite'), store = tx.objectStore('drafts');
+      const deadline = Date.now() + 10000; let count = 0; window.holdDraftRead = true;
+      const hold = () => { if (window.holdDraftRead && Date.now() < deadline && ++count < 100000) store.get('fixture-lock').onsuccess = hold; };
+      tx.oncomplete = () => db.close(); hold(); resolve();
+    };
+  }));
+  try {
+    await page.evaluate(() => document.dispatchEvent(new Event('commerce:drafts-updated')));
+    await expect(page.locator('#draft-storage-status')).toContainText('Showing the last loaded snapshot');
+    await expect(page.locator('#vendor-total')).toHaveText('13');
+    await page.reload();
+    await expect(page.locator('#draft-storage-status')).toHaveText('Loading saved offers…');
+    await expect(page.locator('#vendor-total')).toHaveText('—');
+    await expect(page.locator('#vendor-table')).toHaveAttribute('aria-busy', 'true');
+  } finally { await holder.evaluate(() => { window.holdDraftRead = false; }); await holder.close(); }
+  await expect(page.locator('#draft-storage-state')).toBeHidden();
+  await expect(page.locator('#vendor-total')).toHaveText('13');
+  const store = draft => page.evaluate(value => new Promise((resolve, reject) => {
+    const request = indexedDB.open('agentic-commerce-local-drafts', 1);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      const db = request.result, tx = db.transaction('drafts', 'readwrite'); tx.objectStore('drafts').put(value);
+      tx.oncomplete = () => { db.close(); resolve(); }; tx.onabort = () => { db.close(); reject(tx.error); };
+    };
+  }), draft);
+  try {
+    await store({ ...drafts[1], revision: 0 });
+    await page.evaluate(() => document.dispatchEvent(new Event('commerce:drafts-updated')));
+    await expect(page.locator('#draft-storage-status')).toContainText('could not be refreshed');
+    await expect(page.locator('#vendor-total')).toHaveText('13');
+    await expect(page.locator('#vendor-table tbody tr')).toHaveCount(10);
+    await page.reload();
+    await expect(page.locator('#draft-storage-status')).toContainText('Saved offers are unavailable');
+    await expect(page.locator('#vendor-total')).toHaveText('—');
+    await page.getByRole('link', { name: 'Shopper', exact: true }).click();
+    await expect(page.locator('#shop-empty')).toBeHidden();
+    await expect(page.locator('#shop-count')).toContainText('unknown');
+    await page.getByRole('link', { name: 'Admin', exact: true }).click();
+    await expect(page.locator('#project-list')).toContainText('unavailable');
+    await page.goto(url + '#vendor-editor');
+    await expect(page.locator('#draft-list button')).toHaveCount(0);
+    await expect(page.locator('#status')).toHaveAttribute('data-error', 'true');
+    await store(drafts[1]); await page.locator('#draft-storage-retry').click();
+    await expect(page.locator('#draft-list button')).toHaveCount(13);
+    await expect(page.locator('#status')).toBeEmpty();
+    await page.goto(url + '#admin');
+    await expect(page.locator('#draft-storage-state')).toBeHidden();
+    await expect(page.locator('#admin-reviewable')).toHaveText('12');
+  } finally { await store(drafts[1]); }
+  await page.goto(url + '#vendor'); await page.locator('#vendor-state').selectOption('revise');
+  await expect(page.locator('.review-reason').filter({ visible: true })).toContainText('Increase price');
+  await page.getByRole('link', { name: 'Edit offer ↗', exact: true }).click();
+  await expect(page.locator('#sale-price')).toBeFocused();
+  await page.goto(url + '#admin-tools');
+  const size = await page.locator('#workspace-arguments').evaluate(el => parseFloat(getComputedStyle(el).fontSize));
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.evaluate(() => { document.documentElement.style.fontSize = '200%'; });
+  assert.equal(await page.locator('#workspace-arguments').evaluate(el => parseFloat(getComputedStyle(el).fontSize)), size * 2);
+  for (const width of [360, 768, 1024, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const hash of ['admin-tools', 'vendor', 'shop', 'admin']) {
+      await page.goto(url + '#' + hash);
+      await page.evaluate(() => { document.documentElement.style.fontSize = '200%'; });
+      assert.equal(await page.locator('#workspace-arguments').evaluate(el => parseFloat(getComputedStyle(el).fontSize)), size * 2);
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth ? [...document.querySelectorAll('main *,header *')].filter(el => el.getBoundingClientRect().right > innerWidth && !el.closest('.console-sidebar')).slice(0, 8).map(el => el.id || el.className) : []);
+      assert.deepEqual(overflow, [], `${hash} at ${width}px / 200% text size`);
+      for (const region of await page.locator('.table-region:visible').all()) { await expect(region).toHaveAttribute('tabindex', '0'); await expect(region).toHaveAttribute('aria-label', /scroll area$/); }
+    }
+  }
+  await page.evaluate(() => { document.documentElement.style.fontSize = ''; });
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.goto(url + '#admin-tools');
+  const ratios = await page.evaluate(() => {
+    const rgb = value => value.match(/[\d.]+/g).slice(0, 3).map(Number);
+    const luminance = value => rgb(value).reduce((sum, c, i) => sum + [0.2126, 0.7152, 0.0722][i] * (c / 255 <= .04045 ? c / 3294.6 : ((c / 255 + .055) / 1.055) ** 2.4), 0);
+    const contrast = (a, b) => (Math.max(luminance(a), luminance(b)) + .05) / (Math.min(luminance(a), luminance(b)) + .05);
+    return ['#workspace-provenance', '#workspace-tool', '#workspace-field-query'].map(selector => {
+      const el = document.querySelector(selector), css = getComputedStyle(el); let parent = el, bg;
+      do { bg = getComputedStyle(parent).backgroundColor; parent = parent.parentElement; } while (parent && bg === 'rgba(0, 0, 0, 0)');
+      return { selector, text: contrast(css.color, bg), border: contrast(css.borderColor, bg) };
+    });
+  });
+  for (const ratio of ratios) { assert(ratio.text >= 4.5, JSON.stringify(ratio)); if (ratio.selector !== '#workspace-provenance') assert(ratio.border >= 3, JSON.stringify(ratio)); }
+  await page.locator('#workspace-field-query').focus();
+  await page.keyboard.press('Tab'); await expect(page.locator('#workspace-advanced > summary')).toBeFocused();
+  await page.setViewportSize({ width: 1440, height: 1000 });
 }

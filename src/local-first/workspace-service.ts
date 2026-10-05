@@ -24,9 +24,14 @@ export async function handleWorkspaceService(request: Request, sourceRevision: s
     || request.headers.has('origin') && request.headers.get('origin') !== url.origin) return fail(403, 'workspace_credentials_or_origin_refused')
   if (route === '/service.json') {
     if (!['GET', 'HEAD'].includes(request.method)) return fail(405, 'get_required')
+    const routing = routingTokens()
     return Response.json({ schema: 'commerce.workspace-service/v1', sourceRevision, scope: 'read-only',
-      registryAdmission: 'not-claimed', persistence: 'none', routing: routingTokens(), tools: WORKSPACE_TOOLS,
-      limits: WORKSPACE_LIMITS, api: WORKSPACE_SERVICE_PATH + '/api', mcp: WORKSPACE_SERVICE_PATH + '/mcp' })
+      registryAdmission: 'not-claimed', persistence: 'none', routing, tools: WORKSPACE_TOOLS,
+      limits: WORKSPACE_LIMITS, api: WORKSPACE_SERVICE_PATH + '/api', invoke: WORKSPACE_SERVICE_PATH + '/invoke',
+      mcp: WORKSPACE_SERVICE_PATH + '/mcp', invocationExample: {
+        invocation: `${routing.commandToken} ${routing.bindingToken} ${routing.semanticToken} ${WORKSPACE_TOOLS[0].name}`,
+        arguments: { snapshot: { schema: 'commerce.workspace-snapshot/v1', offers: [] } },
+      } })
   }
   if (request.method !== 'POST') return new Response(null, { status: 405, headers: { allow: 'POST' } })
   const deadline = new AbortController(), signal = AbortSignal.any([request.signal, deadline.signal])
