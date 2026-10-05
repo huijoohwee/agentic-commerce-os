@@ -2,8 +2,8 @@
 title: "Reference Implementation — Native Commerce, Workspaces and First-Dollar Boundary"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "edge-commerce-agent-mvp"
-revision: "0.18.0"
-version: "0.18.0"
+revision: "0.18.1"
+version: "0.18.1"
 prd_revision: "0.18.0"
 tad_revision: "0.18.0"
 adr_revision: "0.18.0"
@@ -15,16 +15,16 @@ frontmatter_contract: "required"
 owner: "Commerce product architecture"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
-readiness_scope: "Sandbox production verified at eb85; LC-01–LC-07 live checkout dev-proven, activation pending"
+readiness_scope: "Live checkout verified at d2c19 for one SGD8 static offer; no payment or revenue proof"
 lane: "authoring"
 universal_scope: false
 load_policy: "on-demand"
 runtime_readiness_policy: "fail-closed"
 lifecycle_status: "proposed"
 demand_status: "unvalidated"
-worktree_id: "device-0232231d4a19--checkout-shop-parity"
+worktree_id: "device-0232231d4a19--live-reader-setup-evidence"
 agent_id: "codex-01a1076a"
-source_revision: "173e994784cca2befb458868a6fb01d456d75628"
+source_revision: "d2c19ec74dc7dd80250f1b9910ded53bc9e69856"
 guideline_revision: "3.4.0"
 guideline_source_revision: "82835ac37d524643faa6b9703cb077ea9474ab15"
 related_continuity_id: "PRD-TAD-ADR-COMMERCE-MVP-GTM-001"
@@ -585,9 +585,13 @@ The document owner must capture one timed pilot in the buyer’s existing worksp
 
 **Recovery:** old host drained; backup retained; H574 started on a fresh state copy with retained row unchanged. Candidate refusal/old-host readiness → temporary 502 → exact H574 readiness took 113 seconds within 300. Actual public-browser listing survived no-execution reader `1c04f403-9cc1-4b45-9dbb-a83e5f3ce7b4` and exact restore; both verified, unknown write and payment false. Public readiness: 200, eb85, fulfillment ready. Device-session only; no always-on/off-device recovery or customer/revenue proof.
 
-**Live / source handoff:** LC remains dev-proven. Account read returns 403 `more_permissions_required`; manual Accounts Read, account/offer verification, controlled webhook provisioning and private secrets precede separately approved live-reader/live releases. No new endpoint/live GitHub secrets. This document is outside artifact entries/listing build inputs: no deployment; runtime stays eb85. Scope: 10min/4kB/zero modules; document checks, protected integration.
+**Historical handoff, 0.17.3:** sandbox release22/eb85 was verified; live activation was blocked by Accounts Read HTTP 403, with no new endpoint or live secrets. The 0.18.1 evidence below supersedes those blockers. That document-only integration made no deployment.
 
 **Checkout continuity / 0.18.0 — PRD:** CX-01 requires checkout and shop to retain the same header, navigation, breadcrumb, panel typography and responsive shell; navigation collapse persists across both, and shopper search returns focus to the existing offer search. CX-02 preserves confirmation, offline refusal, sandbox/live/reader distinctions, recovery-before-payment and verified downloads. Existing tool discovery and MCP/WebMCP `/ @ #` owners remain the invocation contract. The scope is this checkout journey; it does not assert full-platform equivalence.
 **TAD / ADR:** ground on integrated `9bcd091c1807ed5af00a153a8a00e9fb7aec15e4`; reuse `public/local-first/{index.html,workspace.js,style.css}` and the single shopper navigation DOM node. Keep checkout's payment route and lazy module, map its navigation/search context to shopper, and use readable paired desktop panels with a mobile stack. No new theme, dependency, backend or module. All five section roles consume 0.18.0; earlier receipt sections retain their historical acceptance joins.
 **MVP / GTM:** extend the existing checkout browser check for shared geometry, active location, collapse/search navigation and mobile overflow; run existing sandbox, live and reader fixtures for behavioral regression, plus authored limits, typecheck and invocation contracts. Bound: 30 active minutes, four UI owners maximum, one affected test and this document, 25kB diff, zero modules, every file <600 lines and chunk <500kB. Improve continuity for the existing offer without changing price, terms or claiming conversion/revenue evidence.
-**Handoff:** local sandbox, live and reader browser fixtures passed, including CX-01 shared shell/collapse/search and CX-02 confirmation/recovery/offline/download checks; no hosted payment was submitted. Typecheck, 480-file authored limits, evidence-contract16, invocation12 and WebMCP6 passed; independent review found no P1/P2. Local visual review covered desktop and mobile. Five files changed, three UI owners, zero modules; source receipts and screenshots are retained in `checkout-shop-parity-evidence.json` in the operator workspace. Current production remains release22/eb85. Owner: Commerce UI/release operator; next action: exact protected integration and native closeout, then separately authorized deployment. Accounts Read and actual live activation remain unresolved; recheck external CI/permission results without an ETA.
+**Handoff:** sandbox/live/reader fixtures passed CX-01 shared shell/navigation and CX-02 confirmation/recovery/offline/download; desktop/mobile visuals passed, no hosted payment. Typecheck, authored limits480, evidence16, invocation12 and WebMCP6 passed; independent review found no P1/P2. Five files, three UI owners, zero modules; workspace receipt `checkout-shop-parity-evidence.json` retains source/screenshots. [PR115](https://github.com/huijoohwee/agentic-commerce-os/pull/115), [green gate37255488007](https://github.com/huijoohwee/agentic-commerce-os/actions/runs/37255488007), integrated as `d2c19ec74dc7dd80250f1b9910ded53bc9e69856`; native closeout retained recovery. Subsequent evidence below supersedes release22/eb85 and the permission blocker.
+
+**Provider setup / evidence patch 0.18.1:** five acceptance roles remain 0.18.0. On 2026-10-05T02:45:54.016Z, the restricted key returned HTTP 200 from `/v1/account` for `acct_1TKGGUGzH0w0k4VU`, with charges and payouts enabled. Native provisioning at 02:46:16.710Z bound source d2c19 to endpoint `we_1UN1uuGzH0w0k4VUO6XEixhU`, `https://airvio.co/agentic-commerce-os/checkout/webhook`, API `2026-06-24.dahlia` and exactly `checkout.session.completed` / `checkout.session.async_payment_succeeded`. Secret and operator-authenticated receipt remain private; this is not provider-signed attestation. Legacy destinations remain. Three production GitHub secrets were installed privately at 02:46:45–47Z.
+
+**Reader / live verified:** human-approved [reader23 / 37256750710](https://github.com/huijoohwee/agentic-commerce-os/actions/runs/37256750710) completed 2026-10-05T02:49:58.911Z: version `496e25ca-5c4c-46e9-9506-9ae29e966f2f`, receipt `bcaa4ac02cff5c5132c3fc4a14cf39423e2017917f40589df00a149670858a0d`. Separately approved [live24 / 37257012867](https://github.com/huijoohwee/agentic-commerce-os/actions/runs/37257012867) completed 02:56:31.099Z: version `de11731b-b2a2-4103-8bcb-934890ded14b`, receipt `38c6bcedaed381c2d39d36c054ae30b3b718d31e13b9bb829306ef072136510f`. Both bind d2c19; retained reader and secret fingerprint unchanged. Public readiness at 03:02:44.466Z returned 200, exact source/version, live checkout and fulfillment ready. Existing account/price verified SGD8 (800 minor), live and sales-capable. Each release passed three GET-only desktop/mobile browser groups; no Session, payment or revenue proof. Scope is one static offer, not platform parity; device-session availability remains. This evidence-only document is outside runtime inputs: no redeployment. Scope: 15 active minutes, one document, 8kB diff, zero modules, <600 lines.
