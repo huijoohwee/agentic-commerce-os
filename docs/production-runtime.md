@@ -74,6 +74,24 @@ and its successful owner-approval step; deployment rechecks the exact provider i
 asset-only bindings and absent route before replacing that retained version. This input
 is an expected-state assertion, not proof of provider state. A changed baseline fails closed.
 
+### Runtime hardening candidate — 2026-10-05
+
+The next source candidate coalesces authenticated host readiness checks into one
+fresh verification, with four waiters and a 15-second deadline. Cancellation is
+isolated per caller; no prior healthy result is cached. Inference still verifies
+its own current artifacts. This bounds concurrent probe amplification; it does
+not provide a host-wide buyer admission quota or an abuse-prevention service.
+The listing CLI emits bounded, redacted operational counts to stderr (60 events
+per minute, with backpressure suppression). Device-session availability and
+operator recovery remain explicit; logs do not establish unattended availability.
+See [durable fulfillment](durable-fulfillment.md) for settled-record retention and
+stopped-host recovery, and [dependency security](production-dependency-security.md)
+for the patched lockfile. These changes require a newly pinned host, protected
+release and exact runtime readback; the previous deployment receipt remains historical.
+The existing payment account and test price are retained. Live account/price
+verification, a separately authorized live profile and buyer payment/recovery
+evidence are still required before a real-money readiness claim.
+
 All subsequent sections describe the deferred **full Commerce** runtime. Their
 provider, payment and independent-evaluator conditions still apply to that profile.
 

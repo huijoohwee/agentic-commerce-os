@@ -6,6 +6,31 @@ import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {startListingHost} from './host.mjs';
 
+/** Bounded operational counts only: no job IDs, principal, payload, error text or credentials. */
+export function createListingEventSink({stream=process.stderr,now=()=>performance.now()}={}){
+  const statuses=new Set(['busy','idle','paused','failed','completed','blocked','cancelled','running','planning']);
+  const reasons=new Set(['worker_store_unavailable','run_response_unavailable','worker_stopped',
+    'worker_authority_unavailable','worker_authority_or_runtime_unavailable']);
+  let windowStart=now(),written=0,suppressed=0;
+  return event=>{
+    if(!event||!['worker','request'].includes(event.type)||!statuses.has(event.status))return;
+    const at=now();if(at-windowStart>=60000){windowStart=at;written=0;}
+    if(written>=60||stream.writableNeedDrain||stream.destroyed||stream.writableEnded){
+      suppressed=Math.min(1000000,suppressed+1);return;
+    }
+    const runs=Array.isArray(event.runs)?event.runs.slice(0,128):[];
+    const record={schema:'commerce.listing-host-event/v1',type:event.type,status:event.status,
+      ...(reasons.has(event.reasonCode)?{reasonCode:event.reasonCode}:{}),runCount:runs.length,
+      completed:runs.filter(row=>row?.status==='completed').length,
+      blocked:runs.filter(row=>row?.status==='blocked').length,
+      paused:runs.filter(row=>row?.status==='paused').length,
+      ...(Number.isSafeInteger(event.awaitingAuthorization)&&event.awaitingAuthorization>=0
+        ?{awaitingAuthorization:Math.min(128,event.awaitingAuthorization)}:{}),suppressed};
+    try{written++;stream.write(JSON.stringify(record)+'\n');suppressed=0;}
+    catch{suppressed=Math.min(1000000,suppressed+1);}
+  };
+}
+
 async function main(){
   const {values}=parseArgs({options:{config:{type:'string'}},strict:true,allowPositionals:false});
   const path=values.config;
@@ -33,8 +58,9 @@ async function main(){
         ||createHash('sha256').update(bytes).digest('hex')!==config.relay?.pins?.bundleSha256)throw Error('listing_bundle_mismatch');
     }finally{await bundle.close();}
   }
-  const host=await startListingHost({...config,plan});
+  const host=await startListingHost({...config,plan,onEvent:createListingEventSink()});
   console.log(JSON.stringify({origin:host.origin,availability:host.availability,sourceRevision:config.sourceRevision}));
   for(const signal of ['SIGINT','SIGTERM'])process.once(signal,()=>{void host.close().catch(()=>{process.exitCode=1;});});
 }
-main().catch(()=>{console.error('Listing host unavailable. Verify its private configuration, installed runtime and pinned local model.');process.exitCode=1;});
+if(process.argv[1]&&await realpath(process.argv[1]).catch(()=>null)===fileURLToPath(import.meta.url))
+  main().catch(()=>{console.error('Listing host unavailable. Verify its private configuration, installed runtime and pinned local model.');process.exitCode=1;});
