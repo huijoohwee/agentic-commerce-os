@@ -101,14 +101,20 @@ observations, not protected integration or deployment receipts.
 Canvas typecheck, token closure and deterministic build pass. Two unchanged lazy-media fixtures
 also fail at G0 under the same two-tick harness; Graph's plan retains that bounded baseline result.
 Commerce's six projection/provenance tests, typecheck, 490-file authored limits, invocation (12),
-WebMCP (6) and real MCP/HTTP/sigil parity (5) pass. At 2026-10-05T08:31:13Z all 11 working-source
-browser groups plus Program Pack/durable listing pass: named table, selected-record fields at
+WebMCP (6) and real MCP/HTTP/sigil parity (5) pass. Clean Commerce
+`5f25ff69f2b7fee4a5c4f089103ec17e673747b2` passes 215 local unit tests and all 11 browser groups
+plus Program Pack/durable listing at 2026-10-05T08:36:17Z, with artifact digest
+`9ea580c5887a334eaf3179ff427fa58428ba5791e7875515d168fd6a7ce76cf0`. Scope: named table and selected-record fields at
 360/768/1280 px, native 14 px type, keyboard selection/return focus, offline rows/properties,
 200% text resize at 360/768/1024/1280 px, storage recovery and no private remote writes. The existing
 workspace route now completes before scroll/focus restoration, resolving its observed checkout race.
-The session `work/commerce-graph-browser.log` records this result; clean Commerce rerun follows
-publication. Graph PR1563 / Integration run37284086847 and Commerce protected integration remain
-pending at authoring. This bounded read-only adapter does not expose all Graph editing/media features
+Native publication committed this source before `blocked-publication-stale-base`; no Commerce PR
+exists. Exact native alignment to protected `0204010637b0671a1b8a3415c0018c29d62aab85` stopped
+at `blocked-lane-alignment-overlap`. Predecessor 9f2e629 and squash 020401 have identical trees, but
+the native owner permits only disjoint alignment. Preserve the lane and its evidence for a supported
+alignment-owner repair; recheck on that owner result, with no manual bypass. Graph PR1563 /
+Integration run37284086847 remains in progress at authoring; Commerce integration and runtime
+activation are unproved. This bounded read-only adapter does not expose all Graph editing/media features
 or establish physical-device/customer acceptance. Every chunk stays <500,000 bytes; authored files
 <600 lines. No new paid plan/addon/overage or serving-model token cost; existing locked FOSS only.
 

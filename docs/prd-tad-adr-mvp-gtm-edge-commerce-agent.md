@@ -3,7 +3,7 @@ title: "Reference Implementation — Native Commerce, Workspaces and First-Dolla
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "edge-commerce-agent-mvp"
 revision: "0.21.0"
-version: "0.21.0"
+version: "0.21.1"
 prd_revision: "0.21.0"
 tad_revision: "0.21.0"
 adr_revision: "0.21.0"
@@ -15,7 +15,7 @@ frontmatter_contract: "required"
 owner: "Commerce product architecture"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
-readiness_scope: "CW-D11 native Graph table implemented; working-source checks pass, clean protected proof pending, no new deployment or revenue proof"
+readiness_scope: "CW-D11 implemented; clean local checks pass at 5f25ff6, native publication blocked, no new deployment or revenue proof"
 lane: "authoring"
 universal_scope: false
 load_policy: "on-demand"
@@ -72,7 +72,7 @@ Commerce storage, revision checks, edit/review and MCP/WebMCP `/ @ #` owners. Th
 selected the embedded option. Graph owns a shared table core, portable DOM adapter and generated
 native CSS; its canonical UI/UX guide remains the design authority, with no competing `DESIGN.md`.
 C0 is PR120/9f2e629, integrated as 0204010637b0671a1b8a3415c0018c29d62aab85 with green CI;
-those previous checks do not pass D11. Clean Graph a9a2e31 is pinned; six Commerce projection tests and all 11 working-source browser groups pass with invocation/source guards. Exact clean Commerce proof and protected integration remain pending; this read-only subset is not full Graph parity.
+D11 pins clean Graph a9a2e31; clean Commerce 5f25ff69f2b7fee4a5c4f089103ec17e673747b2 passes 215 local unit tests/all 11 browser groups with source/invocation guards. Native publication is blocked by stale base and overlapping alignment; no Commerce PR exists. Evidence patch 0.21.1 keeps the five-role 0.21.0 join; the companion owns the exact receipt and native-owner repair handoff. This read-only subset is not full Graph parity.
 The five section roles below retain EC-01–EC-10; each consumes its matching companion section
 for CW requirements/design/decisions/MVP/GTM. Historical receipts remain at their recorded revisions.
 The 0.6.0 sandbox retains its scoped evidence. Revision 0.14.0 adds a compact project console and merchant detail views over saved local drafts,
@@ -473,7 +473,7 @@ never enroll fabricated payer evidence from this sandbox. [The sprint][sprint] o
 ## Alignment and maintenance — reference implementation
 
 The historical evidence companion consumes 0.6.0 and the sprint at 1.2.0; it is not silently
-re-stamped as October evidence. The workspace companion records the 0.21.0 implementation join, working-source passes and remaining exact-source D11 gates; RR-D10 records local readiness repair and remaining runtime gates. Historical
+re-stamped as October evidence. The workspace companion records the 0.21.0 join, 0.21.1 clean local proof and native publication blocker; RR-D10 records local readiness repair and remaining runtime gates. Historical
 five-role joins, source links, schema owners, five flow inventories, deployment boundaries and
 monetization separation are the bounded documentation review. Existing source checks validate
 syntax, links, limits and projection; they do not certify every advisory statement in the guideline.

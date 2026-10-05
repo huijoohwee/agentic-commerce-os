@@ -3,7 +3,7 @@ title: "Reference Implementation — Native Commerce Workspace Increment"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "edge-commerce-agent-mvp"
 revision: "0.21.0"
-version: "0.21.0"
+version: "0.21.1"
 prd_revision: "0.21.0"
 tad_revision: "0.21.0"
 adr_revision: "0.21.0"
@@ -15,7 +15,7 @@ frontmatter_contract: "required"
 owner: "Commerce product architecture"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
-readiness_scope: "CW-D11 native Graph data-view implemented; working-source checks pass, clean protected source and human acceptance pending, no deployment"
+readiness_scope: "CW-D11 implemented; clean local checks pass at 5f25ff6, native source publication blocked, human/runtime acceptance open"
 lane: "authoring"
 universal_scope: false
 load_policy: "on-demand"
@@ -502,9 +502,10 @@ five-role join owns host integration. User authorization is the explicit embed o
 Clean Graph source `a9a2e31f78e84b984e5176a6f761e5c737ad6ea3` is pinned in [config/graph-data-view.json](../config/graph-data-view.json), including input/output hashes and MIT notices. JS/CSS/token CSS are 168,142/52,697/6,088 bytes. [Graph PR1563](https://github.com/huijoohwee/agentic-graph/pull/1563) is published; protected [run37284086847](https://github.com/huijoohwee/agentic-graph/actions/runs/37284086847) remains pending at authoring.
 Graph's ten selected native regressions, four adapter tests, typecheck and repeated byte-identical build pass; two unchanged lazy-media fixtures reproduce at G0, as retained in its plan. This read-only portable subset is not full Graph parity.
 Commerce passes six projection/provenance tests, typecheck, authored limits (490 files), invocation (12), WebMCP (6) and real MCP/HTTP/sigil parity (5).
-At 2026-10-05T08:31:13Z all 11 working-source browser groups plus Program Pack/durable listing pass: named table and selected record at 360/768/1280 px, 14 px text, Enter/Space and return focus, offline rows/properties, existing 200% text resize through 1024 px, storage failure recovery and no private remote writes. `work/commerce-graph-browser.log` retains that observation.
+Clean Commerce `5f25ff69f2b7fee4a5c4f089103ec17e673747b2` passes 215 local unit tests and all 11 browser groups plus Program Pack/durable listing at 2026-10-05T08:36:17Z; artifact digest `9ea580c5887a334eaf3179ff427fa58428ba5791e7875515d168fd6a7ce76cf0`. Scope: native list/detail at 360/768/1280 px, 14 px text, Enter/Space and return focus, offline rows/properties, 200% text resize at 360/768/1024/1280 px, storage recovery and no private remote writes. This supersedes the working-source observation only for those checks.
 The existing workspace owner now awaits route completion before restoring scroll/focus; checkout assertions pass after this race correction, with no added module.
-Exact clean Commerce browser proof follows publication; protected source and deployment receipts remain open. Full-profile local workerd and independent evaluator prerequisites remain baseline limitations. Physical-device, human/TTV and customer acceptance are unobserved; deployment requires its own approval and retained-reader recovery.
+Evidence patch 0.21.1 retains all five acceptance roles at 0.21.0. Native publication committed 5f25ff6, then stopped at `blocked-publication-stale-base`; no Commerce PR was created. Exact native alignment to `0204010637b0671a1b8a3415c0018c29d62aab85` stopped at `blocked-lane-alignment-overlap`, despite verified equality of predecessor 9f2e629 and squash 020401 trees. The native owner supports only disjoint alignment; preserve this lane for its alignment-owner repair and recheck when that owner supplies a supported transition. No manual bypass or cleanup is authorized by this result.
+Graph protected CI, Commerce publication/integration and deployment remain separate open gates. Full-profile local workerd/evaluator prerequisites remain baseline limitations. Physical-device, human/TTV and customer acceptance are unobserved; deployment needs its own approval and retained-reader recovery.
 
 ### Existing invocation contract, reference implementation
 
@@ -562,7 +563,7 @@ stop after three alignment cycles or two without blocker reduction.
 | PRD-TAD-ADR-MVP-GTM | CID | RAO | Updated Date |
 |---|---|---|---|
 | Historical console delivery handoff | edge-commerce-agent-mvp@0.16.0 / CW-D09, RR-D10 | UI/runtime owners → retain exact source and delivery receipts → Development: cb06 protected integration; Production Release: successful run 37214188137/v3 receipt; Runtime: public browser and actual-listing recovery passed; human acceptance remains open | 2026-10-04 |
-| CW-D11 native reuse | edge-commerce-agent-mvp@0.21.0 / F6–F7 | Graph/Commerce owners → one core and pinned local adapter → working-source checks pass; clean-source/protected receipts pending, runtime/human acceptance separate | 2026-10-05 |
+| CW-D11 native reuse | edge-commerce-agent-mvp@0.21.0 / F6–F7 | Graph/Commerce owners → one core and pinned local adapter → clean 5f25 local checks pass; native source publication blocked on alignment-owner repair, runtime/human acceptance separate | 2026-10-05 |
 | Next authorized planning action | Same join / CW-P1 | Product → identify one reachable merchant and proposed priced outcome → E1 inputs; prerequisite: explicit contact authority, recheck on supplied prospect | 2026-10-04 |
 | Next acceptance action | Same join / CW-01–08 | Product/QA → run five human baseline tasks and resolve full-runtime prerequisites → independently bound acceptance; recheck when participants/runtime are available | 2026-10-04 |
 
