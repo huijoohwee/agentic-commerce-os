@@ -552,7 +552,7 @@ async function verifyWorkspaceFidelity({ page, context, url, drafts }) {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.evaluate(() => { document.documentElement.style.fontSize = '200%'; });
   assert.equal(await page.locator('#workspace-arguments').evaluate(el => parseFloat(getComputedStyle(el).fontSize)), size * 2);
-  for (const width of [360, 768, 1280]) {
+  for (const width of [360, 768, 1024, 1280]) {
     await page.setViewportSize({ width, height: 900 });
     for (const hash of ['admin-tools', 'vendor', 'shop', 'admin']) {
       await page.goto(url + '#' + hash);

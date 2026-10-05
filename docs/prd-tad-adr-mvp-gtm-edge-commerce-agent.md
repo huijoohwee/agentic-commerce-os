@@ -3,7 +3,7 @@ title: "Reference Implementation — Native Commerce, Workspaces and First-Dolla
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "edge-commerce-agent-mvp"
 revision: "0.20.0"
-version: "0.20.1"
+version: "0.20.2"
 prd_revision: "0.20.0"
 tad_revision: "0.20.0"
 adr_revision: "0.20.0"
@@ -67,9 +67,9 @@ keep unvalidated demand, live payment and full-agent production behind their own
 ## Current workspace increment — reference implementation
 
 The [workspace companion](prd-tad-adr-mvp-gtm-commerce-workspaces.md) joins
-CW-01–CW-08 at `edge-commerce-agent-mvp@0.20.0`. Evidence patch 0.20.1 implements native loading/readability,
+CW-01–CW-08 at `edge-commerce-agent-mvp@0.20.0`. Evidence patch 0.20.2 implements native loading/readability,
 accessible visual fidelity, schema-led tool assistance, safe errors and equivalent private handoff.
-Ten admitted files extend native views/descriptor and tests: storage recovery, readable controls/results, schema fields and scoped prepare counts; no schema/dependency changes. The companion records exact checks, publication limits and human acceptance gaps.
+Ten admitted files extend native views/descriptor and tests: storage recovery, readable controls/results, schema fields and scoped prepare counts; no schema/dependency changes. The companion records PR119/f8a4974 local passes, Linux CI header overflow, the native reflow successor, publication limits and human acceptance gaps.
 The five section roles below retain EC-01–EC-10; each consumes its matching companion section
 for CW requirements/design/decisions/MVP/GTM. Historical receipts remain at their recorded revisions.
 The 0.6.0 sandbox retains its scoped evidence. Revision 0.14.0 adds a compact project console and merchant detail views over saved local drafts,

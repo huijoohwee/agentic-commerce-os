@@ -3,7 +3,7 @@ title: "Reference Implementation — Native Commerce Workspace Increment"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "edge-commerce-agent-mvp"
 revision: "0.20.0"
-version: "0.20.1"
+version: "0.20.2"
 prd_revision: "0.20.0"
 tad_revision: "0.20.0"
 adr_revision: "0.20.0"
@@ -484,7 +484,7 @@ contradictory current-tense rows; historical checks are scoped to their recorded
 
 ## CW-D10 implementation and handoff — reference implementation
 
-**Development / 0.20.1:** same five-role acceptance join 0.20.0; F1–F5 source mechanisms implemented.
+**Development / 0.20.2:** same five-role acceptance join 0.20.0; F1–F5 source mechanisms implemented.
 F1 retains labelled stale rows, unknown initial counts, explicit retry and editor refresh without clearing
 unsaved text. F2 raises functional type/contrast, contains tables in named keyboard-scroll regions and
 keeps correction focus in the single navigation completion. F3/F4 derive fields from the existing schemas,
@@ -497,8 +497,10 @@ Browser fixture verification passes all 11 groups plus Program Pack and durable 
 Independent source review found and corrected editor retry, closed-details focus and duplicate navigation;
 text-resize tests exposed mobile minimum-width and tablet table overflow, now covered by regression checks.
 Typecheck, authored limits (484 files), terminology, invocation (12 assertions) and WebMCP (6) pass. Local preview uses labelled demo data; fixture proof is over uncommitted working bytes, with exact clean-source proof required next.
-**Production Release:** pending native publish and exact protected gate; the publication receipt pins
-final source/diff. **Runtime:** no new deployed identity, payment or fulfillment result. Local proof cannot
+**Source review:** [PR119](https://github.com/huijoohwee/agentic-commerce-os/pull/119) published `f8a4974a73fc8a662b47a2e29aaf480b4c03f912`; clean local domain/unit/worker checks, 209 local-first tests and all 11 browser groups passed.
+[CI37279261982](https://github.com/huijoohwee/agentic-commerce-os/actions/runs/37279261982) found Linux fallback-font header overflow at 768 px / 200% text. The native `commerce-fidelity-reflow` successor wraps the header through 1100 px and adds a 1024 px assertion, preserving readable text.
+Correction bound: 15 active minutes, four existing files/12 kB contextual diff, no new modules; the same browser suite passes locally including 1024 px, with exact protected CI pending. Local full-profile check remains blocked by its workerd prerequisite; independent runtime evidence also lacks its evaluator inputs/issuers.
+**Production Release:** pending protected source gate and separately authorized deployment. **Runtime:** no new deployed identity, payment or fulfillment result. Local proof cannot
 renew historical live receipts. Full-profile local checks require the verified workerd override described
 in `docs/container-runtime.md`; that prerequisite is not bypassed.
 **Next:** Commerce release owner runs affected checks, native publication and exact clean-source gate;
