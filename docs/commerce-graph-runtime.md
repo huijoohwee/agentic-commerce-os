@@ -143,15 +143,10 @@ Pure `evaluateOfferSetup` returns three value-based steps through the editor and
 `commerce.workspace.offer.review` MCP/WebMCP `/ @ #` handler, always requiring human review.
 It adds no acknowledgment, mutation or registration check. Saved review remains UI-owned.
 
-Fifteen affected tests, workerd MCP parity, typecheck, authored limits, invocation12 and WebMCP6
-pass. Browser proof covers offline review/export, all 14 field invalidations, storage abort/retry,
-stale BroadcastChannel recovery, keyboard focus and 200% text at 320/768/1280. Final regressions
-pass (5.3 seconds, zero page errors): conflict without BroadcastChannel offers Reload preserving
-unsaved/stored data; delayed `openSavedDraft` disables controls before awaiting storage, then
-restores the current revision without acknowledgment. Exact committed-source verification is recorded separately in the release handoff.
-Bound: 35–45 active minutes, 12 files, ≤55 kB authored bytes, zero new runtime modules/dependencies;
-<600 lines/file and <500,000 bytes/chunk. Native publication's stale-base/overlap blocker remains.
-Protected integration/deployment are separate; local setup is no sales, provider or customer proof.
+The [workspace companion](prd-tad-adr-mvp-gtm-commerce-workspaces.md) owns D12 checks and bounds.
+Shared field metadata preserves one validator; editor-only diagnostics are omitted from the device bundle.
+Exact committed-source verification is recorded separately in the release handoff.
+The native publication alignment blocker remains; local setup grants no sales or provider authority.
 
 ## Historical full-runtime transport — reference implementation
 

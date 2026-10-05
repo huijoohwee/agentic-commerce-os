@@ -1,8 +1,8 @@
 // One browser/agent contract. No model, provider, account or network dependency.
-import { validDraft, validLaunchTerms, launchFieldIssues, LIMITS, MAXIMUM_AMOUNT_MINOR } from './drafts.js';
+import { validDraft, validLaunchTerms, launchFieldIssues, invalidLaunchFields, LAUNCH_ID_FIELDS,
+  LAUNCH_DESCRIPTION_FIELDS, LAUNCH_VARIABLE_COST_FIELDS, LAUNCH_MONEY_FIELDS as MONEY_FIELDS, LIMITS, MAXIMUM_AMOUNT_MINOR } from './drafts.js';
 export const LAUNCH_CONTINUITY = 'edge-commerce-agent-mvp@0.2.0';
 const TEXT_FIELDS = ['merchantId', 'agentId', 'audience', 'outcome', 'currency'];
-const MONEY_FIELDS = ['priceMinor', 'deliveryCostMinor', 'providerFeeMinor', 'agentCostMinor', 'acquisitionCostMinor', 'fixedCostMinor'];
 
 /** One normalization path for editor guidance and saving; failed amounts stay incomplete. */
 export function inspectLaunchInput(raw) {
@@ -32,18 +32,16 @@ export function parseLaunchInput(raw) {
 
 /** Setup is a read-only assessment of values, never evidence of saving or human approval. */
 export function evaluateOfferSetup({ title, launch } = {}) {
-  const issues = launchFieldIssues(launch), invalid = new Set(issues.map(issue => issue.field));
-  const describe = ['audience', 'outcome'].filter(field => invalid.has(field));
+  const fields = invalidLaunchFields(launch), missing = keys => keys.filter(field => fields.includes(field));
+  const describe = missing(LAUNCH_DESCRIPTION_FIELDS);
   if (typeof title !== 'string' || !title.trim() || title.length > LIMITS.title) describe.unshift('title');
-  if (invalid.has('launch') && !issues.some(issue => issue.field !== 'launch')) describe.push('launch');
-  const identity = ['merchantId', 'agentId'].filter(field => invalid.has(field));
-  const money = ['currency', ...MONEY_FIELDS].filter(field => invalid.has(field));
+  if (fields.length === 1 && fields[0] === 'launch') describe.push('launch');
+  const identity = missing(LAUNCH_ID_FIELDS), money = missing(['currency', ...MONEY_FIELDS]);
   const economics = money.length ? null : calculateLaunchEconomics(launch);
   if (economics?.constraints.length) money.push('priceMinor');
-  const steps = [{ id: 'describe', complete: !describe.length, fields: describe },
-    { id: 'identity', complete: !identity.length, fields: identity },
-    { id: 'economics', complete: !money.length && Boolean(economics), fields: money }];
-  return { status: issues.length || describe.length ? 'draft' : economics.selection,
+  const steps = [['describe', describe], ['identity', identity], ['economics', money]]
+    .map(([id, fields]) => ({ id, complete: !fields.length, fields }));
+  return { status: fields.length || describe.length ? 'draft' : economics.selection,
     economics, steps, humanReview: 'still-required' };
 }
 
@@ -53,7 +51,7 @@ export function evaluateLaunch(terms) {
 }
 
 function calculateLaunchEconomics(terms) {
-  const variableCostMinor = terms.deliveryCostMinor + terms.providerFeeMinor + terms.agentCostMinor + terms.acquisitionCostMinor;
+  const variableCostMinor = LAUNCH_VARIABLE_COST_FIELDS.reduce((total, field) => total + terms[field], 0);
   const contributionMinor = terms.priceMinor - variableCostMinor;
   return Object.freeze({ currency: terms.currency, priceMinor: terms.priceMinor, variableCostMinor, contributionMinor,
     firstSaleNetMinor: contributionMinor - terms.fixedCostMinor,

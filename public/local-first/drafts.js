@@ -1,8 +1,10 @@
 export const LIMITS = Object.freeze({ count: 100, title: 120, description: 10000, price: 120, transferBytes: 8000000 });
 export const MAXIMUM_AMOUNT_MINOR = 1_000_000_000;
-const TERMS_KEYS = ['acquisitionCostMinor', 'agentCostMinor', 'agentId', 'audience', 'currency',
-  'deliveryCostMinor', 'fixedCostMinor', 'merchantId', 'outcome', 'priceMinor', 'providerFeeMinor'];
-const MONEY_KEYS = ['priceMinor', 'deliveryCostMinor', 'providerFeeMinor', 'agentCostMinor', 'acquisitionCostMinor', 'fixedCostMinor'];
+export const LAUNCH_ID_FIELDS = Object.freeze(['merchantId', 'agentId']);
+export const LAUNCH_DESCRIPTION_FIELDS = Object.freeze(['audience', 'outcome']);
+export const LAUNCH_VARIABLE_COST_FIELDS = Object.freeze(['deliveryCostMinor', 'providerFeeMinor', 'agentCostMinor', 'acquisitionCostMinor']);
+export const LAUNCH_MONEY_FIELDS = Object.freeze(['priceMinor', ...LAUNCH_VARIABLE_COST_FIELDS, 'fixedCostMinor']);
+const TERMS_KEYS = [...LAUNCH_ID_FIELDS, ...LAUNCH_DESCRIPTION_FIELDS, 'currency', ...LAUNCH_MONEY_FIELDS].sort();
 const DATABASE = 'agentic-commerce-local-drafts';
 const SCHEMA = 'commerce.local-drafts/v3';
 const LEGACY_KEYS = ['createdAt', 'description', 'id', 'price', 'revision', 'title', 'updatedAt'];
@@ -24,28 +26,40 @@ export function validWorkflow(value) {
     && (value.reviewedDigest === null || value.status === 'completed' && value.reviewedDigest === value.outputDigest);
 }
 
-export function launchFieldIssues(value) {
-  const issues = [], issue = (field, message) => issues.push({ field, message });
+export function invalidLaunchFields(value) {
+  const fields = [];
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    issue('launch', 'Use the supported launch fields.'); value = {};
-  } else if (Object.keys(value).sort().join() !== TERMS_KEYS.join()) issue('launch', 'Use all supported launch fields without extra properties.');
-  for (const key of ['merchantId', 'agentId']) {
-    if (typeof value[key] !== 'string' || !/^[a-z0-9][a-z0-9._-]{0,127}$/.test(value[key]))
-      issue(key, 'Use 1–128 lowercase letters, numbers, dots, underscores or hyphens, starting with a letter or number.');
+    fields.push('launch'); value = {};
+  } else if (Object.keys(value).sort().join() !== TERMS_KEYS.join()) fields.push('launch');
+  for (const key of LAUNCH_ID_FIELDS) {
+    const text = value[key];
+    if (typeof text !== 'string' || !/^[a-z0-9][a-z0-9._-]{0,127}$/.test(text))
+      fields.push(key);
   }
-  for (const key of ['audience', 'outcome']) {
-    if (typeof value[key] !== 'string' || value[key].trim() !== value[key] || !value[key].length || value[key].length > 280)
-      issue(key, 'Add 1–280 characters without leading or trailing spaces.');
+  for (const key of LAUNCH_DESCRIPTION_FIELDS) {
+    const text = value[key];
+    if (typeof text !== 'string' || !text || text.trim() !== text || text.length > 280)
+      fields.push(key);
   }
-  if (typeof value.currency !== 'string' || !/^[A-Z]{3}$/.test(value.currency)) issue('currency', 'Use a three-letter currency code.');
-  for (const key of MONEY_KEYS) {
-    if (!Number.isSafeInteger(value[key]) || value[key] < 0 || value[key] > MAXIMUM_AMOUNT_MINOR)
-      issue(key, 'Use a non-negative whole minor-unit amount within the supported limit.');
-    else if (key === 'priceMinor' && value[key] === 0) issue(key, 'Planned price must be greater than zero.');
+  if (typeof value.currency !== 'string' || !/^[A-Z]{3}$/.test(value.currency)) fields.push('currency');
+  for (const key of LAUNCH_MONEY_FIELDS) {
+    const amount = value[key];
+    if (!Number.isSafeInteger(amount) || amount < (key === 'priceMinor' ? 1 : 0) || amount > MAXIMUM_AMOUNT_MINOR)
+      fields.push(key);
   }
-  return issues;
+  return fields;
 }
-export function validLaunchTerms(value) { return launchFieldIssues(value).length === 0; }
+export function launchFieldIssues(value) {
+  return invalidLaunchFields(value).map(field => ({ field, message:
+    field === 'launch' ? !value || typeof value !== 'object' || Array.isArray(value)
+      ? 'Use the supported launch fields.' : 'Use all supported launch fields without extra properties.'
+    : LAUNCH_ID_FIELDS.includes(field) ? 'Use 1–128 lowercase letters, numbers, dots, underscores or hyphens, starting with a letter or number.'
+    : LAUNCH_DESCRIPTION_FIELDS.includes(field) ? 'Add 1–280 characters without leading or trailing spaces.'
+    : field === 'currency' ? 'Use a three-letter currency code.'
+    : field === 'priceMinor' && value?.priceMinor === 0 ? 'Planned price must be greater than zero.'
+    : 'Use a non-negative whole minor-unit amount within the supported limit.' }));
+}
+export function validLaunchTerms(value) { return invalidLaunchFields(value).length === 0; }
 
 export function validDraft(value, legacy = false) {
   return value && typeof value === 'object' && !Array.isArray(value)

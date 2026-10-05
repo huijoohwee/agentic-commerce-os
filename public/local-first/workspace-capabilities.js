@@ -1,18 +1,22 @@
-import { groupProjects, validDraft, validLaunchTerms, LIMITS as DRAFT_LIMITS } from './drafts.js';
+import { groupProjects, validDraft, validLaunchTerms, LAUNCH_ID_FIELDS, LAUNCH_DESCRIPTION_FIELDS,
+  LAUNCH_MONEY_FIELDS, LIMITS as DRAFT_LIMITS, MAXIMUM_AMOUNT_MINOR } from './drafts.js';
 import { evaluateOfferSetup } from './launch.js';
 
 export const WORKSPACE_LIMITS = Object.freeze({ requestBytes: 196608, resultBytes: 196608, deadlineMs: 5000 });
 const SNAPSHOT = 'commerce.workspace-snapshot/v1';
 const record = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+const jsonBytes = value => new TextEncoder().encode(JSON.stringify(value)).length;
 const fail = code => { throw Error('workspace_' + code); };
 const text = (maxLength, pattern) => ({ type: 'string', minLength: 1, maxLength, ...(pattern ? { pattern } : {}) });
 const integer = { type: 'integer', minimum: 1, maximum: Number.MAX_SAFE_INTEGER };
-const id = text(36, '^[0-9a-f-]{36}$');
-const termProperties = Object.fromEntries(['merchantId', 'agentId'].map(key => [key, text(128, '^[a-z0-9][a-z0-9._-]{0,127}$')]));
-for (const key of ['audience', 'outcome']) termProperties[key] = text(280);
+const offerIdPattern = /^[0-9a-f-]{36}$/;
+const validOfferId = value => typeof value === 'string' && offerIdPattern.test(value);
+const id = text(36, offerIdPattern.source);
+const termProperties = Object.fromEntries(LAUNCH_ID_FIELDS.map(key => [key, text(128, '^[a-z0-9][a-z0-9._-]{0,127}$')]));
+for (const key of LAUNCH_DESCRIPTION_FIELDS) termProperties[key] = text(280);
 termProperties.currency = text(3, '^[A-Z]{3}$');
-for (const key of ['priceMinor', 'deliveryCostMinor', 'providerFeeMinor', 'agentCostMinor', 'acquisitionCostMinor', 'fixedCostMinor']) {
-  termProperties[key] = { type: 'integer', minimum: key === 'priceMinor' ? 1 : 0, maximum: 1000000000 };
+for (const key of LAUNCH_MONEY_FIELDS) {
+  termProperties[key] = { type: 'integer', minimum: key === 'priceMinor' ? 1 : 0, maximum: MAXIMUM_AMOUNT_MINOR };
 }
 const launchSchema = { anyOf: [{ type: 'null' }, { type: 'object', additionalProperties: false,
   required: Object.keys(termProperties), properties: termProperties }] };
@@ -20,18 +24,18 @@ const offerProperties = { id, title: text(120), revision: integer, updatedAt: in
 const snapshotSchema = { type: 'object', additionalProperties: false, required: ['schema', 'offers'],
   properties: { schema: { const: SNAPSHOT }, offers: { type: 'array', maxItems: DRAFT_LIMITS.count,
     items: { type: 'object', additionalProperties: false, required: Object.keys(offerProperties), properties: offerProperties } } } };
-function definition(name, title, description, properties = {}, required = []) {
+function definition(name, title, description, properties = {}, required = Object.keys(properties)) {
   return Object.freeze({ name: 'commerce.workspace.' + name, title, description,
     inputSchema: { type: 'object', additionalProperties: false, required,
       properties: { ...properties, ...(name === 'environment.read' ? {} : { snapshot: snapshotSchema }) } },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false } });
 }
 export const WORKSPACE_TOOLS = Object.freeze([
-  definition('projects.list', 'Find projects', 'Find merchant projects in browser drafts or an explicitly provided offer snapshot.', { query: { type: 'string', maxLength: 120 } }),
-  definition('project.read', 'Inspect a project', 'Read project offers and revision numbers. No hosted infrastructure is managed.', { projectId: text(140) }, ['projectId']),
-  definition('offer.review', 'Check offer readiness', 'Calculate estimates for an exact offer revision. Does not approve, export or publish.',
-    { offerId: id, expectedRevision: integer }, ['offerId', 'expectedRevision']),
-  definition('environment.read', 'Inspect environment', 'Read the current local-first runtime configuration. Does not prove deployment, payment or fulfillment.'),
+  definition('projects.list', 'Find projects', 'Find merchant projects in browser drafts or a supplied offer snapshot.', { query: { type: 'string', maxLength: 120 } }, []),
+  definition('project.read', 'Inspect a project', 'Read offers and revisions; no hosted infrastructure management.', { projectId: text(140) }),
+  definition('offer.review', 'Check offer readiness', 'Estimate an exact offer revision; no approval, export or publishing.',
+    { offerId: id, expectedRevision: integer }),
+  definition('environment.read', 'Inspect environment', 'Read local runtime config; no deployment, payment or fulfillment proof.'),
 ]);
 export function workspaceSnapshot(drafts) {
   if (!Array.isArray(drafts) || drafts.length > DRAFT_LIMITS.count || !drafts.every(draft => validDraft(draft))) fail('drafts_invalid');
@@ -42,14 +46,14 @@ function validateSnapshot(value) {
     || !Array.isArray(value.offers) || value.offers.length > DRAFT_LIMITS.count) fail('snapshot_invalid');
   for (const offer of value.offers) {
     if (!record(offer) || Object.keys(offer).sort().join() !== 'id,launch,revision,title,updatedAt'
-      || typeof offer.id !== 'string' || !/^[0-9a-f-]{36}$/.test(offer.id)
+      || !validOfferId(offer.id)
       || typeof offer.title !== 'string' || !offer.title.trim() || offer.title.length > 120
       || !Number.isSafeInteger(offer.revision) || offer.revision < 1
       || !Number.isSafeInteger(offer.updatedAt) || offer.updatedAt < 1
       || offer.launch !== null && !validLaunchTerms(offer.launch)) fail('snapshot_invalid');
   }
   if (new Set(value.offers.map(offer => offer.id)).size !== value.offers.length) fail('snapshot_duplicate');
-  if (new TextEncoder().encode(JSON.stringify(value)).length > WORKSPACE_LIMITS.requestBytes - 4096) fail('snapshot_limit');
+  if (jsonBytes(value) > WORKSPACE_LIMITS.requestBytes - 4096) fail('snapshot_limit');
   return structuredClone(value);
 }
 export function validateWorkspaceInput(name, args) {
@@ -59,7 +63,7 @@ export function validateWorkspaceInput(name, args) {
     || tool.inputSchema.required.some(key => !Object.hasOwn(args, key))) fail('arguments_invalid');
   if ('query' in args && (typeof args.query !== 'string' || args.query.length > 120)) fail('query_invalid');
   if ('projectId' in args && (typeof args.projectId !== 'string' || !/^(?:local:unassigned|store:[a-z0-9][a-z0-9._-]{0,127})$/.test(args.projectId))) fail('project_invalid');
-  if ('offerId' in args && (typeof args.offerId !== 'string' || !/^[0-9a-f-]{36}$/.test(args.offerId))) fail('offer_invalid');
+  if ('offerId' in args && !validOfferId(args.offerId)) fail('offer_invalid');
   if ('expectedRevision' in args && (!Number.isSafeInteger(args.expectedRevision) || args.expectedRevision < 1)) fail('revision_invalid');
   return { ...args, ...('snapshot' in args ? { snapshot: validateSnapshot(args.snapshot) } : {}) };
 }
@@ -112,6 +116,6 @@ export async function invokeWorkspace(name, input, context = {}) {
   }
   if (context.signal?.aborted) fail('cancelled');
   const result = { schema: 'commerce.workspace-result/v1', tool: name, provenance, readOnly: true, value };
-  if (new TextEncoder().encode(JSON.stringify(result)).length > WORKSPACE_LIMITS.resultBytes) fail('result_limit');
+  if (jsonBytes(result) > WORKSPACE_LIMITS.resultBytes) fail('result_limit');
   return result;
 }
