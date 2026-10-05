@@ -2,13 +2,13 @@
 title: "Reference Implementation — Native Commerce, Workspaces and First-Dollar Boundary"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "edge-commerce-agent-mvp"
-revision: "0.18.1"
-version: "0.18.1"
-prd_revision: "0.18.0"
-tad_revision: "0.18.0"
-adr_revision: "0.18.0"
-mvp_revision: "0.18.0"
-gtm_revision: "0.18.0"
+revision: "0.19.0"
+version: "0.19.0"
+prd_revision: "0.19.0"
+tad_revision: "0.19.0"
+adr_revision: "0.19.0"
+mvp_revision: "0.19.0"
+gtm_revision: "0.19.0"
 date: "2026-10-05"
 lang: "en-US"
 frontmatter_contract: "required"
@@ -22,9 +22,9 @@ load_policy: "on-demand"
 runtime_readiness_policy: "fail-closed"
 lifecycle_status: "proposed"
 demand_status: "unvalidated"
-worktree_id: "device-0232231d4a19--live-reader-setup-evidence"
+worktree_id: "device-0232231d4a19--sandbox-paid-recovery"
 agent_id: "codex-01a1076a"
-source_revision: "d2c19ec74dc7dd80250f1b9910ded53bc9e69856"
+source_revision: "0463a99f1f0c489f210588243f1807a7958a540c"
 guideline_revision: "3.4.0"
 guideline_source_revision: "82835ac37d524643faa6b9703cb077ea9474ab15"
 related_continuity_id: "PRD-TAD-ADR-COMMERCE-MVP-GTM-001"
@@ -44,7 +44,7 @@ The proposed [native commerce transfer ecosystem](prd-tad-adr-mvp-gtm-native-com
 at `NATIVE-COMMERCE-TRANSFER-001@0.2.1` specifies MainPanel, transfer and policy-evidence enhancements.
 It consumes this sandbox baseline and inherits no implementation, payment or deployment readiness.
 
-`edge-commerce-agent-mvp@0.18.0` joins [PRD](#prd), [TAD](#tad), [ADR](#adr), [MVP](#mvp)
+`edge-commerce-agent-mvp@0.19.0` joins [PRD](#prd), [TAD](#tad), [ADR](#adr), [MVP](#mvp)
 and [GTM](#gtm). PRD owns criteria; TAD consumes that exact revision; ADR binds the design;
 MVP and GTM consume their checks and outcomes. This document describes concrete choices for
 this reference implementation, not universal vendor requirements. Shared [guidelines][guideline]
@@ -517,7 +517,6 @@ This assessment consumes `edge-commerce-agent-mvp@0.16.0` and the separately sco
 
 The document owner must capture one timed pilot in the buyer’s existing workspace, record the four observations using the shared maturity rubric, and measure accepted outcome, actual payment, repeat use and delivery/support cost separately. A successful sandbox checkout proves its declared mechanism only; it cannot establish willingness to pay, a commercial winner or collected customer revenue. Append the learn-loop result as a successor Context through the shared planning owner.
 
-
 ## RR-D10 — Production readiness recovery, reference implementation
 
 **Context / PRD:** the 2026-10-04 live audit found fulfillment admission 503 while configuration readiness was 200. The deployed source remained `081de8b254985b09bd6e3d7367bf5d54484e44a3`; protected main was `ff97aa8274b9e00c1fda2a743aa5cdaba3c59e19`. User instruction “implement Production readiness” authorizes the repair over existing owners. Buyer priority: recover the existing offer-to-fulfillment path before adding capabilities.
@@ -537,7 +536,6 @@ The document owner must capture one timed pilot in the buyer’s existing worksp
 **Runtime / recovery:** the actual public-browser listing survived reader version `1c04f403-9cc1-4b45-9dbb-a83e5f3ce7b4` and restoration of the exact candidate. Rollback proof digest `4c7477d80c7c7efbe6ab651fb59e5f8211ffd03afbe3a8fe893272205ae9ba4d` binds both verified deployments and output; human review, payment submission and real money are false. Public browser proof: eleven groups passed, 15:55:58Z.
 **Transport observation:** the retained listing host keeps its separate source `f015d40c8caae51503136be92f3b2315be8245e8`, pinned artifacts, SQLite data and model limits of 1.5 GiB/2 CPU. Tunnel v2→v3 changed only the stale hostname fallback from port 5191 to HTTP 404, preserving both pinned 5192 routes and final 404. A guarded write/readback verified config hash `1916461e8ca93a3c32635324a2f8bfc62de0394a7aa5a547dcc1a688b5c7c29d`; the API provides no atomic version condition. 15:50:18Z probes returned host/session 200 and unknown-path 404.
 **Limits / successor:** Workers Free is operator-confirmed; billing proof and total cost remain unknown. Availability is `device-session`: device sleep or process loss interrupts fulfillment. Full-profile issuer/evaluator enrollment, provider/catalog/registry evidence, required self-review prevention, real payment and independent human acceptance remain open. Runtime owner rechecks readiness/admission on source, host, ingress or authority drift; Product owns the timed human pilot and demand evidence. Transport rollback stops the connector before verified config restoration; drift prevents replay. Record this outcome through native RELEASE and private TODO. Reconciled main supersedes [PR105](https://github.com/huijoohwee/agentic-commerce-os/pull/105); deployed artifact is unchanged.
-
 
 ## LC — Existing live education offer, reference implementation
 
@@ -595,3 +593,7 @@ The document owner must capture one timed pilot in the buyer’s existing worksp
 **Provider setup / evidence patch 0.18.1:** five acceptance roles remain 0.18.0. On 2026-10-05T02:45:54.016Z, the restricted key returned HTTP 200 from `/v1/account` for `acct_1TKGGUGzH0w0k4VU`, with charges and payouts enabled. Native provisioning at 02:46:16.710Z bound source d2c19 to endpoint `we_1UN1uuGzH0w0k4VUO6XEixhU`, `https://airvio.co/agentic-commerce-os/checkout/webhook`, API `2026-06-24.dahlia` and exactly `checkout.session.completed` / `checkout.session.async_payment_succeeded`. Secret and operator-authenticated receipt remain private; this is not provider-signed attestation. Legacy destinations remain. Three production GitHub secrets were installed privately at 02:46:45–47Z.
 
 **Reader / live verified:** human-approved [reader23 / 37256750710](https://github.com/huijoohwee/agentic-commerce-os/actions/runs/37256750710) completed 2026-10-05T02:49:58.911Z: version `496e25ca-5c4c-46e9-9506-9ae29e966f2f`, receipt `bcaa4ac02cff5c5132c3fc4a14cf39423e2017917f40589df00a149670858a0d`. Separately approved [live24 / 37257012867](https://github.com/huijoohwee/agentic-commerce-os/actions/runs/37257012867) completed 02:56:31.099Z: version `de11731b-b2a2-4103-8bcb-934890ded14b`, receipt `38c6bcedaed381c2d39d36c054ae30b3b718d31e13b9bb829306ef072136510f`. Both bind d2c19; retained reader and secret fingerprint unchanged. Public readiness at 03:02:44.466Z returned 200, exact source/version, live checkout and fulfillment ready. Existing account/price verified SGD8 (800 minor), live and sales-capable. Each release passed three GET-only desktop/mobile browser groups; no Session, payment or revenue proof. Scope is one static offer, not platform parity; device-session availability remains. This evidence-only document is outside runtime inputs: no redeployment. Scope: 15 active minutes, one document, 8kB diff, zero modules, <600 lines.
+
+**Hosted test delivery / 0.19.0 — PRD / MVP:** SD-01 requires hosted test payment plus a signed webhook after the buyer browser closes; SD-02 restores the same paid test order and pinned asset in a fresh browser using its saved recovery file; SD-03 converges duplicate/concurrent events on one entitlement; SD-04 rejects cross-mode credentials, cookies, recovery and events while preserving legacy sandbox listing and live/reader behavior. Preserve checkout/shop UI and MCP/WebMCP `/ @ #`. The user selected Stripe hosted test mode; fixtures alone do not prove SD-01/02, live collection or demand.
+**TAD / ADR:** extend existing checkout/provider/webhook/recovery/session/UI owners with explicit static `test` mode; retain legacy `sandbox` and all live contracts. Provider readback bound account `acct_1TKGGUGzH0w0k4VU`, active test price `price_1UEcrJGzH0w0k4VU6HbApj39`, product `prod_VF75VTaUhifetp`, SGD800 minor and livemode false. Test profile `d2ac3f74…` pins observed event API2026-03-25.dahlia; live remains June. Reuse exact provider readback, pinned asset and idempotent entitlement; isolate test cookie/signature, recovery, secrets and namespace. Device build excludes test. `hosted-test.mjs serve/prepare/verify` runs the actual Worker with native config, CLI forwarding and blocked browser return; private pending-operation guard prevents unresolved retries. No new runtime module, ledger, SDK or production selector.
+**GTM / bounds / handoff:** SD-01/02 passed at2026-10-05T03:49:16.849Z: actual hosted test order ending `O8aKaX9`, event `evt_1UN2tgGzH0w0k4VUdbFwT0cA`, browser closed03:48:08.990Z, signed webhook200 and entitlement read before fresh-browser recovery. Tampered file refused; restored receipt charges0 and asset SHA174f3f32… matches. Workspace `outputs/hosted-test-paid-recovery-proof.json` (SHAd9900f4a…) binds actual source/harness digest `eaae04b0…` over base0463; `hosted-test-ui-fixture-verification.json` retains mobile/desktop proof. SD-03/04:26 affected tests; sandbox/live/reader/test browser regressions, typecheck, authored limits and evidence16 pass. Review found no remaining P1/P2 after pending-operation/chronology fixes. Source publish/CI/merge/closeout receipts go to `outputs/hosted-test-source-closeout.json`; protected release pending at authoring. Production stays release24/d2c19; this authority is sandbox only. Bound refreshed:90 active minutes,14files,100kB changed-line patch,2new verification modules,0runtime modules/dependencies; <600lines/file,<500kB/chunk. Device diagnostic499539B is not a release receipt. No always-load delta; test fees0, CI/token totals not measured. Owner: Commerce release; next close protected source and retain test receipts. First real customer/revenue and demand remain unobserved; production promotion needs its own exact-candidate authority.

@@ -176,3 +176,32 @@ test('unknown live create and entitlement responses reuse stable provider identi
   const creates=fixture.calls.filter(r=>r.method==='POST'&&new URL(r.url).pathname==='/v1/checkout/sessions');
   assert.equal(creates[0].headers.get('idempotency-key'),creates[1].headers.get('idempotency-key'));
 });
+test('concurrent live events retain one logical provider entitlement with a stable payload',{timeout:5000},async()=>{
+  const c=client(),created=await start(c),id=created.order.orderId;c.fixture.complete(id);
+  const original=c.fixture.transport,effects=new Map(),attempts=[];let reads=0,release;
+  const together=new Promise(resolve=>{release=resolve;});
+  c.fixture.transport=async request=>{
+    const exactSession=new URL(request.url).pathname==='/v1/checkout/sessions/'+id;
+    if(exactSession&&request.method==='GET'&&reads<2){
+      // Capture both pre-entitlement responses before either handler may write.
+      const response=await original(request);reads++;if(reads===2)release();await together;return response;
+    }
+    if(!exactSession||request.method!=='POST')return original(request);
+    const key=request.headers.get('idempotency-key'),body=await request.clone().text();
+    assert(key);attempts.push({key,body});let effect=effects.get(key);
+    if(effect)assert.equal(effect.body,body,'Provider idempotency forbids changed parameters');
+    else {effect={body,result:original(request).then(response=>response.text())};effects.set(key,effect);}
+    return new Response(await effect.result,{headers:{'content-type':'application/json'}});
+  };
+  const first=eventFor(c.fixture.sessions.get(id));
+  const second={...structuredClone(first),id:'evt_'+'f'.repeat(24),type:'checkout.session.async_payment_succeeded'};
+  const responses=await Promise.all([webhook(c.fixture,first),webhook(c.fixture,second)]);
+  assert.deepEqual(responses.map(response=>response.status),[200,200]);assert(attempts.length>=2);
+  assert.equal(effects.size,1);assert.equal(new Set(attempts.map(item=>item.key)).size,1);
+  assert.equal(new Set(attempts.map(item=>item.body)).size,1);
+  assert.match(attempts[0].key,/^commerce-live-entitlement:/);
+  assert.deepEqual([...new URLSearchParams(attempts[0].body)],[['metadata[entitlement_digest]',OFFER.assetDigest]]);
+  assert.equal((await webhook(c.fixture,first)).status,200);assert.equal(effects.size,1);
+  assert.equal(c.fixture.sessions.get(id).metadata.entitlement_digest,OFFER.assetDigest);
+  assert.equal((await c.call('/download')).value,asset.toString());
+});

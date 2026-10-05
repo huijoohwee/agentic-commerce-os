@@ -1,6 +1,6 @@
 // Only the listing build disables live checkout; unbundled and Worker owners retain it.
 import { stripeClient, stripeTestKey, stripeLiveKey, type PaymentFetch, type StripeSession } from './stripe-checkout.ts';
-import { checkoutOffer, LIVE_CHECKOUT_PROFILE_SHA256, readLiveEducationAsset, type CheckoutMode } from './checkout-offer.ts';
+import { checkoutOffer, LIVE_CHECKOUT_PROFILE_SHA256, TEST_CHECKOUT_PROFILE_SHA256, readLiveEducationAsset, type CheckoutMode } from './checkout-offer.ts';
 import { createCheckoutRecovery, readCheckoutRecovery } from './checkout-recovery.ts';
 import { handleStripeWebhook } from './stripe-webhook.ts';
 import { readSession, newSession, cookie, csrf } from './session.ts';
@@ -13,6 +13,9 @@ export type CheckoutEnv = Readonly<{
   CHECKOUT_MODE?: string;
   STOREFRONT_SESSION_SECRET?: string;
   STRIPE_TEST_SECRET_KEY?: string;
+  STRIPE_TEST_WEBHOOK_SECRET?: string;
+  CHECKOUT_TEST_RECOVERY_SECRET?: string;
+  CHECKOUT_TEST_PROFILE_SHA256?: string;
   STRIPE_LIVE_SECRET_KEY?: string;
   STRIPE_LIVE_WEBHOOK_SECRET?: string;
   CHECKOUT_RECOVERY_SECRET?: string;
@@ -22,11 +25,17 @@ export type CheckoutEnv = Readonly<{
 const PREFIX = '/agentic-commerce-os';
 const json = (status: number, body: unknown, cookie?: string) => Response.json(body,
   { status, ...(cookie ? { headers: { 'set-cookie': cookie } } : {}) });
-export const checkoutMode = (env: CheckoutEnv): CheckoutMode => ['live','live-reader'].includes(env.CHECKOUT_MODE ?? '') ? 'live' : 'sandbox';
+export const checkoutMode = (env: CheckoutEnv): CheckoutMode => ['live','live-reader'].includes(env.CHECKOUT_MODE ?? '') ? 'live' : (import.meta.commerceLiveCheckout !== false) && env.CHECKOUT_MODE === 'test' ? 'test' : 'sandbox';
 export function checkoutConfigured(env: CheckoutEnv) {
   if (typeof env.STOREFRONT_SESSION_SECRET !== 'string' || env.STOREFRONT_SESSION_SECRET.length < 32) return false;
   if (env.CHECKOUT_MODE === 'sandbox') return stripeTestKey(env.STRIPE_TEST_SECRET_KEY);
   if (!(import.meta.commerceLiveCheckout !== false)) return false;
+  if (env.CHECKOUT_MODE === 'test') {
+    const secrets = [env.STOREFRONT_SESSION_SECRET,env.STRIPE_TEST_SECRET_KEY,env.STRIPE_TEST_WEBHOOK_SECRET,env.CHECKOUT_TEST_RECOVERY_SECRET];
+    return stripeTestKey(env.STRIPE_TEST_SECRET_KEY) && /^whsec_[A-Za-z0-9]{20,}$/u.test(env.STRIPE_TEST_WEBHOOK_SECRET ?? '')
+      && typeof env.CHECKOUT_TEST_RECOVERY_SECRET === 'string' && env.CHECKOUT_TEST_RECOVERY_SECRET.length >= 32
+      && new Set(secrets).size === secrets.length && env.CHECKOUT_TEST_PROFILE_SHA256 === TEST_CHECKOUT_PROFILE_SHA256;
+  }
   const secrets = [env.STOREFRONT_SESSION_SECRET, env.STRIPE_LIVE_SECRET_KEY, env.STRIPE_LIVE_WEBHOOK_SECRET, env.CHECKOUT_RECOVERY_SECRET];
   return ['live','live-reader'].includes(env.CHECKOUT_MODE ?? '') && stripeLiveKey(env.STRIPE_LIVE_SECRET_KEY)
     && /^whsec_[A-Za-z0-9]{20,}$/u.test(env.STRIPE_LIVE_WEBHOOK_SECRET ?? '')
@@ -41,8 +50,9 @@ function receipt(payment: StripeSession | null, mode: CheckoutMode) {
     realMoney: ((import.meta.commerceLiveCheckout !== false) && mode === 'live'), chargeMinor: ((import.meta.commerceLiveCheckout !== false) && mode === 'live') && success ? offer.amountMinor : 0,
     orderId: payment.id, offerId: offer.id, status: success ? 'succeeded' : payment.status === 'expired' ? 'expired' : 'pending',
     ...(((import.meta.commerceLiveCheckout !== false) && mode === 'live') ? { amountMinor: offer.amountMinor, entitlementReady: success && payment.entitlementReady === true,
-      profileDigest: LIVE_CHECKOUT_PROFILE_SHA256 } : { testAmountMinor: offer.amountMinor }),
-    currency: offer.currency, downloadReady: success && (!((import.meta.commerceLiveCheckout !== false) && mode === 'live') || payment.entitlementReady === true),
+      profileDigest: LIVE_CHECKOUT_PROFILE_SHA256 } : { testAmountMinor: offer.amountMinor,
+      ...((import.meta.commerceLiveCheckout !== false) && mode === 'test' ? {entitlementReady: success && payment.entitlementReady === true,profileDigest:TEST_CHECKOUT_PROFILE_SHA256} : {}) }),
+    currency: offer.currency, downloadReady: success && (!((import.meta.commerceLiveCheckout !== false) && mode !== 'sandbox') || payment.entitlementReady === true),
     checkoutUrl: payment.url, ...(payment.fulfillment ? { fulfillment: { ...payment.fulfillment,
       status: success ? 'available' : 'awaiting_sandbox_payment' } } : {}) };
 }
@@ -60,10 +70,10 @@ export async function handleCheckout(request: Request, env: CheckoutEnv, transpo
   let session = await readSession(request, secret, mode);
   const stripe = stripeClient((((import.meta.commerceLiveCheckout !== false) && mode === 'live') ? env.STRIPE_LIVE_SECRET_KEY : env.STRIPE_TEST_SECRET_KEY)!, transport, mode);
   if ((import.meta.commerceLiveCheckout !== false) && relative === '/checkout/webhook') {
-    if (mode !== 'live') return fail(404,'not_found');
-    return handleStripeWebhook(request,env.STRIPE_LIVE_WEBHOOK_SECRET!,async id => {
+    if (mode === 'sandbox') return fail(404,'not_found');
+    return handleStripeWebhook(request,(mode === 'test' ? env.STRIPE_TEST_WEBHOOK_SECRET : env.STRIPE_LIVE_WEBHOOK_SECRET)!,async id => {
       await readLiveEducationAsset(env.ASSETS,url.origin);return stripe.fulfill(id);
-    });
+    },mode);
   }
   const confirmedRequest = () => request.headers.get('origin') === url.origin
     && request.headers.get('sec-fetch-site') !== 'cross-site' && !request.headers.has('content-encoding')
@@ -71,11 +81,11 @@ export async function handleCheckout(request: Request, env: CheckoutEnv, transpo
   const readPayment = () => session?.paymentId ? stripe.read(session.paymentId, session.nonce, session.fulfillment) : Promise.resolve(null);
   try {
     if ((import.meta.commerceLiveCheckout !== false) && relative === '/checkout/recover') {
-      if (mode !== 'live') return fail(404,'not_found');
+      if (mode === 'sandbox') return fail(404,'not_found');
       if (request.method !== 'POST' || !confirmedRequest()) return fail(403,'checkout_recovery_confirmation_required');
       const body = await readJsonObject(request,4096);
       if (isHttpFailure(body) || Object.keys(body).join() !== 'recoveryToken') return fail(400,'checkout_recovery_invalid');
-      const recovered = await readCheckoutRecovery(body.recoveryToken,env.CHECKOUT_RECOVERY_SECRET!);
+      const recovered = await readCheckoutRecovery(body.recoveryToken,(mode === 'test' ? env.CHECKOUT_TEST_RECOVERY_SECRET : env.CHECKOUT_RECOVERY_SECRET)!,mode);
       if (!recovered) return fail(403,'checkout_recovery_invalid');
       const payment = await stripe.read(recovered.paymentId!,recovered.nonce);
       if (payment.status !== 'complete' || payment.payment_status !== 'paid') return fail(409,'checkout_paid_required');
@@ -90,7 +100,7 @@ export async function handleCheckout(request: Request, env: CheckoutEnv, transpo
     }
     if (!session) return fail(401, 'checkout_session_required');
     if ((import.meta.commerceLiveCheckout !== false) && relative === '/checkout/recovery') {
-      if (mode !== 'live') return fail(404,'not_found');
+      if (mode === 'sandbox') return fail(404,'not_found');
       if (request.method !== 'POST' || !confirmedRequest()
         || request.headers.get('x-commerce-csrf') !== await csrf(session,secret,mode)) return fail(403,'checkout_confirmation_required');
       const body = await readJsonObject(request,1024);
@@ -98,7 +108,7 @@ export async function handleCheckout(request: Request, env: CheckoutEnv, transpo
         || body.confirmed !== true || body.offerId !== offer.id) return fail(400,'offer_confirmation_mismatch');
       if (!session.paymentId) return fail(409,'checkout_not_started');
       await readPayment();
-      return json(200,{ok:true,...envelope,...await createCheckoutRecovery(session,env.CHECKOUT_RECOVERY_SECRET!)});
+      return json(200,{ok:true,...envelope,...await createCheckoutRecovery(session,(mode === 'test' ? env.CHECKOUT_TEST_RECOVERY_SECRET : env.CHECKOUT_RECOVERY_SECRET)!,mode === 'test' ? 'test' : 'live')});
     }
     if (['/checkout/start', '/checkout/cancel', '/checkout/reset'].includes(relative) && request.method === 'POST') {
       if (!confirmedRequest() || request.headers.get('x-commerce-csrf') !== await csrf(session, secret, mode))
@@ -108,7 +118,7 @@ export async function handleCheckout(request: Request, env: CheckoutEnv, transpo
       const keys = Object.keys(body).sort().join();
       if (!['confirmed,offerId', 'confirmed,fulfillment,offerId,reviewed'].includes(keys)
         || body.confirmed !== true || body.offerId !== offer.id) return fail(400, 'offer_confirmation_mismatch');
-      if (((import.meta.commerceLiveCheckout !== false) && mode === 'live') && keys !== 'confirmed,offerId') return fail(400,'live_education_only');
+      if (((import.meta.commerceLiveCheckout !== false) && mode !== 'sandbox') && keys !== 'confirmed,offerId') return fail(400,'live_education_only');
       let fulfillment: FulfillmentBinding | undefined;
       if (keys !== 'confirmed,offerId') {
         if (relative !== '/checkout/start' || body.reviewed !== true || !validBinding(body.fulfillment))
@@ -132,7 +142,7 @@ export async function handleCheckout(request: Request, env: CheckoutEnv, transpo
               || result.plannedAt < session.issuedAt || result.plannedAt > Date.now()
               || Date.now() - result.plannedAt >= 23 * 3600000)) return fail(409, 'checkout_session_expired');
           }
-          if (((import.meta.commerceLiveCheckout !== false) && mode === 'live')) await readLiveEducationAsset(env.ASSETS,url.origin);
+          if (((import.meta.commerceLiveCheckout !== false) && mode !== 'sandbox')) await readLiveEducationAsset(env.ASSETS,url.origin);
           payment = await stripe.create(session.nonce, url.origin, fulfillment, separateOrder);
           session = { ...session, paymentId: payment.id, ...(fulfillment ? { fulfillment } : {}) };
         }
@@ -144,7 +154,7 @@ export async function handleCheckout(request: Request, env: CheckoutEnv, transpo
         session = newSession(); payment = null;
       }
       return json(200,{ok:true,...envelope,order:receipt(payment,mode),
-        ...(((import.meta.commerceLiveCheckout !== false) && mode === 'live') && session.paymentId ? {recovery:await createCheckoutRecovery(session,env.CHECKOUT_RECOVERY_SECRET!)} : {})},
+        ...(((import.meta.commerceLiveCheckout !== false) && mode !== 'sandbox') && session.paymentId ? {recovery:await createCheckoutRecovery(session,(mode === 'test' ? env.CHECKOUT_TEST_RECOVERY_SECRET : env.CHECKOUT_RECOVERY_SECRET)!,mode === 'test' ? 'test' : 'live')} : {})},
         await cookie(session,secret,mode));
     }
     if (request.method !== 'GET') return fail(405, 'method_not_allowed');
@@ -157,7 +167,7 @@ export async function handleCheckout(request: Request, env: CheckoutEnv, transpo
     }
     if (relative === '/checkout/download') {
       if (!order?.downloadReady) return fail(409, ((import.meta.commerceLiveCheckout !== false) && mode === 'live') ? 'checkout_entitlement_required' : 'sandbox_success_required');
-      if (((import.meta.commerceLiveCheckout !== false) && mode === 'live')) return new Response(await readLiveEducationAsset(env.ASSETS,url.origin),{headers:{
+      if (((import.meta.commerceLiveCheckout !== false) && mode !== 'sandbox')) return new Response(await readLiveEducationAsset(env.ASSETS,url.origin),{headers:{
         'content-type':'text/markdown; charset=utf-8','content-disposition':'attachment; filename="airvio-education-materials.md"'}});
       const asset = await env.ASSETS.fetch(new Request(new URL(offer.asset, url.origin)));
       if (!asset.ok) return fail(503, 'download_unavailable');

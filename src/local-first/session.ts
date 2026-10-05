@@ -2,8 +2,10 @@
 import type { CheckoutMode } from './checkout-offer.ts';
 import { validBinding, type FulfillmentBinding } from './fulfillment-contract.ts';
 export type Session = { nonce: string; issuedAt: number; paymentId?: string; fulfillment?: FulfillmentBinding };
-const cookieName = (mode: CheckoutMode) => mode === 'live' ? '__Host-airvio_checkout' : '__Host-airvio_sandbox';
-const payloadDomain = (mode: CheckoutMode, payload: string) => mode === 'live' ? 'live-checkout:' + payload : payload;
+const cookieName = (mode: CheckoutMode) => mode === 'live' ? '__Host-airvio_checkout'
+  : (import.meta.commerceLiveCheckout !== false) && mode === 'test' ? '__Host-airvio_test_checkout' : '__Host-airvio_sandbox';
+const payloadDomain = (mode: CheckoutMode, payload: string) => mode === 'live' ? 'live-checkout:' + payload
+  : (import.meta.commerceLiveCheckout !== false) && mode === 'test' ? 'test-checkout:' + payload : payload;
 const MAX_AGE = 7 * 86400;
 const encoder = new TextEncoder();
 const base64 = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes)).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/u, '');
@@ -36,6 +38,7 @@ export async function readSession(request: Request, secret: string, mode: Checko
       || item.issuedAt > Date.now() + 5000 || Date.now() - item.issuedAt > MAX_AGE * 1000
       || Object.keys(item).some(k => !['nonce', 'issuedAt', 'paymentId', 'fulfillment'].includes(k))
       || item.fulfillment !== undefined && (!item.paymentId || !validBinding(item.fulfillment))
+      || (import.meta.commerceLiveCheckout !== false) && mode === 'test' && item.fulfillment !== undefined
       || item.paymentId !== undefined && (typeof item.paymentId !== 'string' || !(mode === 'live' ? /^cs_live_[A-Za-z0-9]{16,200}$/u : /^cs_test_[A-Za-z0-9]{16,200}$/u).test(item.paymentId))) return null;
     return item as Session;
   } catch { return null; }

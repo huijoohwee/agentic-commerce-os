@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
-import {CHECKOUT_OFFER,LIVE_CHECKOUT_PROFILE_SHA256} from '../../src/local-first/checkout-offer.ts';
+import {CHECKOUT_OFFER,LIVE_CHECKOUT_PROFILE_SHA256,TEST_CHECKOUT_PROFILE_SHA256} from '../../src/local-first/checkout-offer.ts';
 import {stripeFixture} from './stripe-fixture.ts';
 import {optimizeListingBundle} from '../../scripts/local-host/build.ts';
 
@@ -67,6 +67,20 @@ test('compiled device profile refuses complete live configuration and live adapt
   assert.throws(()=>device.stripeClient(live.STRIPE_LIVE_SECRET_KEY,()=>{throw Error('unexpected transport');},'live'),/unavailable/);
   const c=client(device,{STRIPE_TEST_SECRET_KEY:live.STRIPE_LIVE_SECRET_KEY});
   assert.equal((await c.call()).status,503);assert.equal(c.fixture.calls.length,0);
+});
+test('compiled device profile refuses hosted test entitlement configuration before provider I/O',async()=>{
+  const hosted={CHECKOUT_MODE:'test',CHECKOUT_TEST_PROFILE_SHA256:TEST_CHECKOUT_PROFILE_SHA256,
+    STRIPE_TEST_WEBHOOK_SECRET:'whsec_'+'w'.repeat(40),
+    CHECKOUT_TEST_RECOVERY_SECRET:'device-hosted-test-recovery-secret-longer-than-32-characters'};
+  const c=client(device,hosted);
+  for(const suffix of ['', '/start','/webhook','/recover','/download'])
+    assert.equal((await c.call(suffix,['/start','/webhook','/recover'].includes(suffix)?terms:undefined)).status,503);
+  assert.equal(c.fixture.calls.length,0);
+  assert.throws(()=>device.stripeClient(env.STRIPE_TEST_SECRET_KEY,()=>{throw Error('unexpected transport');},'test'),/unavailable/);
+  const ordinary=client(worker,hosted),opened=await ordinary.call();
+  assert.equal(opened.status,200);assert.equal(opened.value.mode,'test');assert.equal(opened.value.realMoney,false);
+  assert.match(opened.headers.get('set-cookie'),/^__Host-airvio_test_checkout=/);
+  assert.equal(ordinary.fixture.calls.length,0);
 });
 test('ordinary compiled Worker retains the explicitly configured live capability',async()=>{
   const c=client(worker,{CHECKOUT_MODE:'live',STRIPE_LIVE_SECRET_KEY:'rk_live_'+'l'.repeat(40),
