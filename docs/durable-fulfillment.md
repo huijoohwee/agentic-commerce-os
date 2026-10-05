@@ -4,12 +4,12 @@ doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "DURABLE-LISTING-FULFILLMENT-001"
 upstream_continuity_id: "DURABLE-AGENT-WORKFLOWS-001"
 upstream_revision: "0.2.0"
-version: "0.2.1"
-prd_revision: "0.2.0"
-tad_revision: "0.2.0"
-adr_revision: "0.2.0"
-mvp_revision: "0.2.0"
-gtm_revision: "0.2.0"
+version: "0.3.0"
+prd_revision: "0.3.0"
+tad_revision: "0.3.0"
+adr_revision: "0.3.0"
+mvp_revision: "0.3.0"
+gtm_revision: "0.3.0"
 date: "2026-10-05"
 lang: "en-US"
 owner: "agentic-commerce-os"
@@ -17,7 +17,7 @@ frontmatter_contract: "required"
 load_policy: "on-demand"
 local_rung: "documented"
 delivered_rung: "undocumented"
-readiness_scope: "v0.2.0 source hardening and cold-copy recovery fixture; deployed host retains independent historical pins"
+readiness_scope: "v0.3.0 bounded host resource and storage admission; deployed host retains independent historical pins"
 lane: "authoring"
 universal_scope: false
 worktree_id: "device-0232231d4a19--commerce-runtime-completion"
@@ -31,7 +31,7 @@ reviewed_source_revision: "173e994784cca2befb458868a6fb01d456d75628"
 
 This product slice consumes the approved
 [DURABLE-AGENT-WORKFLOWS-001@0.2.0](https://github.com/huijoohwee/agentic-os/blob/672b21ebf583ff3d5918d5ddba7821cef2b098ee/guides/DURABLE-WORKFLOWS.md).
-Commerce owns `DURABLE-LISTING-FULFILLMENT-001@0.2.0`; its DF criteria below map to
+Commerce owns `DURABLE-LISTING-FULFILLMENT-001@0.3.0`; its DF criteria below map to
 the shared runtime plan's AC-D criteria, whose source owner remains Agentic OS.
 Implementation is authorized for this joined revision. Historical proposal and protected release
 observations retain their original scope. The existing [sandbox owner](prd-tad-adr-mvp-gtm-edge-commerce-agent.md)
@@ -332,7 +332,7 @@ immutable source/bundle/model pins. No new dependency, public route or always-lo
 
 ## v0.2.0 context, resources and observation
 
-The current source consumes protected OS `047e7240b9cd31e7a78c708d998c02983144f0ea`.
+The v0.2.0 source consumed protected OS `047e7240b9cd31e7a78c708d998c02983144f0ea`.
 OS owns context validation, allocation reservations, tracing, evidence comparison and SQLite retention;
 Commerce supplies only the listing plan, fixed limits, contract evaluator and session adapter. Graph
 owns the dashboard and Editor Workspace JSON → Markdown → Viewer/Canvas projections. This revision
@@ -359,8 +359,8 @@ usage, timeout or overrun holds uncertain capacity across restart and daily roll
 has no automatic refund/reconciliation control: an unresolved hold needs verified operator recovery
 through the OS owner. Zero provider spend does not imply zero device, energy or total cost.
 
-Existing contextless jobs keep their original scheduling policy through a lazy retained runtime;
-they are never retagged into a new allocation or represented as newly measured traces. New jobs must
+Existing contextless jobs retain status and cancellation through a lazy retained runtime;
+v0.3.0 refuses their dispatch rather than assigning a synthetic context or resetting budgets. New jobs must
 carry context. Jobs keep their existing one-day deadline plus seven-day retention; traces have a seven-day bound.
 The draft/output/payment binding remains unchanged.
 A rollback must use a reader compatible with v3 drafts and preserve both SQLite stores; an older
@@ -390,3 +390,48 @@ Sprint budget: 120–180 active minutes, at most 12 product modules and 80 kB au
 no new package or always-loaded observation service. Protected CI and production approval are external
 gates, not estimates. GTM still requires one real seller's reviewed draft, measured preparation time,
 corrections and independent willingness-to-pay evidence before pricing or ROI claims.
+
+
+## v0.3.0 host-wide resource and storage admission
+
+PRD / DF-08: a fresh signed session cannot reset the host's daily resource allowance or exhaust
+persistent rows through refused starts. Commerce consumes protected OS
+`44da26e7beb7d9aa5da271480f2e0ef34846dfaa`; its SQLite owner retires fully settled allocations
+seven days after the policy ends, preserving unknown/reserved/overrun and active-fenced records.
+The compiled plan requires all five section roles at 0.3.0; evidence patch versions may advance
+within 0.3.x. A new plan is a new source identity, not authority to dispatch retained older jobs.
+
+TAD: the existing native admission controller reserves at most 12 host run slots over eight days
+before a new job write: at most 12 new starts in a rolling eight-day retention window. A fixed server-owned principal and cohort bind these slots across sessions
+and coordinators. No rejected slot creates a job. The retention covers the daily allocation end
+plus seven days; failures do not automatically refund slots. Existing per-principal store caps of
+32 and database cap of 128 are unchanged. The rolling bound supports a small device-session MVP;
+it does not promise continuous capacity after a burst or when unreconciled historical rows remain.
+
+The existing native resource owner supplies both caller and host ledgers. The host independently
+applies the table's same UTC-day project/agent limits (96 attempts, 65,536 input tokens, 8,192 output
+tokens and 1,800,000 ms). Attempts count planning, work, synthesis and evaluation phases; they
+are not a generated-listing throughput allowance. It keeps the same per-run and per-phase limits and zero paid-provider spend.
+The caller's persisted job/context is verified before the private host reservation. Host operation
+identity binds caller and run; job ownership and public observations remain caller-scoped.
+
+ADR: reserve host then caller before dispatch; settle identical measured usage in both. A newly
+reserved host attempt may settle zero only when caller admission failed before dispatch. A replay
+is never refunded; mismatched replay or partial settlement retains uncertainty. The in-memory paired
+receipt remains usable for an exact settlement retry. A crash can conservatively hold capacity;
+only the existing owner's verified reconciliation may release unknown work. One unknown host
+allocation blocks later sessions and day rollover, so renewed run slots cannot admit another
+uncertain execution cohort. Pending reservations also block window rollover. These controls do
+not reclaim unverifiable historical holds; the native atomic record caps remain the final refusal. There is no new public reconciliation control.
+Contextless retained jobs support status/cancel only; upgraded executors must not run them outside
+admission. Rollback must remain reader-only for jobs admitted by newer policy.
+
+MVP acceptance uses actual native SQLite: concurrent fresh-session admission, shared daily budget,
+restart, exact settlement retry, multi-day churn past the retention horizon, and unknown usage that
+continues to block dispatch while row counts remain bounded. A private copy of the actual old-host
+snapshot opens through both new SQLite owners: its one record remains readable, integrity is
+`ok`, and the original snapshot digest is unchanged. This is copy readability, not a live restore
+or signed-session replay claim; seeded replay proofs do not attest live data.
+GTM remains a bounded single-device service with visible busy/held outcomes; no throughput, revenue,
+model-quality or uninterrupted-availability claim follows from these tests. Production activation
+still requires its own current host/edge pins and protected release proof.

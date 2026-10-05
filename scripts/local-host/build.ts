@@ -35,8 +35,8 @@ export function listingPlanJoin(bytes: Uint8Array) {
   };
   const continuityId = read('continuity_id'), version = read('version');
   const revisions = Object.fromEntries(['prd', 'tad', 'adr', 'mvp', 'gtm'].map(role => [role, read(role + '_revision')]));
-  if (continuityId !== 'DURABLE-LISTING-FULFILLMENT-001' || !/^0\.2\.(?:0|[1-9]\d*)$/.test(version)
-    || Object.values(revisions).some(value => value !== '0.2.0')) throw new Error('listing_plan_join_invalid');
+  if (continuityId !== 'DURABLE-LISTING-FULFILLMENT-001' || !/^0\.3\.(?:0|[1-9]\d*)$/.test(version)
+    || Object.values(revisions).some(value => value !== '0.3.0')) throw new Error('listing_plan_join_invalid');
   return { continuityId, revisions };
 }
 
