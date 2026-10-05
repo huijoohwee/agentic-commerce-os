@@ -1,6 +1,7 @@
 import { WORKER } from './artifact.mjs';
 import { readBoundedJsonResponse } from '../production-release/bounded-response.ts';
 import { parseListingHostPins } from '../../src/local-first/fulfillment-relay.ts';
+import { LIVE_CHECKOUT_PROFILE_SHA256 } from '../../src/local-first/checkout-offer.ts';
 
 export function createProvider({ accountId, zoneId, token }) {
   if (!/^[0-9a-f]{32}$/.test(accountId) || !/^[0-9a-f]{32}$/.test(zoneId) || !token) throw Error('Missing Cloudflare configuration');
@@ -31,15 +32,21 @@ export function createProvider({ accountId, zoneId, token }) {
     return match ? { id: match.id, pattern, script: match.script, state: 'bound' }
       : { id: null, pattern, script: null, state: 'absent' };
   }
-  async function version(versionId, revision, expectedCheckout, expectedPins) {
+  async function version(versionId, revision, expectedCheckout, expectedPins, expectedSecretSetDigest) {
     const value = await api(script + '/versions/' + encodeURIComponent(versionId));
     const bindings = value.resources?.bindings;
     const allowed = { ASSETS: 'assets', CF_VERSION_METADATA: 'version_metadata', RELEASE_CANDIDATE_SHA: 'plain_text' };
-    const sandbox = Array.isArray(bindings) && [6, 8].includes(bindings.length);
-    const relay = Array.isArray(bindings) && bindings.length === 8;
+    const checkout = Array.isArray(bindings) ? bindings.find(binding => binding.name === 'CHECKOUT_MODE')?.text : undefined;
+    const live = ['live','live-reader'].includes(checkout);
+    const sandbox = Array.isArray(bindings) && !live && [6, 8].includes(bindings.length);
+    const relay = Array.isArray(bindings) && (live ? bindings.length === 13 : bindings.length === 8);
     if (sandbox) { allowed.CHECKOUT_MODE = 'plain_text'; allowed.STOREFRONT_SESSION_SECRET = 'secret_text'; allowed.STRIPE_TEST_SECRET_KEY = 'secret_text'; }
+    if (live) Object.assign(allowed,{CHECKOUT_MODE:'plain_text',STOREFRONT_SESSION_SECRET:'secret_text',
+      STRIPE_TEST_SECRET_KEY:'secret_text',
+      STRIPE_LIVE_SECRET_KEY:'secret_text',STRIPE_LIVE_WEBHOOK_SECRET:'secret_text',CHECKOUT_RECOVERY_SECRET:'secret_text',
+      CHECKOUT_LIVE_PROFILE_SHA256:'plain_text',CHECKOUT_SECRET_SET_SHA256:'plain_text'});
     if (relay) { allowed.LISTING_HOST_PINS_JSON = 'plain_text'; allowed.LISTING_HOST_BEARER = 'secret_text'; }
-    if (!Array.isArray(bindings) || ![3, 6, 8].includes(bindings.length)
+    if (!Array.isArray(bindings) || !(live ? [11,13] : [3,6,8]).includes(bindings.length)
       || bindings.some(binding => allowed[binding.name] !== binding.type)
       || new Set(bindings.map(binding => binding.name)).size !== bindings.length
       || !/^[0-9a-f]{40}$/.test(bindings.find(binding => binding.name === 'RELEASE_CANDIDATE_SHA')?.text)) {
@@ -47,13 +54,20 @@ export function createProvider({ accountId, zoneId, token }) {
     }
     if (sandbox && bindings.find(binding => binding.name === 'CHECKOUT_MODE')?.text !== 'sandbox'
       || expectedCheckout === 'sandbox' && !sandbox) throw Error('Sandbox profile required');
+    const profileDigest = bindings.find(binding => binding.name === 'CHECKOUT_LIVE_PROFILE_SHA256')?.text;
+    const secretSetDigest = bindings.find(binding => binding.name === 'CHECKOUT_SECRET_SET_SHA256')?.text;
+    if (live && (profileDigest !== LIVE_CHECKOUT_PROFILE_SHA256 || !/^[a-f0-9]{64}$/u.test(secretSetDigest ?? ''))
+      || ['live','live-reader'].includes(expectedCheckout) && checkout !== expectedCheckout
+      || expectedSecretSetDigest !== undefined && secretSetDigest !== expectedSecretSetDigest)
+      throw Error('Exact live profile and secret set required');
     const source = bindings.find(binding => binding.name === 'RELEASE_CANDIDATE_SHA').text;
     if (revision && (source !== revision || value.annotations?.['workers/tag'] !== revision)) throw Error('Uploaded version source mismatch');
     const pins = relay ? parseListingHostPins(JSON.parse(bindings.find(binding => binding.name === 'LISTING_HOST_PINS_JSON').text)) : null;
     if (expectedPins !== undefined && JSON.stringify(pins) !== JSON.stringify(expectedPins === null ? null : parseListingHostPins(expectedPins))) {
       throw Error('Uploaded fulfillment pins mismatch');
     }
-    return { versionId, sourceRevision: source, bindingNames: bindings.map(binding => binding.name).sort(), fulfillmentPins: pins };
+    return { versionId, sourceRevision: source, bindingNames: bindings.map(binding => binding.name).sort(), fulfillmentPins: pins,
+      ...(live ? {checkout,profileDigest,secretSetDigest} : {}) };
   }
   return { active, route, version,
     exposure: () => api(script + '/subdomain'),

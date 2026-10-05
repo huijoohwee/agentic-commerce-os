@@ -1,6 +1,7 @@
 import { saveDraft, validWorkflow } from './drafts.js';
 
 const base = '/agentic-commerce-os';
+const liveCheckout = ['live', 'live-reader'].includes(document.querySelector('meta[name="commerce-checkout-mode"]')?.content);
 const node = (tag, text) => { const value = document.createElement(tag); if (text) value.textContent = text; return value; };
 let dialog, current, saved, busy = false;
 const elements = {};
@@ -18,7 +19,7 @@ function render() {
   elements.cancel.disabled = busy || !navigator.onLine || !flow?.runId || ['completed', 'canceled'].includes(flow.status);
   elements.retry.hidden = flow?.status !== 'blocked'; elements.retry.disabled = busy || !navigator.onLine;
   elements.review.disabled = busy || !matches();
-  elements.checkout.disabled = busy || !navigator.onLine || !flow?.reviewedDigest || !matches();
+  elements.checkout.disabled = liveCheckout || busy || !navigator.onLine || !flow?.reviewedDigest || !matches();
   elements.new.disabled = busy || flow?.runId && !['completed', 'canceled', 'blocked'].includes(flow.status);
   elements.new.hidden = !flow;
   if (flow && !matches()) message('This result belongs to an earlier draft. Review its text or prepare a new listing from the saved draft.');
@@ -103,6 +104,7 @@ function createDialog() {
     ['resume', 'Resume / refresh', () => current.workflow ? refresh() : prepare()], ['cancel', 'Cancel job', () => refresh('cancel')],
     ['retry', 'Retry stopped job', () => refresh('retry')], ['new', 'Prepare new listing', prepare],
     ['checkout', 'Use in sandbox checkout', async () => {
+      if (liveCheckout) throw Error('Generated listings are sandbox-only. The live checkout sells education materials only.');
       if (!matches() || current.workflow.reviewedDigest !== current.workflow.outputDigest) throw Error('Review the listing first.');
       const { selectFulfillment } = await import('./checkout.js');
       selectFulfillment({ runId: current.workflow.runId, outputDigest: current.workflow.outputDigest }, current.title);
@@ -112,6 +114,7 @@ function createDialog() {
     const button = node('button', label); button.id = 'listing-' + key; button.type = 'button';
     button.addEventListener('click', () => void run(action)); elements[key] = button; buttons.append(button);
   }
+  if (liveCheckout) elements.checkout.title = 'Generated listings are sandbox-only; live checkout sells education materials only.';
   const close = node('button', 'Close'); close.type = 'button'; close.addEventListener('click', () => dialog.close());
   dialog.append(heading, elements.title, elements.message, elements.inspection, elements.output, elements.reviewLabel, buttons,
     node('p', 'Drafts and job handles stay on this device. Execution needs the operator’s host. No publishing or real payment occurs here.'), close);

@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { verifyGraphBundle } from '../workspace-pack/build-graph.mjs';
 import { FULFILLMENT_CONFIG, readFulfillmentRelease } from './fulfillment.mjs';
+import { readCheckoutRelease, liveAuthorizationScope } from './live-profile.mjs';
 
 export const CONFIG = 'wrangler.local-first.jsonc';
 export const WORKER = 'agentic-commerce-edge-production';
@@ -22,7 +23,7 @@ export function assertLocalFirstConfig(config) {
     throw Error('Local-first configuration must remain sandbox-only, private until route activation, and free of payment providers or financial resources.');
   }
 }
-export function sourceManifest(revision) {
+export function sourceManifest(revision, selection = readCheckoutRelease()) {
   if (!/^[0-9a-f]{40}$/.test(revision) || git('rev-parse', 'HEAD') !== revision) throw Error('Candidate source mismatch');
   verifyGraphBundle();
   assertLocalFirstConfig(JSON.parse(fs.readFileSync(CONFIG, 'utf8')));
@@ -30,7 +31,7 @@ export function sourceManifest(revision) {
   const paths = [CONFIG, 'src/local-first/worker.ts', 'src/local-first/workspace-pack.ts', 'src/local-first/workspace-service.ts', 'config/capability-token-map.json',
     'config/workspace-pack-graph.json', 'src/generated/graph-workspace-pack.js', 'src/generated/graph-workspace-pack.d.ts',
     'scripts/workspace-pack/build-graph.mjs', 'src/edge/production-prefix.ts', 'src/shared/http.ts',
-    ...['checkout', 'session', 'fulfillment-contract', 'fulfillment-definition', 'fulfillment', 'fulfillment-relay', 'stripe-checkout', 'checkout-offer'].map(file => `src/local-first/${file}.ts`),
+    ...['checkout', 'session', 'fulfillment-contract', 'fulfillment-definition', 'fulfillment', 'fulfillment-relay', 'stripe-checkout', 'checkout-offer', 'checkout-recovery', 'stripe-webhook'].map(file => `src/local-first/${file}.ts`),
     'src/sandbox/device-host.ts', 'package.json', 'package-lock.json',
     ...[...FILES, ...PRIVATE_FILES].map(file => 'public/local-first/' + file)];
   if (readFulfillmentRelease()) paths.push(FULFILLMENT_CONFIG);
@@ -39,7 +40,9 @@ export function sourceManifest(revision) {
     const bytes = fs.readFileSync(file); if (bytes.length >= 500000) throw Error('Artifact file exceeds 500 kB');
     return { path: file, bytes: bytes.length, digest: digest(bytes) };
   });
-  const body = { schema: 'commerce.local-first-artifact/v2', profile: 'local-first', checkout: 'sandbox',
+  const live = liveAuthorizationScope(selection);
+  const body = { schema: live ? 'commerce.local-first-live-artifact/v1' : 'commerce.local-first-artifact/v2',
+    profile: 'local-first', checkout: selection.checkout, ...(live ? {live} : {}),
     sourceRevision: revision, sourceTree: git('rev-parse', 'HEAD^{tree}'), entries };
   return { ...body, artifactDigest: digest(JSON.stringify(body)) };
 }

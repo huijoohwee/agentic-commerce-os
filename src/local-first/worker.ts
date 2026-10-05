@@ -1,5 +1,5 @@
 import { handleWorkspaceService } from './workspace-service.ts'
-import { handleCheckout, checkoutConfigured, type CheckoutEnv } from './checkout.ts'
+import { handleCheckout, checkoutConfigured, checkoutMode, type CheckoutEnv } from './checkout.ts'
 import type { PaymentFetch } from './stripe-checkout.ts'
 import { renderStorefrontTemplate } from './checkout-offer.ts'
 import { PRODUCTION_STOREFRONT_PREFIX } from '../edge/production-prefix.ts'
@@ -89,7 +89,7 @@ export async function fetchLocalFirst(request: Request, env: LocalFirstEnv, tran
       if (!/^(?:[0-9a-f]{40}|local-unreleased)$/u.test(source)) return finish(new Response('Invalid release', { status: 503 }))
       const headers = new Headers({ 'content-type': assetPath === '/' ? 'text/html; charset=utf-8' : 'application/javascript; charset=utf-8' })
       if (assetPath === '/sw.js') headers.set('service-worker-allowed', `${prefix}/`)
-      return finish(new Response(renderStorefrontTemplate(await response.text(), source), { headers }))
+      return finish(new Response(renderStorefrontTemplate(await response.text(), source, env.CHECKOUT_MODE), { headers }))
     }
     return finish(response)
 }
@@ -110,8 +110,8 @@ async function readiness(env: LocalFirstEnv, runtime: FulfillmentRuntime | undef
     finally { clearTimeout(timer); probe.removeEventListener('abort', cancel) }
   }
   return { ok: valid && fulfillment !== 'unavailable' && !signal.aborted,
-    readinessScope: 'configured-capabilities', fulfillment, profile: 'local-first', checkout: valid ? 'sandbox' : 'unavailable',
-    storage: 'browser-only', paymentStorage: 'stripe-test', paymentProvider: 'stripe', realMoney: false,
+    readinessScope: 'configured-capabilities', fulfillment, profile: 'local-first', checkout: valid ? env.CHECKOUT_MODE : 'unavailable',
+    storage: 'browser-only', paymentStorage: checkoutMode(env) === 'live' ? 'stripe-live' : 'stripe-test', paymentProvider: 'stripe', realMoney: checkoutMode(env) === 'live',
     sourceRevision: env.RELEASE_CANDIDATE_SHA, workerVersionId: env.CF_VERSION_METADATA?.id ?? null }
 }
 const unavailableRuntime: FulfillmentRuntime = Object.freeze({

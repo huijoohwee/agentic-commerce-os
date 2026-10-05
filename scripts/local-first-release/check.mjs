@@ -10,13 +10,22 @@ import { waitForReadiness } from './readiness.mjs';
 import { waitForAssets } from './availability.mjs';
 import { checkRoleWorkspace } from '../../test/local-first/workspace-browser.mjs';
 import { checkMerchantLaunch } from '../../test/local-first/merchant-browser.mjs';
-import { BROWSER_CHECKS, BROWSER_PROOF_SCHEMA, completeBrowserChecks, assertBrowserProof } from './browser-proof.mjs';
+import { BROWSER_CHECKS, BROWSER_PROOF_SCHEMA, completeBrowserChecks, assertBrowserProof,
+  LIVE_BROWSER_PROOF_SCHEMA, completeLiveBrowserChecks, assertLiveBrowserProof } from './browser-proof.mjs';
+import { LIVE_CHECKOUT_PROFILE_SHA256 } from '../../src/local-first/checkout-offer.ts';
 
 const root = process.cwd();
 const output = path.resolve(process.env.LOCAL_FIRST_EVIDENCE_DIR || 'node_modules/.cache/local-first-verification');
 fs.mkdirSync(output, { recursive: true });
 const remote = process.argv.find(arg => arg.startsWith('--base-url='))?.slice(11);
 const revision = process.env.CANDIDATE_SHA || execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+const checkout = process.env.LOCAL_FIRST_CHECKOUT || 'sandbox';
+if (!['sandbox','live-reader','live'].includes(checkout)) throw Error('Invalid explicit checkout mode');
+if (process.env.LOCAL_FIRST_PROFILE_SHA256 && process.env.LOCAL_FIRST_PROFILE_SHA256 !== LIVE_CHECKOUT_PROFILE_SHA256)
+  throw Error('Live browser profile does not match this source');
+const liveScope = remote ? 'live-read-only' : 'local-fixture';
+const previous = remote && process.env.LOCAL_FIRST_PREVIOUS_READINESS_JSON
+  ? JSON.parse(process.env.LOCAL_FIRST_PREVIOUS_READINESS_JSON) : undefined;
 let runtime, browser;
 const checks = [], requests = [], readinessObservations = [], assetObservations = [], responses = [], failures = [];
 const pages = [];
@@ -44,6 +53,12 @@ try {
     config.assets.directory = path.join(root, 'public/local-first');
     config.vars.STRIPE_TEST_SECRET_KEY = 'sk_test_' + 'f'.repeat(32);
     config.vars.STOREFRONT_SESSION_SECRET = 'local-sandbox-fixture-secret-not-for-production';
+    config.vars.CHECKOUT_MODE = checkout;
+    if (checkout !== 'sandbox') Object.assign(config.vars, {
+      STRIPE_LIVE_SECRET_KEY:'rk_live_'+'a'.repeat(32), STRIPE_LIVE_WEBHOOK_SECRET:'whsec_'+'b'.repeat(32),
+      CHECKOUT_RECOVERY_SECRET:'local-live-recovery-fixture-secret-not-for-production',
+      CHECKOUT_LIVE_PROFILE_SHA256:LIVE_CHECKOUT_PROFILE_SHA256,
+    });
     const localConfig = path.join(output, 'wrangler-fixture.json');
     fs.writeFileSync(localConfig, JSON.stringify(config));
     const log = fs.openSync(path.join(output, 'runtime.log'), 'w');
@@ -62,14 +77,26 @@ try {
   }
   const origin = new URL(base).origin, url = origin + '/agentic-commerce-os/';
   assert(['http:', 'https:'].includes(new URL(origin).protocol));
-  const readiness = await waitForReadiness({ url: url + 'readyz', revision,
+  const readiness = await waitForReadiness({ url: url + 'readyz', revision, checkout, previous,
     versionId: process.env.LOCAL_FIRST_EXPECTED_VERSION,
     observe: observation => readinessObservations.push(observation) });
   assert.equal(readiness.profile, 'local-first');
-  assert.equal(readiness.sourceRevision, revision); assert.equal(readiness.checkout, 'sandbox');
-  await waitForAssets({ baseUrl: url, revision, stableMs: remote ? 15000 : 0,
+  assert.equal(readiness.sourceRevision, revision); assert.equal(readiness.checkout, checkout);
+  await waitForAssets({ baseUrl: url, revision, checkout, previous, stableMs: remote ? 15000 : 0,
     observe: observation => assetObservations.push(observation) });
   assert.equal((await fetch(origin + '/agentic-commerce-os')).url, url);
+  let proof;
+  if (checkout !== 'sandbox') {
+    browser = await chromium.launch({headless:true});
+    await (await import('../../test/local-first/live-checkout-browser.mjs')).checkLiveCheckout({
+      browser, url, output, record, remote:!!remote, checkout, revision, profileDigest:LIVE_CHECKOUT_PROFILE_SHA256, readiness,
+    });
+    proof = assertLiveBrowserProof({schema:LIVE_BROWSER_PROOF_SCHEMA,ok:true,sourceRevision:revision,
+      origin,checkout,profileDigest:LIVE_CHECKOUT_PROFILE_SHA256,scope:liveScope,checks,
+      provider:remote ? 'read-only-live' : 'local-stripe-contract-fixture',
+      hostedPaymentSubmitted:false,liveSessionCreated:false,customerRevenueVerified:false,verifiedAt:new Date().toISOString()},
+    revision,{checkout,profileDigest:LIVE_CHECKOUT_PROFILE_SHA256,scope:liveScope});
+  } else {
   for (const route of ['v1/checkouts/confirm', 'mcp', 'mcp/operator', 'v1/session', 'v1/sync/merge']) {
     const result = await fetch(url + route, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
     assert.equal(result.status, 501); assert.equal((await result.json()).code, 'checkout_deferred');
@@ -145,13 +172,14 @@ try {
     .checkWorkspacePack({ browser, url, output, revision });
   if (!remote) await (await import('../../test/local-first/fulfillment-browser.mjs'))
     .checkDurableFulfillment({ browser, url, output, revision });
-  const proof = assertBrowserProof({ schema: BROWSER_PROOF_SCHEMA, ok: true, sourceRevision: revision,
+  proof = assertBrowserProof({ schema: BROWSER_PROOF_SCHEMA, ok: true, sourceRevision: revision,
     origin, checkout: 'sandbox', checks, verifiedAt: new Date().toISOString() }, revision);
+  }
   fs.writeFileSync(path.join(output, 'browser-proof.json'), JSON.stringify(proof, null, 2) + '\n');
   console.log(JSON.stringify(proof));
 } finally {
   fs.writeFileSync(path.join(output, 'asset-observation.json'), JSON.stringify({ sourceRevision: revision, observations: assetObservations }, null, 2) + '\n');
-  if (!completeBrowserChecks(checks)) {
+  if (!(checkout === 'sandbox' ? completeBrowserChecks(checks) : completeLiveBrowserChecks(checks,liveScope))) {
     const state = await Promise.all(pages.filter(page => !page.isClosed()).map(async (page, index) => {
       try { await page.screenshot({ path: path.join(output, 'failure-page-' + index + '.png'), fullPage: true, timeout: 5000 });
         return { url: page.url(), text: await page.locator('body').innerText({ timeout: 5000 }) }; }

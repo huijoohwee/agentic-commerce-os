@@ -2,36 +2,36 @@
 title: "Reference Implementation — Native Commerce, Workspaces and First-Dollar Boundary"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "edge-commerce-agent-mvp"
-revision: "0.16.0"
-version: "0.16.1"
-prd_revision: "0.16.0"
-tad_revision: "0.16.0"
-adr_revision: "0.16.0"
-mvp_revision: "0.16.0"
-gtm_revision: "0.16.0"
-date: "2026-10-04"
+revision: "0.17.1"
+version: "0.17.1"
+prd_revision: "0.17.0"
+tad_revision: "0.17.0"
+adr_revision: "0.17.0"
+mvp_revision: "0.17.0"
+gtm_revision: "0.17.0"
+date: "2026-10-05"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Commerce product architecture"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
-readiness_scope: "CW/RR implementation locally checked; whole-product acceptance and delivered proof remain incomplete"
+readiness_scope: "LC-01–LC-07 live static-asset checkout implementation; activation and delivered proof pending"
 lane: "authoring"
 universal_scope: false
 load_policy: "on-demand"
 runtime_readiness_policy: "fail-closed"
 lifecycle_status: "proposed"
 demand_status: "unvalidated"
-worktree_id: "device-0232231d4a19--commerce-workspace-plan"
-agent_id: "codex-commerce-workspace-ui"
-source_revision: "6c6a9d825431aee015a5bba8d45e3c5b4dfffbfd"
+worktree_id: "device-0232231d4a19--live-education-checkout"
+agent_id: "codex-01a1076a"
+source_revision: "173e994784cca2befb458868a6fb01d456d75628"
 guideline_revision: "3.4.0"
 guideline_source_revision: "82835ac37d524643faa6b9703cb077ea9474ab15"
 related_continuity_id: "PRD-TAD-ADR-COMMERCE-MVP-GTM-001"
 agenticOsCanvasRenderMode: "2d"
 agenticOsCanvas2dRenderer: "d3"
 surfaces: ["2D Renderer: D3 Graph"]
-reviewed_source_revision: "6c6a9d825431aee015a5bba8d45e3c5b4dfffbfd"
+reviewed_source_revision: "173e994784cca2befb458868a6fb01d456d75628"
 ---
 
 # Reference implementation — native commerce, workspaces and first-dollar boundary
@@ -44,7 +44,7 @@ The proposed [native commerce transfer ecosystem](prd-tad-adr-mvp-gtm-native-com
 at `NATIVE-COMMERCE-TRANSFER-001@0.2.1` specifies MainPanel, transfer and policy-evidence enhancements.
 It consumes this sandbox baseline and inherits no implementation, payment or deployment readiness.
 
-`edge-commerce-agent-mvp@0.16.0` joins [PRD](#prd), [TAD](#tad), [ADR](#adr), [MVP](#mvp)
+`edge-commerce-agent-mvp@0.17.0` joins [PRD](#prd), [TAD](#tad), [ADR](#adr), [MVP](#mvp)
 and [GTM](#gtm). PRD owns criteria; TAD consumes that exact revision; ADR binds the design;
 MVP and GTM consume their checks and outcomes. This document describes concrete choices for
 this reference implementation, not universal vendor requirements. Shared [guidelines][guideline]
@@ -537,3 +537,40 @@ The document owner must capture one timed pilot in the buyer’s existing worksp
 **Runtime / recovery:** the actual public-browser listing survived reader version `1c04f403-9cc1-4b45-9dbb-a83e5f3ce7b4` and restoration of the exact candidate. Rollback proof digest `4c7477d80c7c7efbe6ab651fb59e5f8211ffd03afbe3a8fe893272205ae9ba4d` binds both verified deployments and output; human review, payment submission and real money are false. Public browser proof: eleven groups passed, 15:55:58Z.
 **Transport observation:** the retained listing host keeps its separate source `f015d40c8caae51503136be92f3b2315be8245e8`, pinned artifacts, SQLite data and model limits of 1.5 GiB/2 CPU. Tunnel v2→v3 changed only the stale hostname fallback from port 5191 to HTTP 404, preserving both pinned 5192 routes and final 404. A guarded write/readback verified config hash `1916461e8ca93a3c32635324a2f8bfc62de0394a7aa5a547dcc1a688b5c7c29d`; the API provides no atomic version condition. 15:50:18Z probes returned host/session 200 and unknown-path 404.
 **Limits / successor:** Workers Free is operator-confirmed; billing proof and total cost remain unknown. Availability is `device-session`: device sleep or process loss interrupts fulfillment. Full-profile issuer/evaluator enrollment, provider/catalog/registry evidence, required self-review prevention, real payment and independent human acceptance remain open. Runtime owner rechecks readiness/admission on source, host, ingress or authority drift; Product owns the timed human pilot and demand evidence. Transport rollback stops the connector before verified config restoration; drift prevents replay. Record this outcome through native RELEASE and private TODO. Reconciled main supersedes [PR105](https://github.com/huijoohwee/agentic-commerce-os/pull/105); deployed artifact is unchanged.
+
+
+## LC — Existing live education offer, reference implementation
+
+**Context / PRD:** the user requests production completion and reuse of the existing Stripe setup. Read-only dashboard observations on 2026-10-05 verify account `acct_1TKGGUGzH0w0k4VU`, active payments/payouts, product `prod_Udp8wzZHVOFgQv` (education materials), and one-time live price `price_1TeXU4GzH0w0k4VUqOmX4aTn`: SGD 800 minor units. The paid deliverable is the existing immutable education asset. No generated listing, subscription, new merchant, new price, new paid resource or new customer claim is introduced. The old webhook destination resolves to an unavailable public Worker and does not establish delivery.
+**Intent / directive:** complete the shortest existing buyer-to-paid-download path, with explicit price confirmation and portable receipt recovery. Context → intent → implement existing checkout → verified download is the bounded CID; Commerce runtime owner implements and validates the path. Buyer pain remains hypothesized: interrupted checkout and lost browser state should not lose a paid download. Demand and the first dollar require authentic customer evidence.
+**Join:** this material increment binds PRD, TAD, ADR, MVP and GTM at `edge-commerce-agent-mvp@0.17.0`. Historical EC/CW/RR receipts retain their recorded revisions; 0.17.0 does not renew them. LC acceptance consumes the existing sandbox implementation and adds only the requirements below.
+
+| Criterion / PRD | TAD owner and acceptance | Current evidence / next gate |
+|---|---|---|
+| LC-01 — exact offer and informed charge | `checkout-offer.ts`, `stripe-checkout.ts`: live account/product/price, SGD800, immutable asset digest and profile hash match before creation and fulfillment | Dashboard identity observed; exact-offer source fixtures pass; live API readback remains a deployment prerequisite |
+| LC-02 — durable paid delivery | `checkout.ts`, `stripe-webhook.ts`: raw signed webhook timestamp, exact paid Session plus line-item readback, idempotent fulfillment metadata in the existing Stripe ledger | Signature, paid readback and recovery fixtures pass; controlled endpoint creation must bind the returned signing secret before deployment |
+| LC-03 — recovery across browsers | `checkout-recovery.ts`, `session.ts`: purpose-bound signed recovery token, distinct persistent secret, paid-state revalidation, same-origin restore; token never in URL | Saved-file, tamper, expiry, unpaid and foreign-offer source checks pass; fixture browser recovery/download pass |
+| LC-04 — clear mode and mobile flow | Existing checkout/workspace/workflow views retain sandbox behavior; live shows the actual charge and saves recovery before redirect; reader disables new sales | Desktop/mobile live and reader fixture review pass; existing invocation (12), WebMCP (6) and routing (6) assertions pass |
+| LC-05 — retain paid-order reader during rollback | Existing release controller must bind an exact live-compatible reader and new-sale-disabled behavior before live activation | Source preparation only; exact protected approval, authenticated endpoint-provisioning receipt and actual reader proof pending |
+| LC-06 — fail closed on configuration drift | `worker.ts` and checkout owner require exact mode/profile and distinct credentials; sandbox remains default; configured readiness is not a payment-provider probe | Missing/malformed profile/secret and mode-separated readiness source tests pass; exact deployed identity remains required |
+| LC-07 — authentic economics | Existing first-dollar owner records actual customer consent, gross/net proceeds, fees and support cost separately | No real charge, customer, demand or revenue is claimed from fixtures |
+
+**ADR / LC-A1:** extend the current Commerce Stripe adapter and its receipt/asset owners. Direct reuse of the existing general payment Worker was evaluated: its routes, D1 settlement ledger and plan identity do not implement Commerce browser ownership or asset recovery. A second ledger or a copied payment service would create reconciliation obligations. A small mode-aware extension reuses the existing Stripe account/product/price and standard API; the sandbox path stays available. No new SDK, registry, database, email sender or always-on device dependency is needed for the paid static asset.
+**ADR / LC-A2:** separate `sandbox`, `live-reader` and `live`. Reader accepts verified existing orders, recovery and cancellation/reset of existing intents but refuses new checkout creation. Existing hosted sessions may still complete and must retain delivery. Live requires an exact approved offer profile and dedicated live API/webhook/recovery secrets. A sandbox approval grants no live profile authority. Preserve legacy destinations until their owners explicitly retire them; add only the narrowly required Commerce destination after exact release preparation. Rollback must retain the same asset and verification capability.
+**ADR / LC-A3:** save a bearer recovery file before navigating to hosted checkout. A signature proves integrity, while fresh Stripe paid-state and exact offer checks grant delivery. Losing both cookie and file requires operator support; no account/email recovery promise is invented. Recovery keys must be backed up privately and retained across reader rollback. Rotating or losing them can invalidate outstanding files and blocks promotion until an explicit migration exists.
+**Five flows:** buyer confirmation → recovery file → hosted payment → return/download; disconnected or interrupted buyer → saved-file restore → verified download; webhook → signature/readback → idempotent asset fulfillment; operator → exact build/approval → reader proof → sales enablement; incident → disable new sales → restore verified reader → recover paid orders. Each effect uses its native owner; UI and agent tools do not create payment authority.
+**MVP:** implement LC-01–04/06 first, then prepare LC-05 with the existing release controller. Backend slice: 60 active minutes, seven runtime owners and up to four focused test files, ≤70kB combined source/test diff (about 45kB runtime and 20kB tests). UI slice: 30 active minutes plus 10 minutes for observed desktop/focus defects, five existing files, ≤47kB diff/15kB net source. Checkout-only balanced desktop columns retain the existing mobile breakpoint and recovery keyboard focus visibility. Documentation: this owner, <600 lines. Keep every authored file <600 lines and runtime chunk <500kB. Two narrow server helpers are module-scoped; no browser always-load module is added. Release-controller follow-up: 60 active minutes, seven existing policy/deployment owners plus one narrow policy helper and one focused test, ≤70kB diff; root owns the existing workflow/browser verifier and two focused browser tests within a further 40-minute/35kB slice. Native START reserves these exact paths before edits. Webhook pairing correction, including the independently found concurrent-create case: a further 25 active minutes/30kB for one narrowly scoped provisioning helper and one test, with existing controller bindings. No second controller or dependency is introduced. External access, protected checks and human approval are conditions to recheck, not delivery ETAs.
+**GTM:** rank this existing SGD8 static offer ahead of recurring hosting or marketplace commissions because it requires fewer unbuilt components and no device availability promise. Publish no conversion forecast. Measure a genuine first visit → informed payment → successful recovery/download and actual delivery/support expense; transaction fees use existing Stripe commercial terms and are not a new paid subscription. No outreach is authorized by this document. Feed authentic observed outcomes to the existing first-dollar owner.
+**Development and runtime boundaries:** source review and test evidence may establish dev-proven mechanisms. Protected integration, exact deployment approval, provider configuration, live read-only identity checks, retained-reader proof and public browser verification remain separate effects. A real purchase is a customer action; automated tests must use fixtures or sandbox and must not submit a live charge. This increment does not promote generated listing fulfillment, full-provider runtime, unattended device availability or independent human acceptance.
+
+**Payment-state limit:** the immutable entitlement records a verified completed payment and asset edition. It is not download-consumption evidence, net proceeds, refund automation or a dispute-revocation service. Refunds and disputes remain with the existing Stripe operator workflow; genuine support/refund observations feed a later criterion revision. No automatic revocation or refund SLA is advertised.
+
+**LC release review policy:** the narrowly scoped live static offer uses a distinct live-owner approval receipt bound to the exact source/artifact, checkout mode, profile, webhook destination and retained reader descriptor. The human repository owner must approve that exact protected production run. This is a separate explicit owner-review policy for the single-merchant offer; it neither reuses an earlier sandbox approval nor changes the full-provider independent-review rule. The approval request must identify whether the candidate serves existing orders only or enables real SGD8 sales.
+
+**ADR / LC-A4:** endpoint identity readback cannot establish that a configured signing secret belongs to that endpoint. The native provisioning helper verifies the existing account/offer, creates only the exact Commerce URL/two-event/API-version destination, and privately captures the secret from that response. An operator receipt binds the response identity, secret digest and profile, authenticated under the existing live API key. This is controlled operator evidence, not a Stripe-signed attestation. Release validates that receipt, configured secret and fresh endpoint identity; reader and live approvals bind the same receipt digest. No helper signs an operator-entered webhook secret. The exclusive per-operation journal refuses same-operation retries after an unknown outcome. One deterministic provider idempotency key prevents concurrent separate-directory creation within Stripe’s retention window; it is not an indefinite distributed lock. Later attempts require a complete endpoint inventory and operator reconciliation of every unresolved prior operation. Legacy destinations remain intact. Provisioning tests use fixtures; actual provider creation and private secret installation remain separate effects.
+
+**Build repair / unchanged acceptance join:** document evidence patch 0.17.1 retains all five section roles at 0.17.0. The first published candidate exceeded the existing 499,999-byte listing-host budget because shared checkout imports included live-only Worker paths. Its immutable successor incorporates the separately protected storage/resource fixes and specializes only the sandbox-only device artifact at build time. The ordinary Worker retains live checkout; the device artifact must refuse live configuration before any provider call and retain sandbox sessions, checkout and listing delivery. A standard second minification pass may reduce the single hash-bound artifact; no chunk limit, feature contract or dependency boundary is relaxed. Repair cap: 20 active minutes, two build/test owners plus existing checkout owners, 15kB additional diff; verify exact artifact bytes, compiled sandbox/live-refusal behavior and ordinary live Worker fixtures before publication. Protected integration and actual host upgrade remain separate receipts.
+
+**Review corrections:** the final compilation pass must honor the same abort signal and dispose its context; the observed cancellation gap adds a five-minute/2kB corrective slice without changing artifact limits. Current dependency advisories add an exact development HTTP-library patch within two dependency files/5kB and the existing security note, ten active minutes. For a sandbox host-pin transition, the existing deployment owner must retain the authenticated no-execution reader as failure recovery: restoring an older edge with obsolete host pins would not restore fulfillment. Bind and verify that exact reader before upload, use the existing guarded restoration owner only for known-owned provider state, and record a failed reader restoration separately from completion. Unknown provider writes preserve state. A pre-upload failure requires independent no-new-write evidence before reverting the host; otherwise retain the upgraded data and forward-recover. Controller correction: 15 active minutes/15kB of added implementation/test bytes, two existing owners and two existing tests (including predecessor-readback fixture alignment); contextual patch bytes are recorded separately. Live checkout rollback continues to require its distinct live-compatible reader.
+
+**Host qualification:** the reviewed edge configuration selects the independently integrated host source `57418b3807a547de5083cdbd3254a19732f07c97` and its 499,924-byte native artifact `8f7734144d8ae426fddf11b81ead8bab4c9284a849e8278504d53c338862dbdd`, with the existing image, model, origin and retained reader. Actual loopback qualification against a private terminal-only snapshot copy verified readiness, unchanged completed output, original-owner access and foreign-owner denial; it submitted no job or inference. The copied state is qualification-only. Production requires draining the old host, retaining its complete latest state, and activating this exact artifact against a fresh state copy through the separately approved release. This observation does not establish a production restore or unattended availability.

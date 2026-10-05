@@ -24,3 +24,35 @@ export function assertBrowserProof(proof, revision) {
     || !completeBrowserChecks(proof.checks)) throw Error('Candidate browser proof missing or incomplete');
   return proof;
 }
+
+// Live evidence deliberately does not claim the sandbox suite or a customer sale.
+export const LIVE_BROWSER_PROOF_SCHEMA = 'commerce.local-first-live-browser-proof/v1';
+export const LIVE_BROWSER_CHECKS = Object.freeze({
+  identity: 'exact candidate, live offer profile and explicit checkout mode',
+  layout: 'mobile and desktop education review with explicit price and private recovery controls',
+  readOnly: 'live-read-only: GET-only UI, readiness and checkout; no Session creation or hosted payment',
+  fixture: 'local-fixture: configured sales policy and verified paid download from a simulated payment',
+  recovery: 'local-fixture: saved-file restore in a fresh browser and invalid recovery refusal',
+  safety: 'local-fixture: offline entitlement hiding, uncached receipts and same-origin requests',
+});
+function liveRequired(scope) {
+  if (scope === 'live-read-only') return [LIVE_BROWSER_CHECKS.identity, LIVE_BROWSER_CHECKS.layout, LIVE_BROWSER_CHECKS.readOnly];
+  if (scope === 'local-fixture') return [LIVE_BROWSER_CHECKS.identity, LIVE_BROWSER_CHECKS.layout,
+    LIVE_BROWSER_CHECKS.fixture, LIVE_BROWSER_CHECKS.recovery, LIVE_BROWSER_CHECKS.safety];
+  return [];
+}
+export function completeLiveBrowserChecks(checks, scope) {
+  const required = liveRequired(scope);
+  return required.length > 0 && Array.isArray(checks) && checks.length === required.length
+    && new Set(checks).size === required.length && required.every(check => checks.includes(check));
+}
+export function assertLiveBrowserProof(proof, revision, {checkout, profileDigest, scope} = {}) {
+  if (!/^[a-f0-9]{40}$/.test(revision) || !/^[a-f0-9]{64}$/.test(profileDigest ?? '')
+    || !['live', 'live-reader'].includes(checkout) || !['local-fixture', 'live-read-only'].includes(scope)
+    || proof?.schema !== LIVE_BROWSER_PROOF_SCHEMA || proof.ok !== true || proof.sourceRevision !== revision
+    || proof.checkout !== checkout || proof.profileDigest !== profileDigest || proof.scope !== scope
+    || proof.hostedPaymentSubmitted !== false || proof.liveSessionCreated !== false || proof.customerRevenueVerified !== false
+    || proof.provider !== (scope === 'local-fixture' ? 'local-stripe-contract-fixture' : 'read-only-live')
+    || !completeLiveBrowserChecks(proof.checks, scope)) throw Error('Candidate live browser proof missing or incomplete');
+  return proof;
+}
