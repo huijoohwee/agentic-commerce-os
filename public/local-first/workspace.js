@@ -14,6 +14,7 @@ if (liveCheckout) {
 const views = new Set(['shop', 'checkout', 'vendor', 'vendor-editor', 'vendor-preview', 'admin', 'admin-reviews', 'admin-data', 'admin-runtime', 'admin-project', 'admin-tools']);
 const channel = typeof BroadcastChannel === 'function' ? new BroadcastChannel('commerce-local-drafts') : null;
 let drafts = [], draftsLoaded = false, launch, editor, editorPromise, generation = 0, navigation = 0, shopPage = 0, detailId = null, searchRequested = null;
+let draftLoading = true, draftError = '';
 const tablePages = { vendor: 0, admin: 0 };
 const node = (tag, text, className) => {
   const element = document.createElement(tag);
@@ -30,6 +31,27 @@ function stateOf(draft) {
   return !draft.launch ? 'draft' : launch.evaluateLaunch(draft.launch).constraints.length ? 'revise' : 'reviewable';
 }
 const stateLabel = state => ({ draft: 'Draft', revise: 'Revise costs', reviewable: 'Ready for review' })[state];
+function reviewReason(draft) {
+  if (!draft.launch) return 'Complete merchant, buyer, outcome, price and cost terms.';
+  const result = launch.evaluateLaunch(draft.launch);
+  return 'Estimated contribution ' + launch.formatMoney(result.contributionMinor, result.currency)
+    + (result.constraints.length ? ' · Increase price or revise per-sale costs.' : ' · Human review still required.') + ' Demand unvalidated.';
+}
+function renderDraftStatus() {
+  const text = draftLoading ? (draftsLoaded ? 'Refreshing saved offers… Showing the last loaded snapshot.' : 'Loading saved offers…')
+    : draftError ? (draftsLoaded ? 'Saved offers could not be refreshed. Showing the last loaded snapshot. ' : 'Saved offers are unavailable. ') + draftError : '';
+  $('#draft-storage-status').textContent = text; $('#draft-storage-state').hidden = !text;
+  $('#draft-storage-retry').hidden = !draftError; $('#draft-storage-retry').disabled = draftLoading;
+  $('#draft-storage-state').dataset.error = String(!!draftError);
+  for (const selector of ['#shop-grid', '#vendor-table', '#admin-table', '#project-list', '#project-detail']) $(selector).setAttribute('aria-busy', String(draftLoading));
+  for (const label of document.querySelectorAll('[data-draft-storage]')) label.textContent = draftLoading ? 'Checking browser storage…' : draftError ? 'Unavailable · Last read failed' : 'Available · This browser';
+  if (!draftsLoaded) for (const id of ['vendor-total', 'vendor-complete', 'admin-stores', 'admin-reviewable', 'admin-attention']) $('#' + id).textContent = '—';
+}
+function unavailableDrafts(container) {
+  if (draftsLoaded) return false;
+  container.replaceChildren(node('p', draftLoading ? 'Loading saved offers…' : 'Saved offers are unavailable. Use Retry loading offers above.', 'muted'));
+  return true;
+}
 function art(draft) {
   const visual = node('div', undefined, 'product-art'); visual.setAttribute('aria-hidden', 'true');
   visual.append(node('span', [...draft.title].slice(0, 2).join('').toUpperCase(), 'product-monogram')); return visual;
@@ -51,6 +73,7 @@ function showDetail(draft) {
 $('#close-detail').addEventListener('click', () => $('#offer-detail').close());
 $('#offer-detail').addEventListener('close', () => { detailId = null; });
 function renderShop() {
+  if (unavailableDrafts($('#shop-grid'))) { $('#shop-empty').hidden = true; $('#shop-pagination').hidden = true; $('#shop-count').textContent = 'Saved offer count unknown'; return; }
   const query = $('#shop-query').value.trim().toLowerCase(), store = $('#shop-store').value;
   const offered = drafts.filter(draft => draft.launch);
   const filtered = offered.filter(draft => matches(draft, query) && (!store || draft.launch.merchantId === store));
@@ -72,19 +95,24 @@ function renderShop() {
   $('#shop-pagination').hidden = pages <= 1; $('#shop-page').textContent = `Page ${shopPage + 1} of ${pages}`;
   $('#shop-previous').disabled = shopPage === 0; $('#shop-next').disabled = shopPage + 1 >= pages;
 }
-function offerLink(draft, text) {
+function offerLink(draft, text, focus = 'title') {
   const link = node('a', text); link.href = '#vendor-editor';
   link.addEventListener('click', event => {
     event.preventDefault();
-    void openOffer(draft.id).catch(message);
+    void openOffer(draft.id, focus).catch(message);
   }); return link;
 }
-async function openOffer(id) {
+async function openOffer(id, focus = 'title') {
   const app = await loadEditor();
   if (!await app.openSavedDraft(id)) return;
-  location.hash = 'vendor-editor'; await route(); $('#title').focus();
+  if (location.hash !== '#vendor-editor') history.pushState(null, '', '#vendor-editor');
+  await route();
+  const target = document.getElementById(focus) || $('#title');
+  if (target.closest('details')) target.closest('details').open = true;
+  target.focus();
 }
 function renderTable(role) {
+  if (unavailableDrafts($('#' + role + '-table'))) { $('#' + role + '-count').textContent = 'Saved offer count unknown'; return; }
   const query = $('#' + role + '-query').value.trim().toLowerCase(), state = $('#' + role + '-state').value;
   const filtered = drafts.filter(draft => matches(draft, query) && (!state || stateOf(draft) === state));
   const pages = Math.max(1, Math.ceil(filtered.length / 10)); tablePages[role] = Math.min(tablePages[role], pages - 1);
@@ -101,12 +129,12 @@ function renderTable(role) {
     for (const draft of filtered.slice(tablePages[role] * 10, tablePages[role] * 10 + 10)) {
       const row = node('tr'), title = node('td'), state = stateOf(draft), status = node('td');
       title.append(offerLink(draft, draft.title), node('small', draft.launch?.merchantId || 'Store not set'));
-      status.append(node('span', stateLabel(state), 'state-badge state-' + state));
-      const action = node('td'); action.append(offerLink(draft, role === 'admin' && state === 'reviewable' ? 'Review offer ↗' : 'Edit offer ↗'));
+      status.append(node('span', stateLabel(state), 'state-badge state-' + state), node('small', reviewReason(draft), 'review-reason'));
+      const action = node('td'); action.append(offerLink(draft, role === 'admin' && state === 'reviewable' ? 'Review offer ↗' : 'Edit offer ↗', state === 'draft' ? 'merchant-id' : state === 'revise' ? 'sale-price' : 'title'));
       const cells = [title, status, node('td', price(draft)), node('td', new Date(draft.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })), action];
       cells.forEach((cell, index) => { cell.dataset.label = columns[index]; row.append(cell); }); body.append(row);
     }
-    table.append(head, body); container.append(table);
+    table.append(head, body); container.append(scrollTable(table));
     if (pages > 1) {
       const pager = node('nav', undefined, 'pagination'); pager.setAttribute('aria-label', role + ' pagination');
       for (const [label, offset] of [['Previous', -1], ['Next', 1]]) {
@@ -121,10 +149,12 @@ function renderTable(role) {
   $('#' + role + '-count').textContent = `${filtered.length} offer${filtered.length === 1 ? '' : 's'} · Saved on this device`;
 }
 async function refresh() {
-  const revision = ++generation, next = await listDrafts();
-  if (next.some(draft => draft.launch)) launch ??= await import('./launch.js');
+  const revision = ++generation; draftLoading = true; draftError = ''; renderCurrent();
+  let next;
+  try { next = await listDrafts(); if (next.some(draft => draft.launch)) launch ??= await import('./launch.js'); }
+  catch (error) { if (revision === generation) { draftLoading = false; draftError = error.message; renderCurrent(); } return; }
   if (revision !== generation) return;
-  drafts = next; draftsLoaded = true;
+  drafts = next; draftsLoaded = true; draftLoading = false;
   if (detailId) $('#offer-detail').close();
   const selectedStore = $('#shop-store').value;
   $('#shop-store').replaceChildren(new Option('All stores', ''), ...[...new Set(drafts.filter(d => d.launch).map(d => d.launch.merchantId))].sort().map(store => new Option(store, store)));
@@ -137,6 +167,7 @@ async function refresh() {
   renderCurrent();
 }
 function renderCurrent() {
+  renderDraftStatus();
   if (!$('#shop').hidden) renderShop();
   if (!$('#vendor').hidden) renderTable('vendor');
   if (!$('#admin').hidden) { renderTable('admin'); renderProjects(); }
@@ -149,6 +180,7 @@ async function route() {
   // Shopper and checkout share one navigation node, including its search handler.
   if (role === 'shop' || role === 'checkout') $('#' + role + ' .workspace-shell').prepend($('#shop-navigation'));
   renderNavigation(role);
+  $('#' + role + ' .workspace-content').prepend($('#draft-storage-state'));
   $('#workspace-agent-open').hidden = role !== 'admin';
   $('#console-breadcrumb').hidden = false;
   const root = $('#console-root'), workspaceRole = role === 'checkout' ? 'shop' : role; root.href = '#' + workspaceRole;
@@ -182,6 +214,13 @@ for (const link of document.querySelectorAll('#create-offer, [data-create-offer]
 });
 window.addEventListener('hashchange', () => { if ($('#workspace-agent-drawer').open) $('#workspace-agent-drawer').close(); if ($('#environment-check-detail').open) $('#environment-check-detail').close(); if ($('#offer-detail').open) $('#offer-detail').close(); void route().catch(message); });
 document.addEventListener('commerce:drafts-updated', () => { channel?.postMessage('changed'); void refresh().catch(message); });
+$('#draft-storage-retry').addEventListener('click', async () => {
+  const previousError = draftError;
+  try {
+    await Promise.all([refresh(), editor?.externalChange()]);
+    if (!draftError && $('#status').dataset.error === 'true' && $('#status').textContent === previousError) { $('#status').textContent = ''; $('#status').dataset.error = 'false'; }
+  } catch (error) { message(error); }
+});
 if (channel) channel.onmessage = () => { void refresh().catch(message); void editor?.externalChange().catch(message); };
 function connection() { $('#connection').textContent = navigator.onLine ? 'Local workspace · Online' : 'Offline · Drafts available'; }
 window.addEventListener('online', connection); window.addEventListener('offline', connection); connection();
@@ -210,7 +249,7 @@ function projectCard(project, detail = false) {
   const title = node('h2', detail ? 'Device workspace' : project.name);
   const facts = node('dl', undefined, 'project-facts');
   const saved = project.offers.length, reviewed = project.offers.filter(offer => stateOf(offer) === 'reviewable').length;
-  facts.append(node('dt', 'Draft storage'), node('dd', 'Available · This browser', 'project-available'),
+  facts.append(node('dt', 'Draft storage'), node('dd', draftLoading || draftError ? 'Last loaded snapshot · Check storage status' : 'Available · This browser', 'project-available'),
     node('dt', 'Storefront'), node('dd', 'Private preview · Not published'),
     node('dt', 'Offers'), node('dd', saved + ' saved · ' + reviewed + ' ready for review'));
   const activity = node('div', undefined, 'project-activity'), latest = [...project.offers].sort((a, b) => b.updatedAt - a.updatedAt)[0];
@@ -223,7 +262,7 @@ function projectCard(project, detail = false) {
   info.append(content, actions); card.append(projectPreview(project), info); return card;
 }
 function renderProjects() {
-  if (!draftsLoaded) { $('#project-list').replaceChildren(node('p', 'Loading saved projects…', 'muted')); return; }
+  if (unavailableDrafts($('#project-list'))) { unavailableDrafts($('#project-detail')); $('#project-result-count').textContent = 'Project count unknown'; $('#project-description').textContent = 'Waiting for saved offers; no project availability is inferred.'; return; }
   const projects = groupProjects(drafts), query = $('#project-query').value.trim().toLowerCase();
   renderAdminContext(projects);
   const filtered = projects.filter(project => [project.name, ...project.offers.map(offer => offer.title)].some(value => value.toLowerCase().includes(query)));
@@ -280,11 +319,15 @@ function offerRecords(offers, label) {
   search.addEventListener('input', () => { page = 0; render(); });
   previous.addEventListener('click', () => { page--; render(); }); next.addEventListener('click', () => { page++; render(); }); render(); return section;
 }
+function scrollTable(table) {
+  const region = node('div', undefined, 'table-region'); region.tabIndex = 0; region.setAttribute('role', 'region');
+  region.setAttribute('aria-label', table.getAttribute('aria-label') + ' scroll area'); region.append(table); return region;
+}
 function recordTable(columns, rows, label) {
   const table = node('table', undefined, 'data-table'), header = node('thead'), heading = node('tr'), body = node('tbody'); table.setAttribute('aria-label', label);
   for (const column of columns) { const th = node('th', column); th.scope = 'col'; heading.append(th); } header.append(heading);
   for (const values of rows) { const row = node('tr'); values.forEach((value, index) => { const cell = node('td'); cell.dataset.label = columns[index]; cell.append(value); row.append(cell); }); body.append(row); }
-  table.append(header, body); return table;
+  table.append(header, body); return scrollTable(table);
 }
 function renderAdminContext(projects) {
   const params = new URLSearchParams(location.hash.split('?')[1] || '');

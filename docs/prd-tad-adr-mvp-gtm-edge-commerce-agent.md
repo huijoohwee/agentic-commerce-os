@@ -3,7 +3,7 @@ title: "Reference Implementation — Native Commerce, Workspaces and First-Dolla
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "edge-commerce-agent-mvp"
 revision: "0.20.0"
-version: "0.20.0"
+version: "0.20.1"
 prd_revision: "0.20.0"
 tad_revision: "0.20.0"
 adr_revision: "0.20.0"
@@ -15,7 +15,7 @@ frontmatter_contract: "required"
 owner: "Commerce product architecture"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
-readiness_scope: "CW-D10 planning update; historical live checkout at d2c19 remains scoped, no new runtime or revenue proof"
+readiness_scope: "CW-D10 local UI/invocation implementation; historical live checkout at d2c19 remains scoped, no new deployment or revenue proof"
 lane: "authoring"
 universal_scope: false
 load_policy: "on-demand"
@@ -23,7 +23,7 @@ runtime_readiness_policy: "fail-closed"
 lifecycle_status: "proposed"
 demand_status: "unvalidated"
 worktree_id: "device-0232231d4a19--commerce-fidelity-plan"
-agent_id: "codex-commerce-fidelity-plan"
+agent_id: "codex-commerce-fidelity-ui"
 source_revision: "77bb835287909c3bc8c260a4304b131c0062258b"
 guideline_revision: "3.4.0"
 guideline_source_revision: "82835ac37d524643faa6b9703cb077ea9474ab15"
@@ -59,17 +59,17 @@ The [first-dollar sprint][sprint] owns actual customer validation and collection
 
 **Context:** [ER-SB-01–07][evidence] record the historical sandbox; current source owners support the workspace increment.
 **Intent:** let a solo operator prepare an offer and understand its next permitted action and actual outcome.
-**Directive:** specify the CW-D10 native fidelity/invocation refinements, bind each criterion to source and evidence, and
+**Directive:** implement the CW-D10 native fidelity/invocation refinements, bind each criterion to source and evidence, and
 keep unvalidated demand, live payment and full-agent production behind their own gates.
-**Role/Subject:** Commerce product architect. **Action:** refine the existing workspace plan with bounded owner changes.
-**Outcome:** one current criterion-to-source-to-check chain. **Verb/Object:** specify / the native commerce refinement.
+**Role/Subject:** Commerce product architect. **Action:** implement bounded native owner changes and reconcile evidence.
+**Outcome:** one current criterion-to-source-to-check chain. **Verb/Object:** implement / the native commerce refinement.
 
 ## Current workspace increment — reference implementation
 
 The [workspace companion](prd-tad-adr-mvp-gtm-commerce-workspaces.md) joins
-CW-01–CW-08 at `edge-commerce-agent-mvp@0.20.0`. CW-D10 specifies native loading/readability,
+CW-01–CW-08 at `edge-commerce-agent-mvp@0.20.0`. Evidence patch 0.20.1 implements native loading/readability,
 accessible visual fidelity, schema-led tool assistance, safe errors and equivalent private handoff.
-These proposed refinements reuse implemented owners; the two-file update changes no runtime behavior.
+Ten admitted files extend native views/descriptor and tests: storage recovery, readable controls/results, schema fields and scoped prepare counts; no schema/dependency changes. The companion records exact checks, publication limits and human acceptance gaps.
 The five section roles below retain EC-01–EC-10; each consumes its matching companion section
 for CW requirements/design/decisions/MVP/GTM. Historical receipts remain at their recorded revisions.
 The 0.6.0 sandbox retains its scoped evidence. Revision 0.14.0 adds a compact project console and merchant detail views over saved local drafts,
@@ -473,7 +473,7 @@ never enroll fabricated payer evidence from this sandbox. [The sprint][sprint] o
 ## Alignment and maintenance — reference implementation
 
 The historical evidence companion consumes 0.6.0 and the sprint at 1.2.0; it is not silently
-re-stamped as October evidence. The workspace companion records the 0.20.0 planning join; RR-D10 records local readiness repair and remaining runtime gates. Historical
+re-stamped as October evidence. The workspace companion records the 0.20.0 implementation join; RR-D10 records local readiness repair and remaining runtime gates. Historical
 five-role joins, source links, schema owners, five flow inventories, deployment boundaries and
 monetization separation are the bounded documentation review. Existing source checks validate
 syntax, links, limits and projection; they do not certify every advisory statement in the guideline.

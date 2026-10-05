@@ -48,10 +48,20 @@ test('REST, invocation grammar and environment use one read-only contract with n
   assert.deepEqual(descriptor.tools, WORKSPACE_TOOLS);
   const routing = descriptor.routing, invocation = `${routing.commandToken} ${routing.bindingToken} ${routing.semanticToken} ${list}`;
   assert.equal(parseWorkspaceInvocation(invocation, routing), list);
+  assert.equal(descriptor.invoke, new URL(base).pathname + '/invoke');
+  assert.equal(descriptor.invocationExample.invocation, invocation);
+  const example = await worker.fetch(post(descriptor.invocationExample, '/invoke'), env);
+  assert.equal(example.status, 200);
+  assert.deepEqual((await example.json()).value, { projects: [{ id: 'local:unassigned', name: 'Personal workspace', offerCount: 0, reviewableCount: 0 }] });
   const rest = await worker.fetch(post({ name: list, arguments: { snapshot } }), env);
   assert.equal(rest.status, 200); const result = await rest.json();
   const routed = await worker.fetch(post({ invocation, arguments: { snapshot } }, '/invoke'), env);
   assert.deepEqual(await routed.json(), result);
+  for (const [name, args] of [[project, { snapshot, projectId: 'store:studio' }], [review, { snapshot, offerId: draft.id, expectedRevision: 2 }]]) {
+    const expression = `${routing.commandToken} ${routing.bindingToken} ${routing.semanticToken} ${name}`;
+    const response = await worker.fetch(post({ invocation: expression, arguments: args }, '/invoke'), env);
+    assert.equal(response.status, 200); assert.deepEqual(await response.json(), await invokeWorkspace(name, args));
+  }
   for (const expression of [invocation + ' extra', invocation.replace('@mcp-gateway', '@other'), invocation.replace('#mcp', '#write'), '/project.list']) {
     assert.equal((await worker.fetch(post({ invocation: expression, arguments: { snapshot } }, '/invoke'), env)).status, 422);
   }
