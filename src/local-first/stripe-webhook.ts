@@ -1,11 +1,12 @@
-import { LIVE_CHECKOUT_PROFILE } from './checkout-offer.ts';
+import { checkoutProfile } from './checkout-offer.ts';
 import { isRecord } from '../shared/http.ts';
 const encoder = new TextEncoder();
 const json = (status: number, code: string) => Response.json({ok:status === 200,code},
   {status,headers:{'cache-control':'no-store'}});
-/** Only authenticated live Checkout events for this product may establish entitlement. */
+/** Only authenticated events in the selected mode may establish this product's entitlement. */
 export async function handleStripeWebhook(request: Request, secret: string,
-  fulfill: (sessionId: string) => Promise<unknown>): Promise<Response> {
+  fulfill: (sessionId: string) => Promise<unknown>, mode: 'test' | 'live' = 'live'): Promise<Response> {
+  const live = mode === 'live';
   if (request.method !== 'POST' || new URL(request.url).search || request.headers.has('origin') || request.headers.has('cookie')
     || request.headers.has('content-encoding') || request.headers.get('content-type')?.split(';')[0] !== 'application/json')
     return json(400,'stripe_webhook_request_invalid');
@@ -41,15 +42,15 @@ export async function handleStripeWebhook(request: Request, secret: string,
   if (!valid) return json(400,'stripe_signature_invalid');
   let event: unknown; try {event = JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));}
   catch {return json(400,'stripe_webhook_payload_invalid');}
-  if (!isRecord(event) || event.livemode !== true || event.api_version !== LIVE_CHECKOUT_PROFILE.webhookApiVersion
+  if (!isRecord(event) || event.livemode !== live || event.api_version !== checkoutProfile(mode).webhookApiVersion
     || typeof event.id !== 'string' || !/^evt_[A-Za-z0-9]{8,200}$/u.test(event.id)) return json(400,'stripe_webhook_identity_invalid');
   if (!['checkout.session.completed','checkout.session.async_payment_succeeded'].includes(String(event.type)))
     return json(200,'stripe_event_ignored');
   const session = isRecord(event.data) && isRecord(event.data.object) ? event.data.object : null;
   if (!session || !isRecord(session.metadata)) return json(400,'stripe_webhook_session_invalid');
-  if (session.metadata.owner !== 'agentic-commerce-os' || session.metadata.mode !== 'live') return json(200,'stripe_event_ignored');
-  if (session.object !== 'checkout.session' || session.livemode !== true || typeof session.id !== 'string'
-    || !/^cs_live_[A-Za-z0-9]{16,200}$/u.test(session.id)) return json(400,'stripe_webhook_session_invalid');
+  if (session.metadata.owner !== 'agentic-commerce-os' || session.metadata.mode !== mode) return json(200,'stripe_event_ignored');
+  if (session.object !== 'checkout.session' || session.livemode !== live || typeof session.id !== 'string'
+    || !(live ? /^cs_live_[A-Za-z0-9]{16,200}$/u : /^cs_test_[A-Za-z0-9]{16,200}$/u).test(session.id)) return json(400,'stripe_webhook_session_invalid');
   // Event data is a wakeup only. Re-read exact account, session and line items;
   // Stripe's idempotent metadata update owns entitlement even without a browser return.
   try {await fulfill(session.id);return json(200,'stripe_entitlement_verified');}

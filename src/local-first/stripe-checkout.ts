@@ -1,5 +1,5 @@
 // Only the listing build disables live checkout; unbundled and Worker owners retain it.
-import { STRIPE_ACCOUNT, LIVE_CHECKOUT_OFFER, LIVE_CHECKOUT_PROFILE_SHA256, checkoutOffer, type CheckoutMode } from './checkout-offer.ts';
+import { STRIPE_ACCOUNT, checkoutOffer, checkoutProfile, checkoutProfileDigest, type CheckoutMode } from './checkout-offer.ts';
 import { isHttpFailure, isRecord, readJsonResponse } from '../shared/http.ts';
 import type { FulfillmentBinding } from './fulfillment-contract.ts';
 export type PaymentFetch = (request: Request) => Promise<Response>;
@@ -39,22 +39,26 @@ export function stripeClient(secret: string, transport: PaymentFetch = fetch, mo
       || !['open', 'complete', 'expired'].includes(String(value.status))
       || !['paid', 'unpaid', 'no_payment_required'].includes(String(value.payment_status))
       || value.status === 'open' && !hostedUrl(value.url, value.id)) throw Error('stripe_test_identity_mismatch');
-    if (((import.meta.commerceLiveCheckout !== false) && mode === 'live') && (fulfillment || value.metadata.mode !== 'live' || value.metadata.profile_digest !== LIVE_CHECKOUT_PROFILE_SHA256
-      || value.metadata.asset_digest !== LIVE_CHECKOUT_OFFER.assetDigest || value.metadata.product_id !== LIVE_CHECKOUT_OFFER.productId
-      || value.metadata.account_id !== STRIPE_ACCOUNT || value.metadata.fulfillment_run !== undefined
-      || value.metadata.fulfillment_digest !== undefined)) throw Error('stripe_live_identity_mismatch');
+    if ((import.meta.commerceLiveCheckout !== false) && mode !== 'sandbox') {
+      const profile = checkoutProfile(mode);
+      if (fulfillment || value.metadata.mode !== mode || value.metadata.profile_digest !== checkoutProfileDigest(mode)
+        || value.metadata.asset_digest !== profile.assetDigest || value.metadata.product_id !== profile.product
+        || value.metadata.account_id !== STRIPE_ACCOUNT || value.metadata.fulfillment_run !== undefined
+        || value.metadata.fulfillment_digest !== undefined) throw Error('stripe_live_identity_mismatch');
+    }
     return { id: value.id, livemode: ((import.meta.commerceLiveCheckout !== false) && mode === 'live'), amount_total: offer.amountMinor, currency: offer.currency,
       url: value.status === 'open' ? String(value.url) : null, status: value.status as StripeSession['status'],
       payment_status: value.payment_status as StripeSession['payment_status'],
-      ...(((import.meta.commerceLiveCheckout !== false) && mode === 'live') ? { entitlementReady: value.metadata.entitlement_digest === LIVE_CHECKOUT_OFFER.assetDigest } : {}), ...(fulfillment ? { fulfillment } : {}) };
+      ...(((import.meta.commerceLiveCheckout !== false) && mode !== 'sandbox') ? { entitlementReady: value.metadata.entitlement_digest === checkoutProfile(mode).assetDigest } : {}), ...(fulfillment ? { fulfillment } : {}) };
   }
   async function accountReady(requireSales: boolean) {
     const account = await request('account');
     if (account.id !== STRIPE_ACCOUNT || ((import.meta.commerceLiveCheckout !== false) && mode === 'live') && requireSales && account.charges_enabled !== true) throw Error('stripe_account_unavailable');
     return account;
   }
-  async function liveRead(id: string, nonce?: string) {
-    if (!/^cs_live_[A-Za-z0-9]{16,200}$/u.test(id)) throw Error('stripe_live_session_invalid');
+  async function staticRead(id: string, nonce?: string) {
+    if (!(import.meta.commerceLiveCheckout !== false)) throw Error('stripe_live_checkout_unavailable');
+    if (mode === 'sandbox' || !(mode === 'live' ? /^cs_live_[A-Za-z0-9]{16,200}$/u : /^cs_test_[A-Za-z0-9]{16,200}$/u).test(id)) throw Error('stripe_live_session_invalid');
     await accountReady(false);
     const raw = await request('checkout/sessions/' + id);
     const owner = nonce ?? raw.client_reference_id;
@@ -64,7 +68,7 @@ export function stripeClient(secret: string, transport: PaymentFetch = fetch, mo
     const line = Array.isArray(lines.data) && lines.data.length === 1 ? lines.data[0] : null;
     if (lines.has_more !== false || !isRecord(line) || line.quantity !== 1 || line.amount_total !== offer.amountMinor
       || line.amount_subtotal !== offer.amountMinor || line.currency !== offer.currency || !isRecord(line.price)
-      || line.price.id !== offer.id || line.price.product !== LIVE_CHECKOUT_OFFER.productId || line.price.livemode !== true
+      || line.price.id !== offer.id || line.price.product !== checkoutProfile(mode).product || line.price.livemode !== (mode === 'live')
       || line.price.unit_amount !== offer.amountMinor || line.price.currency !== offer.currency)
       throw Error('stripe_live_line_item_mismatch');
     return { session, nonce: owner };
@@ -74,20 +78,21 @@ export function stripeClient(secret: string, transport: PaymentFetch = fetch, mo
       const [account, price] = await Promise.all([accountReady(requireSales), request('prices/' + offer.id)]);
       if (price.id !== offer.id || price.livemode !== ((import.meta.commerceLiveCheckout !== false) && mode === 'live') || requireSales && price.active !== true || price.unit_amount !== offer.amountMinor
         || price.currency !== offer.currency || price.type !== 'one_time'
-        || ((import.meta.commerceLiveCheckout !== false) && mode === 'live') && price.product !== LIVE_CHECKOUT_OFFER.productId) throw Error('stripe_offer_mismatch');
+        || ((import.meta.commerceLiveCheckout !== false) && mode !== 'sandbox') && price.product !== checkoutProfile(mode).product) throw Error('stripe_offer_mismatch');
       return { accountId: account.id, priceId: price.id, amountMinor: price.unit_amount, currency: price.currency, livemode: ((import.meta.commerceLiveCheckout !== false) && mode === 'live'),
         ...(((import.meta.commerceLiveCheckout !== false) && mode === 'live') ? {salesCapable:account.charges_enabled === true && price.active === true} : {}) };
     },
     async fulfill(id: string) {
       if ((import.meta.commerceLiveCheckout !== false)) {
-        if (mode !== 'live') throw Error('live_entitlement_required');
-        const { session, nonce } = await liveRead(id);
+        if (mode === 'sandbox') throw Error('live_entitlement_required');
+        const { session, nonce } = await staticRead(id);
         if (session.status !== 'complete' || session.payment_status !== 'paid') throw Error('stripe_paid_required');
         if (session.entitlementReady) return session;
         // Stripe owns entitlement; retries write the same verified asset digest.
-        const form = new URLSearchParams({ 'metadata[entitlement_digest]': LIVE_CHECKOUT_OFFER.assetDigest });
+        const assetDigest = checkoutProfile(mode).assetDigest;
+        const form = new URLSearchParams({ 'metadata[entitlement_digest]': assetDigest });
         const updated = validate(await request('checkout/sessions/' + id, form,
-          'commerce-live-entitlement:' + id + ':' + LIVE_CHECKOUT_OFFER.assetDigest), nonce, id);
+          (mode === 'live' ? 'commerce-live-entitlement:' : 'commerce-hosted-test-entitlement:') + id + ':' + assetDigest), nonce, id);
         if (!updated.entitlementReady || updated.status !== 'complete' || updated.payment_status !== 'paid')
           throw Error('stripe_entitlement_unavailable');
         return updated;
@@ -95,13 +100,13 @@ export function stripeClient(secret: string, transport: PaymentFetch = fetch, mo
       throw Error('live_entitlement_required');
     },
     async create(nonce: string, origin: string, fulfillment?: FulfillmentBinding, separateOrder = false) {
-      if (((import.meta.commerceLiveCheckout !== false) && mode === 'live') && (fulfillment || separateOrder)) throw Error('live_education_only');
+      if (((import.meta.commerceLiveCheckout !== false) && mode !== 'sandbox') && (fulfillment || separateOrder)) throw Error('live_education_only');
       if (separateOrder && !fulfillment) throw Error('separate_order_requires_fulfillment');
       // Re-read the exact account and price before creating Checkout.
       const [account, price] = await Promise.all([accountReady(true), request('prices/' + offer.id)]);
       if (account.id !== STRIPE_ACCOUNT || price.id !== offer.id || price.livemode !== ((import.meta.commerceLiveCheckout !== false) && mode === 'live') || price.active !== true
         || price.unit_amount !== offer.amountMinor || price.currency !== offer.currency || price.type !== 'one_time'
-        || ((import.meta.commerceLiveCheckout !== false) && mode === 'live') && price.product !== LIVE_CHECKOUT_OFFER.productId) throw Error('stripe_test_offer_mismatch');
+        || ((import.meta.commerceLiveCheckout !== false) && mode !== 'sandbox') && price.product !== checkoutProfile(mode).product) throw Error('stripe_test_offer_mismatch');
       const back = origin + '/agentic-commerce-os/?checkout=return#checkout';
       const form = new URLSearchParams({ mode: 'payment', 'line_items[0][price]': offer.id,
         'line_items[0][quantity]': '1', 'payment_method_types[0]': 'card',
@@ -110,10 +115,11 @@ export function stripeClient(secret: string, transport: PaymentFetch = fetch, mo
         'metadata[mode]': mode, 'custom_text[submit][message]': ((import.meta.commerceLiveCheckout !== false) && mode === 'live')
           ? 'One-time SGD 8 purchase of education materials. Keep your saved recovery file to retrieve your download.'
           : 'Sandbox only. Use Stripe test card details; no real money moves.' });
-      if (((import.meta.commerceLiveCheckout !== false) && mode === 'live')) {
-        form.set('metadata[profile_digest]', LIVE_CHECKOUT_PROFILE_SHA256);
-        form.set('metadata[asset_digest]', LIVE_CHECKOUT_OFFER.assetDigest);
-        form.set('metadata[product_id]', LIVE_CHECKOUT_OFFER.productId);
+      if (((import.meta.commerceLiveCheckout !== false) && mode !== 'sandbox')) {
+        const profile = checkoutProfile(mode);
+        form.set('metadata[profile_digest]', checkoutProfileDigest(mode));
+        form.set('metadata[asset_digest]', profile.assetDigest);
+        form.set('metadata[product_id]', profile.product);
         form.set('metadata[account_id]', STRIPE_ACCOUNT);
       }
       if (fulfillment) {
@@ -124,13 +130,17 @@ export function stripeClient(secret: string, transport: PaymentFetch = fetch, mo
       // Replacing a verified terminal order uses the reviewed job as a stable key;
       // a lost response replays it while retaining the browser's job principal.
       const suffix = separateOrder ? ':' + fulfillment!.runId + ':' + fulfillment!.outputDigest : '';
-      return validate(await request('checkout/sessions', form, (((import.meta.commerceLiveCheckout !== false) && mode === 'live') ? 'commerce-live:' : 'commerce-test:') + nonce + suffix), nonce, undefined, fulfillment);
+      const prefix = (import.meta.commerceLiveCheckout !== false) && mode !== 'sandbox'
+        ? mode === 'live' ? 'commerce-live:' : 'commerce-hosted-test:' : 'commerce-test:';
+      return validate(await request('checkout/sessions', form, prefix + nonce + suffix), nonce, undefined, fulfillment);
     },
     async read(id: string, nonce: string, fulfillment?: FulfillmentBinding) {
-      return ((import.meta.commerceLiveCheckout !== false) && mode === 'live') ? (await liveRead(id, nonce)).session : validate(await request('checkout/sessions/' + id), nonce, id, fulfillment);
+      return ((import.meta.commerceLiveCheckout !== false) && mode !== 'sandbox') ? (await staticRead(id, nonce)).session : validate(await request('checkout/sessions/' + id), nonce, id, fulfillment);
     },
     async expire(id: string, nonce: string, fulfillment?: FulfillmentBinding) {
-      return validate(await request('checkout/sessions/' + id + '/expire', new URLSearchParams(), (((import.meta.commerceLiveCheckout !== false) && mode === 'live') ? 'commerce-live-expire:' : 'commerce-test-expire:') + nonce), nonce, id, fulfillment);
+      const prefix = (import.meta.commerceLiveCheckout !== false) && mode !== 'sandbox'
+        ? mode === 'live' ? 'commerce-live-expire:' : 'commerce-hosted-test-expire:' : 'commerce-test-expire:';
+      return validate(await request('checkout/sessions/' + id + '/expire', new URLSearchParams(), prefix + nonce), nonce, id, fulfillment);
     },
   };
 }
