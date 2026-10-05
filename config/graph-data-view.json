@@ -1,6 +1,6 @@
 {
   "schema": "agentic-graph/data-view-artifact/v1",
-  "sourceRevision": "bf70fc3f33114bc0a4f971ad44b84d43bf25bb56",
+  "sourceRevision": "73ba0401bd785b34bd5331d3873acec0e7b873b3",
   "sourceDirty": false,
   "entry": "canvas/src/features/markdown/ui/dataViewBrowserAdapter.tsx",
   "browserExport": "mountDataView",
@@ -48,7 +48,7 @@
       "license": "MIT"
     }
   ],
-  "inputDigest": "e30e5f49aea0c7301b6d36401556f5f15f10dc7691e6da122edfe14f385b13dc",
+  "inputDigest": "77604d3ce306386213422721835c94d687c19a3ee30b49281c1a3db7c613cd46",
   "inputs": [
     {
       "path": "canvas/package.json",
@@ -57,13 +57,13 @@
     },
     {
       "path": "canvas/scripts/build-data-view-adapter.mjs",
-      "bytes": 13595,
-      "sha256": "efd6b71f3c2c6dadf7fcc71d6905e26f9b7894584154a82e520d8efbdced1081"
+      "bytes": 14287,
+      "sha256": "ce36cca343da5bbd62db23959b74ab73c9555b6257c1acc4a3c5c23a42fc5588"
     },
     {
       "path": "canvas/src/components/ui/FloatingPanel.tsx",
-      "bytes": 5418,
-      "sha256": "b2eec78de6680ba306491b6389c402e41de2ca0c63ac513ac37e7d1245bb4eeb"
+      "bytes": 5620,
+      "sha256": "2efd1f7cac77921e2586b9ba17e6a92e81bd760bb0e564fc7a4379b6e06835e7"
     },
     {
       "path": "canvas/src/features/markdown/ui/MarkdownDataViewTableCore.tsx",
@@ -102,8 +102,8 @@
     },
     {
       "path": "canvas/src/features/toolbar/ui/toolbarStyles.ts",
-      "bytes": 4043,
-      "sha256": "c27cd4649997afc00ee980874b1314593f2b866038cefe43a85a9ef92bd1f176"
+      "bytes": 4012,
+      "sha256": "d6abd70c48c47b3334bf9951603d6b058e867860db4a3a5cb52162339c8cfb12"
     },
     {
       "path": "canvas/src/index.css",
@@ -172,13 +172,13 @@
     },
     {
       "path": "grph-shared/src/ui/kgTokenContract.ts",
-      "bytes": 8808,
-      "sha256": "0c7557443e001f0bd1af27e14cfaabd62c801addf2f518b2dc3df241858c9710"
+      "bytes": 9360,
+      "sha256": "d169d00962fe7ad99aa0f7c91bff49caeffcd5adf1c13ce8ce9abdcdc16981c4"
     },
     {
       "path": "grph-shared/src/ui/kgTokens.ts",
-      "bytes": 10429,
-      "sha256": "aa79a7ff896366b68ad7858d6c2469be5ead5aa505336978ad5f58b362a7a20f"
+      "bytes": 10530,
+      "sha256": "4a8e7e57e011f986cc86d94f5d77d43cea26660627677cd5c0f4ab7fd25bc30e"
     },
     {
       "path": "grph-shared/src/ui/panelTypography.ts",
@@ -192,8 +192,8 @@
     },
     {
       "path": "grph-shared/src/ui/themeTokens.ts",
-      "bytes": 10257,
-      "sha256": "51bcb3e8f117a4648ea16fa1ecaad81211bb79a16c2563a0e318e892e944703f"
+      "bytes": 10333,
+      "sha256": "9a89b7b89e9e6cfdbb3ae350138fcb676db56521a219360f7bedadb613b10952"
     },
     {
       "path": "grph-shared/src/ui/typography.ts",
@@ -364,18 +364,18 @@
   "outputs": [
     {
       "path": "graph-data-view.js",
-      "bytes": 182924,
-      "sha256": "394ff2cc52a95e2aca0a0e629a5ee2f4ef0377ada362f13547b2561edf2c2006"
+      "bytes": 183143,
+      "sha256": "3110ccdaceee8859a9f191f1607edd80635b0b57b0e06512a17c254645548adf"
     },
     {
       "path": "graph-data-view.css",
-      "bytes": 57710,
-      "sha256": "a0ac2dff01a3c40f70b1de68f8674132d4954a1b5c89eb5d4c2f3e209c5ea656"
+      "bytes": 58233,
+      "sha256": "d204d66e2be368c7acd2fb79dcf8bb8dae221b8d0e0bd6be6c4ba0aef4623b54"
     },
     {
       "path": "graph-ui-tokens.css",
-      "bytes": 6606,
-      "sha256": "7de3534da7a0db24c20ae3b66ce2a41696b47583caae1e068fbfe88839c5b082"
+      "bytes": 6997,
+      "sha256": "279c32d402518afef25ad46b09441255e6078033b72eacd8b4c78b4730a7f6ca"
     }
   ]
 }

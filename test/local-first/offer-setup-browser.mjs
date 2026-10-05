@@ -78,6 +78,50 @@ async function acknowledge(page) {
   await progress(page, 4);
 }
 
+async function checkGuideChrome(page, defaultGlyph = true) {
+  const geometry = await closeButton(page).evaluate(button => {
+    const bounds = element => {
+      const rect = element.getBoundingClientRect();
+      return { width: rect.width, height: rect.height, left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
+    };
+    const icon = button.querySelector('svg');
+    return { button: bounds(button), icon: bounds(icon), header: bounds(button.closest('header')),
+      controlHeight: parseFloat(getComputedStyle(button).getPropertyValue('--kg-control-height')),
+      touchTarget: matchMedia('(pointer: coarse), (max-width: 768px)').matches,
+      strokeWidth: Number(icon.getAttribute('stroke-width')) };
+  });
+  const target = geometry.touchTarget ? 44 : 28;
+  assert.equal(geometry.controlHeight, target, 'The guide inherits the native fine/touch control-height token');
+  assert(Math.abs(geometry.button.height - Math.max(target, geometry.icon.height)) <= 1,
+    'Close uses the native control height and grows enough for an enlarged shared glyph');
+  assert(geometry.button.width >= target, 'Close preserves the native minimum target width');
+  assert(Math.abs(geometry.header.height - geometry.button.height) <= 1, 'The floating header stays compact around its native control');
+  assert.equal(geometry.strokeWidth, 1.5, 'The close glyph inherits the shared default stroke');
+  if (defaultGlyph) {
+    assert.equal(geometry.icon.width, 16, 'The default native glyph is 16px wide');
+    assert.equal(geometry.icon.height, 16, 'The default native glyph is 16px high');
+  }
+  assert(geometry.icon.left >= geometry.button.left && geometry.icon.right <= geometry.button.right
+    && geometry.icon.top >= geometry.button.top && geometry.icon.bottom <= geometry.button.bottom,
+  'The close glyph remains fully inside its target, including with doubled text');
+}
+
+async function coarseGuideControls({ browser, url, observeContext }) {
+  const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, hasTouch: true, serviceWorkers: 'block' });
+  observeContext(context);
+  try {
+    const page = await context.newPage();
+    await page.goto(url + '#vendor-editor');
+    assert.equal(await page.evaluate(() => matchMedia('(pointer: coarse)').matches), true);
+    await openGuide(page);
+    await checkGuideChrome(page);
+    await closeGuide(page);
+    await expect(page.locator('#open-setup-guide')).toBeFocused();
+  } finally {
+    await context.close();
+  }
+}
+
 async function responsiveGuide(page, output) {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const normalFont = await page.locator('#setup-count').evaluate(element => parseFloat(getComputedStyle(element).fontSize));
@@ -87,6 +131,7 @@ async function responsiveGuide(page, output) {
   for (const width of [320, 768, 1280]) {
     await page.setViewportSize({ width, height: 900 });
     await selectStep(page, 'review');
+    await checkGuideChrome(page, false);
     await step(page, 'review').scrollIntoViewIfNeeded();
     const panel = guide(page).locator('[data-kg-floating-panel-root="true"]');
     const geometry = await panel.evaluate(section => {
@@ -95,8 +140,9 @@ async function responsiveGuide(page, output) {
         return { width: rect.width, height: rect.height, left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom,
           scrollWidth: element.scrollWidth, clientWidth: element.clientWidth };
       };
+      const close = section.querySelector('header button');
       return { pageFits: document.documentElement.scrollWidth <= innerWidth, section: bounds(section),
-        actions: [...section.querySelectorAll('button')].map(bounds) };
+        actions: [...section.querySelectorAll('button')].filter(button => button !== close).map(bounds) };
     });
     assert.equal(geometry.pageFits, true, `No page overflow at ${width}px with doubled text`);
     assert(geometry.section.left >= 0 && geometry.section.right <= width + 1, `Setup stays within ${width}px`);
@@ -141,6 +187,7 @@ async function delayedGuideLifecycle({ browser, url, observeContext }) {
     await page.locator('#vendor-navigation a[data-view="vendor-editor"]').click();
     await openGuide(page);
     await expect(guide(page)).toHaveCount(1);
+    await checkGuideChrome(page);
     await closeGuide(page);
     await expect(launcher).toBeFocused();
   } finally {
@@ -150,6 +197,7 @@ async function delayedGuideLifecycle({ browser, url, observeContext }) {
 
 export async function checkOfferSetup({ browser, url, output, observeContext }) {
   await delayedGuideLifecycle({ browser, url, observeContext });
+  await coarseGuideControls({ browser, url, observeContext });
   const context = await browser.newContext({ viewport: { width: 768, height: 900 }, acceptDownloads: true });
   observeContext(context);
   try {
@@ -166,6 +214,7 @@ export async function checkOfferSetup({ browser, url, output, observeContext }) 
     await expect(launcher).toHaveAttribute('aria-expanded', 'true');
     await expect(guide(page).getByRole('heading', { name: 'Offer setup', exact: true })).toBeFocused();
     await expect(guide(page).locator('button[data-step-id]')).toHaveCount(4);
+    await checkGuideChrome(page);
     await progress(page, 0);
     for (const name of steps) await expect(step(page, name)).toContainText('Needs attention');
     await selectStep(page, 'review');
