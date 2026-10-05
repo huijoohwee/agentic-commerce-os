@@ -144,14 +144,16 @@ function renderCurrent() {
 }
 async function route() {
   const revision = ++navigation, hash = location.hash.slice(1), requested = hash.split('?')[0], view = views.has(requested) ? requested : 'shop', role = view.split('-')[0];
-  document.body.classList.toggle('console-mode', role !== 'checkout');
+  document.body.classList.add('console-mode');
   document.body.dataset.workspaceRole = role;
+  // Shopper and checkout share one navigation node, including its search handler.
+  if (role === 'shop' || role === 'checkout') $('#' + role + ' .workspace-shell').prepend($('#shop-navigation'));
   renderNavigation(role);
   $('#workspace-agent-open').hidden = role !== 'admin';
-  $('#console-breadcrumb').hidden = role === 'checkout';
-  const root = $('#console-root'); root.href = '#' + role;
-  root.textContent = ({ shop: 'Storefront', vendor: 'Catalog', admin: 'Projects' })[role] || 'Shopper';
-  $('#console-location').textContent = ({ shop: 'Storefront preview', vendor: 'Offers', 'vendor-editor': 'Offer editor', 'vendor-preview': 'Storefront preview', admin: 'All projects', 'admin-project': 'Project', 'admin-runtime': 'Environment', 'admin-reviews': 'Launch reviews', 'admin-data': 'Data & portability', 'admin-tools': 'Tools & commands' })[view] || '';
+  $('#console-breadcrumb').hidden = false;
+  const root = $('#console-root'), workspaceRole = role === 'checkout' ? 'shop' : role; root.href = '#' + workspaceRole;
+  root.textContent = ({ shop: 'Storefront', vendor: 'Catalog', admin: 'Projects' })[workspaceRole];
+  $('#console-location').textContent = ({ shop: 'Storefront preview', checkout: 'Checkout', vendor: 'Offers', 'vendor-editor': 'Offer editor', 'vendor-preview': 'Storefront preview', admin: 'All projects', 'admin-project': 'Project', 'admin-runtime': 'Environment', 'admin-reviews': 'Launch reviews', 'admin-data': 'Data & portability', 'admin-tools': 'Tools & commands' })[view] || '';
   document.querySelectorAll('[data-role-panel]').forEach(panel => { panel.hidden = panel.dataset.rolePanel !== role; });
   document.querySelectorAll('[data-view-panel]').forEach(panel => { panel.hidden = panel.dataset.viewPanel !== view; });
   document.querySelectorAll('[data-role]').forEach(link => { if (link.dataset.role === (role === 'checkout' ? 'shop' : role)) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current'); });
@@ -318,7 +320,7 @@ $('#admin-project-select').addEventListener('change', event => {
 });
 function renderNavigation(role = document.body.dataset.workspaceRole) {
   const toggle = $('#workspace-navigation-toggle'), expanded = !document.body.classList.contains('navigation-collapsed');
-  toggle.hidden = role === 'checkout';
+  toggle.hidden = false;
   toggle.setAttribute('aria-controls', (role === 'checkout' ? 'shop' : role) + '-navigation');
   toggle.setAttribute('aria-expanded', String(expanded));
   toggle.setAttribute('aria-label', expanded ? 'Hide navigation' : 'Show navigation'); toggle.title = toggle.getAttribute('aria-label');
@@ -329,7 +331,7 @@ $('#workspace-navigation-toggle').addEventListener('click', () => {
 });
 $('#project-query').addEventListener('input', renderProjects);
 async function focusWorkspaceSearch() {
-  const role = document.body.dataset.workspaceRole;
+  const currentRole = document.body.dataset.workspaceRole, role = currentRole === 'checkout' ? 'shop' : currentRole;
   const target = ({ shop: '#shop-query', vendor: '#vendor-query', admin: '#project-query' })[role];
   if (!target) return;
   if (location.hash === '#' + role) { $(target).focus(); return; }
