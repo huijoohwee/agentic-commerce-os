@@ -22,7 +22,7 @@ export function createListingRuntime({ stateStore, executeListing, authorize, mi
       const verdict = await authorize(call);
       normalizeAuthorization(verdict);
       const grant = Object.freeze({ ...verdict });
-      if (options && call.action === 'agent.swarm.start' && grant.allowed === true
+      if (options && call.action === 'agent.swarm.start'
         && !await stateStore.get(call.runId)) await inspection.admit(call);
       return grant;
     },
@@ -52,19 +52,20 @@ export function createListingRuntime({ stateStore, executeListing, authorize, mi
   // Retained contextless ledgers remain readable/cancelable; dispatch cannot bypass host admission.
   const runtime = !inspection ? current : Object.freeze({ ...current,
     ...Object.fromEntries(methods.map(operation => [operation, async (input, context) => {
-      const record = await stateStore.get(typeof input === 'string' ? input : input.runId);
+      const runId = typeof input === 'string' ? input : input.runId;
+      const record = await stateStore.get(runId);
       const legacy = record && !(record.context ?? record.request?.context);
       const selected = legacy ? (retained ??= build()) : current;
       try {
         if (legacy && !['status', 'cancel'].includes(operation)) {
-          const visible = await selected.status(typeof input === 'string' ? input : input.runId, context);
+          const visible = await selected.status(runId, context);
           if (visible.status === 'blocked') return visible;
-          return { runId: typeof input === 'string' ? input : input.runId, status: 'blocked', reasonCode: 'context_required' };
+          return { runId, status: 'blocked', reasonCode: 'context_required' };
         }
         const value = !legacy && ['start', 'run'].includes(operation) ? inspection.bind(input) : input;
         return await selected[operation](value, context);
       } catch (error) {
-        if (error instanceof AgentToolkitBlock) return { runId: typeof input === 'string' ? input : input.runId,
+        if (error instanceof AgentToolkitBlock) return { runId,
           status: 'blocked', reasonCode: error.reasonCode };
         throw error;
       }

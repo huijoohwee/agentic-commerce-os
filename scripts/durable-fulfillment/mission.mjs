@@ -51,10 +51,10 @@ export function createListingMission({ stateStore, toolkitStore, authorize, plan
     const expected = contextFor({ runId: source.runId, conversationId: source.conversationId,
       agent: source.agent, goal: source.goal, input: source.input, maxParallel: source.maxParallel });
     if (!equal(context, expected)) fail('context_stale');
-    const startsAt = Math.floor(now() / 86400000) * 86400000;
+    const startsAt = Math.floor(now() / DAY) * DAY;
     const project = { inputTokens: 65536, outputTokens: 8192, attempts: 96, elapsedMs: 1800000 };
     return { context: expected, allocation: { id: 'listing-session', revision: 'v1',
-      windowId: new Date(startsAt).toISOString().slice(0, 10), startsAt, endsAt: startsAt + 86400000,
+      windowId: new Date(startsAt).toISOString().slice(0, 10), startsAt, endsAt: startsAt + DAY,
       project, agent: project, run: { inputTokens: 4096, outputTokens: 512, attempts: 8, elapsedMs: 112000 },
       bounds: phase === 'work' ? { inputTokens: 2048, outputTokens: 256, attempts: 1, elapsedMs: 55000 }
         : { inputTokens: 0, outputTokens: 0, attempts: 1, elapsedMs: 1000 }, providerCostMicros: 0 } };
@@ -100,7 +100,7 @@ export function createListingMission({ stateStore, toolkitStore, authorize, plan
       return caller;
     },
   });
-  const toolkit = createAgentToolkitRuntime({ stateStore: toolkitStore, resources, now, runTtlMs: 7 * 86400000,
+  const toolkit = createAgentToolkitRuntime({ stateStore: toolkitStore, resources, now, runTtlMs: 7 * DAY,
     authorize: async call => {
       const verdict = await authorize(call);
       return { allowed: verdict?.allowed === true, authorizationId: verdict?.approvalId,
