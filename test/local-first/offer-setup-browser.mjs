@@ -146,6 +146,15 @@ async function responsiveGuide(page, output) {
       const overflow = [...document.body.querySelectorAll('*')].flatMap(element => {
         const rect = element.getBoundingClientRect();
         if (!rect.width || rect.right <= innerWidth + 1 || getComputedStyle(element).display === 'none') return [];
+        const bounds = node => { const box = node.getBoundingClientRect(); return { left: box.left, right: box.right,
+          width: box.width, scrollWidth: node.scrollWidth, clientWidth: node.clientWidth }; };
+        const ancestors = [];
+        for (let node = element.parentElement; node && ancestors.length < 5; node = node.parentElement) {
+          const style = getComputedStyle(node);
+          ancestors.push({ tag: node.tagName.toLowerCase(), id: node.id,
+            className: typeof node.className === 'string' ? node.className.slice(0, 100) : '',
+            ...bounds(node), overflowX: style.overflowX, minWidth: style.minWidth, width: style.width });
+        }
         return [{ tag: element.tagName.toLowerCase(), id: element.id,
           className: typeof element.className === 'string' ? element.className.slice(0, 100) : '',
           text: element.textContent?.trim().slice(0, 80) ?? '',
@@ -153,6 +162,7 @@ async function responsiveGuide(page, output) {
           parent: element.parentElement ? { tag: element.parentElement.tagName.toLowerCase(),
             id: element.parentElement.id, className: typeof element.parentElement.className === 'string'
               ? element.parentElement.className.slice(0, 100) : '' } : null,
+          ancestors,
           left: rect.left, right: rect.right, width: rect.width, scrollWidth: element.scrollWidth,
           clientWidth: element.clientWidth }];
       }).slice(0, 8);

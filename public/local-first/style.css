@@ -243,6 +243,12 @@ body:has(#workspace-agent-drawer[open]){overflow:hidden}
 .console-mode.navigation-collapsed .global-status:not(:empty){margin-left:24px}
 @media(max-width:680px){.console-mode .topbar{gap:4px 10px}.console-mode.navigation-collapsed .global-status:not(:empty){margin-left:16px}}
 
+/* Keep the horizontal mobile section rail inside the viewport at enlarged text sizes. */
+@media(max-width:680px){
+  .console-mode .workspace-shell{width:100%;max-width:100%;min-width:0}
+  .console-mode .console-sidebar{box-sizing:border-box;width:100%;max-width:100%;min-width:0;overflow-x:auto;overscroll-behavior-x:contain}
+}
+
 /* Storage and capability feedback reuse the shared native typography and tokens. */
 .storage-state{margin:0 0 20px;padding:14px 16px;border:1px solid var(--control);border-radius:6px;background:white;display:flex;align-items:center;justify-content:space-between;gap:16px}
 .storage-state p{margin:0;font-size:.875rem;overflow-wrap:anywhere}
