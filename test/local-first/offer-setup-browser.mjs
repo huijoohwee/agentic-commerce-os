@@ -148,6 +148,11 @@ async function responsiveGuide(page, output) {
         if (!rect.width || rect.right <= innerWidth + 1 || getComputedStyle(element).display === 'none') return [];
         return [{ tag: element.tagName.toLowerCase(), id: element.id,
           className: typeof element.className === 'string' ? element.className.slice(0, 100) : '',
+          text: element.textContent?.trim().slice(0, 80) ?? '',
+          href: element.tagName === 'A' ? element.getAttribute('href') : null,
+          parent: element.parentElement ? { tag: element.parentElement.tagName.toLowerCase(),
+            id: element.parentElement.id, className: typeof element.parentElement.className === 'string'
+              ? element.parentElement.className.slice(0, 100) : '' } : null,
           left: rect.left, right: rect.right, width: rect.width, scrollWidth: element.scrollWidth,
           clientWidth: element.clientWidth }];
       }).slice(0, 8);
