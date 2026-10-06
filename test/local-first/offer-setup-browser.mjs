@@ -143,7 +143,8 @@ async function responsiveGuide(page, output) {
       const close = section.querySelector('header button');
       const page = { innerWidth, documentWidth: document.documentElement.scrollWidth,
         clientWidth: document.documentElement.clientWidth, bodyWidth: document.body.scrollWidth };
-      const overflow = [...document.body.querySelectorAll('*')].flatMap(element => {
+      const elements = [...document.body.querySelectorAll('*')];
+      const overflow = elements.flatMap(element => {
         const rect = element.getBoundingClientRect();
         if (!rect.width || rect.right <= innerWidth + 1 || getComputedStyle(element).display === 'none') return [];
         const bounds = node => { const box = node.getBoundingClientRect(); return { left: box.left, right: box.right,
@@ -166,8 +167,32 @@ async function responsiveGuide(page, output) {
           left: rect.left, right: rect.right, width: rect.width, scrollWidth: element.scrollWidth,
           clientWidth: element.clientWidth }];
       }).slice(0, 8);
+      const overflowOrigins = elements.flatMap(element => {
+        const rect = element.getBoundingClientRect();
+        if (!rect.width || rect.right <= innerWidth + 1 || getComputedStyle(element).display === 'none') return [];
+        for (let parent = element.parentElement; parent; parent = parent.parentElement) {
+          const style = getComputedStyle(parent), parentRect = parent.getBoundingClientRect();
+          if (['auto', 'scroll', 'hidden', 'clip'].includes(style.overflowX)
+            && rect.right > parentRect.right + 1) return [];
+        }
+        return [{ tag: element.tagName.toLowerCase(), id: element.id,
+          className: typeof element.className === 'string' ? element.className.slice(0, 100) : '',
+          text: element.textContent?.trim().slice(0, 80) ?? '', left: rect.left, right: rect.right,
+          width: rect.width, parent: element.parentElement ? { tag: element.parentElement.tagName.toLowerCase(),
+            id: element.parentElement.id, className: typeof element.parentElement.className === 'string'
+              ? element.parentElement.className.slice(0, 100) : '' } : null }];
+      }).slice(0, 12);
+      const shell = document.querySelector('#vendor .workspace-shell');
+      const layoutChildren = shell ? [...shell.children].map(element => {
+        const rect = element.getBoundingClientRect(), style = getComputedStyle(element);
+        return { tag: element.tagName.toLowerCase(), id: element.id,
+          className: typeof element.className === 'string' ? element.className.slice(0, 100) : '',
+          left: rect.left, right: rect.right, width: rect.width,
+          scrollWidth: element.scrollWidth, clientWidth: element.clientWidth, overflowX: style.overflowX };
+      }) : [];
       return { pageFits: page.documentWidth <= innerWidth, page, overflow, section: bounds(section),
-        actions: [...section.querySelectorAll('button')].filter(button => button !== close).map(bounds) };
+        overflowOrigins, layoutChildren, actions: [...section.querySelectorAll('button')]
+          .filter(button => button !== close).map(bounds) };
     });
     assert.equal(geometry.pageFits, true,
       `No page overflow at ${width}px with doubled text: ${JSON.stringify({ page: geometry.page, overflow: geometry.overflow })}`);
