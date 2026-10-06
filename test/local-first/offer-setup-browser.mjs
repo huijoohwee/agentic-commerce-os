@@ -195,7 +195,8 @@ async function responsiveGuide(page, output) {
           .filter(button => button !== close).map(bounds) };
     });
     assert.equal(geometry.pageFits, true,
-      `No page overflow at ${width}px with doubled text: ${JSON.stringify({ page: geometry.page, overflow: geometry.overflow })}`);
+      `No page overflow at ${width}px with doubled text: ${JSON.stringify({ page: geometry.page,
+        origins: geometry.overflowOrigins, children: geometry.layoutChildren })}`);
     assert(geometry.section.left >= 0 && geometry.section.right <= width + 1, `Setup stays within ${width}px`);
     assert(geometry.section.top >= 0 && geometry.section.bottom <= 901, `Setup stays within the viewport height at ${width}px`);
     for (const bounds of geometry.actions) {
