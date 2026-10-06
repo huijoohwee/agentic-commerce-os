@@ -183,6 +183,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await expect(page.locator('#vendor-navigation')).toBeVisible();
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(url + '#vendor-editor');
+  await expect(page.getByLabel('What are you creating?')).toBeVisible();
   await page.keyboard.press('ControlOrMeta+k');
   await expect(page.locator('#vendor-query')).toBeFocused();
   await page.goto(url + '#shop-sandbox');
