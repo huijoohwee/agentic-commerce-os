@@ -141,10 +141,21 @@ async function responsiveGuide(page, output) {
           scrollWidth: element.scrollWidth, clientWidth: element.clientWidth };
       };
       const close = section.querySelector('header button');
-      return { pageFits: document.documentElement.scrollWidth <= innerWidth, section: bounds(section),
+      const page = { innerWidth, documentWidth: document.documentElement.scrollWidth,
+        clientWidth: document.documentElement.clientWidth, bodyWidth: document.body.scrollWidth };
+      const overflow = [...document.body.querySelectorAll('*')].flatMap(element => {
+        const rect = element.getBoundingClientRect();
+        if (!rect.width || rect.right <= innerWidth + 1 || getComputedStyle(element).display === 'none') return [];
+        return [{ tag: element.tagName.toLowerCase(), id: element.id,
+          className: typeof element.className === 'string' ? element.className.slice(0, 100) : '',
+          left: rect.left, right: rect.right, width: rect.width, scrollWidth: element.scrollWidth,
+          clientWidth: element.clientWidth }];
+      }).slice(0, 8);
+      return { pageFits: page.documentWidth <= innerWidth, page, overflow, section: bounds(section),
         actions: [...section.querySelectorAll('button')].filter(button => button !== close).map(bounds) };
     });
-    assert.equal(geometry.pageFits, true, `No page overflow at ${width}px with doubled text`);
+    assert.equal(geometry.pageFits, true,
+      `No page overflow at ${width}px with doubled text: ${JSON.stringify({ page: geometry.page, overflow: geometry.overflow })}`);
     assert(geometry.section.left >= 0 && geometry.section.right <= width + 1, `Setup stays within ${width}px`);
     assert(geometry.section.top >= 0 && geometry.section.bottom <= 901, `Setup stays within the viewport height at ${width}px`);
     for (const bounds of geometry.actions) {
