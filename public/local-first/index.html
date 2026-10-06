@@ -6,7 +6,7 @@
   <meta name="commerce-checkout-mode" content="__CHECKOUT_MODE__">
   <meta name="description" content="Build your independent business. Preview offers, prepare your storefront, and review your next launch.">
   <title>Commerce · Airvio</title>
-  <link rel="stylesheet" href="./assets/__RELEASE__/style.css"><script type="module" src="./assets/__RELEASE__/workspace.js"></script>
+  <link rel="stylesheet" href="./assets/__RELEASE__/graph-ui-tokens.css"><link rel="stylesheet" href="./assets/__RELEASE__/style.css"><script type="module" src="./assets/__RELEASE__/workspace.js"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -79,6 +79,11 @@
             <div class="editor-layout"><aside class="panel draft-panel" aria-labelledby="draft-heading"><div class="panel-heading"><h2 id="draft-heading">Your drafts <span id="draft-count">0</span></h2><button id="new-draft" class="small" type="button">+ New</button></div><div id="draft-list" aria-label="Saved drafts"></div><p id="empty-state" class="muted">No drafts yet. Start with one idea.</p></aside>
       <section class="panel editor" aria-labelledby="editor-heading">
         <div class="panel-heading"><h2 id="editor-heading">New offer draft</h2><span class="badge quiet">Private draft</span></div>
+        <section id="offer-setup" aria-labelledby="setup-heading">
+          <div class="setup-heading"><h3 id="setup-heading">Offer setup</h3><span id="setup-count">0 of 4 steps complete</span></div>
+          <p id="setup-status" class="muted" role="status"></p>
+          <button id="open-setup-guide" type="button" class="secondary" aria-expanded="false" aria-controls="setup-guide-panel">Open setup guide</button>
+        </section>
         <form id="draft-form"><fieldset id="editor-fields" disabled>
           <label for="title">What are you creating?</label><input id="title" name="title" maxlength="120" required placeholder="An offer, a product, a service…" autocomplete="off">
           <label for="description">The idea</label><textarea id="description" name="description" maxlength="10000" rows="9" placeholder="Who is it for? What would make it useful? What would you like to try?"></textarea>

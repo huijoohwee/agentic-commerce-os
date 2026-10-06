@@ -15,6 +15,7 @@ const views = new Set(['shop', 'checkout', 'vendor', 'vendor-editor', 'vendor-pr
 const channel = typeof BroadcastChannel === 'function' ? new BroadcastChannel('commerce-local-drafts') : null;
 let drafts = [], draftsLoaded = false, launch, editor, editorPromise, generation = 0, navigation = 0, shopPage = 0, detailId = null, searchRequested = null;
 let draftLoading = true, draftError = '';
+let graphView, tableGeneration = 0;
 const tablePages = { vendor: 0, admin: 0 };
 const node = (tag, text, className) => {
   const element = document.createElement(tag);
@@ -49,7 +50,7 @@ function renderDraftStatus() {
 }
 function unavailableDrafts(container) {
   if (draftsLoaded) return false;
-  container.replaceChildren(node('p', draftLoading ? 'Loading saved offers…' : 'Saved offers are unavailable. Use Retry loading offers above.', 'muted'));
+  clearNativeTable(container); container.replaceChildren(node('p', draftLoading ? 'Loading saved offers…' : 'Saved offers are unavailable. Use Retry loading offers above.', 'muted'));
   return true;
 }
 function art(draft) {
@@ -112,29 +113,18 @@ async function openOffer(id, focus = 'title') {
   target.focus();
 }
 function renderTable(role) {
+  if ($('#' + role + '-table').closest('[data-view-panel]')?.hidden) return;
   if (unavailableDrafts($('#' + role + '-table'))) { $('#' + role + '-count').textContent = 'Saved offer count unknown'; return; }
   const query = $('#' + role + '-query').value.trim().toLowerCase(), state = $('#' + role + '-state').value;
   const filtered = drafts.filter(draft => matches(draft, query) && (!state || stateOf(draft) === state));
   const pages = Math.max(1, Math.ceil(filtered.length / 10)); tablePages[role] = Math.min(tablePages[role], pages - 1);
-  const container = $('#' + role + '-table'); container.replaceChildren();
+  const container = $('#' + role + '-table'); clearNativeTable(container);
   if (!filtered.length) {
     const empty = node('div', undefined, 'empty-state'); empty.append(node('h3', drafts.length ? 'No matching offers' : 'No offers yet'),
       node('p', drafts.length ? 'Change the search or status filter.' : 'Create an offer in the vendor workspace to begin.'));
     const link = node('a', 'Create an offer', 'button secondary'); link.href = '#vendor-editor'; empty.append(link); container.append(empty);
   } else {
-    const table = node('table', undefined, 'data-table'), head = node('thead'), heading = node('tr'), body = node('tbody');
-    table.setAttribute('aria-label', role === 'vendor' ? 'Vendor offers' : 'Launch review queue');
-    const columns = ['Offer', 'Status', 'Planned price', 'Updated', 'Action'];
-    for (const label of columns) { const th = node('th', label); th.scope = 'col'; heading.append(th); } head.append(heading);
-    for (const draft of filtered.slice(tablePages[role] * 10, tablePages[role] * 10 + 10)) {
-      const row = node('tr'), title = node('td'), state = stateOf(draft), status = node('td');
-      title.append(offerLink(draft, draft.title), node('small', draft.launch?.merchantId || 'Store not set'));
-      status.append(node('span', stateLabel(state), 'state-badge state-' + state), node('small', reviewReason(draft), 'review-reason'));
-      const action = node('td'); action.append(offerLink(draft, role === 'admin' && state === 'reviewable' ? 'Review offer ↗' : 'Edit offer ↗', state === 'draft' ? 'merchant-id' : state === 'revise' ? 'sale-price' : 'title'));
-      const cells = [title, status, node('td', price(draft)), node('td', new Date(draft.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })), action];
-      cells.forEach((cell, index) => { cell.dataset.label = columns[index]; row.append(cell); }); body.append(row);
-    }
-    table.append(head, body); container.append(scrollTable(table));
+    renderNativeTable(container, filtered.slice(tablePages[role] * 10, tablePages[role] * 10 + 10), role);
     if (pages > 1) {
       const pager = node('nav', undefined, 'pagination'); pager.setAttribute('aria-label', role + ' pagination');
       for (const [label, offset] of [['Previous', -1], ['Next', 1]]) {
@@ -147,6 +137,28 @@ function renderTable(role) {
     }
   }
   $('#' + role + '-count').textContent = `${filtered.length} offer${filtered.length === 1 ? '' : 's'} · Saved on this device`;
+}
+function clearNativeTable(container) {
+  container.dataset.graphGeneration = String(++tableGeneration); for (const mount of container.querySelectorAll('[data-graph-mount]')) graphView?.disposeTable(mount); container.replaceChildren();
+}
+function renderNativeTable(container, offers, role, label = role === 'vendor' ? 'Vendor offers' : 'Launch review queue') {
+  clearNativeTable(container);
+  const ticket = container.dataset.graphGeneration, view = node('div'); view.dataset.graphMount = ''; container.append(view);
+  view.append(node('p', 'Loading shared table…', 'muted'));
+  void import('./workspace-graph.js').then(async module => {
+    if (ticket !== container.dataset.graphGeneration) return;
+    graphView = module;
+    await module.mountCommerceTable(view, offers, { status: offer => stateLabel(stateOf(offer)), price, reason: reviewReason }, {
+      label, editLabel: role === 'admin' ? 'Review offer ↗' : 'Edit offer ↗',
+      open: offer => void openOffer(offer.id, stateOf(offer) === 'draft' ? 'merchant-id' : stateOf(offer) === 'revise' ? 'sale-price' : 'title').catch(message),
+      inspect: offer => void openAgentTools({ name: 'commerce.workspace.offer.review', input: { offerId: offer.id, expectedRevision: offer.revision }, label: 'Offer · ' + offer.title + ' · v' + offer.revision }),
+    });
+  }).catch(error => {
+    if (ticket !== container.dataset.graphGeneration) return;
+    const retry = node('button', 'Retry shared table', 'secondary'); retry.type = 'button';
+    retry.addEventListener('click', () => renderNativeTable(container, offers, role, label));
+    view.replaceChildren(node('p', error.message || 'Shared table unavailable.', 'muted'), retry);
+  });
 }
 async function refresh() {
   const revision = ++generation; draftLoading = true; draftError = ''; renderCurrent();
@@ -188,6 +200,8 @@ async function route() {
   $('#console-location').textContent = ({ shop: 'Storefront preview', checkout: 'Checkout', vendor: 'Offers', 'vendor-editor': 'Offer editor', 'vendor-preview': 'Storefront preview', admin: 'All projects', 'admin-project': 'Project', 'admin-runtime': 'Environment', 'admin-reviews': 'Launch reviews', 'admin-data': 'Data & portability', 'admin-tools': 'Tools & commands' })[view] || '';
   document.querySelectorAll('[data-role-panel]').forEach(panel => { panel.hidden = panel.dataset.rolePanel !== role; });
   document.querySelectorAll('[data-view-panel]').forEach(panel => { panel.hidden = panel.dataset.viewPanel !== view; });
+  if (!['collection', 'shop-sandbox', 'main'].includes(hash)) window.scrollTo({ top: 0, behavior: 'instant' });
+  for (const mount of document.querySelectorAll('[data-graph-mount]')) if (mount.closest('[hidden]')) { mount.parentElement.dataset.graphGeneration = String(++tableGeneration); graphView?.disposeTable(mount); mount.remove(); }
   document.querySelectorAll('[data-role]').forEach(link => { if (link.dataset.role === (role === 'checkout' ? 'shop' : role)) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current'); });
   document.querySelectorAll('[data-view]').forEach(link => { if (link.dataset.view === view || (view === 'admin-project' && link.dataset.view === 'admin')) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current'); });
   $('#workspace-context').hidden = role !== 'vendor';
@@ -197,10 +211,10 @@ async function route() {
   if (view === 'admin-tools') await loadTools();
   if (revision !== navigation) return;
   if (view === 'checkout') await (await import('./checkout.js')).openCheckout();
+  if (revision !== navigation) return;
   renderCurrent();
   if (view === 'admin-runtime' && new URLSearchParams(hash.split('?')[1]).get('section') === 'checks') $('#environment-checks').scrollIntoView({ block: 'start' });
   else if (hash === 'collection' || hash === 'shop-sandbox') document.getElementById(hash)?.scrollIntoView({ block: 'start' });
-  else if (hash !== 'main') window.scrollTo({ top: 0, behavior: 'instant' });
   if (searchRequested) { const target = searchRequested; searchRequested = null; if (view === role && target.startsWith('#' + (role === 'admin' ? 'project' : role) + '-')) { $(target).focus(); return; } }
   if (hash !== 'collection' && hash !== 'main') document.querySelector(`#${role} [data-view-panel="${view}"] h1, #${role}-heading`)?.focus({ preventScroll: true });
 }
@@ -269,11 +283,11 @@ function renderProjects() {
   $('#project-result-count').textContent = filtered.length + (filtered.length === 1 ? ' project' : ' projects');
   $('#project-list').replaceChildren(...filtered.map(project => projectCard(project)));
   if (!filtered.length) $('#project-list').append(node('div', 'No projects match. Try a merchant name or offer title.', 'empty-state'));
-  $('#workspace-activity').replaceChildren(offerRecords(filtered.flatMap(project => project.offers), 'Recent offer activity'));
+  const activity = $('#workspace-activity'); clearNativeTable(activity); if (!activity.closest('[data-view-panel]')?.hidden) activity.append(offerRecords(filtered.flatMap(project => project.offers), 'Recent offer activity'));
   if (!location.hash.startsWith('#admin-project')) return;
   const requested = new URLSearchParams(location.hash.split('?')[1] || '').get('project');
   const project = requested === null ? projects[0] : projects.find(item => item.id === requested);
-  const detail = $('#project-detail'); detail.replaceChildren();
+  const detail = $('#project-detail'); clearNativeTable(detail);
   $('#project-heading').textContent = project?.name || 'Project unavailable';
   $('#console-location').textContent = project?.name || 'Project unavailable';
   $('#project-description').textContent = project ? 'Local-first · ' + project.offers.length + ' saved offers · Private to this browser' : 'This project is not saved on this device. Return to your projects or import its backup.';
@@ -298,20 +312,10 @@ function offerRecords(offers, label) {
   const render = () => {
     const query = search.value.trim().toLowerCase(), filtered = offers.filter(offer => matches(offer, query) || stateLabel(stateOf(offer)).toLowerCase().includes(query))
       .sort((a, b) => b.updatedAt - a.updatedAt || a.id.localeCompare(b.id));
-    const pages = Math.max(1, Math.ceil(filtered.length / 10)); page = Math.min(page, pages - 1); content.replaceChildren();
+    const pages = Math.max(1, Math.ceil(filtered.length / 10)); page = Math.min(page, pages - 1); clearNativeTable(content);
     if (!filtered.length) content.append(node('p', offers.length ? 'No saved offers match this search.' : 'No saved activity yet. Create an offer to begin.', 'records-empty'));
     else {
-      const rows = filtered.slice(page * 10, page * 10 + 10).map(offer => {
-        const title = node('span', offer.title); title.append(node('small', offer.launch?.merchantId || 'Personal workspace'));
-        const status = node('span', stateLabel(stateOf(offer)), 'state-badge state-' + stateOf(offer));
-        const actions = node('div', undefined, 'record-actions'), inspect = node('button', 'Inspect', 'secondary'); inspect.type = 'button';
-        inspect.setAttribute('aria-label', 'Inspect ' + offer.title + ' with agent tools');
-        inspect.addEventListener('click', () => void openAgentTools({ name: 'commerce.workspace.offer.review',
-          input: { offerId: offer.id, expectedRevision: offer.revision }, label: 'Offer · ' + offer.title + ' · v' + offer.revision }));
-        actions.append(offerLink(offer, 'Open offer'), inspect);
-        return [title, status, node('span', 'v' + offer.revision), node('span', new Date(offer.updatedAt).toLocaleDateString()), actions];
-      });
-      content.append(recordTable(['Offer', 'Review status', 'Revision', 'Updated', 'Action'], rows, label));
+      renderNativeTable(content, filtered.slice(page * 10, page * 10 + 10), 'admin', label);
     }
     previous.disabled = page === 0; next.disabled = page + 1 >= pages;
     count.textContent = filtered.length + ' offers · Page ' + (page + 1) + ' of ' + pages;

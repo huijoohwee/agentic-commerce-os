@@ -1,10 +1,57 @@
 // One browser/agent contract. No model, provider, account or network dependency.
-import { validDraft, validLaunchTerms, MAXIMUM_AMOUNT_MINOR } from './drafts.js';
+import { validDraft, validLaunchTerms, launchFieldIssues, invalidLaunchFields, LAUNCH_ID_FIELDS,
+  LAUNCH_DESCRIPTION_FIELDS, LAUNCH_VARIABLE_COST_FIELDS, LAUNCH_MONEY_FIELDS as MONEY_FIELDS, LIMITS, MAXIMUM_AMOUNT_MINOR } from './drafts.js';
 export const LAUNCH_CONTINUITY = 'edge-commerce-agent-mvp@0.2.0';
+const TEXT_FIELDS = ['merchantId', 'agentId', 'audience', 'outcome', 'currency'];
+
+/** One normalization path for editor guidance and saving; failed amounts stay incomplete. */
+export function inspectLaunchInput(raw) {
+  const keys = [...TEXT_FIELDS, ...MONEY_FIELDS];
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw))
+    return { terms: null, issues: [{ field: 'launch', message: 'Use the supported launch fields.' }], hasInput: false };
+  const issues = [], terms = Object.fromEntries(keys.map(key => [key, raw[key] === undefined ? ''
+    : typeof raw[key] === 'string' ? raw[key].trim() : raw[key]]));
+  if (Object.keys(raw).some(key => !keys.includes(key))) issues.push({ field: 'launch', message: 'Use only the supported launch fields.' });
+  const hasInput = keys.some(key => typeof terms[key] !== 'string' || terms[key].length > 0);
+  if (!hasInput) return { terms: null, issues, hasInput };
+  if (typeof terms.currency === 'string') terms.currency = terms.currency.toUpperCase();
+  issues.push(...launchFieldIssues(terms).filter(issue => !MONEY_FIELDS.includes(issue.field)));
+  for (const key of MONEY_FIELDS) {
+    try { terms[key] = parseMoney(terms[key], terms.currency); }
+    catch (error) { issues.push({ field: key, message: error.message }); }
+  }
+  for (const issue of launchFieldIssues(terms)) if (!issues.some(existing => existing.field === issue.field)) issues.push(issue);
+  return { terms, issues, hasInput };
+}
+
+export function parseLaunchInput(raw) {
+  const result = inspectLaunchInput(raw);
+  if (result.issues.length) throw Error(result.issues[0].message);
+  return result.terms;
+}
+
+/** Setup is a read-only assessment of values, never evidence of saving or human approval. */
+export function evaluateOfferSetup({ title, launch } = {}) {
+  const fields = invalidLaunchFields(launch), missing = keys => keys.filter(field => fields.includes(field));
+  const describe = missing(LAUNCH_DESCRIPTION_FIELDS);
+  if (typeof title !== 'string' || !title.trim() || title.length > LIMITS.title) describe.unshift('title');
+  if (fields.length === 1 && fields[0] === 'launch') describe.push('launch');
+  const identity = missing(LAUNCH_ID_FIELDS), money = missing(['currency', ...MONEY_FIELDS]);
+  const economics = money.length ? null : calculateLaunchEconomics(launch);
+  if (economics?.constraints.length) money.push('priceMinor');
+  const steps = [['describe', describe], ['identity', identity], ['economics', money]]
+    .map(([id, fields]) => ({ id, complete: !fields.length, fields }));
+  return { status: fields.length || describe.length ? 'draft' : economics.selection,
+    economics, steps, humanReview: 'still-required' };
+}
 
 export function evaluateLaunch(terms) {
   if (!validLaunchTerms(terms)) throw Error('Complete the merchant, registered agent, buyer, outcome and bounded cost fields.');
-  const variableCostMinor = terms.deliveryCostMinor + terms.providerFeeMinor + terms.agentCostMinor + terms.acquisitionCostMinor;
+  return calculateLaunchEconomics(terms);
+}
+
+function calculateLaunchEconomics(terms) {
+  const variableCostMinor = LAUNCH_VARIABLE_COST_FIELDS.reduce((total, field) => total + terms[field], 0);
   const contributionMinor = terms.priceMinor - variableCostMinor;
   return Object.freeze({ currency: terms.currency, priceMinor: terms.priceMinor, variableCostMinor, contributionMinor,
     firstSaleNetMinor: contributionMinor - terms.fixedCostMinor,

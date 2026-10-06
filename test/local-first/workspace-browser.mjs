@@ -23,7 +23,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   const page = await context.newPage(); await page.goto(url);
   await expect(page.getByRole('heading', { name: 'Your collection starts with one offer.' })).toBeVisible();
   // Release-scoped assets cannot collide with the legacy cache-first service worker's unversioned paths.
-  const css = await page.locator('link[rel=stylesheet]').getAttribute('href');
+  const css = await page.locator('link[href$="/style.css"]').getAttribute('href');
   const bootstrap = await page.locator('script[type=module]').getAttribute('src');
   assert.match(css, /^\.\/assets\/[a-f0-9]{40}\/style.css$/);
   assert.match(bootstrap, /^\.\/assets\/[a-f0-9]{40}\/workspace.js$/);
@@ -100,11 +100,11 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await expect(page.locator('#status')).toContainText('Imported 13 drafts.');
   await page.getByRole('link', { name: 'Vendor', exact: true }).click();
   await expect(page.locator('#vendor-total')).toHaveText('13');
-  await expect(page.locator('#vendor-table tbody tr')).toHaveCount(10);
+  await expect(page.locator('#vendor-table .graph-record-grid tbody tr')).toHaveCount(10);
   await page.getByRole('navigation', { name: 'vendor pagination' }).getByRole('button', { name: 'Next' }).click();
-  await expect(page.locator('#vendor-table tbody tr')).toHaveCount(3);
+  await expect(page.locator('#vendor-table .graph-record-grid tbody tr')).toHaveCount(3);
   await page.locator('#vendor-state').selectOption('revise');
-  await expect(page.locator('#vendor-table tbody tr')).toHaveCount(1);
+  await expect(page.locator('#vendor-table .graph-record-grid tbody tr')).toHaveCount(1);
   await page.locator('#vendor-state').selectOption('');
   await page.screenshot({ path: path.join(output, 'vendor-desktop.png'), fullPage: true });
   await page.getByRole('link', { name: 'Shopper', exact: true }).click();
@@ -183,6 +183,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await expect(page.locator('#vendor-navigation')).toBeVisible();
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(url + '#vendor-editor');
+  await expect(page.getByLabel('What are you creating?')).toBeVisible();
   await page.keyboard.press('ControlOrMeta+k');
   await expect(page.locator('#vendor-query')).toBeFocused();
   await page.goto(url + '#shop-sandbox');
@@ -284,14 +285,21 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await expect(page.locator('#project-heading')).toHaveText('studio-north');
   for (const width of [360, 768, 1280]) {
     await page.setViewportSize({ width, height: 900 });
+    const row = page.getByRole('table', { name: 'Project offers', exact: true }).locator('tbody tr').nth(1); await row.focus(); await page.keyboard.press('Enter');
+    await expect(page.getByRole('table', { name: 'Offer fields', exact: true })).toBeVisible();
+    assert.equal(await row.locator('td').first().evaluate(el => parseFloat(getComputedStyle(el).fontSize)), 14);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await page.screenshot({ path: path.join(output, `project-detail-${width}.png`), fullPage: true });
+    await page.getByRole('button', { name: 'Close details', exact: true }).click(); await expect(row).toBeFocused();
   }
   await context.setOffline(true);
   await expect(page.locator('[data-environment-observation]')).toHaveText('Offline');
   await page.reload();
   await expect(page.locator('#project-heading')).toHaveText('studio-north');
   // Chromium may reset navigator.onLine after a service-worker navigation; no observation is retained.
+  const offlineRows = page.getByRole('table', { name: 'Project offers', exact: true }).locator('tbody tr'); await expect(offlineRows).toHaveCount(6);
+  await offlineRows.first().focus(); await page.keyboard.press('Space'); await expect(page.getByRole('table', { name: 'Offer fields', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Close details', exact: true }).click();
   await expect(page.locator('[data-environment-observation]')).toHaveText(/^(Offline|Not checked)$/);
   assert.equal(await page.evaluate(() => fetch('./readyz').then(() => false, () => true)), true);
   await context.setOffline(false);
@@ -357,6 +365,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await expect(agentButton).toBeFocused();
   await expect.poll(() => page.evaluate(async () => (await document.modelContext.getTools()).length)).toBe(0);
   assert.equal(await page.locator('#workspace-tool').count(), 1);
+  await page.locator('.graph-record-grid tbody tr').filter({ hasText: 'Independent offer 03' }).click();
   const inspectOffer = page.getByRole('button', { name: 'Inspect Independent offer 03 with agent tools', exact: true });
   await inspectOffer.click();
   await expect(page.locator('#workspace-tool')).toHaveValue('commerce.workspace.offer.review');
@@ -460,7 +469,8 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await page.screenshot({ path: path.join(output, 'admin-desktop.png'), fullPage: true });
   await page.locator('#admin').getByRole('link', { name: 'Launch reviews', exact: true }).click();
   await page.locator('#admin-query').fill('offer 03');
-  await expect(page.locator('#admin-table tbody tr')).toHaveCount(1);
+  await expect(page.locator('#admin-table .graph-record-grid tbody tr')).toHaveCount(1);
+  await page.locator('#admin-table .graph-record-grid tbody tr').first().click();
   await page.getByRole('link', { name: 'Review offer ↗', exact: true }).click();
   await expect(page.getByLabel('What are you creating?')).toHaveValue('Independent offer 03');
   await expect(page.getByLabel('The idea', { exact: true })).toHaveValue('PRIVATE interview notes');
@@ -524,7 +534,7 @@ async function verifyWorkspaceFidelity({ page, context, url, drafts }) {
     await page.evaluate(() => document.dispatchEvent(new Event('commerce:drafts-updated')));
     await expect(page.locator('#draft-storage-status')).toContainText('could not be refreshed');
     await expect(page.locator('#vendor-total')).toHaveText('13');
-    await expect(page.locator('#vendor-table tbody tr')).toHaveCount(10);
+    await expect(page.locator('#vendor-table .graph-record-grid tbody tr')).toHaveCount(10);
     await page.reload();
     await expect(page.locator('#draft-storage-status')).toContainText('Saved offers are unavailable');
     await expect(page.locator('#vendor-total')).toHaveText('—');
@@ -544,7 +554,8 @@ async function verifyWorkspaceFidelity({ page, context, url, drafts }) {
     await expect(page.locator('#admin-reviewable')).toHaveText('12');
   } finally { await store(drafts[1]); }
   await page.goto(url + '#vendor'); await page.locator('#vendor-state').selectOption('revise');
-  await expect(page.locator('.review-reason').filter({ visible: true })).toContainText('Increase price');
+  await page.locator('#vendor-table .graph-record-grid tbody tr').first().click();
+  await expect(page.locator('.graph-record-fields')).toContainText('Increase price');
   await page.getByRole('link', { name: 'Edit offer ↗', exact: true }).click();
   await expect(page.locator('#sale-price')).toBeFocused();
   await page.goto(url + '#admin-tools');
