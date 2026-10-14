@@ -61,7 +61,9 @@ function art(draft, interactive = false) {
   if (!interactive) { visual.append(image); return visual; }
   const action = node('button', undefined, 'product-art-action'); action.type = 'button';
   action.setAttribute('aria-label', 'View offer: ' + draft.title); action.dataset.selectionTarget = 'offer-art-action';
-  action.addEventListener('click', () => showDetail(draft)); action.append(image); visual.append(action); return visual;
+  action.addEventListener('click', () => showDetail(draft));
+  action.append(image, node('span', 'View offer ↗', 'product-art-action-label'));
+  visual.append(action); return visual;
 }
 function price(draft) { return draft.launch ? launch.formatMoney(draft.launch.priceMinor, draft.launch.currency) : 'Not set'; }
 function matches(draft, query) { return [draft.title, draft.launch?.merchantId, draft.launch?.outcome, draft.launch?.audience].join(' ').toLowerCase().includes(query); }
@@ -89,10 +91,8 @@ function renderShop() {
   $('#shop-grid').replaceChildren();
   for (const draft of filtered.slice(shopPage * 12, shopPage * 12 + 12)) {
     const card = node('article', undefined, 'product-card'); card.dataset.selectionTarget = 'offer-card'; card.dataset.selectionLabel = 'Offer: ' + draft.title;
-    const button = node('button', 'View offer ↗'); button.type = 'button';
-    button.setAttribute('aria-label', 'View ' + draft.title); button.addEventListener('click', () => showDetail(draft));
     card.append(art(draft, true), node('small', draft.launch.merchantId), node('h3', draft.title),
-      node('p', price(draft) + ' · Planned price', 'preview-price'), button);
+      node('p', price(draft) + ' · Planned price', 'preview-price'));
     $('#shop-grid').append(card);
   }
   $('#shop-count').textContent = `${filtered.length} preview offer${filtered.length === 1 ? '' : 's'}`;

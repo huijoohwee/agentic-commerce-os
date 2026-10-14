@@ -332,7 +332,8 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
 figure{margin:0}
 #shop .console-heading > .heading-copy{flex:1;min-width:0}
 .product-art{margin:0}
-.product-card .product-art-action{display:grid;place-items:center;width:100%;height:100%;min-height:inherit;padding:0;border:0;background:transparent;color:inherit;cursor:pointer;justify-content:center;text-align:center;text-decoration:none}
+.product-card .product-art-action{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;width:100%;height:100%;min-height:inherit;padding:0;border:0;background:transparent;color:inherit;cursor:pointer;text-align:center;text-decoration:none}
+.product-art-action-label{font-size:.8125rem;text-decoration:underline;text-underline-offset:4px}
 .product-art-action:focus-visible{outline:3px solid #7c9466;outline-offset:-4px}
 .empty-mark{text-decoration:none}
 .empty-mark svg{display:block;width:24px;height:24px}
