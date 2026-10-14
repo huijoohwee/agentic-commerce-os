@@ -34,7 +34,7 @@ const renderShortlist = () => {
   const saved = savedListingIds.filter(id => loaded.has(id));
   const compared = comparedListingIds.map(id => loaded.get(id)).filter(Boolean);
   shortlistRegion.replaceChildren();
-  const head = node('div', undefined, 'shortlist-head');
+  const head = node('header', undefined, 'shortlist-head');
   head.append(node('h3', 'Your shortlist'), node('span', saved.length + ' saved here · ' + compared.length + '/3 to compare', 'hint'));
   shortlistRegion.append(head);
   if (shortlistNotice) shortlistRegion.append(node('p', shortlistNotice, 'hint'));
@@ -63,7 +63,7 @@ const catalogError = error => {
   if (error?.message === 'catalog_search_superseded') return;
   if (!navigator.onLine) return;
   document.querySelector('#catalog-count').textContent = 'Unable to refresh listings';
-  const empty = node('div', undefined, 'empty-state');
+  const empty = node('section', undefined, 'empty-state'); empty.setAttribute('aria-label', 'Catalog loading error');
   empty.append(node('h3', 'We couldn’t load the catalog'), node('p', 'Check your connection and search again. Your last completed catalog stays on this device.', 'hint'));
   renderShortlist();
   resultsRegion.replaceChildren(empty);
@@ -91,7 +91,7 @@ const showListing = listing => {
   document.querySelector('#listing-detail-heading').textContent = listing.title;
   body.replaceChildren(node('p', listing.summary || 'Explore available offers from this provider.', 'hint'));
   describe(body, [['Category', listing.category], ['Provider', listing.agentId], ['Listing', listing.listingId]]);
-  const choices = node('div', undefined, 'stack');
+  const choices = node('section', undefined, 'stack'); choices.setAttribute('aria-label', 'Offer choices');
   choices.append(node('h3', 'Choose an offer'));
   if (listing.offers.length) for (const offer of listing.offers) choices.append(offerButton(listing, offer));
   else {
@@ -128,19 +128,26 @@ const renderCatalog = listings => {
   resultsRegion.replaceChildren();
   renderShortlist();
   if (!filtered.length) {
-    const empty = node('div', undefined, 'empty-state');
+    const empty = node('section', undefined, 'empty-state'); empty.setAttribute('aria-label', 'Catalog search result');
     empty.append(node('h3', 'No matching listings.'), node('p', 'Try a different search or reset the filters to explore more offers.', 'hint'));
     resultsRegion.append(empty); return;
   }
   for (const listing of filtered.slice((catalogPage - 1) * 12, catalogPage * 12)) {
     const article = node('article', undefined, 'listing product-card');
-    const art = node('div', undefined, 'product-art'); art.setAttribute('aria-hidden', 'true');
-    art.append(node('small', listing.category), node('span', listing.title.slice(0, 2).toUpperCase()));
-    const copy = node('div', undefined, 'product-copy');
+    article.dataset.selectionTarget = 'listing-card'; article.dataset.selectionLabel = 'Listing: ' + listing.title;
+    const art = node('figure', undefined, 'product-art');
+    art.dataset.selectionTarget = 'listing-art'; art.dataset.selectionLabel = 'Listing artwork: ' + listing.title;
+    const openArtwork = node('button', undefined, 'product-art-action'); openArtwork.type = 'button';
+    openArtwork.setAttribute('aria-label', 'View details for ' + listing.title); openArtwork.dataset.selectionTarget = 'listing-art-action';
+    openArtwork.addEventListener('click', () => showListing(listing));
+    const image = node('span', listing.title.slice(0, 2).toUpperCase()); image.setAttribute('role', 'img'); image.setAttribute('aria-label', 'Listing artwork for ' + listing.title);
+    openArtwork.append(image, node('small', 'View details', 'product-art-action-label'));
+    art.append(openArtwork, node('figcaption', listing.category));
+    const copy = node('section', undefined, 'product-copy'); copy.setAttribute('aria-label', 'Listing details for ' + listing.title);
     copy.append(node('h3', listing.title), node('p', listing.summary || 'Discover what this provider can do for you.', 'hint summary'));
     copy.append(node('p', listing.agentId, 'field-note'));
     if (!listing.offers.length) copy.append(node('p', 'Request current availability', 'hint'));
-    const buttons = node('div', undefined, 'actions');
+    const buttons = node('section', undefined, 'actions'); buttons.setAttribute('role', 'group'); buttons.setAttribute('aria-label', 'Actions for ' + listing.title);
     const save = node('button', savedListingIds.includes(listing.listingId) ? 'Saved' : 'Save', 'secondary');
     save.type = 'button'; save.dataset.saveListing = listing.listingId;
     save.setAttribute('aria-label', (savedListingIds.includes(listing.listingId) ? 'Remove saved ' : 'Save ') + listing.title);
@@ -152,9 +159,6 @@ const renderCatalog = listings => {
     compare.setAttribute('aria-pressed', String(comparedListingIds.includes(listing.listingId)));
     compare.disabled = !comparedListingIds.includes(listing.listingId) && comparedListingIds.length >= 3;
     compare.addEventListener('click', () => toggleCompared(listing)); buttons.append(compare);
-    const details = node('button', 'View details', 'secondary'); details.type = 'button';
-    details.setAttribute('aria-label', 'View details for ' + listing.title);
-    details.addEventListener('click', () => showListing(listing)); buttons.append(details);
     for (const offer of listing.offers) buttons.append(offerButton(listing, offer));
     copy.append(buttons); article.append(art, copy); resultsRegion.append(article);
   }

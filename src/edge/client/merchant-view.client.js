@@ -17,7 +17,7 @@ const renderProposals = async () => {
   const fragment = document.createDocumentFragment();
   for (const proposal of filtered) {
     const card = node('article', undefined, 'listing proposal-card');
-    const heading = node('div', undefined, 'section-head');
+    const heading = node('header', undefined, 'section-head');
     heading.append(node('h3', proposal.manifest.copy.brand), badge(proposal.status));
     card.append(heading, node('p', proposal.manifest.copy.headline + ' — ' + proposal.manifest.copy.subhead, 'hint'));
     describe(card, [['Store', proposal.manifest.merchantId], ['Agent', proposal.manifest.catalogScope.join(', ')],
@@ -34,7 +34,7 @@ const renderProposals = async () => {
     version.append(node('summary', 'Review exact change'), node('pre', JSON.stringify({ manifest: proposal.manifest, expectedPreviousManifestDigest: proposal.expectedPreviousManifestDigest }, null, 2)));
     card.append(version);
     if (proposal.result?.code) card.append(node('p', errorText(proposal.result.code), 'notice'));
-    const actions = node('div', undefined, 'actions');
+    const actions = node('footer', undefined, 'actions');
     if (proposal.expectedPreviousManifestDigest !== null || proposal.status === 'applied') {
       const link = node('a', 'Open store ↗', 'route'); link.href = runtimePath('/s/' + encodeURIComponent(proposal.manifest.merchantId)); actions.append(link);
     }
@@ -78,7 +78,7 @@ const renderProposals = async () => {
     card.append(actions); fragment.append(card);
   }
   if (!filtered.length) {
-    const empty = node('div', undefined, 'empty-state');
+    const empty = node('section', undefined, 'empty-state');
     empty.append(node('h3', proposals.length ? 'No matching proposals' : 'No proposals yet.'), node('p', proposals.length ? 'Try another search or status.' : 'Prepare a storefront in the vendor workspace. Its draft will appear here for review.', 'hint'));
     fragment.append(empty);
   }
