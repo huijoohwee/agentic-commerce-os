@@ -61,7 +61,8 @@ label { display: grid; gap: 7px; font-size: 13px; font-weight: 550; }
 figure { margin: 0; } .product-art { min-height: 136px; margin: 0; background: color-mix(in srgb, var(--accent) 8%, var(--background)); display: flex; align-items: center; justify-content: center; position: relative; }
 .product-art span { font-size: 42px; letter-spacing: -.09em; opacity: .65; font-weight: 300; }
 .product-art figcaption { position: absolute; top: 12px; left: 12px; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .08em; }
-.product-art-action { flex: 1; width: 100%; min-height: inherit; padding: 0; border: 0; border-radius: 0; background: transparent; color: inherit; display: grid; place-items: center; cursor: pointer; }
+.product-art-action { flex: 1; width: 100%; min-height: inherit; padding: 0; border: 0; border-radius: 0; background: transparent; color: inherit; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; cursor: pointer; }
+.product-art-action-label { font-size: 12px; letter-spacing: normal; opacity: 1; font-weight: 600; }
 .product-art-action:focus-visible { outline: 3px solid var(--accent); outline-offset: -4px; }
 .product-copy { padding: 18px; display: grid; gap: 6px; flex: 1; }
 .product-copy p { margin-bottom: 4px; }

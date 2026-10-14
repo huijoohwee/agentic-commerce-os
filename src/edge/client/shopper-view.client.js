@@ -141,7 +141,8 @@ const renderCatalog = listings => {
     openArtwork.setAttribute('aria-label', 'View details for ' + listing.title); openArtwork.dataset.selectionTarget = 'listing-art-action';
     openArtwork.addEventListener('click', () => showListing(listing));
     const image = node('span', listing.title.slice(0, 2).toUpperCase()); image.setAttribute('role', 'img'); image.setAttribute('aria-label', 'Listing artwork for ' + listing.title);
-    openArtwork.append(image); art.append(openArtwork, node('figcaption', listing.category));
+    openArtwork.append(image, node('small', 'View details', 'product-art-action-label'));
+    art.append(openArtwork, node('figcaption', listing.category));
     const copy = node('section', undefined, 'product-copy'); copy.setAttribute('aria-label', 'Listing details for ' + listing.title);
     copy.append(node('h3', listing.title), node('p', listing.summary || 'Discover what this provider can do for you.', 'hint summary'));
     copy.append(node('p', listing.agentId, 'field-note'));
@@ -158,9 +159,6 @@ const renderCatalog = listings => {
     compare.setAttribute('aria-pressed', String(comparedListingIds.includes(listing.listingId)));
     compare.disabled = !comparedListingIds.includes(listing.listingId) && comparedListingIds.length >= 3;
     compare.addEventListener('click', () => toggleCompared(listing)); buttons.append(compare);
-    const details = node('button', 'View details', 'secondary'); details.type = 'button';
-    details.setAttribute('aria-label', 'View details for ' + listing.title);
-    details.addEventListener('click', () => showListing(listing)); buttons.append(details);
     for (const offer of listing.offers) buttons.append(offerButton(listing, offer));
     copy.append(buttons); article.append(art, copy); resultsRegion.append(article);
   }
