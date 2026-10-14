@@ -85,12 +85,12 @@ function createDialog() {
   dialog.setAttribute('aria-labelledby', 'listing-heading');
   const heading = node('h2', 'Prepare and review your listing'); heading.id = 'listing-heading';
   elements.title = node('h3'); elements.message = node('p'); elements.message.id = 'listing-status'; elements.message.setAttribute('role', 'status');
-  elements.inspection = node('div');
+  elements.inspection = node('section');
   elements.runReference = node('p'); elements.runReference.id = 'listing-run-reference';
   elements.runReference.style.overflowWrap = 'anywhere';
   const inspect = node('a', 'Inspect runs in Graph'); inspect.id = 'listing-inspect'; inspect.href = '/agentic-graph/';
   elements.inspection.append(elements.runReference, inspect);
-  elements.output = node('div'); elements.output.id = 'listing-output';
+  elements.output = node('section'); elements.output.id = 'listing-output';
   elements.output.className = 'preview-explainer';
   elements.reviewLabel = node('label'); elements.reviewLabel.className = 'review-approval';
   elements.review = node('input'); elements.review.type = 'checkbox'; elements.review.id = 'listing-review';
@@ -99,7 +99,7 @@ function createDialog() {
     if (!matches() || current.workflow.status !== 'completed') throw Error('Review the current saved draft first.');
     await persist({ ...current.workflow, reviewedDigest: checked ? current.workflow.outputDigest : null });
   }); });
-  const buttons = node('div'); buttons.className = 'editor-actions';
+  const buttons = node('section'); buttons.className = 'editor-actions'; buttons.setAttribute('role', 'group'); buttons.setAttribute('aria-label', 'Listing actions');
   for (const [key, label, action] of [
     ['resume', 'Resume / refresh', () => current.workflow ? refresh() : prepare()], ['cancel', 'Cancel job', () => refresh('cancel')],
     ['retry', 'Retry stopped job', () => refresh('retry')], ['new', 'Prepare new listing', prepare],

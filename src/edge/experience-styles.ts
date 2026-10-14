@@ -37,7 +37,7 @@ p { margin-bottom: 16px; }
 .journey { display: grid; gap: 16px; list-style: none; padding: 0; margin: 0; }
 .journey li { display: flex; align-items: center; gap: 16px; font-size: 14px; }
 .journey b { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--panel); border: 1px solid var(--line); font-size: 12px; font-weight: 500; }
-.catalog-heading, .section-head, .toolbar, .actions, .pagination, footer { display: flex; gap: 16px; justify-content: space-between; align-items: center; }
+.catalog-heading, .section-head, .toolbar, .actions, .pagination, #main-content>footer { display: flex; gap: 16px; justify-content: space-between; align-items: center; }
 .catalog-heading { margin-bottom: 20px; }
 .catalog-heading h2 { margin: 0; font-size: 25px; }
 #catalog-search { display: flex; gap: 8px; width: min(100%, 460px); }
@@ -58,9 +58,11 @@ label { display: grid; gap: 7px; font-size: 13px; font-weight: 550; }
 #catalog-results { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
 .listing { min-width: 0; overflow-wrap: anywhere; }
 .product-card { border: 1px solid var(--line); border-radius: 11px; background: var(--panel); overflow: hidden; display: flex; flex-direction: column; }
-.product-art { min-height: 136px; background: color-mix(in srgb, var(--accent) 8%, var(--background)); display: flex; align-items: center; justify-content: center; position: relative; }
+figure { margin: 0; } .product-art { min-height: 136px; margin: 0; background: color-mix(in srgb, var(--accent) 8%, var(--background)); display: flex; align-items: center; justify-content: center; position: relative; }
 .product-art span { font-size: 42px; letter-spacing: -.09em; opacity: .65; font-weight: 300; }
-.product-art small { position: absolute; top: 12px; left: 12px; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .08em; }
+.product-art figcaption { position: absolute; top: 12px; left: 12px; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .08em; }
+.product-art-action { flex: 1; width: 100%; min-height: inherit; padding: 0; border: 0; border-radius: 0; background: transparent; color: inherit; display: grid; place-items: center; cursor: pointer; }
+.product-art-action:focus-visible { outline: 3px solid var(--accent); outline-offset: -4px; }
 .product-copy { padding: 18px; display: grid; gap: 6px; flex: 1; }
 .product-copy p { margin-bottom: 4px; }
 .product-copy .summary { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
@@ -136,7 +138,7 @@ pre { font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; padding: 
 #operator-connect { display: flex; gap: 10px; max-width: 620px; }
 #operator-disconnect { margin-top: 12px; }
 .route { display: inline-flex; align-items: center; min-height: 44px; gap: 10px; font-size: 13px; text-decoration: underline; text-underline-offset: 4px; }
-footer { border-top: 1px solid var(--line); margin-top: 36px; padding-top: 20px; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
+#main-content>footer { border-top: 1px solid var(--line); margin-top: 36px; padding-top: 20px; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
 dialog { border: 1px solid var(--line); border-radius: 14px; padding: 0; width: min(640px, calc(100vw - 24px)); max-height: calc(100dvh - 32px); color: var(--ink); background: var(--panel); }
 dialog::backdrop { background: #12251a66; }
 dialog .panel-body { overflow-wrap: anywhere; }
