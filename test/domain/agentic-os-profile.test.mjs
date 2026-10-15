@@ -35,7 +35,11 @@ test('package scripts and dependency pin the exact governing runtime', async () 
   const pkg = JSON.parse(await readFile(new URL('package.json', root), 'utf8'));
 
   assert.equal(pkg.devDependencies['agentic-os'],
-    'https://codeload.github.com/huijoohwee/agentic-os/tar.gz/44da26e7beb7d9aa5da271480f2e0ef34846dfaa');
+    'https://codeload.github.com/huijoohwee/agentic-os/tar.gz/aafb2fef4dcc74a7ba23fc2e182a61814c1e475e');
+  const lock = JSON.parse(await readFile(new URL('package-lock.json', root), 'utf8'));
+  assert.equal(lock.packages[''].devDependencies['agentic-os'], pkg.devDependencies['agentic-os']);
+  assert.equal(lock.packages['node_modules/agentic-os'].resolved, pkg.devDependencies['agentic-os']);
+  assert.equal(lock.packages['node_modules/agentic-os'].license, 'MIT');
   assert.deepEqual({
     setup: pkg.scripts.setup,
     doctor: pkg.scripts.doctor,
