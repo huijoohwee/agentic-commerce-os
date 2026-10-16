@@ -2,28 +2,28 @@
 title: "Reference Implementation — Native Commerce Workspace Increment"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "edge-commerce-agent-mvp"
-revision: "0.23.0"
-version: "0.23.0"
-prd_revision: "0.23.0"
-tad_revision: "0.23.0"
-adr_revision: "0.23.0"
-mvp_revision: "0.23.0"
-gtm_revision: "0.23.0"
-date: "2026-10-05"
+revision: "0.24.0"
+version: "0.24.0"
+prd_revision: "0.24.0"
+tad_revision: "0.24.0"
+adr_revision: "0.24.0"
+mvp_revision: "0.24.0"
+gtm_revision: "0.24.0"
+date: "2026-10-17"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Commerce product architecture"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
-readiness_scope: "CW-D13 native floating guide locally verified; publication/runtime/human gates separate"
+readiness_scope: "CW-D13 native floating guide locally verified; private Base CI access prepared; runtime/human gates separate"
 lane: "authoring"
 universal_scope: false
 load_policy: "on-demand"
 lifecycle_status: "active"
 runtime_readiness_policy: "fail-closed"
-worktree_id: "device-0232231d4a19--commerce-fidelity-plan"
-agent_id: "codex-commerce-setup-panel"
-source_revision: "2d789a59035b02b3a54d0c728bb8d420bfb241a8"
+worktree_id: "device-0232231d4a19--commerce-base-private-ci"
+agent_id: "codex"
+source_revision: "0006d363eaba69bdab2680d19c6445d2537e9ec6"
 guideline_revision: "3.4.0"
 guideline_source_revision: "82835ac37d524643faa6b9703cb077ea9474ab15"
 guideline_sha256: "9707ee2355d4d60b8f7a759441fbe67c8235e8762ab9cb0a46dd070a5f02b84a"
@@ -374,6 +374,10 @@ Reveal 60 s (offline exact review/export, CW-03), Recover 45 s (stale/missing ev
 CW-02/04), Close 30 s (distinct result and next allowed action, CW-05). This is a target, not measured TTV.
 Core functionality, theme alignment, technical integration and usefulness remain unassessed by users for CW.
 A fixture result cannot establish physical-device usability, demand or higher experience maturity.
+
+## Private Agentic Base CI access — 2026-10-17
+
+Shoply remains a planned Base consumer; this prepares read-only Git access only for locked CI dependency installation. It does not pin Base or establish view parity. Integration Gate stages `AGENTIC_BASE_READ_KEY` only for `npm ci --ignore-scripts` with pinned GitHub SSH host identity, removes it before `npm rebuild` and tests, and never exposes it to release workflows; exact commit pin, artifact migration and parity remain a separately reviewed consumer change.
 
 ### Deploy boundary and recovery
 
