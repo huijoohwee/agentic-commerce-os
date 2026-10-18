@@ -13,12 +13,11 @@ export type LocalFirstEnv = Readonly<CheckoutEnv & ListingRelayEnv & {
   CF_VERSION_METADATA?: { id?: string }
 }>
 const ASSET_PATHS = new Map([
-  ['/', '/index.html'], ['/app.js', '/app.js'], ['/drafts.js', '/drafts.js'],
-  ['/checkout.js', '/checkout.js'], ['/launch.js', '/launch.js'], ['/workspace.js', '/workspace.js'],
-  ...['workspace-graph.js', 'agentic-base-data-view.js', 'agentic-base-data-view.css', 'graph-data-view.js', 'graph-data-view.css', 'graph-ui-tokens.css'].map(file => ['/' + file, '/' + file] as [string, string]),
-  ['/style.css', '/style.css'], ['/sw.js', '/sw.js'],
-  ['/workflow.js', '/workflow.js'],
-  ['/workspace-capabilities.js', '/workspace-capabilities.js'], ['/workspace-tools.js', '/workspace-tools.js'],
+  ...[
+    '/', '/app.js', '/drafts.js', '/checkout.js', '/launch.js', '/workspace.js',
+    ...['workspace-graph.js', 'agentic-base-data-view.js', 'agentic-base-data-view.css', 'graph-data-view.js', 'graph-data-view.css', 'graph-ui-tokens.css'].map(file => '/' + file),
+    '/style.css', '/sw.js', '/workflow.js', '/workspace-capabilities.js', '/workspace-tools.js',
+  ].map(path => [path, path] as [string, string]),
   ['/services/workspace-pack/', '/workspace-pack.html'],
   ['/services/workspace-pack/workspace-pack.js', '/workspace-pack.js'],
   ['/services/workspace-pack/workspace-pack.simulation.js', '/workspace-pack.simulation.js'],
