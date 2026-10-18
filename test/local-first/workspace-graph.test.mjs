@@ -4,9 +4,11 @@ import fs from 'node:fs';
 import { createHash } from 'node:crypto';
 import worker from '../../src/local-first/worker.ts';
 import { OFFER_COLUMNS, projectOfferRows, projectOfferDetail } from '../../public/local-first/workspace-graph.js';
-import { FILES, verifyGraphDataView } from '../../scripts/local-first-release/artifact.mjs';
+import { FILES, verifyAgenticBaseDataView, verifyGraphDataView } from '../../scripts/local-first-release/artifact.mjs';
 
-const assets = ['graph-data-view.js', 'graph-data-view.css', 'graph-ui-tokens.css'];
+const baseAssets = ['agentic-base-data-view.js', 'agentic-base-data-view.css'];
+const graphAssets = ['graph-data-view.js', 'graph-data-view.css', 'graph-ui-tokens.css'];
+const assets = [...baseAssets, ...graphAssets];
 const hash = value => createHash('sha256').update(value).digest('hex');
 const readPin = () => JSON.parse(fs.readFileSync('config/graph-data-view.json', 'utf8'));
 const literal = '<img src=x onerror=alert(1)> /buy @operator #draft';
@@ -39,6 +41,24 @@ test('missing launch fields have explicit presentation defaults and private fiel
     ['Untitled launch', 'Store not set', 'Needs human review', '$12.00', 'Not set', 'Not set', 'Review the saved offer', '1']);
 });
 
+test('Commerce table uses the exact private Agentic Base browser artifact', () => {
+  const pin = JSON.parse(fs.readFileSync('config/agentic-base-data-view.json', 'utf8'));
+  assert.equal(pin.schema, 'agentic-base/consumer-artifact/v1');
+  assert.equal(pin.source.repository, 'github.com/huijoohwee/agentic-base');
+  assert.equal(pin.source.revision, '093d2592449d19892170eac928606cd5d5da58b8');
+  assert.equal(pin.source.sourceDirty, false);
+  assert.equal(pin.contract.browserExport, 'mountDataView');
+  assert.deepEqual(pin.outputs.map(output => output.path).sort(), [...baseAssets].sort());
+  const verified = verifyAgenticBaseDataView();
+  assert.deepEqual(verified.outputs, pin.outputs);
+  const source = fs.readFileSync('public/local-first/workspace-graph.js', 'utf8');
+  assert.match(source, /import\('\.\/agentic-base-data-view\.js'\)/);
+  assert.match(source, /import\('\.\/graph-data-view\.js'\)/);
+  assert.match(source, /native\.mountDataView/);
+  assert.match(source, /native\.mountSequenceGuide/);
+  for (const slot of pin.contract.hostThemeSlots) assert(source.includes(slot), `Missing host mapping for ${slot}`);
+});
+
 test('generated Graph assets match their bounded native manifest and remain self-contained', () => {
   const pin = readPin();
   assert.equal(pin.schema, 'agentic-graph/data-view-artifact/v1');
@@ -65,7 +85,7 @@ test('generated Graph assets match their bounded native manifest and remain self
     'canvas/src/features/sequence/sequenceGuideBrowserAdapter.tsx',
     'canvas/src/features/sequence/SequenceFlow.css']) assert(inputNames.includes(required), required);
   assert(!inputNames.some(file => file.startsWith('canvas/src/') && /(?:\/hooks\/|useGraphStore|\/storage\/|\/three\/|\/mermaid\/|\/rich-media\/)/.test(file)));
-  assert.deepEqual(pin.outputs.map(output => output.path).sort(), [...assets].sort());
+  assert.deepEqual(pin.outputs.map(output => output.path).sort(), [...graphAssets].sort());
   for (const output of pin.outputs) {
     const file = 'public/local-first/' + output.path, stat = fs.lstatSync(file), bytes = fs.readFileSync(file);
     assert(stat.isFile() && !stat.isSymbolicLink());
@@ -96,7 +116,7 @@ test('release verification rejects provisional native provenance', t => {
   assert.throws(() => verifyGraphDataView(), /provenance/i);
 });
 
-test('Graph assets are included and served only under the Commerce release identity', async () => {
+test('Base and Graph assets are included and served only under the Commerce release identity', async () => {
   const revision = 'a'.repeat(40), seen = [];
   const names = ['workspace-graph.js', ...assets];
   const env = { RELEASE_CANDIDATE_SHA: revision, ASSETS: { fetch(request) {

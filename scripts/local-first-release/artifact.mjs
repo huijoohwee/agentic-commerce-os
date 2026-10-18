@@ -9,7 +9,7 @@ import { readCheckoutRelease, liveAuthorizationScope } from './live-profile.mjs'
 
 export const CONFIG = 'wrangler.local-first.jsonc';
 export const WORKER = 'agentic-commerce-edge-production';
-export const FILES = Object.freeze(['index.html', 'workspace.js', 'workspace-capabilities.js', 'workspace-tools.js', 'workspace-graph.js', 'graph-data-view.js', 'graph-data-view.css', 'graph-ui-tokens.css', 'app.js', 'drafts.js', 'launch.js', 'checkout.js', 'workflow.js', 'style.css', 'sw.js', 'workspace-pack.html', 'workspace-pack.js', 'workspace-pack.css', 'workspace-pack.simulation.js', 'workspace-pack.console.js']);
+export const FILES = Object.freeze(['index.html', 'workspace.js', 'workspace-capabilities.js', 'workspace-tools.js', 'workspace-graph.js', 'agentic-base-data-view.js', 'agentic-base-data-view.css', 'graph-data-view.js', 'graph-data-view.css', 'graph-ui-tokens.css', 'app.js', 'drafts.js', 'launch.js', 'checkout.js', 'workflow.js', 'style.css', 'sw.js', 'workspace-pack.html', 'workspace-pack.js', 'workspace-pack.css', 'workspace-pack.simulation.js', 'workspace-pack.console.js']);
 export const PRIVATE_FILES = Object.freeze(['education-materials.md']);
 export const digest = value => createHash('sha256').update(value).digest('hex');
 export const git = (...args) => execFileSync('git', args, { encoding: 'utf8', timeout: 20000 }).trim();
@@ -22,6 +22,46 @@ export function assertLocalFirstConfig(config) {
     || JSON.stringify(config.vars) !== JSON.stringify({ RELEASE_CANDIDATE_SHA: 'local-unreleased', CHECKOUT_MODE: 'sandbox' })) {
     throw Error('Local-first configuration must remain sandbox-only, private until route activation, and free of payment providers or financial resources.');
   }
+}
+export function verifyAgenticBaseDataView() {
+  const manifestFile = 'config/agentic-base-data-view.json', manifestStat = fs.lstatSync(manifestFile);
+  if (!manifestStat.isFile() || manifestStat.isSymbolicLink() || manifestStat.size < 1 || manifestStat.size >= 500000) throw Error('Agentic Base data view manifest invalid');
+  const pin = JSON.parse(fs.readFileSync(manifestFile, 'utf8'));
+  if (pin.schema !== 'agentic-base/consumer-artifact/v1' || pin.source?.repository !== 'github.com/huijoohwee/agentic-base'
+    || pin.source?.sourceDirty !== false || !/^[0-9a-f]{40}$/.test(pin.source?.revision ?? '')
+    || pin.source?.package !== '@agentic-base/views-react' || pin.source?.packageVersion !== '0.1.0'
+    || pin.source?.packagePath !== 'packages/views-react' || pin.source?.buildManifest !== 'packages/views-react/dist/browser-data-view.manifest.json'
+    || !/^[0-9a-f]{64}$/.test(pin.source?.buildManifestSha256 ?? '')) throw Error('Agentic Base data view provenance invalid');
+  if (pin.contract?.source !== 'agentic-base/browser-data-view/v1' || pin.contract?.browserExport !== 'mountDataView'
+    || pin.contract?.cssScope !== 'shadow-root'
+    || JSON.stringify(pin.contract?.hostThemeSlots) !== JSON.stringify(['--agentic-base-text', '--agentic-base-surface', '--agentic-base-border', '--agentic-base-muted', '--agentic-base-header', '--agentic-base-selected', '--agentic-base-hover', '--agentic-base-focus'])
+    || !Array.isArray(pin.inputs) || !pin.inputs.length || pin.inputs.length > 20
+    || !/^\d+\.\d+\.\d+$/.test(pin.build?.esbuild ?? '')) throw Error('Agentic Base data view source contract invalid');
+  const inputPaths = new Set(); let totalInputBytes = 0;
+  for (const input of pin.inputs) {
+    if (!input || typeof input.path !== 'string' || input.path.startsWith('/') || input.path.includes('..') || input.path.includes('\\')
+      || inputPaths.has(input.path) || !Number.isSafeInteger(input.bytes) || input.bytes < 1 || input.bytes > 2000000
+      || !/^[0-9a-f]{64}$/.test(input.sha256)) throw Error('Agentic Base data view input invalid');
+    inputPaths.add(input.path); totalInputBytes += input.bytes;
+  }
+  if (totalInputBytes > 8000000 || !inputPaths.has('packages/views-react/src/browser/DataViewBrowserAdapter.tsx')
+    || !inputPaths.has('packages/views-react/src/table/DataTableCore.tsx') || !inputPaths.has('packages/views-react/src/table/TableCore.tsx')) {
+    throw Error('Agentic Base data view native owner missing or over budget');
+  }
+  const outputs = ['agentic-base-data-view.js', 'agentic-base-data-view.css'];
+  if (!Array.isArray(pin.outputs) || pin.outputs.length !== outputs.length || outputs.some(name => !pin.outputs.some(row => row.path === name))) throw Error('Agentic Base data view inventory invalid');
+  for (const output of pin.outputs) {
+    if (output.sourcePath !== (output.path.endsWith('.js') ? 'browser-data-view.js' : 'browser-data-view.css')) throw Error('Agentic Base output source invalid');
+    const file = 'public/local-first/' + output.path, stat = fs.lstatSync(file);
+    if (!stat.isFile() || stat.isSymbolicLink() || stat.size < 1 || stat.size >= 500000) throw Error('Agentic Base data view asset invalid');
+    const bytes = fs.readFileSync(file);
+    if (bytes.length !== output.bytes || digest(bytes) !== output.sha256) throw Error('Agentic Base data view asset differs from its pinned source');
+    const text = bytes.toString('utf8');
+    if (output.path.endsWith('.css') ? /@import\b|url\(\s*['"]?(?:https?:|\/\/)/i.test(text)
+      : /\bimport\s*(?:\(|['"]|[^;\n]*?\bfrom\s*['"])|\b(?:fetch|XMLHttpRequest|WebSocket|EventSource)\s*\(/.test(text)
+        || !text.includes('mountDataView') || !text.includes('DATA_VIEW_BROWSER_LIMITS')) throw Error('Agentic Base data view asset must remain self-contained and offline');
+  }
+  return pin;
 }
 export function verifyGraphDataView() {
   const manifestFile = 'config/graph-data-view.json', manifestStat = fs.lstatSync(manifestFile);
@@ -60,11 +100,12 @@ export function verifyGraphDataView() {
 export function sourceManifest(revision, selection = readCheckoutRelease()) {
   if (!/^[0-9a-f]{40}$/.test(revision) || git('rev-parse', 'HEAD') !== revision) throw Error('Candidate source mismatch');
   verifyGraphBundle();
+  verifyAgenticBaseDataView();
   verifyGraphDataView();
   assertLocalFirstConfig(JSON.parse(fs.readFileSync(CONFIG, 'utf8')));
   if (fs.readdirSync('public/local-first').sort().join() !== [...FILES, ...PRIVATE_FILES].sort().join()) throw Error('Unexpected static asset inventory');
   const paths = [CONFIG, 'src/local-first/worker.ts', 'src/local-first/workspace-pack.ts', 'src/local-first/workspace-service.ts', 'config/capability-token-map.json',
-    'config/graph-data-view.json', 'config/workspace-pack-graph.json', 'src/generated/graph-workspace-pack.js', 'src/generated/graph-workspace-pack.d.ts',
+    'config/agentic-base-data-view.json', 'config/graph-data-view.json', 'config/workspace-pack-graph.json', 'src/generated/graph-workspace-pack.js', 'src/generated/graph-workspace-pack.d.ts',
     'scripts/workspace-pack/build-graph.mjs', 'src/edge/production-prefix.ts', 'src/shared/http.ts',
     ...['checkout', 'session', 'fulfillment-contract', 'fulfillment-definition', 'fulfillment', 'fulfillment-relay', 'stripe-checkout', 'checkout-offer', 'checkout-recovery', 'stripe-webhook'].map(file => `src/local-first/${file}.ts`),
     'src/sandbox/device-host.ts', 'package.json', 'package-lock.json',

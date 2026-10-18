@@ -1,0 +1,77 @@
+{
+  "schema": "agentic-base/consumer-artifact/v1",
+  "source": {
+    "repository": "github.com/huijoohwee/agentic-base",
+    "revision": "093d2592449d19892170eac928606cd5d5da58b8",
+    "sourceDirty": false,
+    "package": "@agentic-base/views-react",
+    "packageVersion": "0.1.0",
+    "packagePath": "packages/views-react",
+    "buildManifest": "packages/views-react/dist/browser-data-view.manifest.json",
+    "buildManifestSha256": "befc1d95fc407c39bbdde91cbe4e70c56d6b2676c8f686d4de74e40838497a2b"
+  },
+  "contract": {
+    "source": "agentic-base/browser-data-view/v1",
+    "browserExport": "mountDataView",
+    "cssScope": "shadow-root",
+    "hostThemeSlots": [
+      "--agentic-base-text",
+      "--agentic-base-surface",
+      "--agentic-base-border",
+      "--agentic-base-muted",
+      "--agentic-base-header",
+      "--agentic-base-selected",
+      "--agentic-base-hover",
+      "--agentic-base-focus"
+    ]
+  },
+  "build": {
+    "esbuild": "0.25.12",
+    "react": "18.3.1",
+    "reactDom": "18.3.1",
+    "format": "esm",
+    "target": "es2022",
+    "offline": true
+  },
+  "inputs": [
+    {
+      "path": "packages/views-react/src/browser/DataViewBrowserAdapter.tsx",
+      "bytes": 5708,
+      "sha256": "ed9638a6abccf089d92a3363ce5e98569ea3547149be9f218b8328e098138960"
+    },
+    {
+      "path": "packages/views-react/src/browser/browserDataView.css",
+      "bytes": 1883,
+      "sha256": "f459e62885ac350800fbb6058be7afacb676b07f0650d85f10683f75151be1c9"
+    },
+    {
+      "path": "packages/views-react/src/browser/index.ts",
+      "bytes": 175,
+      "sha256": "38310e61f58a6cbec4ddc354e6bcda4319602df70886980226e86c456c8effa6"
+    },
+    {
+      "path": "packages/views-react/src/table/DataTableCore.tsx",
+      "bytes": 3327,
+      "sha256": "c5dc0c131d3eae6170e4395c7881c7716ec524040c2750c40cda316226fd1454"
+    },
+    {
+      "path": "packages/views-react/src/table/TableCore.tsx",
+      "bytes": 1327,
+      "sha256": "c3c3daffe91f462625cba8eefa0f518ab8d0f131e4a74ccc5232e2ea33dfa9a9"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "agentic-base-data-view.js",
+      "sourcePath": "browser-data-view.js",
+      "bytes": 148590,
+      "sha256": "3444a7f66befeb59a39b506a36b3467b4801d9c15d756a90171b6ae7e2716a5d"
+    },
+    {
+      "path": "agentic-base-data-view.css",
+      "sourcePath": "browser-data-view.css",
+      "bytes": 1883,
+      "sha256": "f459e62885ac350800fbb6058be7afacb676b07f0650d85f10683f75151be1c9"
+    }
+  ]
+}
