@@ -2,28 +2,28 @@
 title: "Reference Implementation — Native Commerce Workspace Increment"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "edge-commerce-agent-mvp"
-revision: "0.24.0"
-version: "0.24.0"
-prd_revision: "0.24.0"
-tad_revision: "0.24.0"
-adr_revision: "0.24.0"
-mvp_revision: "0.24.0"
-gtm_revision: "0.24.0"
-date: "2026-10-17"
+revision: "0.25.0"
+version: "0.25.0"
+prd_revision: "0.25.0"
+tad_revision: "0.25.0"
+adr_revision: "0.25.0"
+mvp_revision: "0.25.0"
+gtm_revision: "0.25.0"
+date: "2026-10-18"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Commerce product architecture"
 local_rung: "undocumented"
 delivered_rung: "undocumented"
-readiness_scope: "CW-D13 native floating guide locally verified; private Base CI access prepared; runtime/human gates separate"
+readiness_scope: "CW-D14 pins Shoply to the private Base browser table; Integration Gate and live visual parity remain separate"
 lane: "authoring"
 universal_scope: false
 load_policy: "on-demand"
 lifecycle_status: "active"
 runtime_readiness_policy: "fail-closed"
-worktree_id: "device-0232231d4a19--commerce-base-private-ci"
+worktree_id: "device-0232231d4a19--agentic-base-browser-view-consumer"
 agent_id: "codex"
-source_revision: "0006d363eaba69bdab2680d19c6445d2537e9ec6"
+source_revision: "7024f93a1839b205949d4f2b72d908c7ef4669b0"
 guideline_revision: "3.4.0"
 guideline_source_revision: "82835ac37d524643faa6b9703cb077ea9474ab15"
 guideline_sha256: "9707ee2355d4d60b8f7a759441fbe67c8235e8762ab9cb0a46dd070a5f02b84a"
@@ -128,8 +128,8 @@ schema-led assistance → correct read. Reuse W1/W3/W4; buyer impact and WTP are
 | F3 capability discoverability / CW-06,07 | Opening the existing tools panel identifies browser-local vs supplied snapshot vs runtime observation and read-only vs prepare; each of the four tools exposes required fields and its exact invocation, with usable controls when native WebMCP is absent. No auto-invoke on open; extend the workspace browser suite with all four tools, unsupported API and keyboard traversal. Target first correct local read ≤60 s; headless ≤15 min. |
 | F4 recovery and result comprehension / CW-02,06 | Summaries use each existing result shape: project counts/list, offer review with revision/economics/human-review requirement, or environment observation; provenance is always visible, absent fields never invented, raw JSON remains inspectable. Errors retain their code and one safe next action; stale revision requires reopen/review, timeout/cancel remains unknown, schema drift disables tools. No automatic retry or intent substitution; extend browser and `workspace-invocation.test.mjs` negatives. |
 | F5 private, equivalent handoff / CW-03,06 | For the same selected offer/revision, local UI, optional WebMCP, HTTP, MCP and sigil calls return equal `value` and deliberate provenance differences. Prepared snapshots expose only the selected scope, with field/offer counts visible before sharing; no private notes, cookies, persisted payload or automatic transmission. Extend existing parity tests and browser request assertions; invalid aliases, unknown properties, missing snapshots and cancellation still fail. |
-| F6 native list/detail reuse / CW-03,07,08 | Vendor, Admin and project offer lists render through Graph's shared table core; selecting a record shows its property orientation through the same core and the existing edit/review action. Native wrappers also delegate to that core. Keyboard activation, labels, 360/768/1024/1280 px and 200% text resize pass; no duplicate table renderer/theme. |
-| F7 bounded local composition / CW-01,03,06 | Lazy mount/update/destroy uses validated plain data and exact pinned local module/CSS. Loading, failure, stale state and disposal races remain explicit; offline after priming works. Generated provenance/byte checks pass; no Graph stores, media, remote calls or authority transfers. Existing MCP/WebMCP `/ @ #` behavior remains unchanged. |
+| F6 native list/detail reuse / CW-03,07,08 | Vendor, Admin and project offer lists render through the exact Agentic Base browser table; selecting a record shows its property orientation through the same core and the existing edit/review action. Graph native wrappers also delegate to Base. Keyboard activation, labels, 360/768/1024/1280 px and 200% text resize pass; no second table source. |
+| F7 bounded local composition / CW-01,03,06 | Lazy mount/update/destroy uses validated plain data and the exact pinned Base module/CSS. Loading, failure, stale state and disposal races remain explicit; offline after priming works. Base provenance/byte checks pass; no Graph stores, media, remote calls or authority transfers. Existing MCP/WebMCP `/ @ #` behavior remains unchanged. |
 | F8 offer setup / CW-03,06,07 | Description needs title/audience/outcome; identifiers check merchant/agent format only; economics needs currency, six explicit bounded amounts and positive estimated contribution. Current edits may complete these three steps. Step four requires saved exact revision + review + explicit acknowledgment; editing, storage error or stale revision invalidates it. UI and existing `offer.review` share pure three-step assessment; agents cannot acknowledge. Verify missing/invalid/zero amounts, currency precision, negative contribution, stale review, keyboard focus and MCP/WebMCP/sigil parity. |
 
 F1/F2 rank first for the nearest offer-review journey, F3/F4 next for correct integration, F5 preserves
@@ -211,7 +211,7 @@ Its descriptor now advertises the existing `api`/`mcp`/`invoke` URLs and an exac
 headless parity tests execute the example. No new route or authority is added.
 F4 reuses `evaluateLaunch` reasons/contribution for the selected saved offer; focus the existing editor
 for missing terms or non-positive contribution. Never recalculate economics in the presentation layer.
-CW-D11 adds one lazy Commerce projection with no domain state; Graph owns the shared core and adapter. The existing host remains under 600 lines; rich Graph editing/media stays in its native wrappers.
+CW-D11 adds one lazy Commerce projection with no domain state; `agentic-base` owns the shared table contract, browser renderer and component CSS. Commerce maps its existing Graph semantic tokens into Base theme slots. The Graph sequence guide remains its separate lazy feature; the Shoply table never invokes the Graph bundle's legacy table export. The existing host remains under 600 lines; rich Graph editing/media stays in its native wrappers.
 
 | Failure or threat | Required behavior / owner check |
 |---|---|
@@ -341,7 +341,7 @@ summary for merchants. Preserve exact input/result bytes and owner error codes a
 Revert only changed views/tests on comprehension or parity regression; draft schemas, reviewed
 revisions and effect permissions stay intact. Revisit only on observed buyer need for a missing read.
 
-**CW-A12 / accepted for CW-D11:** the user selected an in-page native table. Extract G1 once for its native row and column wrappers plus Commerce; host callbacks keep editing/review in existing owners. A full-app iframe adds unrelated stores/runtime, copying JSX/CSS creates drift, and a new grid package adds a competing owner. Revert generated pin and projection together; no draft migration. This narrow extraction supersedes CW-A11’s no-extraction choice only for the existing table structure.
+**CW-A12 / accepted for CW-D11:** the user selected an in-page native table. Extract G1 once into `agentic-base` for native row/column wrappers and Commerce; host callbacks keep editing/review in existing owners. A full-app iframe adds unrelated stores/runtime, copying JSX/CSS creates drift, and a new grid package adds a competing owner. Revert generated pin and projection together; no draft migration. This narrow extraction supersedes CW-A11’s no-extraction choice only for the existing table structure.
 **CW-A13 / CW-D12:** extend existing `drafts.js` validation and `launch.js` inspection/evaluation, not a wizard store or duplicated validator. `inspectLaunchInput` and `parseLaunchInput` share normalization; `evaluateOfferSetup` returns only three value-based steps plus human-review-required. UI owns acknowledgment against the existing saved-review identity. Add no mutation/tool, registry or provider check; revert checklist views and result projection together without changing stored schema.
 Manual diagnostics and the proposed projection are economically incomparable until the study measures
 support time; the plan does not invent a weighted commercial score. No contested vendor selection is
@@ -375,15 +375,15 @@ CW-02/04), Close 30 s (distinct result and next allowed action, CW-05). This is 
 Core functionality, theme alignment, technical integration and usefulness remain unassessed by users for CW.
 A fixture result cannot establish physical-device usability, demand or higher experience maturity.
 
-## Private Agentic Base CI access — 2026-10-17
+## Agentic Base browser table consumer — CW-D14 / 2026-10-18
 
-Shoply remains a planned Base consumer; this prepares read-only Git access only for locked CI dependency installation. It does not pin Base or establish view parity. Integration Gate stages `AGENTIC_BASE_READ_KEY` only for `npm ci --ignore-scripts` with pinned GitHub SSH host identity, removes it before `npm rebuild` and tests, and never exposes it to release workflows; exact commit pin, artifact migration and parity remain a separately reviewed consumer change.
+Shoply consumes `@agentic-base/views-react` browser output from private Base commit `093d2592449d19892170eac928606cd5d5da58b8`, pinned with source-input and output hashes in [config/agentic-base-data-view.json](../config/agentic-base-data-view.json). Only the bounded `mountDataView` contract is used for Commerce list/property projections; Graph's existing sequence-guide behavior remains intact. The copied package output is local, self-contained and offline; Commerce owns records, theme-slot mapping, editing/review callbacks and lifecycle. The package remains private; no public registry, second persistence layer, runtime fetch, or remote data transfer is added. Existing Graph and Shoply read-only CI keys remain restricted to locked dependency installation and are removed before tests/release; this artifact check needs no runtime credential.
 
 ### Deploy boundary and recovery
 
 | Lane / effect | Authority and evidence required | Current disposition / recovery owner |
 |---|---|---|
-| Authoring → source review | User-authorized embed, exact native START/readmission paths and source-bound checks | Open for CW-D11; RELEASE publishes exact candidates for review |
+| Authoring → source review | User-authorized embed, exact native START/readmission paths and source-bound checks | Open for CW-D14; RELEASE publishes exact candidates for review |
 | Source review → protected main | Exact candidate plus required protected Integration Gate and integration receipt | Not inferred from local checks; use existing OS release owner |
 | Main → generated mirror | Separate consumer projection instruction and exact source join | Closed; no authored mirror edits |
 | Main → runtime | Product-owned changed-input analysis, cost/license proof, exact deployment authority and receipt | D11 changes local-first assets/cache inputs; production still needs separate exact-candidate approval/readback |

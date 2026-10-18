@@ -1,7 +1,9 @@
-// Commerce owns record projection and actions; Graph owns the table and field view.
+// Commerce owns record projection and actions; Agentic Base owns the portable table.
 const mounts = new WeakMap();
-const cssUrl = new URL('./graph-data-view.css', import.meta.url).href;
-let adapter;
+const baseCssUrl = new URL('./agentic-base-data-view.css', import.meta.url).href;
+const graphCssUrl = new URL('./graph-data-view.css', import.meta.url).href;
+let baseAdapter;
+let graphAdapter;
 const el = (tag, text, className) => {
   const item = document.createElement(tag);
   if (text !== undefined) item.textContent = text;
@@ -20,14 +22,35 @@ export function projectOfferDetail(offer, presentation) {
     cells: [offer.title, offer.launch?.merchantId || 'Store not set', presentation.status(offer), presentation.price(offer),
       offer.launch?.audience || 'Not set', offer.launch?.outcome || 'Not set', presentation.reason(offer), String(offer.revision)] }] };
 }
+function applyBaseTheme(host) {
+  const slots = {
+    '--agentic-base-text': 'var(--kg-text-primary, #172033)',
+    '--agentic-base-surface': 'var(--kg-panel-bg, #fff)',
+    '--agentic-base-border': 'var(--kg-border, #d9dee8)',
+    '--agentic-base-muted': 'var(--kg-text-secondary, #64748b)',
+    '--agentic-base-header': 'var(--kg-panel-bg, #f7f8fa)',
+    '--agentic-base-selected': 'color-mix(in srgb, var(--kg-accent, #2563eb) 12%, var(--kg-panel-bg, #fff))',
+    '--agentic-base-hover': 'color-mix(in srgb, var(--kg-accent, #2563eb) 7%, var(--kg-panel-bg, #fff))',
+    '--agentic-base-focus': 'var(--kg-accent, #2563eb)',
+  };
+  for (const [name, value] of Object.entries(slots)) host.style.setProperty(name, value);
+}
+function loadBaseAdapter() {
+  baseAdapter ??= import('./agentic-base-data-view.js').catch(error => { baseAdapter = null; throw error; });
+  return baseAdapter;
+}
+function loadGraphAdapter() {
+  graphAdapter ??= import('./graph-data-view.js').catch(error => { graphAdapter = null; throw error; });
+  return graphAdapter;
+}
 export function disposeTable(container) {
   const state = mounts.get(container);
   if (!state) return;
   state.disposed = true; state.grid?.destroy(); state.detail?.destroy(); mounts.delete(container);
 }
-async function surface(host, signal) {
+async function surface(host, signal, stylesheetUrl) {
   const shadow = host.attachShadow({ mode: 'open' }), stylesheet = el('link'), target = el('div');
-  stylesheet.rel = 'stylesheet'; stylesheet.href = cssUrl;
+  stylesheet.rel = 'stylesheet'; stylesheet.href = stylesheetUrl;
   const loaded = new Promise((resolve, reject) => {
     const finish = error => {
       clearTimeout(timer); stylesheet.onload = null; stylesheet.onerror = null;
@@ -49,12 +72,12 @@ export async function mountCommerceTable(container, offers, presentation, action
   disposeTable(container);
   const state = { disposed: false, grid: null, detail: null }; mounts.set(container, state);
   const layout = el('div', undefined, 'graph-record-layout'), gridHost = el('div', undefined, 'graph-record-grid');
+  applyBaseTheme(gridHost);
   const details = el('section', undefined, 'graph-record-detail'); details.hidden = true;
   details.setAttribute('aria-label', 'Selected offer');
   layout.append(gridHost, details); container.replaceChildren(layout);
   try {
-    adapter ??= import('./graph-data-view.js').catch(error => { adapter = null; throw error; });
-    const [native, target] = await Promise.all([adapter, surface(gridHost)]);
+    const [native, target] = await Promise.all([loadBaseAdapter(), surface(gridHost, undefined, baseCssUrl)]);
     if (state.disposed || mounts.get(container) !== state) return;
     const rows = projectOfferRows(offers, presentation);
     let selection = 0;
@@ -70,12 +93,13 @@ export async function mountCommerceTable(container, offers, presentation, action
       close.addEventListener('click', () => { selection++; state.detail?.destroy(); state.detail = null; details.hidden = true; layout.classList.remove('has-selection'); state.grid.update({ columns: OFFER_COLUMNS, rows, ariaLabel: actions.label, onActivateRow: select }); gridHost.shadowRoot.querySelectorAll('tr[tabindex="0"]')[rows.findIndex(row => row.id === id)]?.focus(); });
       header.append(heading, close);
       const detailHost = el('div', undefined, 'graph-record-fields'), controls = el('div', undefined, 'record-actions');
+      applyBaseTheme(detailHost);
       const edit = el('a', actions.editLabel, 'button secondary'); edit.href = '#vendor-editor';
       edit.addEventListener('click', event => { event.preventDefault(); actions.open(offer); }); controls.append(edit);
       if (actions.inspect) { const inspect = el('button', 'Inspect with tools', 'secondary'); inspect.type = 'button'; inspect.setAttribute('aria-label', 'Inspect ' + offer.title + ' with agent tools'); inspect.addEventListener('click', () => actions.inspect(offer)); controls.append(inspect); }
       details.replaceChildren(header, note, detailHost, controls); details.hidden = false; layout.classList.add('has-selection');
       try {
-        const detailTarget = await surface(detailHost);
+        const detailTarget = await surface(detailHost, undefined, baseCssUrl);
         if (state.disposed || selection !== revision) return;
         state.detail = native.mountDataView(detailTarget, { ...projectOfferDetail(offer, presentation), orientation: 'columns', ariaLabel: 'Offer fields' });
         heading.focus({ preventScroll: true });
@@ -106,8 +130,7 @@ export function createCommerceSetupGuide({ launcher }) {
       document.body.append(host);
       launcher.setAttribute('aria-expanded', 'true');
       try {
-        adapter ??= import('./graph-data-view.js').catch(error => { adapter = null; throw error; });
-        const [native, target] = await Promise.all([adapter, surface(host, loading.signal)]);
+        const [native, target] = await Promise.all([loadGraphAdapter(), surface(host, loading.signal, graphCssUrl)]);
         if (!requested || generation !== ticket) return;
         handle = native.mountSequenceGuide(target, latest);
       } catch (error) {
