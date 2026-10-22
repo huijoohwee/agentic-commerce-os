@@ -47,6 +47,36 @@ export async function fetchLocalFirst(request: Request, env: LocalFirstEnv, tran
     if (url.pathname !== prefix && !url.pathname.startsWith(`${prefix}/`)) {
       return finish(Response.json({ ok: false, code: 'not_found' }, { status: 404 }))
     }
+    // The durable listing host shares this router but must omit the public SME service.
+    // Its build sets import.meta.commerceLiveCheckout=false; Worker/dev builds leave it undefined.
+    if (import.meta.commerceLiveCheckout !== false) {
+      const rootAsset = ['/sme-business-pack.html', '/sme-business-pack.js', '/sme-business-pack.css',
+        '/sme-business-pack-core.js', '/sme-pack-sg.js', '/sme-pack-my.js']
+        .find(asset => url.pathname === `${prefix}${asset}`)
+      if (rootAsset) {
+        const response = await env.ASSETS.fetch(new Request(new URL(rootAsset, url.origin), { method: 'GET' }))
+        return finish(response.ok ? response : new Response('Asset unavailable', { status: 503 }))
+      }
+      const smePackRoute = `${prefix}/services/sme-business-pack`
+      if (url.pathname === smePackRoute && ['GET', 'HEAD'].includes(request.method)) {
+        url.pathname += '/'; url.search = ''; return finish(Response.redirect(url.href, 308))
+      }
+      if (url.pathname.startsWith(`${smePackRoute}/`)) {
+        const route = url.pathname.slice(smePackRoute.length)
+        if (['/service.json', '/api', '/mcp'].includes(route)) {
+          const { handleSmeBusinessPackRequest } = await import('./sme-business-pack.ts')
+          const response = await handleSmeBusinessPackRequest(request, env.RELEASE_CANDIDATE_SHA)
+          if (response) return finish(response)
+        }
+        const asset = route === '/' ? '/sme-business-pack.html'
+          : ['/sme-business-pack.js', '/sme-business-pack.css', '/sme-business-pack-core.js', '/sme-pack-sg.js', '/sme-pack-my.js']
+            .find(file => route === file)
+        if (asset) {
+          const response = await env.ASSETS.fetch(new Request(new URL(asset, url.origin), { method: 'GET' }))
+          return finish(response.ok ? response : new Response('Asset unavailable', { status: 503 }))
+        }
+      }
+    }
     if (url.pathname === WORKSPACE_PACK_PATH && ['GET', 'HEAD'].includes(request.method)) {
       url.pathname += '/'; url.search = ''; return finish(Response.redirect(url.href, 308))
     }
@@ -118,7 +148,7 @@ const unavailableRuntime: FulfillmentRuntime = Object.freeze({
   async ready() { throw Error('fulfillment_unavailable') },
   async invoke() { throw Error('fulfillment_unavailable') },
 })
-export default { fetch: (request: Request, env: LocalFirstEnv) => {
+export default { fetch: async (request: Request, env: LocalFirstEnv) => {
   let runtime: FulfillmentRuntime | undefined
   try { runtime = createFulfillmentRelay(env) } catch { runtime = unavailableRuntime }
   return fetchLocalFirst(request, env, undefined, runtime)
