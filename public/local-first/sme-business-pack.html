@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f8f8f6">
+  <meta name="description" content="Check completeness for a Singapore or Malaysia F&B takeover listing.">
+  <title>SME Takeover Pack · Commerce</title>
+  <link rel="stylesheet" href="./sme-business-pack.css">
+  <script type="module" src="./sme-business-pack.js"></script>
+</head>
+<body>
+  <main>
+    <header class="page-head">
+      <a class="back" href="../../">← Commerce workspace</a>
+      <p id="runtime-mode" class="eyebrow">SME BUSINESS PACK · R1</p>
+      <h1>Check a food business takeover listing</h1>
+      <p class="lede">Compare required facts and see an arithmetic report for Singapore or Malaysia without saving your inputs.</p>
+    </header>
+    <section class="notice" aria-label="Pack status">
+      <strong>Indicative, not verified</strong>
+      <p>Both packs are provisional. Their money bands are draft interface buckets, not market benchmarks. The report is not valuation, legal, tax, or transaction advice.</p>
+      <p id="service-status" role="status" aria-live="polite">Loading pack list…</p>
+      <p id="runtime-status" role="status" aria-live="polite">Checking service availability…</p>
+    </section>
+    <section class="layout">
+      <form id="check-form" class="card" autocomplete="off">
+        <label for="pack-id">Country pack</label>
+        <select id="pack-id" name="pack_id" required></select>
+        <section id="fields" class="fields" aria-live="polite"></section>
+        <div class="actions">
+          <button type="submit">Run listing check</button>
+          <button id="checklist" type="button" class="secondary">Check transfer checklist</button>
+          <button id="sample" type="button" class="secondary">Load sample facts</button>
+        </div>
+      </form>
+      <section class="card results" aria-labelledby="result-heading">
+        <h2 id="result-heading">Report</h2>
+        <p id="result-status" role="status" aria-live="polite">Choose a pack and enter facts to begin.</p>
+        <pre id="result" tabindex="0" aria-label="Report output"></pre>
+      </section>
+    </section>
+    <section class="card agent-card" aria-labelledby="agent-heading">
+      <h2 id="agent-heading">Agent tools</h2>
+      <p>Headless MCP endpoint</p><code id="mcp-url"></code>
+      <p id="webmcp-status" role="status" aria-live="polite">Checking browser tool support…</p>
+      <p class="footnote">MCP and WebMCP calls use the same deterministic checks. Browser tool registration is optional and never implies agent connection.</p>
+    </section>
+    <footer><p>0 inference tokens · No account or external data required. Browser checks stay on this device; this app does not save inputs. Headless MCP requests are processed statelessly.</p></footer>
+  </main>
+</body>
+</html>
