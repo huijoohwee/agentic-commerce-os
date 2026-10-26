@@ -234,11 +234,14 @@ jobs:
           set -euo pipefail
           ./node_modules/.bin/wrangler pages deploy "$PAYLOAD_DIR" \
             --project-name=agentic-design-system --branch=main \
-            --commit-hash="$CANDIDATE_SHA" --commit-message="Design System Production candidate $CANDIDATE_SHA" --commit-dirty=false
+            --commit-hash="$CANDIDATE_SHA" --commit-message="Design System Production candidate $CANDIDATE_SHA" --commit-dirty=false \
+            2>&1 | tee "$EVIDENCE_DIR/pages-production-upload.log"
+          production_pages_url="$(node scripts/design-system-release.mjs pages-upload-url \
+            "$EVIDENCE_DIR/pages-production-upload.log")"
           ./node_modules/.bin/wrangler pages deployment list --project-name=agentic-design-system \
             --environment=production --json > "$EVIDENCE_DIR/pages-production-deployments.json"
           node scripts/design-system-release.mjs pages-deployment \
-            "$EVIDENCE_DIR/pages-production-deployments.json" main "$CANDIDATE_SHA" \
+            "$EVIDENCE_DIR/pages-production-deployments.json" main "$CANDIDATE_SHA" "$production_pages_url" \
             > "$EVIDENCE_DIR/pages-production-deployment.json"
 
       - name: Activate and verify the exact Production edge route

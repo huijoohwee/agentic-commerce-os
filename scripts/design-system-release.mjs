@@ -217,13 +217,22 @@ async function readback(base, directory, candidateSha, outputPath) {
   process.stdout.write(`${JSON.stringify({ origin: origin.origin, candidateRevision: candidateSha, sourceRevision: config.source.revision, payloadDigest: config.payloadDigest, checks: proof.length })}\n`);
 }
 
-function parsePagesDeployment(path, branch, candidateSha) {
+function parsePagesDeployment(path, branch, candidateSha, expectedUrl = null) {
   const parsed = json(path), rows = Array.isArray(parsed) ? parsed : parsed.result ?? parsed.deployments;
   if (!Array.isArray(rows)) fail('pages_deployments_schema_invalid');
+  if (expectedUrl !== null) {
+    let url;
+    try { url = new URL(expectedUrl); } catch { fail('pages_deployment_url_invalid'); }
+    if (url.protocol !== 'https:' || url.username || url.password || url.port || url.pathname !== '/'
+      || url.search || url.hash || !/^[a-z0-9-]+\.agentic-design-system\.pages\.dev$/u.test(url.hostname)) {
+      fail('pages_deployment_url_invalid');
+    }
+  }
   const shaOf = (row) => row.commit_hash ?? row.commitHash ?? row.source?.commit_hash
     ?? row.deployment_trigger?.metadata?.commit_hash ?? row.deployment_trigger?.metadata?.commitHash
     ?? row.Source ?? (typeof row.source === 'string' ? row.source : undefined);
   const branchOf = (row) => row.branch ?? row.Branch ?? row.source?.branch ?? row.deployment_trigger?.metadata?.branch;
+  const urlOf = (row) => row.url ?? row.Deployment ?? row.aliases?.[0] ?? null;
   const commitMatches = (value) => {
     if (value === candidateSha) return true;
     if (typeof value !== 'string' || !/^[0-9a-f]{7,39}$/u.test(value) || !candidateSha.startsWith(value)) return false;
@@ -232,11 +241,23 @@ function parsePagesDeployment(path, branch, candidateSha) {
       return resolved === candidateSha;
     } catch { return false; }
   };
-  const matches = rows.filter((row) => commitMatches(shaOf(row)) && branchOf(row) === branch);
+  const matches = rows.filter((row) => commitMatches(shaOf(row)) && branchOf(row) === branch
+    && (expectedUrl === null || urlOf(row) === expectedUrl));
   if (matches.length !== 1) fail('pages_candidate_deployment_not_unique');
   const row = matches[0], id = row.id ?? row.deployment_id ?? row.Id;
   if (typeof id !== 'string' || !id) fail('pages_deployment_id_missing');
-  process.stdout.write(`${JSON.stringify({ id, url: row.url ?? row.Deployment ?? row.aliases?.[0] ?? null, branch, commitSha: candidateSha, environment: row.environment ?? row.Environment?.toLowerCase() ?? (branch === 'main' ? 'production' : 'preview') })}\n`);
+  process.stdout.write(`${JSON.stringify({ id, url: urlOf(row), branch, commitSha: candidateSha, environment: row.environment ?? row.Environment?.toLowerCase() ?? (branch === 'main' ? 'production' : 'preview') })}\n`);
+}
+
+function parsePagesUploadUrl(path) {
+  const bytes = read(path);
+  if (bytes.length > 64_000) fail('pages_upload_log_too_large');
+  const log = bytes.toString('utf8');
+  const urls = [...log.matchAll(/https:\/\/[a-z0-9-]+\.agentic-design-system\.pages\.dev\b/gu)].map(([url]) => url);
+  if (urls.length !== 1) fail('pages_upload_url_not_unique');
+  const url = new URL(urls[0]);
+  if (url.pathname !== '/' || url.search || url.hash) fail('pages_deployment_url_invalid');
+  process.stdout.write(`${url.origin}\n`);
 }
 
 function parseWorkerDeployment(path, expectedName, candidateSha, expectedMessage) {
@@ -311,6 +332,8 @@ async function main(args) {
   if (command === 'identity' && rest.length === 4) return identity(...rest);
   if (command === 'readback' && rest.length === 4) return readback(...rest);
   if (command === 'pages-deployment' && rest.length === 3) return parsePagesDeployment(...rest);
+  if (command === 'pages-deployment' && rest.length === 4) return parsePagesDeployment(...rest);
+  if (command === 'pages-upload-url' && rest.length === 1) return parsePagesUploadUrl(...rest);
   if (command === 'worker-deployment' && rest.length === 4) return parseWorkerDeployment(...rest);
   if (command === 'route-baseline' && rest.length === 1) return routeStatus(rest[0], false);
   if (command === 'route-proof' && rest.length === 1) return routeStatus(rest[0], true);
