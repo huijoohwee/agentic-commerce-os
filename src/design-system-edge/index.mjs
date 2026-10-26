@@ -73,7 +73,7 @@ export default {
     const upstreamUrl = new URL(origin);
     upstreamUrl.pathname = pathname.slice(PREFIX.length) || '/';
     upstreamUrl.search = url.search;
-    const headers = new Headers();
+    const headers = new Headers({ 'accept-encoding': 'identity' });
     for (const name of FORWARDED_HEADERS) {
       const value = request.headers.get(name);
       if (value) headers.set(name, value);
@@ -91,11 +91,15 @@ export default {
 
     const responseHeaders = new Headers();
     for (const name of [
-      'accept-ranges', 'cache-control', 'content-encoding', 'content-length', 'content-range',
+      'accept-ranges', 'cache-control', 'content-range',
       'content-type', 'etag', 'last-modified', 'vary',
     ]) {
       const value = upstream.headers.get(name);
       if (value) responseHeaders.set(name, value);
+    }
+    if (request.method === 'HEAD') {
+      const contentLength = upstream.headers.get('content-length');
+      if (contentLength) responseHeaders.set('content-length', contentLength);
     }
     responseHeaders.set('referrer-policy', 'strict-origin-when-cross-origin');
     responseHeaders.set('x-content-type-options', 'nosniff');
