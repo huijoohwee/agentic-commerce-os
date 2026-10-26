@@ -1,0 +1,287 @@
+name: Design System Route Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_sha:
+        description: Exact protected main commit to release
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: design-system-route-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Dev readback and exact Production promotion
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    env:
+      CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+    steps:
+      - name: Checkout exact protected candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.candidate_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+
+      - name: Install locked release tools
+        run: timeout --foreground --kill-after=30s 8m npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Bind source, candidate and the exact static payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$GITHUB_RUN_ATTEMPT" = 1
+          test "$GITHUB_REF" = refs/heads/main
+          test "$GITHUB_SHA" = "$CANDIDATE_SHA"
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$CANDIDATE_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+          upstream_revision="$(node -e 'const p=require("./package-lock.json").packages["node_modules/agentic-os"]?.resolved??""; const m=p.match(/agentic-os\/tar\.gz\/([0-9a-f]{40})(?:$|\?)/u); if(!m) process.exit(1); process.stdout.write(m[1])')"
+          evidence="$RUNNER_TEMP/design-system-release-evidence"
+          payload="$RUNNER_TEMP/design-system-payload"
+          mkdir -p "$evidence"
+          node node_modules/agentic-os/bin/agentic-os-pin.mjs \
+            --consumer="$GITHUB_WORKSPACE" --revision="$upstream_revision" --source-control \
+            > "$evidence/source-control-preflight.json"
+          node scripts/design-system-release.mjs verify public/agentic-design-system
+          node scripts/design-system-release.mjs build "$payload"
+          node scripts/design-system-release.mjs identity public/agentic-design-system \
+            "$CANDIDATE_SHA" "$evidence/source-control-preflight.json" "$evidence/candidate.json"
+
+          payload_digest="$(node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).payloadDigest)' "$evidence/candidate.json")"
+          source_revision="$(node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).sourceRevision)' "$evidence/candidate.json")"
+          preflight_digest="$(node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).sourceControlPreflightDigest)' "$evidence/candidate.json")"
+          printf 'EVIDENCE_DIR=%s\nPAYLOAD_DIR=%s\nPAYLOAD_DIGEST=%s\nSOURCE_REVISION=%s\nPREFLIGHT_DIGEST=%s\n' \
+            "$evidence" "$payload" "$payload_digest" "$source_revision" "$preflight_digest" >> "$GITHUB_ENV"
+          printf 'DEV_PAGES_BRANCH=dev-%s\nDEV_PAGES_ORIGIN=dev-%s.agentic-design-system.pages.dev\n' \
+            "$GITHUB_RUN_ID" "$GITHUB_RUN_ID" >> "$GITHUB_ENV"
+
+      - name: Observe exact route baseline
+        id: route_baseline
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          node scripts/design-system-release.mjs route-baseline agentic-design-system-edge-production \
+            > "$EVIDENCE_DIR/route-baseline.json"
+          test "$(node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).state)' "$EVIDENCE_DIR/route-baseline.json")" = absent
+
+      - name: Validate both Worker bundles before deployment
+        run: |
+          set -euo pipefail
+          ./node_modules/.bin/wrangler deploy --config wrangler.design-system.jsonc --env dev --dry-run \
+            --var "PAGES_ORIGIN:$DEV_PAGES_ORIGIN" \
+            --var "DESIGN_SYSTEM_SOURCE_REVISION:$SOURCE_REVISION" \
+            --var "RELEASE_CANDIDATE_SHA:$CANDIDATE_SHA" \
+            --var "RELEASE_CANDIDATE_DIGEST:$PAYLOAD_DIGEST"
+          ./node_modules/.bin/wrangler deploy --config wrangler.design-system.jsonc --env production --dry-run \
+            --var "DESIGN_SYSTEM_SOURCE_REVISION:$SOURCE_REVISION" \
+            --var "RELEASE_CANDIDATE_SHA:$CANDIDATE_SHA" \
+            --var "RELEASE_CANDIDATE_DIGEST:$PAYLOAD_DIGEST"
+
+      - name: Ensure the dedicated Direct Upload Pages project
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          ./node_modules/.bin/wrangler pages project list --json > "$EVIDENCE_DIR/pages-projects.json"
+          project_state="$(node - "$EVIDENCE_DIR/pages-projects.json" "$EVIDENCE_DIR/pages-project-baseline.json" <<'NODE'
+          const fs = require('node:fs');
+          const value = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          const rows = Array.isArray(value) ? value : value.result ?? value.projects;
+          if (!Array.isArray(rows)) throw new Error('pages_project_list_invalid');
+          const matches = rows.filter((row) => row.name === 'agentic-design-system');
+          if (matches.length > 1) throw new Error('pages_project_not_unique');
+          const state = matches.length ? 'present' : 'absent';
+          fs.writeFileSync(process.argv[3], JSON.stringify({ schema: 'agentic-commerce-design-system-pages-project-baseline/v1', name: 'agentic-design-system', state, projectId: matches[0]?.id ?? null, productionBranch: matches[0]?.production_branch ?? null }, null, 2) + '\n');
+          process.stdout.write(state);
+          NODE
+          )"
+          if [[ "$project_state" == absent ]]; then
+            ./node_modules/.bin/wrangler pages project create agentic-design-system --production-branch=main
+          fi
+
+      - name: Deploy the exact candidate to the run-specific Dev Pages branch
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          ./node_modules/.bin/wrangler pages deploy "$PAYLOAD_DIR" \
+            --project-name=agentic-design-system --branch="$DEV_PAGES_BRANCH" \
+            --commit-hash="$CANDIDATE_SHA" --commit-message="Design System candidate $CANDIDATE_SHA" --commit-dirty=false
+          ./node_modules/.bin/wrangler pages deployment list --project-name=agentic-design-system \
+            --environment=preview --json > "$EVIDENCE_DIR/pages-dev-deployments.json"
+          node scripts/design-system-release.mjs pages-deployment \
+            "$EVIDENCE_DIR/pages-dev-deployments.json" "$DEV_PAGES_BRANCH" "$CANDIDATE_SHA" \
+            > "$EVIDENCE_DIR/pages-dev-deployment.json"
+
+      - name: Deploy and read back the Dev edge candidate
+        id: dev_readback
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          ./node_modules/.bin/wrangler deploy --config wrangler.design-system.jsonc --env dev \
+            --var "PAGES_ORIGIN:$DEV_PAGES_ORIGIN" \
+            --var "DESIGN_SYSTEM_SOURCE_REVISION:$SOURCE_REVISION" \
+            --var "RELEASE_CANDIDATE_SHA:$CANDIDATE_SHA" \
+            --var "RELEASE_CANDIDATE_DIGEST:$PAYLOAD_DIGEST" \
+            --message="Design System Dev candidate $CANDIDATE_SHA"
+          ./node_modules/.bin/wrangler deployments list --config wrangler.design-system.jsonc --env dev --json \
+            > "$EVIDENCE_DIR/worker-dev-deployments.json"
+          node scripts/design-system-release.mjs worker-deployment \
+            "$EVIDENCE_DIR/worker-dev-deployments.json" agentic-design-system-edge-dev \
+            > "$EVIDENCE_DIR/worker-dev-deployment.json"
+          node --input-type=module - "$EVIDENCE_DIR/dev-worker-url.txt" <<'NODE'
+          const fs = require('node:fs');
+          const account = process.env.CLOUDFLARE_ACCOUNT_ID;
+          const script = 'agentic-design-system-edge-dev';
+          const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${account}/workers/scripts/${script}/subdomain`, { headers: { authorization: `Bearer ${process.env.CLOUDFLARE_API_TOKEN}`, accept: 'application/json' }, signal: AbortSignal.timeout(10000) });
+          const body = await response.json();
+          if (!response.ok || body.success !== true || body.result?.enabled !== true || !/^[a-z0-9-]+$/u.test(body.result?.subdomain ?? '')) throw new Error('dev_worker_subdomain_unverified');
+          fs.writeFileSync(process.argv[2], `https://${script}.${body.result.subdomain}.workers.dev\n`, { flag: 'wx' });
+          NODE
+          dev_origin="$(node scripts/design-system-release.mjs worker-url "$EVIDENCE_DIR/dev-worker-url.txt")"
+          node scripts/design-system-release.mjs readback "$dev_origin" "$PAYLOAD_DIR" \
+            "$CANDIDATE_SHA" "$EVIDENCE_DIR/dev-readback.json"
+
+      - name: Deploy the same static payload to Pages Production
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          ./node_modules/.bin/wrangler pages deploy "$PAYLOAD_DIR" \
+            --project-name=agentic-design-system --branch=main \
+            --commit-hash="$CANDIDATE_SHA" --commit-message="Design System Production candidate $CANDIDATE_SHA" --commit-dirty=false
+          ./node_modules/.bin/wrangler pages deployment list --project-name=agentic-design-system \
+            --environment=production --json > "$EVIDENCE_DIR/pages-production-deployments.json"
+          node scripts/design-system-release.mjs pages-deployment \
+            "$EVIDENCE_DIR/pages-production-deployments.json" main "$CANDIDATE_SHA" \
+            > "$EVIDENCE_DIR/pages-production-deployment.json"
+
+      - name: Activate and verify the exact Production edge route
+        id: production_readback
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          ./node_modules/.bin/wrangler deploy --config wrangler.design-system.jsonc --env production \
+            --var "DESIGN_SYSTEM_SOURCE_REVISION:$SOURCE_REVISION" \
+            --var "RELEASE_CANDIDATE_SHA:$CANDIDATE_SHA" \
+            --var "RELEASE_CANDIDATE_DIGEST:$PAYLOAD_DIGEST" \
+            --message="Design System Production candidate $CANDIDATE_SHA"
+          node scripts/design-system-release.mjs route-proof agentic-design-system-edge-production \
+            > "$EVIDENCE_DIR/route-production-proof.json"
+          node scripts/design-system-release.mjs readback https://airvio.co "$PAYLOAD_DIR" \
+            "$CANDIDATE_SHA" "$EVIDENCE_DIR/production-readback.json"
+          ./node_modules/.bin/wrangler deployments list --config wrangler.design-system.jsonc --env production --json \
+            > "$EVIDENCE_DIR/worker-production-deployments.json"
+          node scripts/design-system-release.mjs worker-deployment \
+            "$EVIDENCE_DIR/worker-production-deployments.json" agentic-design-system-edge-production \
+            > "$EVIDENCE_DIR/worker-production-deployment.json"
+          node --input-type=module - "$EVIDENCE_DIR" <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const crypto = require('node:crypto');
+          const root = process.argv[2];
+          const read = (name) => JSON.parse(fs.readFileSync(path.join(root, name), 'utf8'));
+          const sha = (name) => crypto.createHash('sha256').update(fs.readFileSync(path.join(root, name))).digest('hex');
+          const candidate = read('candidate.json');
+          const route = read('route-production-proof.json');
+          const devReadback = read('dev-readback.json');
+          const prodReadback = read('production-readback.json');
+          if (candidate.candidateRevision !== process.env.CANDIDATE_SHA || route.requestLimitFailOpen !== false
+            || devReadback.payloadDigest !== candidate.payloadDigest || prodReadback.payloadDigest !== candidate.payloadDigest
+            || devReadback.candidateRevision !== process.env.CANDIDATE_SHA || prodReadback.candidateRevision !== process.env.CANDIDATE_SHA) throw new Error('release_receipt_binding_mismatch');
+          const receipt = {
+            schema: 'agentic-commerce-design-system-deployment-receipt/v1',
+            completedAt: new Date().toISOString(),
+            candidateRevision: candidate.candidateRevision,
+            sourceRevision: candidate.sourceRevision,
+            sourceControlPreflightDigest: candidate.sourceControlPreflightDigest,
+            payloadDigest: candidate.payloadDigest,
+            totalBytes: candidate.totalBytes,
+            baseline: read('route-baseline.json'),
+            development: { pages: read('pages-dev-deployment.json'), worker: read('worker-dev-deployment.json'), readbackDigest: sha('dev-readback.json') },
+            production: { pages: read('pages-production-deployment.json'), worker: read('worker-production-deployment.json'), route: route, readbackDigest: sha('production-readback.json') },
+            failClosedQuotaReadback: route.requestLimitFailOpen === false,
+            run: { repository: process.env.GITHUB_REPOSITORY, id: process.env.GITHUB_RUN_ID, url: `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}` },
+          };
+          fs.writeFileSync(path.join(root, 'release-receipt.json'), JSON.stringify(receipt, null, 2) + '\n', { flag: 'wx' });
+          const digest = crypto.createHash('sha256').update(fs.readFileSync(path.join(root, 'release-receipt.json'))).digest('hex');
+          process.stdout.write(JSON.stringify({ schema: receipt.schema, candidateRevision: receipt.candidateRevision, payloadDigest: receipt.payloadDigest, receiptDigest: digest, routeId: route.routeId, pagesDeploymentId: receipt.production.pages.id, workerVersionId: receipt.production.worker.versionId }) + '\n');
+          NODE
+          {
+            echo '## Agentic Design System Production receipt'
+            cat "$EVIDENCE_DIR/release-receipt.json"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Restore the exact prior route absence if Production verification failed
+        if: ${{ always() && steps.production_readback.outcome != 'success' && steps.route_baseline.outcome == 'success' }}
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          node --input-type=module - "$EVIDENCE_DIR/route-baseline.json" "$EVIDENCE_DIR/route-rollback-receipt.json" <<'NODE'
+          const fs = require('node:fs');
+          const baseline = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          if (baseline.state !== 'absent') throw new Error('rollback_baseline_not_absent');
+          const account = process.env.CLOUDFLARE_ACCOUNT_ID;
+          const headers = { authorization: `Bearer ${process.env.CLOUDFLARE_API_TOKEN}`, accept: 'application/json', 'content-type': 'application/json' };
+          const api = async (url, init = {}) => {
+            const response = await fetch(url, { ...init, headers, signal: AbortSignal.timeout(10000) });
+            const body = await response.json();
+            if (!response.ok || body.success !== true) throw new Error('route_rollback_api_failed');
+            return body.result;
+          };
+          const zones = await api('https://api.cloudflare.com/client/v4/zones?name=airvio.co');
+          if (!Array.isArray(zones) || zones.length !== 1 || zones[0].name !== 'airvio.co') throw new Error('rollback_zone_unverified');
+          const routesUrl = `https://api.cloudflare.com/client/v4/zones/${zones[0].id}/workers/routes`;
+          const readRoutes = async () => {
+            const rows = await api(routesUrl);
+            if (!Array.isArray(rows)) throw new Error('rollback_route_list_invalid');
+            return rows.filter((row) => row.pattern === 'airvio.co/agentic-design-system*');
+          };
+          let matches = await readRoutes();
+          if (matches.length > 1 || matches.some((row) => row.script !== 'agentic-design-system-edge-production')) throw new Error('rollback_route_identity_ambiguous');
+          const routeId = matches[0]?.id ?? null;
+          if (routeId) {
+            await api(`${routesUrl}/${encodeURIComponent(routeId)}`, { method: 'DELETE' });
+            matches = await readRoutes();
+          }
+          if (matches.length !== 0) throw new Error('rollback_route_absence_unverified');
+          const receipt = { schema: 'agentic-commerce-design-system-route-rollback/v1', restoredAt: new Date().toISOString(), baseline: 'absent', routeId, routePattern: 'airvio.co/agentic-design-system*', routeAbsent: true, pagesProjectPreserved: true, workerVersionRetained: true };
+          fs.writeFileSync(process.argv[3], JSON.stringify(receipt, null, 2) + '\n', { flag: 'wx' });
+          process.stdout.write(JSON.stringify(receipt) + '\n');
+          NODE
+
+      - name: Retain bounded release evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: design-system-route-release-${{ inputs.candidate_sha }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/design-system-release-evidence/
+          if-no-files-found: ignore
+          retention-days: 1
