@@ -1,5 +1,22 @@
 # Production runtime contract
 
+## Agentic Design System static route — `DESIGN-SYSTEM-ROUTE-01@0.1.0`
+
+`agentic-commerce-os` owns `https://airvio.co/agentic-design-system*` and proxies only
+read-only requests to the dedicated Free Pages project `agentic-design-system`. The canonical
+content URL is `https://airvio.co/agentic-design-system/`; the slashless URL redirects with 308.
+The public snapshot is the nine-file allowlist and exact hashes in
+[`config/design-system-static-release.json`](../config/design-system-static-release.json).
+The edge path has no storage bindings, forwards no cookies or authorization headers, and fails
+closed on invalid configuration, unsupported methods, redirecting origins, or origin errors.
+
+Cloudflare's Workers Free daily request cap is 100,000. The Production route readback must prove
+`request_limit_fail_open: false`; an absent quota-mode field is not a pass. Check Free plan and
+billable usage before each Production run. The route release uses no paid plan, add-on, overage,
+database, KV, R2 or telemetry. Keep the exact Pages deployment and Worker version baseline with
+the deployment receipt. See [the route release plan](prd-tad-adr-mvp-gtm-design-system-route.md)
+for the Dev/Production steps and rollback boundary.
+
 See [Commerce and Graph runtime composition](commerce-graph-runtime.md) for the
 canonical URLs, canvas reuse, shared verification setup, and current live gaps.
 
