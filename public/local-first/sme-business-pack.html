@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f8f8f6">
+  <meta name="theme-color" content="#f4f5ef">
   <meta name="description" content="Check completeness for a Singapore or Malaysia F&B takeover listing.">
   <title>SME Takeover Pack · Commerce</title>
   <link rel="stylesheet" href="./sme-business-pack.css">
@@ -10,20 +10,40 @@
 </head>
 <body>
   <main>
-    <header class="page-head">
-      <a class="back" href="../../">← Commerce workspace</a>
-      <p id="runtime-mode" class="eyebrow">SME BUSINESS PACK · R1</p>
-      <h1>Check a food business takeover listing</h1>
-      <p class="lede">Compare required facts and see an arithmetic report for Singapore or Malaysia without saving your inputs.</p>
-    </header>
-    <section class="notice" aria-label="Pack status">
-      <strong>Indicative, not verified</strong>
-      <p>Both packs are provisional. Their money bands are draft interface buckets, not market benchmarks. The report is not valuation, legal, tax, or transaction advice.</p>
-      <p id="service-status" role="status" aria-live="polite">Loading pack list…</p>
-      <p id="runtime-status" role="status" aria-live="polite">Checking service availability…</p>
+    <section class="hero" aria-labelledby="page-title">
+      <header class="page-head">
+        <a class="back" href="../../">← Commerce workspace</a>
+        <p id="runtime-mode" class="eyebrow">SME BUSINESS PACK · R1</p>
+        <h1 id="page-title">Check a food business takeover listing</h1>
+        <p class="lede">Compare required facts and see an arithmetic report for Singapore or Malaysia without saving your inputs.</p>
+        <ul class="hero-points" aria-label="How the check works">
+          <li><span>01</span>Choose a pack</li>
+          <li><span>02</span>Add seller facts</li>
+          <li><span>03</span>Review the gaps</li>
+        </ul>
+      </header>
+      <aside class="notice" aria-label="Pack status and limitations">
+        <div class="notice-heading">
+          <span class="notice-mark" aria-hidden="true">!</span>
+          <div>
+            <p class="notice-kicker">Evidence standard</p>
+            <strong>Indicative, not verified</strong>
+          </div>
+        </div>
+        <p class="notice-copy">Both packs are provisional. Money bands are draft interface buckets, not market benchmarks. This report is not valuation, legal, tax, or transaction advice.</p>
+        <div class="notice-status">
+          <p id="service-status" role="status" aria-live="polite">Loading pack list…</p>
+          <p id="runtime-status" role="status" aria-live="polite">Checking service availability…</p>
+        </div>
+      </aside>
     </section>
     <section class="layout">
       <form id="check-form" class="card" autocomplete="off">
+        <div class="form-heading">
+          <p class="section-kicker">01–02 · Listing details</p>
+          <h2>What has the seller shared?</h2>
+          <p>Choose the closest band. Your answers stay in this browser and are not saved.</p>
+        </div>
         <label for="pack-id">Country pack</label>
         <select id="pack-id" name="pack_id" required></select>
         <section id="fields" class="fields" aria-live="polite"></section>
@@ -34,7 +54,13 @@
         </div>
       </form>
       <section class="card results" aria-labelledby="result-heading">
-        <h2 id="result-heading">Report</h2>
+        <div class="results-heading">
+          <div>
+            <p class="section-kicker">03 · Review</p>
+            <h2 id="result-heading">Your report</h2>
+          </div>
+          <span class="report-mark" aria-hidden="true">↗</span>
+        </div>
         <p id="result-status" role="status" aria-live="polite">Choose a pack and enter facts to begin.</p>
         <pre id="result" tabindex="0" aria-label="Report output"></pre>
       </section>
