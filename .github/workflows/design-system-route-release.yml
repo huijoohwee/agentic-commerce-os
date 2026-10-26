@@ -51,11 +51,28 @@ jobs:
           test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$CANDIDATE_SHA"
           test -z "$(git status --porcelain --untracked-files=all)"
 
+          canonical_local_ref=refs/heads/main
+          canonical_remote_ref=refs/remotes/origin/main
+          test "$(git rev-parse --verify "$canonical_remote_ref")" = "$CANDIDATE_SHA"
+          if git show-ref --verify --quiet "$canonical_local_ref"; then
+            test "$(git rev-parse "$canonical_local_ref")" = "$CANDIDATE_SHA"
+          else
+            git update-ref "$canonical_local_ref" "$CANDIDATE_SHA"
+          fi
+
           upstream_revision="$(node -e 'const p=require("./package-lock.json").packages["node_modules/agentic-os"]?.resolved??""; const m=p.match(/agentic-os\/tar\.gz\/([0-9a-f]{40})(?:$|\?)/u); if(!m) process.exit(1); process.stdout.write(m[1])')"
           evidence="$RUNNER_TEMP/design-system-release-evidence"
           payload="$RUNNER_TEMP/design-system-payload"
+          upstream_source="$RUNNER_TEMP/agentic-os-source"
           mkdir -p "$evidence"
-          node node_modules/agentic-os/bin/agentic-os-pin.mjs \
+          test ! -e "$upstream_source"
+          git init --quiet "$upstream_source"
+          git -C "$upstream_source" remote add origin https://github.com/huijoohwee/agentic-os.git
+          timeout --foreground --kill-after=30s 2m git -C "$upstream_source" fetch \
+            --quiet --no-tags --depth=1 origin "$upstream_revision"
+          git -C "$upstream_source" checkout --quiet --detach FETCH_HEAD
+          test "$(git -C "$upstream_source" rev-parse HEAD)" = "$upstream_revision"
+          node "$upstream_source/bin/agentic-os-pin.mjs" \
             --consumer="$GITHUB_WORKSPACE" --revision="$upstream_revision" --source-control \
             > "$evidence/source-control-preflight.json"
           node scripts/design-system-release.mjs verify public/agentic-design-system
