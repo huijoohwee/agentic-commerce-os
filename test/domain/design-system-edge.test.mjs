@@ -72,6 +72,28 @@ test('GET buffers the decoded upstream representation and strips stale encoding 
   assert.equal(response.headers.get('content-length'), null);
 });
 
+test('HTML responses prevent zone-level body transforms while preserving cache policy', async () => {
+  const response = await call('https://airvio.co/agentic-design-system/', {}, async () =>
+    new Response('<!doctype html><html></html>', {
+      headers: {
+        'cache-control': 'public, max-age=0, must-revalidate',
+        'content-type': 'text/html; charset=utf-8',
+      },
+    }));
+  assert.equal(response.headers.get('cache-control'), 'public, max-age=0, must-revalidate, no-transform');
+});
+
+test('non-HTML cache policy remains unchanged', async () => {
+  const response = await call('https://airvio.co/agentic-design-system/app.js', {}, async () =>
+    new Response('export {}', {
+      headers: {
+        'cache-control': 'public, max-age=0, must-revalidate',
+        'content-type': 'text/javascript',
+      },
+    }));
+  assert.equal(response.headers.get('cache-control'), 'public, max-age=0, must-revalidate');
+});
+
 test('HEAD retains status and headers without a body', async () => {
   const response = await call('https://airvio.co/agentic-design-system/', { method: 'HEAD' },
     async (_input, init) => {
