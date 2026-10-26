@@ -156,7 +156,10 @@ async function fetchCandidateAsset(url, item, config, candidateSha) {
   for (let attempt = 0; attempt < delays.length; attempt += 1) {
     if (delays[attempt] > 0) await new Promise((resolveDelay) => setTimeout(resolveDelay, delays[attempt]));
     const { response, bytes } = await fetchBounded(url);
-    if (response.status !== 200 || hash(bytes) !== item.sha256) fail(`asset_readback_mismatch:${item.path}`);
+    if (response.status !== 200 || hash(bytes) !== item.sha256) {
+      if (attempt === delays.length - 1) fail(`asset_readback_mismatch:${item.path}:status=${response.status}:sha256=${hash(bytes)}`);
+      continue;
+    }
     const provenanceMatches = response.headers.get('x-design-system-source') === config.source.revision
       && response.headers.get('x-design-system-release') === candidateSha
       && response.headers.get('x-design-system-payload') === config.payloadDigest;
