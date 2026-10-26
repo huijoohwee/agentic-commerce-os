@@ -193,13 +193,22 @@ function parsePagesDeployment(path, branch, candidateSha) {
   const parsed = json(path), rows = Array.isArray(parsed) ? parsed : parsed.result ?? parsed.deployments;
   if (!Array.isArray(rows)) fail('pages_deployments_schema_invalid');
   const shaOf = (row) => row.commit_hash ?? row.commitHash ?? row.source?.commit_hash
-    ?? row.deployment_trigger?.metadata?.commit_hash ?? row.deployment_trigger?.metadata?.commitHash;
-  const branchOf = (row) => row.branch ?? row.source?.branch ?? row.deployment_trigger?.metadata?.branch;
-  const matches = rows.filter((row) => shaOf(row) === candidateSha && branchOf(row) === branch);
+    ?? row.deployment_trigger?.metadata?.commit_hash ?? row.deployment_trigger?.metadata?.commitHash
+    ?? row.Source ?? (typeof row.source === 'string' ? row.source : undefined);
+  const branchOf = (row) => row.branch ?? row.Branch ?? row.source?.branch ?? row.deployment_trigger?.metadata?.branch;
+  const commitMatches = (value) => {
+    if (value === candidateSha) return true;
+    if (typeof value !== 'string' || !/^[0-9a-f]{7,39}$/u.test(value) || !candidateSha.startsWith(value)) return false;
+    try {
+      const resolved = execFileSync('git', ['-C', ROOT, 'rev-parse', '--verify', `${value}^{commit}`], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+      return resolved === candidateSha;
+    } catch { return false; }
+  };
+  const matches = rows.filter((row) => commitMatches(shaOf(row)) && branchOf(row) === branch);
   if (matches.length !== 1) fail('pages_candidate_deployment_not_unique');
-  const row = matches[0], id = row.id ?? row.deployment_id;
+  const row = matches[0], id = row.id ?? row.deployment_id ?? row.Id;
   if (typeof id !== 'string' || !id) fail('pages_deployment_id_missing');
-  process.stdout.write(`${JSON.stringify({ id, url: row.url ?? row.aliases?.[0] ?? null, branch, commitSha: candidateSha, environment: row.environment ?? (branch === 'main' ? 'production' : 'preview') })}\n`);
+  process.stdout.write(`${JSON.stringify({ id, url: row.url ?? row.Deployment ?? row.aliases?.[0] ?? null, branch, commitSha: candidateSha, environment: row.environment ?? row.Environment?.toLowerCase() ?? (branch === 'main' ? 'production' : 'preview') })}\n`);
 }
 
 function parseWorkerDeployment(path, expectedName) {
