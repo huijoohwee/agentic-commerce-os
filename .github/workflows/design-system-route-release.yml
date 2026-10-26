@@ -124,10 +124,25 @@ jobs:
           const value = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
           const rows = Array.isArray(value) ? value : value.result ?? value.projects;
           if (!Array.isArray(rows)) throw new Error('pages_project_list_invalid');
-          const matches = rows.filter((row) => row.name === 'agentic-design-system');
+          const projectName = (row) => row && typeof row === 'object' ? row.name ?? row['Project Name'] : null;
+          const matches = rows.filter((row) => projectName(row) === 'agentic-design-system');
           if (matches.length > 1) throw new Error('pages_project_not_unique');
+          const project = matches[0] ?? null;
+          const rawDomains = project?.domains ?? project?.['Project Domains'];
+          const domains = Array.isArray(rawDomains)
+            ? rawDomains
+            : typeof rawDomains === 'string' ? rawDomains.split(',').map((domain) => domain.trim()) : [];
+          if (project && !domains.includes('agentic-design-system.pages.dev')) {
+            throw new Error('pages_project_domain_unverified');
+          }
           const state = matches.length ? 'present' : 'absent';
-          fs.writeFileSync(process.argv[3], JSON.stringify({ schema: 'agentic-commerce-design-system-pages-project-baseline/v1', name: 'agentic-design-system', state, projectId: matches[0]?.id ?? null, productionBranch: matches[0]?.production_branch ?? null }, null, 2) + '\n');
+          fs.writeFileSync(process.argv[3], JSON.stringify({
+            schema: 'agentic-commerce-design-system-pages-project-baseline/v1',
+            name: 'agentic-design-system', state,
+            projectId: project?.id ?? project?.Id ?? project?.['Project ID'] ?? null,
+            productionBranch: project?.production_branch ?? project?.['Production Branch'] ?? null,
+            domains,
+          }, null, 2) + '\n');
           process.stdout.write(state);
           NODE
           )"
