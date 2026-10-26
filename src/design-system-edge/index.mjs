@@ -25,6 +25,19 @@ function originUrl(value) {
   }
 }
 
+function isExcludedPath(pathname) {
+  let decodedPath;
+  try {
+    decodedPath = decodeURIComponent(pathname);
+  } catch {
+    return true;
+  }
+  const relativePath = decodedPath.slice(PREFIX.length);
+  return relativePath === '/registry' || relativePath.startsWith('/registry/')
+    || relativePath === '/review-inventory.json'
+    || relativePath === '/vendor/agentic-base-browser-data-view.manifest.json';
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -35,6 +48,7 @@ export default {
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       return errorResponse(405, 'Method not allowed', { allow: 'GET, HEAD' });
     }
+    if (isExcludedPath(pathname)) return errorResponse(404, 'Not found');
     if (pathname === PREFIX) {
       url.pathname = `${PREFIX}/`;
       return new Response(null, {
