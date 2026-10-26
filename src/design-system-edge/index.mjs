@@ -101,12 +101,20 @@ export default {
       const contentLength = upstream.headers.get('content-length');
       if (contentLength) responseHeaders.set('content-length', contentLength);
     }
+    let body = null;
+    if (request.method === 'GET' && ![204, 205, 304].includes(upstream.status)) {
+      try {
+        body = await upstream.arrayBuffer();
+      } catch {
+        return errorResponse(502, 'Static origin body unavailable');
+      }
+    }
     responseHeaders.set('referrer-policy', 'strict-origin-when-cross-origin');
     responseHeaders.set('x-content-type-options', 'nosniff');
     responseHeaders.set('x-design-system-source', env.DESIGN_SYSTEM_SOURCE_REVISION);
     responseHeaders.set('x-design-system-release', env.RELEASE_CANDIDATE_SHA);
     responseHeaders.set('x-design-system-payload', env.RELEASE_CANDIDATE_DIGEST);
-    return new Response(request.method === 'HEAD' ? null : upstream.body, {
+    return new Response(body, {
       status: upstream.status,
       headers: responseHeaders,
     });

@@ -46,11 +46,30 @@ test('GET maps only the path below the prefix and forwards only safe read header
   assert.equal(received.init.headers.get('if-none-match'), '"asset"');
   assert.equal(received.init.headers.has('cookie'), false);
   assert.equal(received.init.headers.has('authorization'), false);
+  assert.equal(received.init.headers.get('accept-encoding'), 'identity');
   assert.equal(await response.text(), 'asset');
   assert.equal(response.headers.get('x-design-system-release'), env.RELEASE_CANDIDATE_SHA);
   assert.equal(response.headers.get('x-design-system-payload'), env.RELEASE_CANDIDATE_DIGEST);
   assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
   assert.equal(response.headers.get('set-cookie'), null);
+});
+
+test('GET buffers the decoded upstream representation and strips stale encoding metadata', async () => {
+  const decoded = new TextEncoder().encode('decoded asset');
+  const response = await call('https://airvio.co/agentic-design-system/app.js', {}, async () => ({
+    status: 200,
+    headers: new Headers({
+      'content-encoding': 'gzip',
+      'content-length': 'encoded-length',
+      'content-type': 'text/javascript',
+    }),
+    async arrayBuffer() {
+      return decoded.buffer.slice(decoded.byteOffset, decoded.byteOffset + decoded.byteLength);
+    },
+  }));
+  assert.equal(await response.text(), 'decoded asset');
+  assert.equal(response.headers.get('content-encoding'), null);
+  assert.equal(response.headers.get('content-length'), null);
 });
 
 test('HEAD retains status and headers without a body', async () => {
