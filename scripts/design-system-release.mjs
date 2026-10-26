@@ -151,6 +151,20 @@ async function fetchBounded(url, init = {}) {
   return { response, bytes };
 }
 
+async function fetchCandidateAsset(url, item, config, candidateSha) {
+  const delays = [0, 2_000, 4_000, 8_000, 16_000];
+  for (let attempt = 0; attempt < delays.length; attempt += 1) {
+    if (delays[attempt] > 0) await new Promise((resolveDelay) => setTimeout(resolveDelay, delays[attempt]));
+    const { response, bytes } = await fetchBounded(url);
+    if (response.status !== 200 || hash(bytes) !== item.sha256) fail(`asset_readback_mismatch:${item.path}`);
+    const provenanceMatches = response.headers.get('x-design-system-source') === config.source.revision
+      && response.headers.get('x-design-system-release') === candidateSha
+      && response.headers.get('x-design-system-payload') === config.payloadDigest;
+    if (provenanceMatches) return { response, bytes, attempts: attempt + 1 };
+  }
+  fail(`asset_provenance_mismatch:${item.path}`);
+}
+
 async function readback(base, directory, candidateSha, outputPath) {
   if (!/^[0-9a-f]{40}$/u.test(candidateSha ?? '')) fail('candidate_sha_invalid');
   const { config, entries } = verifyDirectory(directory), origin = new URL(base);
@@ -165,16 +179,13 @@ async function readback(base, directory, candidateSha, outputPath) {
   if (redirect.status !== 308 || redirect.headers.get('location') !== expectedLocation) fail('slashless_redirect_mismatch');
   proof.push({ path: `${PREFIX}?route-check=slashless`, status: redirect.status, location: expectedLocation });
   for (const item of entries) {
-    const { response, bytes } = await fetchBounded(urlFor(item.path));
-    if (response.status !== 200 || hash(bytes) !== item.sha256) fail(`asset_readback_mismatch:${item.path}`);
-    if (response.headers.get('x-design-system-source') !== config.source.revision
-      || response.headers.get('x-design-system-release') !== candidateSha
-      || response.headers.get('x-design-system-payload') !== config.payloadDigest) fail(`asset_provenance_mismatch:${item.path}`);
+    const { response, bytes, attempts } = await fetchCandidateAsset(urlFor(item.path), item, config, candidateSha);
     proof.push({
       path: item.path === 'index.html' ? `${PREFIX}/` : `${PREFIX}/${item.path}`,
       status: response.status,
       sha256: hash(bytes),
       bytes: bytes.length,
+      provenanceAttempts: attempts,
     });
   }
   const head = await fetchBounded(urlFor('index.html'), { method: 'HEAD' });
@@ -218,17 +229,29 @@ function parsePagesDeployment(path, branch, candidateSha) {
   process.stdout.write(`${JSON.stringify({ id, url: row.url ?? row.Deployment ?? row.aliases?.[0] ?? null, branch, commitSha: candidateSha, environment: row.environment ?? row.Environment?.toLowerCase() ?? (branch === 'main' ? 'production' : 'preview') })}\n`);
 }
 
-function parseWorkerDeployment(path, expectedName) {
+function parseWorkerDeployment(path, expectedName, candidateSha, expectedMessage) {
   const parsed = json(path), rows = Array.isArray(parsed) ? parsed : parsed.deployments ?? parsed.result;
-  if (!Array.isArray(rows) || rows.length === 0) fail('worker_deployment_schema_invalid');
-  const latest = rows[0];
-  const name = latest.script_name ?? latest.scriptName ?? latest.name;
-  if (name && name !== expectedName) fail('worker_deployment_name_mismatch');
-  const versions = latest.versions ?? [];
-  const version = versions.find((item) => item.percentage === 100 || item.percentage === 1) ?? versions[0];
-  const versionId = latest.version_id ?? latest.versionId ?? version?.version_id ?? version?.id;
+  if (!Array.isArray(rows) || rows.length === 0 || !/^[0-9a-f]{40}$/u.test(candidateSha ?? '')
+    || expectedMessage !== `Design System ${expectedName.endsWith('-dev') ? 'Dev' : 'Production'} candidate ${candidateSha} run ${process.env.GITHUB_RUN_ID ?? ''}`) {
+    fail('worker_deployment_schema_invalid');
+  }
+  const matches = rows.filter((row) => {
+    const name = row.script_name ?? row.scriptName ?? row.name;
+    return (!name || name === expectedName) && row.annotations?.['workers/message'] === expectedMessage;
+  });
+  if (matches.length !== 1) fail('worker_candidate_deployment_not_unique');
+  const deployment = matches[0];
+  const versions = deployment.versions ?? [];
+  const fullTraffic = versions.filter((item) => item.percentage === 100 || item.percentage === 1);
+  if (fullTraffic.length !== 1) fail('worker_full_traffic_version_not_unique');
+  const version = fullTraffic[0];
+  const versionId = deployment.version_id ?? deployment.versionId ?? version.version_id ?? version.id;
   if (typeof versionId !== 'string' || !/^[0-9a-f-]{36}$/iu.test(versionId)) fail('worker_version_id_missing');
-  process.stdout.write(`${JSON.stringify({ script: expectedName, versionId, deploymentId: latest.id ?? latest.deployment_id ?? null, createdAt: latest.created_on ?? latest.createdAt ?? null })}\n`);
+  const deploymentId = deployment.id ?? deployment.deployment_id;
+  const createdAt = deployment.created_on ?? deployment.createdAt;
+  if (typeof deploymentId !== 'string' || !/^[0-9a-f-]{36}$/iu.test(deploymentId)
+    || typeof createdAt !== 'string' || !Number.isFinite(Date.parse(createdAt))) fail('worker_deployment_identity_missing');
+  process.stdout.write(`${JSON.stringify({ script: expectedName, candidateSha, message: expectedMessage, versionId, deploymentId, createdAt })}\n`);
 }
 
 async function routeStatus(expectedScript, requireActive) {
@@ -278,7 +301,7 @@ async function main(args) {
   if (command === 'identity' && rest.length === 4) return identity(...rest);
   if (command === 'readback' && rest.length === 4) return readback(...rest);
   if (command === 'pages-deployment' && rest.length === 3) return parsePagesDeployment(...rest);
-  if (command === 'worker-deployment' && rest.length === 2) return parseWorkerDeployment(...rest);
+  if (command === 'worker-deployment' && rest.length === 4) return parseWorkerDeployment(...rest);
   if (command === 'route-baseline' && rest.length === 1) return routeStatus(rest[0], false);
   if (command === 'route-proof' && rest.length === 1) return routeStatus(rest[0], true);
   if (command === 'worker-url' && rest.length === 1) return workerUrl(rest[0]);
