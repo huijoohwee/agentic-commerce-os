@@ -192,11 +192,12 @@ jobs:
             --var "DESIGN_SYSTEM_SOURCE_REVISION:$SOURCE_REVISION" \
             --var "RELEASE_CANDIDATE_SHA:$CANDIDATE_SHA" \
             --var "RELEASE_CANDIDATE_DIGEST:$PAYLOAD_DIGEST" \
-            --message="Design System Dev candidate $CANDIDATE_SHA"
+            --message="Design System Dev candidate $CANDIDATE_SHA run $GITHUB_RUN_ID"
           ./node_modules/.bin/wrangler deployments list --config wrangler.design-system.jsonc --env dev --json \
             > "$EVIDENCE_DIR/worker-dev-deployments.json"
           node scripts/design-system-release.mjs worker-deployment \
             "$EVIDENCE_DIR/worker-dev-deployments.json" agentic-design-system-edge-dev \
+            "$CANDIDATE_SHA" "Design System Dev candidate $CANDIDATE_SHA run $GITHUB_RUN_ID" \
             > "$EVIDENCE_DIR/worker-dev-deployment.json"
           node --input-type=module - "$EVIDENCE_DIR/dev-worker-url.txt" <<'NODE'
           import fs from 'node:fs';
@@ -251,7 +252,7 @@ jobs:
             --var "DESIGN_SYSTEM_SOURCE_REVISION:$SOURCE_REVISION" \
             --var "RELEASE_CANDIDATE_SHA:$CANDIDATE_SHA" \
             --var "RELEASE_CANDIDATE_DIGEST:$PAYLOAD_DIGEST" \
-            --message="Design System Production candidate $CANDIDATE_SHA"
+            --message="Design System Production candidate $CANDIDATE_SHA run $GITHUB_RUN_ID"
           node scripts/design-system-release.mjs route-proof agentic-design-system-edge-production \
             > "$EVIDENCE_DIR/route-production-proof.json"
           node scripts/design-system-release.mjs readback https://airvio.co "$PAYLOAD_DIR" \
@@ -260,6 +261,7 @@ jobs:
             > "$EVIDENCE_DIR/worker-production-deployments.json"
           node scripts/design-system-release.mjs worker-deployment \
             "$EVIDENCE_DIR/worker-production-deployments.json" agentic-design-system-edge-production \
+            "$CANDIDATE_SHA" "Design System Production candidate $CANDIDATE_SHA run $GITHUB_RUN_ID" \
             > "$EVIDENCE_DIR/worker-production-deployment.json"
           node --input-type=module - "$EVIDENCE_DIR" <<'NODE'
           import crypto from 'node:crypto';
@@ -272,9 +274,15 @@ jobs:
           const route = read('route-production-proof.json');
           const devReadback = read('dev-readback.json');
           const prodReadback = read('production-readback.json');
+          const devWorker = read('worker-dev-deployment.json');
+          const productionWorker = read('worker-production-deployment.json');
+          const devMessage = `Design System Dev candidate ${process.env.CANDIDATE_SHA} run ${process.env.GITHUB_RUN_ID}`;
+          const productionMessage = `Design System Production candidate ${process.env.CANDIDATE_SHA} run ${process.env.GITHUB_RUN_ID}`;
           if (candidate.candidateRevision !== process.env.CANDIDATE_SHA || route.requestLimitFailOpen !== false
             || devReadback.payloadDigest !== candidate.payloadDigest || prodReadback.payloadDigest !== candidate.payloadDigest
-            || devReadback.candidateRevision !== process.env.CANDIDATE_SHA || prodReadback.candidateRevision !== process.env.CANDIDATE_SHA) throw new Error('release_receipt_binding_mismatch');
+            || devReadback.candidateRevision !== process.env.CANDIDATE_SHA || prodReadback.candidateRevision !== process.env.CANDIDATE_SHA
+            || devWorker.candidateSha !== process.env.CANDIDATE_SHA || devWorker.message !== devMessage
+            || productionWorker.candidateSha !== process.env.CANDIDATE_SHA || productionWorker.message !== productionMessage) throw new Error('release_receipt_binding_mismatch');
           const receipt = {
             schema: 'agentic-commerce-design-system-deployment-receipt/v1',
             completedAt: new Date().toISOString(),
