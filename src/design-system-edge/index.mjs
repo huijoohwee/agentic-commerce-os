@@ -16,9 +16,10 @@ function originUrl(value) {
   if (typeof value !== 'string' || value.length > 253) return null;
   try {
     const url = new URL(`https://${value}`);
+    const allowedPagesHost = url.hostname === 'agentic-design-system.pages.dev'
+      || /^[a-z0-9-]+\.agentic-design-system\.pages\.dev$/u.test(url.hostname);
     if (url.protocol !== 'https:' || url.username || url.password || url.port
-      || url.pathname !== '/' || url.search || url.hash
-      || !/^[a-z0-9-]+\.agentic-design-system\.pages\.dev$/u.test(url.hostname)) return null;
+      || url.pathname !== '/' || url.search || url.hash || !allowedPagesHost) return null;
     return url;
   } catch {
     return null;
