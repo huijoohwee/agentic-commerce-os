@@ -174,9 +174,19 @@ async function readback(base, directory, candidateSha, outputPath) {
     ? `${origin.origin}${PREFIX}/${query}`
     : `${origin.origin}${PREFIX}/${path}${query}`;
   const redirectUrl = `${origin.origin}${PREFIX}?route-check=slashless`;
-  const { response: redirect } = await fetchBounded(redirectUrl, { redirect: 'manual' });
   const expectedLocation = `${origin.origin}${PREFIX}/?route-check=slashless`;
-  if (redirect.status !== 308 || redirect.headers.get('location') !== expectedLocation) fail('slashless_redirect_mismatch');
+  const propagationDelays = [0, 2_000, 4_000, 8_000, 16_000];
+  let redirect;
+  for (const delay of propagationDelays) {
+    if (delay) await new Promise((resolveDelay) => setTimeout(resolveDelay, delay));
+    ({ response: redirect } = await fetchBounded(redirectUrl, { redirect: 'manual' }));
+    if (redirect.status === 308) {
+      if (redirect.headers.get('location') !== expectedLocation) fail('slashless_redirect_mismatch');
+      break;
+    }
+    if (redirect.status !== 404) fail('slashless_redirect_mismatch');
+  }
+  if (redirect?.status !== 308) fail('slashless_redirect_mismatch');
   proof.push({ path: `${PREFIX}?route-check=slashless`, status: redirect.status, location: expectedLocation });
   for (const item of entries) {
     const { response, bytes, attempts } = await fetchCandidateAsset(urlFor(item.path), item, config, candidateSha);
