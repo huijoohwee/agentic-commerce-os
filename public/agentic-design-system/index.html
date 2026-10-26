@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="description" content="A governed catalog for design tokens, brand profiles, accessibility contracts, components, examples, and releases.">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self'; script-src 'self'; worker-src 'self'; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <title>Agentic Design System</title>
+    <link rel="stylesheet" href="./vendor/agentic-base-browser-data-view.css?v=c104152">
+    <style>
+      :root {
+        color-scheme: light dark;
+        font: 100%/1.55 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; color: CanvasText; background: Canvas; }
+      a { color: LinkText; }
+      a:focus-visible, input:focus-visible { outline: 3px solid Highlight; outline-offset: 3px; }
+      .shell { width: min(100% - 2rem, 68rem); margin-inline: auto; }
+      .skip-link { position: absolute; inset: 0 auto auto 0; display: inline-flex; align-items: center; min-block-size: 2.75rem; transform: translateY(-150%); padding: .75rem 1rem; color: ButtonText; background: ButtonFace; }
+      .skip-link:focus { transform: translateY(0); }
+      header { border-bottom: 1px solid GrayText; }
+      .topbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 4rem; }
+      .wordmark { font-weight: 700; text-decoration: none; }
+      nav { display: flex; flex-wrap: wrap; gap: .25rem; }
+      nav a { display: inline-flex; align-items: center; min-block-size: 2.75rem; padding-inline: .65rem; border-radius: .35rem; }
+      main { padding-block: clamp(2rem, 7vw, 5rem); }
+      .eyebrow { margin: 0 0 .5rem; font-size: .875rem; font-weight: 650; }
+      h1, h2, h3 { line-height: 1.2; text-wrap: balance; }
+      h1 { max-width: 14ch; margin: 0; font-size: clamp(2.25rem, 7vw, 4rem); }
+      h2 { margin-block: 0 .75rem; font-size: clamp(1.35rem, 4vw, 1.8rem); }
+      h3 { margin-block: 0 .5rem; font-size: 1.05rem; }
+      p { max-width: 68ch; }
+      .intro { max-width: 48rem; margin-block: 1rem 2rem; font-size: clamp(1.05rem, 2vw, 1.2rem); }
+      .status { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: center; margin-block: 1.5rem 2rem; padding: 1rem; border: 1px solid GrayText; border-radius: .5rem; }
+      .status p { margin: 0; }
+      .search { display: grid; gap: .45rem; max-width: 36rem; margin-block: 2rem; }
+      .search input { inline-size: 100%; min-block-size: 2.75rem; padding: .6rem .75rem; color: FieldText; background: Field; border: 1px solid GrayText; border-radius: .35rem; font: inherit; }
+      .hint { margin: 0; font-size: .9rem; }
+      #components.section--compact { margin-block-start: 0; }
+      .inventory-heading { position: absolute; inline-size: 1px; block-size: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+      .inventory-workspace { position: relative; left: 50%; width: 100vw; max-width: 100vw; margin-inline-start: -50vw; overflow: visible; border-block: 1px solid color-mix(in srgb, CanvasText 18%, Canvas); background: Canvas; }
+      .inventory-viewbar { display: flex; align-items: stretch; gap: 0; min-block-size: 2.75rem; padding-inline: 1rem; border-bottom: 1px solid color-mix(in srgb, CanvasText 17%, Canvas); background: Canvas; }
+      .inventory-layout { display: inline-flex; flex: 0 0 auto; align-items: center; gap: .45rem; margin-inline-end: .65rem; padding-inline-end: .8rem; border-inline-end: 1px solid color-mix(in srgb, CanvasText 17%, Canvas); color: LinkText; font-size: .9rem; font-weight: 550; white-space: nowrap; }
+      .inventory-layout svg { width: 1rem; height: 1rem; }
+      .inventory-viewbar button { position: relative; min-block-size: 2.75rem; padding: .35rem .85rem; color: color-mix(in srgb, CanvasText 72%, Canvas); background: transparent; border: 0; border-bottom: 2px solid transparent; font: inherit; font-size: .88rem; cursor: pointer; }
+      .inventory-viewbar button[aria-selected="true"] { color: CanvasText; border-bottom-color: Highlight; }
+      .inventory-viewbar button:focus-visible, .inventory-toolbar button:focus-visible, .inventory-review-controls button:focus-visible { outline: 2px solid Highlight; outline-offset: -2px; }
+      .inventory-viewbar button:hover, .inventory-toolbar button:hover { background: color-mix(in srgb, CanvasText 4%, Canvas); }
+      .inventory-toolbar { position: relative; z-index: 3; display: flex; flex-wrap: wrap; align-items: center; gap: .3rem; min-block-size: 2.75rem; margin: 0; padding: .35rem 1rem; border-bottom: 1px solid color-mix(in srgb, CanvasText 16%, Canvas); background: Canvas; }
+      .inventory-toolbar label { display: flex; align-items: center; gap: .35rem; font-size: .82rem; font-weight: 550; white-space: nowrap; }
+      .inventory-toolbar input, .inventory-toolbar select, .inventory-toolbar button, .inventory-review-controls button { min-block-size: 2.2rem; max-inline-size: 13rem; padding: .35rem .55rem; color: FieldText; background: Field; border: 1px solid color-mix(in srgb, CanvasText 20%, Canvas); border-radius: .25rem; font: inherit; font-size: .82rem; }
+      .inventory-toolbar input:focus-visible, .inventory-toolbar select:focus-visible { outline: 2px solid Highlight; outline-offset: 1px; }
+      .inventory-icon-button:focus-visible, .inventory-menu > summary:focus-visible { outline: 2px solid Highlight; outline-offset: 1px; }
+      .inventory-toolbar button, .inventory-review-controls button { color: ButtonText; background: ButtonFace; cursor: pointer; }
+      .inventory-toolbar button:disabled, .inventory-review-controls button:disabled { cursor: not-allowed; opacity: .55; }
+      .inventory-viewbar [role="tab"] { user-select: none; }
+      .inventory-viewbar [role="tab"]:focus-visible { outline-offset: -4px; }
+      .inventory-search { flex: 0 1 22rem; min-inline-size: min(100%, 14rem); max-inline-size: 22rem; margin-inline-end: auto; }
+      .inventory-search input { flex: 1; min-inline-size: 8rem; max-inline-size: none; }
+      .inventory-icon-button { display: inline-grid; flex: 0 0 2.25rem; place-items: center; inline-size: 2.25rem; min-inline-size: 2.25rem; min-block-size: 2.25rem; padding: .4rem !important; color: color-mix(in srgb, CanvasText 72%, Canvas) !important; background: transparent !important; border-color: transparent !important; border-radius: .25rem !important; }
+      .inventory-icon-button svg { inline-size: 1.1rem; block-size: 1.1rem; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+      .inventory-icon-button:hover, .inventory-icon-button[aria-expanded="true"] { color: LinkText !important; background: color-mix(in srgb, CanvasText 5%, Canvas) !important; }
+      .inventory-icon-button:disabled { opacity: .45; cursor: not-allowed; }
+      .inventory-toolbar .inventory-search-toggle { margin-inline-start: auto; }
+      .inventory-toolbar .inventory-search-toggle[aria-expanded="true"] { margin-inline-end: 0; }
+      .inventory-toolbar .inventory-search:not([hidden]) { margin-inline-end: auto; }
+      .inventory-menu { position: relative; }
+      .inventory-menu > summary { display: inline-flex; align-items: center; gap: .4rem; min-block-size: 2.2rem; padding: .35rem .65rem; color: CanvasText; border: 1px solid color-mix(in srgb, CanvasText 20%, Canvas); border-radius: .25rem; background: Canvas; font-size: .82rem; font-weight: 550; cursor: pointer; list-style: none; white-space: nowrap; }
+      .inventory-menu > summary svg { inline-size: .85rem; block-size: .85rem; transition: transform .16s ease; }
+      .inventory-menu[open] > summary svg { transform: rotate(180deg); }
+      .inventory-menu[open] > summary { border-color: Highlight; }
+      .inventory-menu[open] > summary.inventory-icon-button { color: LinkText !important; background: color-mix(in srgb, Highlight 9%, Canvas) !important; }
+      .sr-only { position: absolute; inline-size: 1px; block-size: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+      .inventory-filter-panel, .inventory-action-panel { position: absolute; inset-block-start: calc(100% + .35rem); inset-inline-end: 0; z-index: 5; display: grid; grid-template-columns: repeat(2, minmax(10rem, 1fr)); gap: .6rem; inline-size: min(32rem, calc(100vw - 2rem)); padding: .85rem; border: 1px solid color-mix(in srgb, CanvasText 20%, Canvas); border-radius: .3rem; background: Canvas; box-shadow: 0 8px 24px color-mix(in srgb, CanvasText 18%, transparent); }
+      .inventory-filter-panel label { align-items: stretch; flex-direction: column; gap: .25rem; }
+      .inventory-filter-panel input, .inventory-filter-panel select { inline-size: 100%; max-inline-size: none; }
+      .inventory-action-panel { grid-template-columns: 1fr; inline-size: min(22rem, calc(100vw - 2rem)); }
+      .inventory-action-panel p { margin: 0; font-size: .82rem; }
+      .inventory-action-panel button { inline-size: 100%; max-inline-size: none; text-align: start; }
+      .inventory-source-summary { display: flex; flex-wrap: wrap; gap: .2rem .7rem; min-inline-size: 0; padding: .35rem 1rem; color: color-mix(in srgb, CanvasText 72%, Canvas); font-size: .74rem; }
+      .inventory-source-summary p { margin: 0; overflow-wrap: anywhere; }
+      #inventory-source { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+      .inventory-review-controls { display: grid; gap: .45rem; padding-block-start: .55rem; border-block-start: 1px solid color-mix(in srgb, CanvasText 14%, Canvas); }
+      .inventory-review-controls[hidden] { display: none !important; }
+      #inventory-selected { min-inline-size: 0; font-size: .78rem; line-height: 1.35; overflow-wrap: anywhere; }
+      .inventory-review-controls p { margin: 0; }
+      .inventory-review-controls details { margin-block-start: .15rem; }
+      .inventory-review-controls summary { color: LinkText; cursor: pointer; }
+      .inventory-table-region { block-size: min(72vh, 56rem); min-block-size: 24rem; inline-size: 100%; max-inline-size: 100%; overflow: auto; background: Canvas; }
+      #inventory-table-mount { block-size: 100%; min-inline-size: 100%; --agentic-base-text: CanvasText; --agentic-base-muted: color-mix(in srgb, CanvasText 68%, Canvas); --agentic-base-surface: Canvas; --agentic-base-header: color-mix(in srgb, CanvasText 5%, Canvas); --agentic-base-border: color-mix(in srgb, CanvasText 17%, Canvas); --agentic-base-selected: color-mix(in srgb, Highlight 12%, Canvas); --agentic-base-focus: Highlight; }
+      #inventory-table-mount .agentic-base-data-view { overflow: visible; }
+      #inventory-table-mount .agentic-base-data-table { box-sizing: border-box; max-width: none; }
+      #inventory-table-mount .agentic-base-data-table th, #inventory-table-mount .agentic-base-data-table td { border-bottom: 1px solid color-mix(in srgb, CanvasText 17%, Canvas); }
+      #inventory-table-mount .agentic-base-data-table thead th { position: sticky; top: 0; z-index: 2; white-space: nowrap; background: color-mix(in srgb, CanvasText 2%, Canvas); }
+      #inventory-table-mount .agentic-base-data-table td > span { display: block; max-inline-size: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      #inventory-filter-panel,
+      #inventory-review-controls { min-inline-size: 0; padding: 0; border: 0; }
+      #inventory-review-controls legend { position: absolute; inline-size: 1px; block-size: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+      .inventory-status-note { margin: 0; padding: .45rem 1rem; border-block-start: 1px solid color-mix(in srgb, CanvasText 14%, Canvas); color: color-mix(in srgb, CanvasText 68%, Canvas); font-size: .78rem; }
+      .catalog-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: 1rem; }
+      .catalog-card { min-block-size: 10rem; padding: 1.15rem; border: 1px solid GrayText; border-radius: .5rem; }
+      .catalog-card p { margin-block: .5rem 0; }
+      .catalog-meta { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .35rem .75rem; margin-block: 1rem 0; font-size: .9rem; }
+      .catalog-meta dt { font-weight: 650; }
+      .catalog-meta dd { margin: 0; overflow-wrap: anywhere; }
+      .catalog-evidence { margin-block: 1rem 0; padding-inline-start: 1.25rem; overflow-wrap: anywhere; }
+      .empty { margin-block: 1.25rem 2.5rem; padding: 1rem; border-inline-start: .25rem solid GrayText; }
+      .rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr)); gap: 1rem; }
+      .rule { padding-block: .75rem; border-top: 1px solid GrayText; }
+      .section { margin-block-start: 3rem; }
+      .section--compact { margin-block-start: 2rem; }
+      footer { padding-block: 1.5rem; border-top: 1px solid GrayText; }
+      footer p { margin: 0; }
+      [hidden] { display: none !important; }
+      @media (max-width: 42rem) {
+        .topbar { align-items: flex-start; flex-direction: column; padding-block: .75rem; }
+        nav { width: 100%; }
+        nav a { padding-inline: .5rem; }
+        .inventory-toolbar { align-items: center; }
+        .inventory-toolbar .inventory-search { order: 1; flex: 1 0 100%; min-inline-size: 100%; margin: 0; }
+        .inventory-toolbar .inventory-search-toggle { margin-inline-start: auto; }
+        .inventory-toolbar select { flex: 1; max-inline-size: none; }
+        .inventory-viewbar { overflow-x: auto; }
+        .inventory-viewbar button, .inventory-review-controls button { flex: 1; }
+        .inventory-filter-panel { grid-template-columns: 1fr; }
+        .inventory-source-summary { justify-content: flex-start; }
+        .inventory-table-region { min-block-size: 20rem; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header>
+      <section class="shell topbar" aria-label="Site identity and catalog navigation">
+        <a class="wordmark" href="#top">Agentic Design System</a>
+        <nav aria-label="Catalog sections">
+          <a href="#tokens">Tokens</a>
+          <a href="#profiles">Profiles</a>
+          <a href="#guidelines">Guidelines</a>
+          <a href="#accessibility">Accessibility</a>
+          <a href="#components">Components</a>
+          <a href="#releases">Releases</a>
+        </nav>
+      </section>
+    </header>
+    <main id="main" class="shell">
+      <p class="eyebrow">One catalog · one accountable source per concern</p>
+      <h1 id="top">Design source, clearly owned.</h1>
+      <p class="intro">Find the approved owner, revision, reuse status, and evidence for each design concern. Consumers pin an exact release and keep executable behavior with its product owner.</p>
+
+      <section class="status" aria-labelledby="catalog-state-heading">
+        <strong id="catalog-state-heading">Draft catalog · no public records cleared</strong>
+        <p id="release-summary">Loading catalog release metadata…</p>
+      </section>
+
+      <label class="search" for="catalog-search">
+        <span>Search the catalog</span>
+        <input id="catalog-search" type="search" autocomplete="off" placeholder="Search a concern or type @component-id">
+        <span class="hint">Search is local to this catalog. It sends no query to a service.</span>
+      </label>
+
+      <section aria-labelledby="records-heading">
+        <h2 id="records-heading">Catalog entries</h2>
+        <p id="catalog-empty" class="empty" hidden>No public catalog records are cleared yet. Rights, source owner, exact revision, and required evidence must be verified before an entry appears here.</p>
+        <section id="catalog-grid" class="catalog-grid" aria-label="Published catalog records"></section>
+      </section>
+
+      <section class="section" aria-labelledby="rules-heading">
+        <h2 id="rules-heading">Governance rules</h2>
+        <section class="rules" aria-label="Catalog governance rules">
+          <article class="rule"><h3>One owner</h3><p>Every token, profile, guideline, component, and stable ID resolves to one accountable source.</p></article>
+          <article class="rule"><h3>Rights before reuse</h3><p>Unknown license or permission blocks publication. A link does not transfer ownership.</p></article>
+          <article class="rule"><h3>Pin and roll back</h3><p>Consumers bind an immutable release and digest. A successor names its predecessor.</p></article>
+          <article class="rule"><h3>No shadow variants</h3><p>Do not add a second editable value for the same profile, token, mode, or component ID.</p></article>
+        </section>
+      </section>
+
+      <section id="tokens" class="section" aria-labelledby="tokens-heading">
+        <h2 id="tokens-heading">Design tokens</h2>
+        <p>Token values stay in their native source. This catalog exposes an entry only after its owner, exact revision, digest, and reuse permission are recorded.</p>
+      </section>
+      <section id="profiles" class="section--compact" aria-labelledby="profiles-heading">
+        <h2 id="profiles-heading">Brand profiles</h2>
+        <p>Each profile needs a unique ID, identity owner, intended surface, and permitted-use record. No palette or identity asset is invented here.</p>
+      </section>
+      <section id="guidelines" class="section--compact" aria-labelledby="guidelines-heading">
+        <h2 id="guidelines-heading">Guidelines</h2>
+        <p>Guidelines resolve to their original owner and revision. The catalog does not maintain a competing policy copy.</p>
+      </section>
+      <section id="accessibility" class="section--compact" aria-labelledby="accessibility-heading">
+        <h2 id="accessibility-heading">Accessibility contracts</h2>
+        <p>Interactive records need named evidence for keyboard use, visible focus, measured contrast, zoom, reduced motion, narrow touch layouts, and offline behavior. The catalog does not imply conformance without results.</p>
+      </section>
+      <section id="components" class="section--compact" aria-labelledby="components-heading">
+        <h2 class="inventory-heading" id="components-heading">Design system elements</h2>
+        <section class="inventory-workspace" aria-label="Design system element workspace">
+        <nav class="inventory-viewbar" role="tablist" aria-label="Inventory view">
+          <p class="inventory-layout"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" role="img" aria-label="Multi-dimensional table layout icon"><rect x="1.5" y="1.5" width="5" height="5" rx=".5"/><rect x="9.5" y="1.5" width="5" height="5" rx=".5"/><rect x="1.5" y="9.5" width="5" height="5" rx=".5"/><rect x="9.5" y="9.5" width="5" height="5" rx=".5"/></svg>Multi-dimensional Table</p>
+          <button id="inventory-source-tab" type="button" role="tab" data-inventory-mode="all" aria-controls="inventory-table-panel" aria-selected="true" tabindex="0">Source inventory</button>
+          <button id="inventory-reviewed-tab" type="button" role="tab" data-inventory-mode="reviewed" aria-controls="inventory-table-panel" aria-selected="false" tabindex="-1">Review decisions</button>
+        </nav>
+        <section class="inventory-toolbar" role="toolbar" aria-label="Multi-dimensional Table controls">
+          <button id="inventory-search-toggle" class="inventory-icon-button inventory-search-toggle" type="button" aria-label="Search elements" aria-expanded="false" aria-controls="inventory-search-form"><svg viewBox="0 0 20 20" role="img" aria-label="Search icon"><circle cx="8.5" cy="8.5" r="5.5"/><path d="m13 13 4 4"/></svg></button>
+          <label id="inventory-search-form" class="inventory-search" for="inventory-search" hidden>Search elements
+            <input id="inventory-search" type="search" autocomplete="off" placeholder="Name, owner, path, or status">
+          </label>
+          <button class="inventory-icon-button" type="button" aria-label="Filter elements" data-focus-inventory-control="inventory-concern"><svg viewBox="0 0 20 20" role="img" aria-label="Filter icon"><path d="M3 4h14l-5.5 6.2v4.3l-3 1.5v-5.8L3 4Z"/></svg></button>
+          <button class="inventory-icon-button" type="button" aria-label="Sort rows" data-focus-inventory-control="inventory-sort"><svg viewBox="0 0 20 20" role="img" aria-label="Sort icon"><path d="M6 16V4m0 0L3.5 6.5M6 4l2.5 2.5M14 4v12m0 0 2.5-2.5M14 16l-2.5-2.5"/></svg></button>
+          <button class="inventory-icon-button" type="button" aria-label="Group rows" data-focus-inventory-control="inventory-group"><svg viewBox="0 0 20 20" role="img" aria-label="Group icon"><rect x="3" y="3" width="5" height="5" rx="1"/><rect x="12" y="3" width="5" height="5" rx="1"/><rect x="3" y="12" width="5" height="5" rx="1"/><path d="M12 14.5h5"/></svg></button>
+          <details id="inventory-view-options" class="inventory-menu">
+            <summary class="inventory-icon-button" aria-label="Display controls" aria-controls="inventory-filter-panel" aria-expanded="false"><svg viewBox="0 0 20 20" role="img" aria-label="Display controls icon"><path d="M3 5h14M3 10h14M3 15h14"/><circle cx="7" cy="5" r="1.5" fill="Canvas"/><circle cx="13" cy="10" r="1.5" fill="Canvas"/><circle cx="9" cy="15" r="1.5" fill="Canvas"/></svg><svg viewBox="0 0 20 20" role="img" aria-label="Disclosure indicator"><path d="m5 7 5 5 5-5"/></svg><span class="sr-only">Display controls</span></summary>
+            <fieldset id="inventory-filter-panel" class="inventory-filter-panel">
+              <legend class="sr-only">Filter and arrange rows</legend>
+              <label for="inventory-concern">Concern
+                <select id="inventory-concern"><option value="">All concerns</option></select>
+              </label>
+              <label for="inventory-group">Group rows by
+                <select id="inventory-group">
+                  <option value="concern">Concern</option><option value="group">Group</option>
+                  <option value="owner">Owner</option><option value="reuseGate">Reuse gate</option>
+                  <option value="none">No grouping</option>
+                </select>
+              </label>
+              <label for="inventory-sort">Sort rows by
+                <select id="inventory-sort">
+                  <option value="name">Element name</option><option value="concern">Concern</option>
+                  <option value="group">Group</option><option value="owner">Owner</option>
+                  <option value="sourcePath">Source path</option>
+                </select>
+              </label>
+              <label for="inventory-decision-filter">Review
+                <select id="inventory-decision-filter">
+                  <option value="">All decisions</option><option value="pending">Pending</option>
+                  <option value="keep">Keep</option><option value="remove">Remove</option>
+                </select>
+              </label>
+            </fieldset>
+          </details>
+          <details class="inventory-menu">
+            <summary class="inventory-icon-button" aria-label="Review actions" aria-controls="inventory-action-panel" aria-expanded="false"><svg viewBox="0 0 20 20" role="img" aria-label="Review actions icon"><circle cx="4" cy="10" r="1" fill="currentColor"/><circle cx="10" cy="10" r="1" fill="currentColor"/><circle cx="16" cy="10" r="1" fill="currentColor"/></svg><svg viewBox="0 0 20 20" role="img" aria-label="Disclosure indicator"><path d="m5 7 5 5 5-5"/></svg><span class="sr-only">Review actions</span></summary>
+            <section id="inventory-action-panel" class="inventory-action-panel" aria-label="Local review actions">
+              <p><strong>Local review only.</strong> Keep/Remove decisions stay in this browser. They do not grant reuse rights or publish an item.</p>
+              <p id="inventory-storage-note">Decisions stay here unless you export them.</p>
+              <button id="inventory-export" type="button">Export decisions</button>
+              <button id="inventory-clear" type="button">Clear decisions</button>
+              <fieldset id="inventory-review-controls" class="inventory-review-controls" hidden>
+                <legend>Review selected element</legend>
+                <section id="inventory-selected" aria-label="Selected review item" aria-live="polite">
+                  <p id="inventory-selected-brief"></p>
+                  <details id="inventory-selected-details" hidden>
+                    <summary>Source and reuse details</summary>
+                    <p id="inventory-selected-full"></p>
+                  </details>
+                </section>
+                <button id="inventory-keep-selected" type="button" disabled>Keep selected</button>
+                <button id="inventory-remove-selected" type="button" disabled>Remove selected</button>
+              </fieldset>
+            </section>
+          </details>
+        </section>
+        <section id="inventory-table-panel" class="inventory-table-region" role="tabpanel" aria-labelledby="inventory-source-tab" tabindex="0">
+          <section id="inventory-table-mount" aria-label="Agentic Graph design system inventory"></section>
+        </section>
+        <section class="inventory-source-summary" aria-live="polite" aria-label="Inventory source summary">
+          <p id="inventory-source">Loading source inventory…</p>
+          <p id="inventory-decision-summary"></p>
+        </section>
+        <p id="inventory-status" class="inventory-status-note" role="status" aria-live="polite"></p>
+        </section>
+      </section>
+      <section id="examples" class="section--compact" aria-labelledby="examples-heading">
+        <h2 id="examples-heading">Examples</h2>
+        <p>Examples will link to or be generated from an authorized source revision. No executable example is published before its source and rights are cleared.</p>
+      </section>
+      <section id="releases" class="section--compact" aria-labelledby="releases-heading">
+        <h2 id="releases-heading">Versioned releases</h2>
+        <p>Each release records its exact source revision, manifest digest, checks, compatibility, and predecessor. Draft metadata is not a published release.</p>
+      </section>
+      <p id="search-status" class="hint" role="status" aria-live="polite"></p>
+      <p id="offline-status" class="hint" role="status" aria-live="polite"></p>
+    </main>
+    <footer>
+      <p class="shell">Local-first static catalog. No remote fonts, scripts, telemetry, user accounts, or model calls.
+        <a href="./THIRD-PARTY-NOTICES.txt">Third-party notices</a></p>
+    </footer>
+    <script type="module" src="./app.js?v=c104152"></script>
+  </body>
+</html>

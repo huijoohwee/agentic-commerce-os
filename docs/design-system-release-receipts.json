@@ -1,0 +1,12 @@
+{
+  "schema": "agentic-commerce-design-system-release-receipts/v1",
+  "status": "pending",
+  "source": {
+    "repository": "github.com/huijoohwee/agentic-design-system",
+    "revision": "d9823a90ae534f0173eef769041115e0b1a82789",
+    "pullRequest": "https://github.com/huijoohwee/agentic-design-system/pull/5"
+  },
+  "route": "https://airvio.co/agentic-design-system/",
+  "payloadDigest": "bf8720fd419fa86c2e53f7c52810e410f80623b1ce806b0c8ca52001afb98c14",
+  "note": "Deployment and runtime receipts are appended only after the exact Dev artifact and Production route have been read back."
+}

@@ -1,0 +1,62 @@
+{
+  "schema": "agentic-commerce-design-system-static-release/v1",
+  "source": {
+    "repository": "github.com/huijoohwee/agentic-design-system",
+    "revision": "d9823a90ae534f0173eef769041115e0b1a82789"
+  },
+  "route": "https://airvio.co/agentic-design-system/",
+  "files": [
+    {
+      "path": "app.js",
+      "bytes": 22894,
+      "sha256": "ac9a764f9617876e5010d149f94945bf75a1d7ee696100759fd56bf2ca91edc6"
+    },
+    {
+      "path": "catalog.json",
+      "bytes": 325,
+      "sha256": "2a72afaa502f7dfcdba5a6942d1a7e5dabdc18acb6ae3f0015f213a1ed4e2910"
+    },
+    {
+      "path": "catalog.schema.json",
+      "bytes": 3643,
+      "sha256": "aac3b43167532c26e888175aace35e3cec2fb6c3d68c7e66f71ccb340fc59ac2"
+    },
+    {
+      "path": "index.html",
+      "bytes": 27143,
+      "sha256": "7f632c2adc2c4b0b1ea1c4c657c968b231562a567f255491b09e1ce09321bd8b"
+    },
+    {
+      "path": "LICENSE",
+      "bytes": 1272,
+      "sha256": "b2e476300173b31043c1222c840b5cd3a8c234d50ffc5f44f104fcbf66fc5ffe"
+    },
+    {
+      "path": "sw.js",
+      "bytes": 1915,
+      "sha256": "8f3bbcebdd078566b10a78180eafdf119c3fc3af19635a45b5243400ea5226bf"
+    },
+    {
+      "path": "THIRD-PARTY-NOTICES.txt",
+      "bytes": 4595,
+      "sha256": "40b0896c3f130a9665cb42173c5f946f90073843cdc8c07a551ca9af49d6a1bd"
+    },
+    {
+      "path": "vendor/agentic-base-browser-data-view.css",
+      "bytes": 16270,
+      "sha256": "f00b3f4c88dfa81946fdc1577aa01ff49ea3e6f996f32607bc715a5d93079b69"
+    },
+    {
+      "path": "vendor/agentic-base-browser-data-view.js",
+      "bytes": 212169,
+      "sha256": "2cab75c008f14d3cce8b235f7efe93bc560cd0575a6bfbee23699671e955ad0d"
+    }
+  ],
+  "totalBytes": 290226,
+  "payloadDigest": "bf8720fd419fa86c2e53f7c52810e410f80623b1ce806b0c8ca52001afb98c14",
+  "excluded": [
+    "registry/",
+    "site/review-inventory.json",
+    "site/vendor/agentic-base-browser-data-view.manifest.json"
+  ]
+}

@@ -11,6 +11,15 @@
     "declared": true,
     "servingCandidateVerified": false
   },
+  "designSystemRoute": {
+    "owner": "agentic-commerce-os",
+    "pattern": "airvio.co/agentic-design-system*",
+    "pagesProject": "agentic-design-system",
+    "declared": true,
+    "quotaExhaustion": "fail-closed",
+    "requestLimitFailOpen": false,
+    "servingCandidateVerified": false
+  },
   "boundaries": [
     {
       "id": "sandbox-to-mirror",

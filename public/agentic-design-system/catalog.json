@@ -1,0 +1,14 @@
+{
+  "$schema": "./catalog.schema.json",
+  "catalogId": "agentic-design-system",
+  "schemaVersion": "1.0.0",
+  "release": {
+    "version": "0.1.0-draft",
+    "status": "draft",
+    "sourceRevision": null,
+    "manifestDigest": null,
+    "predecessor": null
+  },
+  "requestedPath": "/agentic-design-system/",
+  "records": []
+}
