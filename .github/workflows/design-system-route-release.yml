@@ -85,7 +85,7 @@ jobs:
           preflight_digest="$(node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).sourceControlPreflightDigest)' "$evidence/candidate.json")"
           printf 'EVIDENCE_DIR=%s\nPAYLOAD_DIR=%s\nPAYLOAD_DIGEST=%s\nSOURCE_REVISION=%s\nPREFLIGHT_DIGEST=%s\n' \
             "$evidence" "$payload" "$payload_digest" "$source_revision" "$preflight_digest" >> "$GITHUB_ENV"
-          printf 'DEV_PAGES_BRANCH=dev-%s\nDEV_PAGES_ORIGIN=dev-%s.agentic-design-system.pages.dev\n' \
+          printf 'DEV_PAGES_BRANCH=dev-%s\nDRY_RUN_PAGES_ORIGIN=dev-%s.agentic-design-system.pages.dev\n' \
             "$GITHUB_RUN_ID" "$GITHUB_RUN_ID" >> "$GITHUB_ENV"
 
       - name: Observe exact route baseline
@@ -103,7 +103,7 @@ jobs:
         run: |
           set -euo pipefail
           ./node_modules/.bin/wrangler deploy --config wrangler.design-system.jsonc --env dev --dry-run \
-            --var "PAGES_ORIGIN:$DEV_PAGES_ORIGIN" \
+            --var "PAGES_ORIGIN:$DRY_RUN_PAGES_ORIGIN" \
             --var "DESIGN_SYSTEM_SOURCE_REVISION:$SOURCE_REVISION" \
             --var "RELEASE_CANDIDATE_SHA:$CANDIDATE_SHA" \
             --var "RELEASE_CANDIDATE_DIGEST:$PAYLOAD_DIGEST"
@@ -164,6 +164,21 @@ jobs:
           node scripts/design-system-release.mjs pages-deployment \
             "$EVIDENCE_DIR/pages-dev-deployments.json" "$DEV_PAGES_BRANCH" "$CANDIDATE_SHA" \
             > "$EVIDENCE_DIR/pages-dev-deployment.json"
+          dev_pages_origin="$(node - "$EVIDENCE_DIR/pages-dev-deployment.json" "$DEV_PAGES_BRANCH" "$CANDIDATE_SHA" <<'NODE'
+          const fs = require('node:fs');
+          const deployment = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          if (deployment.branch !== process.argv[3] || deployment.commitSha !== process.argv[4]
+            || deployment.environment !== 'preview') throw new Error('dev_pages_candidate_mismatch');
+          let url;
+          try { url = new URL(deployment.url); } catch { throw new Error('dev_pages_url_invalid'); }
+          if (url.protocol !== 'https:' || url.username || url.password || url.port || url.pathname !== '/'
+            || url.search || url.hash || !/^[a-z0-9-]+\.agentic-design-system\.pages\.dev$/u.test(url.hostname)) {
+            throw new Error('dev_pages_url_invalid');
+          }
+          process.stdout.write(url.hostname);
+          NODE
+          )"
+          printf 'DEV_PAGES_ORIGIN=%s\n' "$dev_pages_origin" >> "$GITHUB_ENV"
 
       - name: Deploy and read back the Dev edge candidate
         id: dev_readback
