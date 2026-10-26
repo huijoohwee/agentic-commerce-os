@@ -97,6 +97,10 @@ export default {
       const value = upstream.headers.get(name);
       if (value) responseHeaders.set(name, value);
     }
+    if (request.method === 'HEAD') {
+      const contentLength = upstream.headers.get('content-length');
+      if (contentLength) responseHeaders.set('content-length', contentLength);
+    }
     responseHeaders.set('referrer-policy', 'strict-origin-when-cross-origin');
     responseHeaders.set('x-content-type-options', 'nosniff');
     responseHeaders.set('x-design-system-source', env.DESIGN_SYSTEM_SOURCE_REVISION);
