@@ -156,7 +156,9 @@ async function readback(base, directory, candidateSha, outputPath) {
   const { config, entries } = verifyDirectory(directory), origin = new URL(base);
   if (origin.protocol !== 'https:' || origin.username || origin.password || origin.search || origin.hash) fail('readback_origin_invalid');
   const proof = [];
-  const urlFor = (path, query = '') => `${origin.origin}${PREFIX}/${path}${query}`;
+  const urlFor = (path, query = '') => path === 'index.html'
+    ? `${origin.origin}${PREFIX}/${query}`
+    : `${origin.origin}${PREFIX}/${path}${query}`;
   const redirectUrl = `${origin.origin}${PREFIX}?route-check=slashless`;
   const { response: redirect } = await fetchBounded(redirectUrl, { redirect: 'manual' });
   const expectedLocation = `${origin.origin}${PREFIX}/?route-check=slashless`;
@@ -168,7 +170,12 @@ async function readback(base, directory, candidateSha, outputPath) {
     if (response.headers.get('x-design-system-source') !== config.source.revision
       || response.headers.get('x-design-system-release') !== candidateSha
       || response.headers.get('x-design-system-payload') !== config.payloadDigest) fail(`asset_provenance_mismatch:${item.path}`);
-    proof.push({ path: `${PREFIX}/${item.path}`, status: response.status, sha256: hash(bytes), bytes: bytes.length });
+    proof.push({
+      path: item.path === 'index.html' ? `${PREFIX}/` : `${PREFIX}/${item.path}`,
+      status: response.status,
+      sha256: hash(bytes),
+      bytes: bytes.length,
+    });
   }
   const head = await fetchBounded(urlFor('index.html'), { method: 'HEAD' });
   if (head.response.status !== 200 || head.bytes.length !== 0) fail('head_readback_mismatch');
