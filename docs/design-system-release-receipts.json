@@ -1,12 +1,30 @@
 {
   "schema": "agentic-commerce-design-system-release-receipts/v1",
-  "status": "pending",
+  "status": "production-verified",
   "source": {
     "repository": "github.com/huijoohwee/agentic-design-system",
     "revision": "d9823a90ae534f0173eef769041115e0b1a82789",
     "pullRequest": "https://github.com/huijoohwee/agentic-design-system/pull/5"
   },
+  "implementation": {
+    "repository": "github.com/huijoohwee/agentic-commerce-os",
+    "revision": "0d794ba813fc593a852e561d4b73fab9f4c91462",
+    "pullRequest": "https://github.com/huijoohwee/agentic-commerce-os/pull/160",
+    "sourceReleaseReceipt": "docs/reports/design-system-route-source-release.json",
+    "sourceReleaseReceiptDigest": "912caeebbb44025806f75521110180322493f9314106ec248dc2a5c388b9207e"
+  },
   "route": "https://airvio.co/agentic-design-system/",
   "payloadDigest": "bf8720fd419fa86c2e53f7c52810e410f80623b1ce806b0c8ca52001afb98c14",
-  "note": "Deployment and runtime receipts are appended only after the exact Dev artifact and Production route have been read back."
+  "releaseRun": "https://github.com/huijoohwee/agentic-commerce-os/actions/runs/40420828266",
+  "deploymentReceipt": {
+    "path": "docs/reports/design-system-route-release-40420828266.json#deploymentReceipt",
+    "sha256": "19b621616f2b6069c3cf60f7d5dbbdbb965f01f756d18f086264a596f7c9388f"
+  },
+  "runtimeVerification": {
+    "path": "docs/reports/design-system-route-release-40420828266.json#runtimeVerificationReceipt",
+    "sha256": "6dd23d80542e45690d06fc1d661031153c85f14d7cb26734cbcf79c2f4bb857e"
+  },
+  "note": "Dev and Production were verified for the same 290226-byte payload. The Production route is active with quota fail-closed; the prior route was absent, so rollback was not invoked.",
+  "sourceReleaseReceipt": "docs/reports/design-system-route-release-40420828266.json#sourceReleaseReceipt",
+  "sourceReleaseReceiptDigest": "912caeebbb44025806f75521110180322493f9314106ec248dc2a5c388b9207e"
 }
