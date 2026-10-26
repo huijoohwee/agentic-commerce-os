@@ -263,6 +263,19 @@ function parsePagesUploadUrl(path) {
   process.stdout.write(`${url.origin}\n`);
 }
 
+function parsePagesOrigin(path, candidateSha) {
+  const deployment = json(path);
+  let url;
+  try { url = new URL(deployment.url); } catch { fail('pages_deployment_url_invalid'); }
+  if (deployment.branch !== 'main' || deployment.commitSha !== candidateSha || deployment.environment !== 'production'
+    || url.protocol !== 'https:' || url.username || url.password || url.port || url.pathname !== '/'
+    || url.search || url.hash || url.hostname === 'agentic-design-system.pages.dev'
+    || !/^[a-z0-9-]+\.agentic-design-system\.pages\.dev$/u.test(url.hostname)) {
+    fail('pages_production_origin_unbound');
+  }
+  process.stdout.write(`${url.hostname}\n`);
+}
+
 function parseWorkerDeployment(path, expectedName, candidateSha, expectedMessage) {
   const parsed = json(path), rows = Array.isArray(parsed) ? parsed : parsed.deployments ?? parsed.result;
   if (!Array.isArray(rows) || rows.length === 0 || !/^[0-9a-f]{40}$/u.test(candidateSha ?? '')
@@ -336,6 +349,7 @@ async function main(args) {
   if (command === 'readback' && rest.length === 4) return readback(...rest);
   if (command === 'pages-deployment' && rest.length === 3) return parsePagesDeployment(...rest);
   if (command === 'pages-deployment' && rest.length === 4) return parsePagesDeployment(...rest);
+  if (command === 'pages-origin' && rest.length === 2) return parsePagesOrigin(...rest);
   if (command === 'pages-upload-url' && rest.length === 1) return parsePagesUploadUrl(...rest);
   if (command === 'worker-deployment' && rest.length === 4) return parseWorkerDeployment(...rest);
   if (command === 'route-baseline' && rest.length === 1) return routeStatus(rest[0], false);
