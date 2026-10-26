@@ -97,6 +97,13 @@ export default {
       const value = upstream.headers.get(name);
       if (value) responseHeaders.set(name, value);
     }
+    if (/^\s*text\/html(?:\s*;|$)/iu.test(responseHeaders.get('content-type') ?? '')) {
+      const cacheControl = responseHeaders.get('cache-control') ?? '';
+      const directives = cacheControl.split(',').map((value) => value.trim().toLowerCase());
+      if (!directives.includes('no-transform')) {
+        responseHeaders.set('cache-control', [cacheControl, 'no-transform'].filter(Boolean).join(', '));
+      }
+    }
     if (request.method === 'HEAD') {
       const contentLength = upstream.headers.get('content-length');
       if (contentLength) responseHeaders.set('content-length', contentLength);
