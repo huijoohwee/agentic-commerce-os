@@ -157,7 +157,7 @@ async function readback(base, directory, candidateSha, outputPath) {
   if (origin.protocol !== 'https:' || origin.username || origin.password || origin.search || origin.hash) fail('readback_origin_invalid');
   const proof = [];
   const urlFor = (path, query = '') => `${origin.origin}${PREFIX}/${path}${query}`;
-  const redirectUrl = urlFor('', '?route-check=slashless');
+  const redirectUrl = `${origin.origin}${PREFIX}?route-check=slashless`;
   const { response: redirect } = await fetchBounded(redirectUrl, { redirect: 'manual' });
   const expectedLocation = `${origin.origin}${PREFIX}/?route-check=slashless`;
   if (redirect.status !== 308 || redirect.headers.get('location') !== expectedLocation) fail('slashless_redirect_mismatch');
