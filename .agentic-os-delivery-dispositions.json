@@ -23,6 +23,24 @@
     },
     {
       "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/design-system-route-disposition-ledger",
+      "laneHead": "a261d0c8768b7e1c0218860763a2f477d8885e16",
+      "paths": [
+        ".agentic-os-delivery-dispositions.json"
+      ],
+      "disposition": "no-deploy",
+      "candidateRevision": "b05cb5f48545a3f48dfa54657e515f5ebf228aa1",
+      "candidateDigest": "4d62be47f14dbe91d85ac32df1c0eae06a5316e3f11e3235a5b6be80d530fa78",
+      "sourceReleaseReceiptDigest": null,
+      "deploymentReceiptDigest": null,
+      "runtimeVerificationReceiptDigest": null,
+      "evidencePath": "docs/reports/design-system-route-release-40420828266.json",
+      "evidenceDigest": "a991c0d25cd01697f7077c09569db23593490636d51f9347cdbbf4b119f5c61b",
+      "decisionRef": "https://github.com/huijoohwee/agentic-commerce-os/pull/162",
+      "reason": "The control ledger is excluded from the product artifact; it is repository workflow metadata and is not included in the static Pages allowlist."
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/design-system-route-release-handover",
       "laneHead": "c6a0db16a9eefbf4f37e28a6fc837a9dece79120",
       "paths": [
@@ -42,5 +60,5 @@
       "reason": "These Commerce documentation files record delivery evidence and planning; they are not inputs to the separate agentic-design-system Pages build."
     }
   ],
-  "receiptDigest": "747a822b1051475bf4194041e947220e023ca34c23d12e3348d93e97c545a48d"
+  "receiptDigest": "24c61eb5d5123949f8ee3e718ce7dcf11ac01d207994d9f0babc957635ed0cc4"
 }
