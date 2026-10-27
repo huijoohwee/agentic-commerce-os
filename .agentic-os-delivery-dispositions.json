@@ -23,6 +23,25 @@
     },
     {
       "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/design-system-immutable-pages-origin",
+      "laneHead": "e7113cb5eab13538c57cd6789e88acbd596e1a6d",
+      "paths": [
+        ".github/workflows/design-system-route-release.yml",
+        "scripts/design-system-release.mjs"
+      ],
+      "disposition": "deployed",
+      "candidateRevision": "0d794ba813fc593a852e561d4b73fab9f4c91462",
+      "candidateDigest": "bf8720fd419fa86c2e53f7c52810e410f80623b1ce806b0c8ca52001afb98c14",
+      "sourceReleaseReceiptDigest": "912caeebbb44025806f75521110180322493f9314106ec248dc2a5c388b9207e",
+      "deploymentReceiptDigest": "19b621616f2b6069c3cf60f7d5dbbdbb965f01f756d18f086264a596f7c9388f",
+      "runtimeVerificationReceiptDigest": "6dd23d80542e45690d06fc1d661031153c85f14d7cb26734cbcf79c2f4bb857e",
+      "evidencePath": "docs/reports/design-system-route-release-40420828266.json",
+      "evidenceDigest": "a991c0d25cd01697f7077c09569db23593490636d51f9347cdbbf4b119f5c61b",
+      "decisionRef": "https://github.com/huijoohwee/agentic-commerce-os/actions/runs/40420828266",
+      "reason": null
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/design-system-route-disposition-ledger",
       "laneHead": "a261d0c8768b7e1c0218860763a2f477d8885e16",
       "paths": [
@@ -60,5 +79,5 @@
       "reason": "These Commerce documentation files record delivery evidence and planning; they are not inputs to the separate agentic-design-system Pages build."
     }
   ],
-  "receiptDigest": "24c61eb5d5123949f8ee3e718ce7dcf11ac01d207994d9f0babc957635ed0cc4"
+  "receiptDigest": "301b646113ceabb7dc614bfa9a8abe8b074f57b479adda5ef68bc349812d5f60"
 }
