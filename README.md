@@ -152,6 +152,12 @@ receipts.
 Product deployment, rollback, and Production authorization remain governed by
 the Commerce runtime contracts below.
 
+## Private archive
+
+This public repository remains canonical. `agentic-commerce-os-private-archive` is a
+private, frozen history copy, never a build or release source. Follow the [shared private
+archive policy](https://github.com/huijoohwee/agentic-os/blob/main/guides/PRIVATE-ARCHIVE-POLICY.md).
+
 ## Readiness boundary
 
 `GET /livez` proves only that the edge code is executing. A direct Worker

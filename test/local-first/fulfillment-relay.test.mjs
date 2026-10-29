@@ -1,4 +1,4 @@
-import { listingPlanFixture } from './fulfillment-fixture.mjs';
+import { freeCostEvidenceFixture, listingPlanFixture } from './fulfillment-fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {randomBytes} from 'node:crypto';
@@ -168,19 +168,29 @@ test('concurrent relay calls retain separate server principals and reject princi
     assert.equal(request.headers.get('authorization'),'Bearer '+token);
     assert.equal(request.headers.get('origin'),null);assert.equal(request.headers.get('cookie'),null);
     return Response.json({runId:body.runId,status:'planning'});
-  });
+  },{verifyProviderCostEvidence:freeCostEvidenceFixture});
   await Promise.all(owners.map((owner,index)=>relay.invoke('status',{runId:'listing-'+String(index+1).repeat(64)},owner,signal())));
   for(const [index,owner]of owners.entries())assert.equal(seen.find(row=>row.runId==='listing-'+String(index+1).repeat(64)).principalId,owner.principalId);
   await assert.rejects(relay.invoke('status',{runId:'listing-'+ '1'.repeat(64),principalId:owners[1].principalId},owners[0],signal()));
   assert.equal(seen.length,2);
-  const failed=createFulfillmentRelay(env,async()=>{throw Error('connection lost');});
+  const failed=createFulfillmentRelay(env,async()=>{throw Error('connection lost');},
+    {verifyProviderCostEvidence:freeCostEvidenceFixture});
   await assert.rejects(failed.invoke('cancel',{runId:'listing-'+ '1'.repeat(64),operationId:'cancel-one'},owners[0],signal()),
     error=>error.writeResultUnknown===true&&error.reasonCode==='run_transport_failed');
   for(const status of [400,404,429,500,502]){
-    const refused=createFulfillmentRelay(env,async()=>Response.json({code:'run_host_failed'},{status}));
+    const refused=createFulfillmentRelay(env,async()=>Response.json({code:'run_host_failed'},{status}),
+      {verifyProviderCostEvidence:freeCostEvidenceFixture});
     await assert.rejects(refused.invoke('cancel',{runId:'listing-'+ '1'.repeat(64),operationId:'cancel-one'},owners[0],signal()),
       error=>error.status===503&&error.code==='fulfillment_transport_unavailable'&&error.writeResultUnknown===(status>=500));
   }
+});
+
+test('HTTPS fulfillment stays blocked before transport without a trusted cost verifier',async()=>{
+  let sends=0;
+  const relay=createFulfillmentRelay(env,async()=>{sends++;return Response.json({status:'idle'});});
+  await assert.rejects(relay.invoke('status',{runId:'listing-'+'1'.repeat(64)},context(),signal()),
+    /HTTPS cost verifier/);
+  assert.equal(sends,0);
 });
 
 test('real HTTP relay restores a stopped SQLite copy without rerun and rejects changed signing authority',async t=>{
@@ -210,7 +220,7 @@ test('real HTTP relay restores a stopped SQLite copy without rerun and rejects c
     observations.push({httpStatus:response.status,status:value.status,reasonCode:value.reasonCode,code:value.code,
       tasks:value.tasks?.map(task=>({status:task.status,reasonCode:task.reasonCode}))});
     return response;
-  });
+  },{verifyProviderCostEvidence:freeCostEvidenceFixture});
   const origin='https://airvio.co',base=origin+'/agentic-commerce-os/fulfillment/';
   async function browser(){
     const response=await fetchLocalFirst(new Request(base+'session'),env,undefined,relay);

@@ -13,9 +13,13 @@ const pins={origin:'https://executor.example.com',bundleSha256:'b'.repeat(64),
 const token='c'.repeat(64);
 
 test('actual Worker runtime admits exact host identity, invokes with sealed context, and refuses redirects',async()=>{
-  const source=`import {createFulfillmentRelay} from './src/local-first/fulfillment-relay.ts';
+const source=`import {createFulfillmentRelay} from './src/local-first/fulfillment-relay.ts';
+const verifyProviderCostEvidence=async scope=>({schema:'agentic-os/verified-effect-cost-evidence/v1',status:'verified-zero-cost',
+provider:scope.provider,mode:'free-fail-closed',billingPlan:'free',providerHardCapUsd:null,quotaExhaustion:'deny',
+paidPlanActive:false,addOnsActive:false,overagesEnabled:false,autoUpgradeEnabled:false,evidenceDigest:'f'.repeat(64),
+scopeDigest:scope.scopeDigest,verifiedAt:scope.observedAt,expiresAt:new Date(Date.parse(scope.observedAt)+60000).toISOString()});
 export default {async fetch(request,env){try{
-const relay=createFulfillmentRelay(env);
+const relay=createFulfillmentRelay(env,fetch,{verifyProviderCostEvidence});
 const value=new URL(request.url).pathname==='/ready'?await relay.ready(AbortSignal.timeout(5000)):
 await relay.invoke('status',{runId:'edge-contract'},{principalId:'commerce-'+ 'd'.repeat(64),principalExpiresAt:Date.now()+60000},AbortSignal.timeout(5000));
 return Response.json({ok:true,value});}catch{return Response.json({ok:false},{status:503})}}};`;
