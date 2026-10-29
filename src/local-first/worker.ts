@@ -14,12 +14,14 @@ export type LocalFirstEnv = Readonly<CheckoutEnv & ListingRelayEnv & {
 }>
 const ASSET_PATHS = new Map([
   ...[
-    '/', '/favicon.svg', '/app.js', '/drafts.js', '/checkout.js', '/launch.js', '/workspace.js', '/workspace-tour.js',
-    ...['workspace-graph.js', 'workspace-navigation.js', 'workspace-singleton.js', 'shopper-demo-detail.js', 'agentic-base-data-view.js', 'agentic-base-data-view.css', 'graph-data-view.js', 'graph-data-view.css', 'graph-ui-tokens.css', 'commerce-theme.css', 'workspace-shell.css'].map(file => '/' + file),
+    '/', '/app.js', '/drafts.js', '/checkout.js', '/launch.js', '/workspace.js',
+    ...['workspace-graph.js', 'agentic-base-data-view.js', 'agentic-base-data-view.css', 'graph-data-view.js', 'graph-data-view.css', 'graph-ui-tokens.css'].map(file => '/' + file),
     '/style.css', '/sw.js', '/workflow.js', '/workspace-capabilities.js', '/workspace-tools.js',
   ].map(path => [path, path] as [string, string]),
   ...(import.meta.commerceLiveCheckout === false ? [] : [
-    '/sme-business-pack.js', '/sme-business-pack.css', '/sme-business-pack-core.js', '/sme-pack-sg.js', '/sme-pack-my.js',
+    '/favicon.svg', '/workspace-tour.js', '/workspace-navigation.js', '/workspace-singleton.js',
+    '/shopper-demo-detail.js', '/commerce-theme.css', '/workspace-shell.css', '/sme-business-pack.js',
+    '/sme-business-pack.css', '/sme-business-pack-core.js', '/sme-pack-sg.js', '/sme-pack-my.js',
   ].map(path => [path, path] as [string, string])),
   ['/services/workspace-pack/', '/workspace-pack.html'],
   ['/services/workspace-pack/workspace-pack.js', '/workspace-pack.js'],
