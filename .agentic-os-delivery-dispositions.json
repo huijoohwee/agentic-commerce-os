@@ -77,7 +77,25 @@
       "evidenceDigest": "a991c0d25cd01697f7077c09569db23593490636d51f9347cdbbf4b119f5c61b",
       "decisionRef": "https://github.com/huijoohwee/agentic-commerce-os/pull/161",
       "reason": "These Commerce documentation files record delivery evidence and planning; they are not inputs to the separate agentic-design-system Pages build."
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/generate-commerce-prd",
+      "laneHead": "049b2c807157742d5b1886ecac73f98fa7fc51eb",
+      "paths": [
+        "docs/prd-tad-adr-mvp-gtm-agentic-commerce-os.md"
+      ],
+      "disposition": "no-deploy",
+      "candidateRevision": "88f04096825d95fa04f4db6ca76a2c6591f6abf7",
+      "candidateDigest": "386937ae95d52fa51c99e0771f5287bf4d0b1c13c5d83fe0d3399af4015ae911",
+      "sourceReleaseReceiptDigest": null,
+      "deploymentReceiptDigest": null,
+      "runtimeVerificationReceiptDigest": null,
+      "evidencePath": "scripts/local-first-release/artifact.mjs",
+      "evidenceDigest": "e07f29375605f682fbe793e3208fee22a279a568511a6d27309e4df1275df02a",
+      "decisionRef": "https://github.com/huijoohwee/agentic-commerce-os/pull/168",
+      "reason": "The PRD is repository documentation outside the local-first Worker and static asset inputs enumerated by the committed artifact builder; this candidate changes no deployed runtime input."
     }
   ],
-  "receiptDigest": "301b646113ceabb7dc614bfa9a8abe8b074f57b479adda5ef68bc349812d5f60"
+  "receiptDigest": "3d8fc545adb75496d875fe8cb2a56732e77ced237190c2dc7ff4bd1fa695a191"
 }
