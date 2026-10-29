@@ -1,0 +1,43 @@
+/* Generated from agentic-design-system c18253b35e8bcc0bed548cfb717ec31909422dbe; profile sha256 000adeb267d0d0ff9527e1227faefcd5fd2c15faee463fa70173204783ea7c9e. Do not edit. */
+:root {
+  color-scheme: light;
+  --commerce-accent-soft: #eaf0ff;
+  --commerce-action: #2f63f5;
+  --commerce-action-rgb: 47 99 245;
+  --commerce-active-nav: #e4edff;
+  --commerce-border: #dce4f0;
+  --commerce-border-strong: #cbd6e8;
+  --commerce-canvas: #f5f6f8;
+  --commerce-control-border: #7f8fa8;
+  --commerce-dialog-outline: 2px solid var(--commerce-action);
+  --commerce-focus: var(--commerce-action);
+  --commerce-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  --commerce-ink: #202a39;
+  --commerce-radius-control: 10px;
+  --commerce-radius-dialog: 20px;
+  --commerce-radius-panel: 14px;
+  --commerce-shadow-dialog: 0 24px 80px rgb(26 41 66 / .24);
+  --commerce-space-2xl: 1.75rem;
+  --commerce-space-3xl: 2rem;
+  --commerce-space-4xl: 2.5rem;
+  --commerce-space-lg: 1.25rem;
+  --commerce-space-md: 1rem;
+  --commerce-space-sm: 0.75rem;
+  --commerce-space-xl: 1.5rem;
+  --commerce-space-xs: 0.5rem;
+  --commerce-status-negative: #873b28;
+  --commerce-status-negative-soft: #fff1ed;
+  --commerce-status-positive: #315b45;
+  --commerce-status-positive-border: #cbdcc9;
+  --commerce-status-positive-soft: #eef3eb;
+  --commerce-status-warning: #765512;
+  --commerce-status-warning-border: #ead9aa;
+  --commerce-status-warning-soft: #fffaf0;
+  --commerce-status-warning-strong: #e2aa43;
+  --commerce-surface: #ffffff;
+  --commerce-surface-subtle: #eef3fb;
+  --commerce-text-muted: #627391;
+  --commerce-touch-target: 44px;
+  font-family: var(--commerce-font-family);
+  font-synthesis: none;
+}

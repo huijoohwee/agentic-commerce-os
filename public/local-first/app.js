@@ -2,6 +2,7 @@ import { listDrafts, saveDraft, importDrafts, exportDrafts, LIMITS } from './dra
 import { inspectLaunchInput, parseLaunchInput, evaluateOfferSetup } from './launch.js';
 
 const $ = selector => document.querySelector(selector);
+const displayLocale = document.documentElement.lang || 'en';
 let selected = null, dirty = false, busy = false;
 let reviewed = null;
 let stale = false, actionFailed = false;
@@ -68,12 +69,15 @@ function show(draft) {
 async function refresh() {
   const drafts = await listDrafts();
   $('#draft-count').textContent = String(drafts.length);
-  $('#empty-state').hidden = drafts.length > 0;
+  const hasDrafts = drafts.length > 0;
+  const layout = $('#vendor [data-view-panel="vendor-editor"] .editor-layout');
+  layout.querySelector('.draft-panel').hidden = !hasDrafts;
+  layout.classList.toggle('no-saved-drafts', !hasDrafts);
   $('#draft-list').replaceChildren();
   for (const draft of drafts) {
     const button = document.createElement('button'), title = document.createElement('span'), time = document.createElement('small');
     button.type = 'button'; button.setAttribute('aria-current', String(draft.id === selected?.id));
-    title.textContent = draft.title; time.textContent = new Date(draft.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    title.textContent = draft.title; time.textContent = 'Updated ' + new Date(draft.updatedAt).toLocaleDateString(displayLocale, { month: 'short', day: 'numeric', year: 'numeric' });
     button.append(title, time);
     button.addEventListener('click', () => {
       if (busy || !mayLeave()) return;

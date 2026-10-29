@@ -1,21 +1,20 @@
-import { listDrafts, groupProjects } from './drafts.js';
-
-const $ = selector => document.querySelector(selector);
-const checkoutMode = document.querySelector('meta[name="commerce-checkout-mode"]')?.content;
+import { listDrafts, groupProjects } from './drafts.js'; import { getOrCreateSingleton } from './workspace-singleton.js'; import { bindDemoOfferDetails } from './shopper-demo-detail.js';
+import { WORKSPACE_ROLES, bindWorkspaceNavigation, mountWorkspaceShell, mountWorkspaceSidebar } from './workspace-navigation.js?v=workspace-navigation-mobile-50';
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; await getOrCreateSingleton('workspace-application', async () => { mountWorkspaceShell();
+const displayLocale = document.documentElement.lang || 'en'; const $ = selector => document.querySelector(selector); const monogram = title => { const words = title.trim().split(/\s+/u); return (words.length > 1 ? words.slice(0, 2).map(word => [...word][0]).join('') : [...words[0]].slice(0, 2).join('')).toUpperCase(); }; const merchantName = id => String(id || '').replace(/[-._]+/gu, ' ').replace(/(^|\s)\p{L}/gu, initial => initial.toUpperCase());
+const checkoutMode = document.querySelector('meta[name="commerce-checkout-mode"]')?.content, shopCheckoutNav = document.querySelector('#shop-navigation-content')?.content.querySelector('#shop-checkout-nav');
 const liveCheckout = ['live', 'live-reader'].includes(checkoutMode);
-if (liveCheckout) {
-  $('#shop-checkout-nav').textContent = 'Education materials'; $('#live-offer-heading').textContent = 'Education materials';
-  $('#shop-offer-note').textContent = 'Open educational content · Markdown download · One-time purchase';
-  $('#shop-checkout-badge').textContent = checkoutMode === 'live-reader' ? 'New purchases paused' : 'Live payment · SGD 8';
-  $('#shop-checkout-price').textContent = 'SGD 8.00 · One-time payment';
+if (liveCheckout && shopCheckoutNav) {
+  shopCheckoutNav.textContent = 'Education materials'; shopCheckoutNav.setAttribute('aria-label', 'Education materials'); $('#live-offer-heading').textContent = 'Education materials';
+  $('#shop-offer-note').textContent = 'Markdown · Download after payment';
+  $('#shop-checkout-badge').textContent = checkoutMode === 'live-reader' ? 'New purchases paused' : 'Live payment';
+  $('#shop-checkout-price').textContent = 'SGD 8.00';
   $('#shop-checkout-action').textContent = checkoutMode === 'live-reader' ? 'Restore a purchase ↗' : 'Review education materials ↗';
-  $('#shop-checkout-note').textContent = 'Education materials only · Save your recovery file before payment';
+  $('#shop-checkout-note').textContent = checkoutMode === 'live-reader' ? 'Restore a purchase · Save your recovery file' : 'One-time payment · Save your recovery file before payment';
 }
-const views = new Set(['shop', 'checkout', 'vendor', 'vendor-editor', 'vendor-preview', 'admin', 'admin-reviews', 'admin-data', 'admin-runtime', 'admin-project', 'admin-tools']);
+const views = new Set(['shop', 'checkout', 'vendor', 'vendor-editor', 'vendor-preview', 'admin', 'admin-reviews', 'admin-data', 'admin-runtime', 'admin-project', 'admin-tools', 'sme']), resolveRoute = hash => { const requested = hash.split('?')[0], view = views.has(requested) ? requested : requested.startsWith('sme-') ? 'sme' : 'shop'; return { requested, view, role: view === 'sme' ? 'sme' : view.split('-')[0] }; }, setRolePanels = role => document.querySelectorAll('[data-role-panel]').forEach(panel => { panel.hidden = panel.dataset.rolePanel !== role; }), initialRole = resolveRoute(location.hash.slice(1)).role; document.body.dataset.workspaceRole = initialRole; setRolePanels(initialRole === 'sme' ? '' : initialRole);
 const channel = typeof BroadcastChannel === 'function' ? new BroadcastChannel('commerce-local-drafts') : null;
-let drafts = [], draftsLoaded = false, launch, editor, editorPromise, generation = 0, navigation = 0, shopPage = 0, detailId = null, searchRequested = null;
-let draftLoading = true, draftError = '';
-let graphView, tableGeneration = 0;
+let drafts = [], draftsLoaded = false, launch, editor, editorPromise, generation = 0, navigation = 0, shopPage = 0, detailId = null, searchRequested = null, smeRoute = null, workspaceSwitchPending = null, draftLoading = true, draftError = '', graphView, tableGeneration = 0;
 const tablePages = { vendor: 0, admin: 0 };
 const node = (tag, text, className) => {
   const element = document.createElement(tag);
@@ -56,8 +55,8 @@ function unavailableDrafts(container) {
 function art(draft, interactive = false) {
   const visual = node('figure', undefined, 'product-art');
   visual.dataset.selectionTarget = 'offer-art'; visual.dataset.selectionLabel = 'Offer artwork: ' + draft.title;
-  const image = node('span', [...draft.title].slice(0, 2).join('').toUpperCase(), 'product-monogram');
-  image.setAttribute('role', 'img'); image.setAttribute('aria-label', 'Offer artwork for ' + draft.title);
+  const image = node('span', monogram(draft.title), 'product-monogram');
+  image.setAttribute('role', 'img'); image.setAttribute('aria-label', 'Offer artwork for ' + draft.title); image.dataset.coverTitle = draft.title;
   if (!interactive) { visual.append(image); return visual; }
   const action = node('button', undefined, 'product-art-action'); action.type = 'button';
   action.setAttribute('aria-label', 'View offer: ' + draft.title); action.dataset.selectionTarget = 'offer-art-action';
@@ -66,40 +65,42 @@ function art(draft, interactive = false) {
   visual.append(action); return visual;
 }
 function price(draft) { return draft.launch ? launch.formatMoney(draft.launch.priceMinor, draft.launch.currency) : 'Not set'; }
-function matches(draft, query) { return [draft.title, draft.launch?.merchantId, draft.launch?.outcome, draft.launch?.audience].join(' ').toLowerCase().includes(query); }
-function showDetail(draft) {
+function matches(draft, query) { return [draft.title, draft.launch?.merchantId, merchantName(draft.launch?.merchantId), draft.launch?.outcome, draft.launch?.audience].join(' ').toLowerCase().includes(query); }
+function openDetail(dialog, heading) { heading.tabIndex = -1; dialog.showModal(); heading.focus({ preventScroll: true }); }
+function showDetail(draft) { if (draft === 'sandbox') { detailId = null; const dialog = $('#offer-detail'), header = $('#shop-sandbox header'), illustration = $('#shop-sandbox .live-offer-art svg').cloneNode(true), artwork = node('figure', undefined, 'product-art'), heading = node('h2', $('#shop-sandbox header h3').textContent), action = node('a', $('#shop-checkout-action').textContent, 'button'); illustration.setAttribute('class', 'detail-sandbox-art'); artwork.append(illustration); heading.id = 'detail-heading'; action.href = $('#shop-checkout-action').getAttribute('href'); $('#detail-content').replaceChildren(artwork, node('small', 'Airvio · Sandbox'), heading, node('p', header.querySelector('p:not(.footnote)').textContent), node('p', $('#shop-offer-note').textContent, 'muted'), node('p', $('#shop-checkout-price').textContent, 'preview-price'), node('p', `${$('#shop-checkout-badge').textContent} · ${$('#shop-checkout-note').textContent}`, 'muted'), action); dialog.classList.add('detail-split'); openDetail(dialog, heading); return; }
   const current = drafts.find(item => item.id === draft.id && item.revision === draft.revision);
   if (!current?.launch) return;
-  detailId = current.id;
+  $('#offer-detail').classList.add('detail-split'); detailId = current.id;
   const heading = node('h2', current.title); heading.id = 'detail-heading';
   const body = $('#detail-content');
-  body.replaceChildren(art(current), node('small', current.launch.merchantId), heading,
-    node('p', current.launch.outcome), node('p', current.launch.audience, 'muted'),
+  body.replaceChildren(art(current), node('small', merchantName(current.launch.merchantId)), heading,
+    node('p', current.launch.outcome, 'detail-outcome'), node('p', current.launch.audience, 'detail-audience muted'),
     node('p', price(current), 'preview-price'), node('p', 'Planned price · Preview only', 'footnote'),
     node('p', 'This offer is a private draft. Orders and payments are not available in this preview.', 'muted'));
-  $('#offer-detail').showModal();
+  openDetail($('#offer-detail'), heading);
 }
-$('#close-detail').addEventListener('click', () => $('#offer-detail').close());
-$('#offer-detail').addEventListener('close', () => { detailId = null; });
+$('#shop-offer-details').addEventListener('click', () => showDetail('sandbox')); $('#close-detail').addEventListener('click', () => $('#offer-detail').close()); bindDemoOfferDetails({ dialog: $('#offer-detail'), onError: message });
+$('#offer-detail').addEventListener('close', () => { detailId = null; $('#offer-detail').classList.remove('detail-split'); });
 function renderShop() {
-  if (unavailableDrafts($('#shop-grid'))) { $('#shop-empty').hidden = true; $('#shop-pagination').hidden = true; $('#shop-count').textContent = 'Saved offer count unknown'; return; }
+  if (unavailableDrafts($('#shop-grid'))) { $('#collection').hidden = false; $('#shop-demo-shelf').hidden = true; $('#shop-grid').hidden = false; $('#shop-empty').hidden = true; $('#collection-heading').textContent = 'Your offers'; $('#shop-pagination').hidden = true; $('#shop-count-value').textContent = '?'; $('#shop-count-label').textContent = 'saved offers unknown'; $('#shop-search').hidden = true; $('#shop-navigation [data-workspace-search]').hidden = true; return; }
   const query = $('#shop-query').value.trim().toLowerCase(), store = $('#shop-store').value;
-  const offered = drafts.filter(draft => draft.launch);
+  const offered = drafts.filter(draft => draft.launch), hasOffers = offered.length > 0; $('#collection').hidden = false; $('#shop-demo-shelf').hidden = hasOffers; $('#shop-grid').hidden = !hasOffers; $('#collection-heading').textContent = hasOffers ? 'Your offers' : 'Example offers';
+  $('#shop-search').hidden = false; $('#shop-navigation [data-workspace-search]').hidden = !hasOffers; $('#shop-store').closest('label').hidden = !hasOffers; $('#shop-sort').closest('label').hidden = !hasOffers; $('#shop-query').placeholder = hasOffers ? 'Search offers or stores' : 'Search example offers';
   const filtered = offered.filter(draft => matches(draft, query) && (!store || draft.launch.merchantId === store));
   if ($('#shop-sort').value === 'name') filtered.sort((a, b) => a.title.localeCompare(b.title) || a.id.localeCompare(b.id));
   const pages = Math.max(1, Math.ceil(filtered.length / 12)); shopPage = Math.min(shopPage, pages - 1);
   $('#shop-grid').replaceChildren();
   for (const draft of filtered.slice(shopPage * 12, shopPage * 12 + 12)) {
     const card = node('article', undefined, 'product-card'); card.dataset.selectionTarget = 'offer-card'; card.dataset.selectionLabel = 'Offer: ' + draft.title;
-    card.append(art(draft, true), node('small', draft.launch.merchantId), node('h3', draft.title),
-      node('p', price(draft) + ' · Planned price', 'preview-price'));
+    card.append(art(draft, true), node('small', merchantName(draft.launch.merchantId)), node('h3', draft.title),
+      node('p', draft.launch.outcome, 'offer-outcome'), node('p', draft.launch.audience, 'offer-audience'), node('p', price(draft), 'preview-price'), Object.assign(node('time', `Updated ${new Intl.DateTimeFormat(displayLocale, { month: 'short', day: 'numeric' }).format(draft.updatedAt)}`, 'offer-updated'), { dateTime: new Date(draft.updatedAt).toISOString() }));
     $('#shop-grid').append(card);
   }
-  $('#shop-count').textContent = `${filtered.length} preview offer${filtered.length === 1 ? '' : 's'}`;
-  $('#shop-empty').hidden = filtered.length > 0;
-  $('#shop-empty h3').textContent = offered.length ? 'No offers match your search.' : 'Your collection starts with one offer.';
-  $('#shop-empty p').textContent = offered.length ? 'Try another search or choose a different store.' : 'Create an offer and complete its launch terms to see your storefront take shape.';
-  for (const action of $('#shop-empty').querySelectorAll('.empty-mark, .empty-action')) action.hidden = offered.length > 0;
+  const demoCards = [...$('#shop-demo-shelf').querySelectorAll('.demo-product-card')]; demoCards.forEach(card => { card.hidden = !card.textContent.toLowerCase().includes(query); }); const visibleDemoCards = demoCards.filter(card => !card.hidden && getComputedStyle(card).display !== 'none'); const demoFiltered = query || $('#shop-demo-filters input:checked').value !== 'all'; const demoCount = visibleDemoCards.length; $('#shop-count-value').textContent = hasOffers ? filtered.length : String(demoCount); $('#shop-count-label').textContent = hasOffers ? `preview offer${filtered.length === 1 ? '' : 's'}` : demoFiltered ? `of ${demoCards.length} examples` : 'demo offers'; const noMatches = hasOffers ? filtered.length === 0 : demoCount === 0;
+  $('#shop-demo-shelf .demo-shelf-note').hidden = !hasOffers && demoCount === 0; $('#shop-empty').hidden = !noMatches; $('#shop-empty').dataset.empty = 'filtered';
+  $('#shop-empty h3').textContent = hasOffers ? 'No offers match your search.' : 'No example offers match your search.';
+  $('#shop-empty p').textContent = hasOffers ? 'Try another search or choose a different store.' : 'Try another search or choose another type.';
+  $('#shop-empty .empty-mark').hidden = false; $('#shop-reset-filters').hidden = !noMatches;
   $('#shop-pagination').hidden = pages <= 1; $('#shop-page').textContent = `Page ${shopPage + 1} of ${pages}`;
   $('#shop-previous').disabled = shopPage === 0; $('#shop-next').disabled = shopPage + 1 >= pages;
 }
@@ -119,17 +120,20 @@ async function openOffer(id, focus = 'title') {
   if (target.closest('details')) target.closest('details').open = true;
   target.focus();
 }
-function renderTable(role) {
+function renderTable(role) { if (role === 'vendor') { const search = document.querySelector('[data-workspace-sidebar][data-sidebar-variant="vendor"] [data-workspace-search]'); if (search) search.hidden = !draftsLoaded || drafts.length === 0; }
   if ($('#' + role + '-table').closest('[data-view-panel]')?.hidden) return;
-  if (unavailableDrafts($('#' + role + '-table'))) { $('#' + role + '-count').textContent = 'Saved offer count unknown'; return; }
+  if (unavailableDrafts($('#' + role + '-table'))) { if (role === 'vendor') $('#create-offer').hidden = false; $('#' + role + '-count').textContent = 'Saved offer count unknown'; return; }
+  const filters = $('#' + role + '-query').closest('.table-tools'); filters.hidden = drafts.length === 0; if (!drafts.length) { $('#' + role + '-query').value = ''; $('#' + role + '-state').value = ''; }
   const query = $('#' + role + '-query').value.trim().toLowerCase(), state = $('#' + role + '-state').value;
   const filtered = drafts.filter(draft => matches(draft, query) && (!state || stateOf(draft) === state));
+  if (role === 'vendor') $('#create-offer').hidden = false;
   const pages = Math.max(1, Math.ceil(filtered.length / 10)); tablePages[role] = Math.min(tablePages[role], pages - 1);
   const container = $('#' + role + '-table'); clearNativeTable(container);
   if (!filtered.length) {
-    const empty = node('section', undefined, 'empty-state'); empty.setAttribute('aria-label', 'Offer table status'); empty.append(node('h3', drafts.length ? 'No matching offers' : 'No offers yet'),
-      node('p', drafts.length ? 'Change the search or status filter.' : 'Create an offer in the vendor workspace to begin.'));
-    const link = node('a', 'Create an offer', 'button secondary'); link.href = '#vendor-editor'; empty.append(link); container.append(empty);
+    const start = role === 'vendor' && drafts.length === 0, empty = node('section', undefined, 'empty-state' + (start ? ' vendor-start-state' : '')); empty.setAttribute('aria-label', role === 'vendor' ? 'Offer status' : 'Launch review queue status'); empty.append(node('h3', start ? 'Your first offer starts with three clear details.' : drafts.length ? 'No matching offers' : 'No offers yet'), node('p', start ? 'Capture the buyer, expected outcome and estimated costs in a private draft before launch review.' : drafts.length ? 'Change the search or status filter.' : role === 'admin' ? 'Save an offer to add it to the launch review queue.' : 'Start with one offer. Add its buyer, outcome and estimated costs before launch review.'));
+    if (start) { const art = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); art.classList.add('vendor-start-art'); art.setAttribute('viewBox', '0 0 128 160'); art.setAttribute('aria-hidden', 'true'); const cover = document.createElementNS('http://www.w3.org/2000/svg', 'use'); cover.setAttribute('href', '#sample-offer-cover'); art.append(cover); empty.prepend(art); const steps = node('ol', undefined, 'vendor-start-steps'); for (const label of ['Buyer', 'Outcome', 'Estimated costs']) steps.append(node('li', label)); empty.append(steps); }
+    else if (drafts.length === 0) { const link = node('a', 'Create an offer', 'button'); link.href = '#vendor-editor'; empty.append(link); }
+    container.append(empty);
   } else {
     renderNativeTable(container, filtered.slice(tablePages[role] * 10, tablePages[role] * 10 + 10), role);
     if (pages > 1) {
@@ -143,7 +147,7 @@ function renderTable(role) {
       container.append(pager);
     }
   }
-  $('#' + role + '-count').textContent = `${filtered.length} offer${filtered.length === 1 ? '' : 's'} · Saved on this device`;
+  $('#' + role + '-count').textContent = role === 'vendor' && filtered.length === 0 ? '' : `${filtered.length} offer${filtered.length === 1 ? '' : 's'} · Saved on this device`;
 }
 function clearNativeTable(container) {
   container.dataset.graphGeneration = String(++tableGeneration); for (const mount of container.querySelectorAll('[data-graph-mount]')) graphView?.disposeTable(mount); container.replaceChildren();
@@ -155,8 +159,8 @@ function renderNativeTable(container, offers, role, label = role === 'vendor' ? 
   void import('./workspace-graph.js').then(async module => {
     if (ticket !== container.dataset.graphGeneration) return;
     graphView = module;
-    await module.mountCommerceTable(view, offers, { status: offer => stateLabel(stateOf(offer)), price, reason: reviewReason }, {
-      label, editLabel: role === 'admin' ? 'Review offer ↗' : 'Edit offer ↗',
+    await module.mountCommerceTable(view, offers, { status: offer => stateLabel(stateOf(offer)), state: stateOf, price, reason: reviewReason, monogram, merchantName }, {
+      label, display: role === 'vendor' ? 'cards' : 'table', editLabel: role === 'admin' ? 'Review offer ↗' : 'Edit offer ↗',
       open: offer => void openOffer(offer.id, stateOf(offer) === 'draft' ? 'merchant-id' : stateOf(offer) === 'revise' ? 'sale-price' : 'title').catch(message),
       inspect: offer => void openAgentTools({ name: 'commerce.workspace.offer.review', input: { offerId: offer.id, expectedRevision: offer.revision }, label: 'Offer · ' + offer.title + ' · v' + offer.revision }),
     });
@@ -176,7 +180,7 @@ async function refresh() {
   drafts = next; draftsLoaded = true; draftLoading = false;
   if (detailId) $('#offer-detail').close();
   const selectedStore = $('#shop-store').value;
-  $('#shop-store').replaceChildren(new Option('All stores', ''), ...[...new Set(drafts.filter(d => d.launch).map(d => d.launch.merchantId))].sort().map(store => new Option(store, store)));
+  $('#shop-store').replaceChildren(new Option('All stores', ''), ...[...new Set(drafts.filter(d => d.launch).map(d => d.launch.merchantId))].sort().map(store => new Option(merchantName(store), store)));
   if ([...$('#shop-store').options].some(option => option.value === selectedStore)) $('#shop-store').value = selectedStore;
   const complete = drafts.filter(draft => draft.launch), reviewable = complete.filter(draft => stateOf(draft) === 'reviewable');
   $('#vendor-total').textContent = String(drafts.length); $('#vendor-complete').textContent = String(complete.length);
@@ -193,40 +197,45 @@ function renderCurrent() {
   renderEnvironment();
 }
 async function route() {
-  const revision = ++navigation, hash = location.hash.slice(1), requested = hash.split('?')[0], view = views.has(requested) ? requested : 'shop', role = view.split('-')[0];
-  document.body.classList.add('console-mode');
-  document.body.dataset.workspaceRole = role;
+  const revision = ++navigation, hash = location.hash.slice(1), { requested, view, role } = resolveRoute(hash), switchState = workspaceSwitchPending?.role === role ? workspaceSwitchPending : null, switchedWorkspace = !!switchState, sectionRoute = (role === 'sme' && requested !== 'sme') || ['collection', 'shop-sandbox'].includes(requested); workspaceSwitchPending = null;
+  $('#status').textContent = ''; $('#status').removeAttribute('data-error');
+  if (role === 'sme') try { const module = await import('./sme-business-pack.js?v=workspace-singleton-2'); if (revision !== navigation) return; await module.prepareSmeBusinessPackStyles(); if (revision !== navigation) return; if (!smeRoute) smeRoute = await module.mountSmeBusinessPack(); if (revision !== navigation) { smeRoute?.deactivate(); return; } } catch (error) { if (revision === navigation) throw error; return; }
+  document.body.classList.add('console-mode'); document.body.dataset.workspaceRole = role;
+  $('#workspace-role-switcher').value = role === 'checkout' ? 'shop' : role;
   // Shopper and checkout share one navigation node, including its search handler.
-  if (role === 'shop' || role === 'checkout') $('#' + role + ' .workspace-shell').prepend($('#shop-navigation'));
-  renderNavigation(role);
-  $('#' + role + ' .workspace-content').prepend($('#draft-storage-state'));
+  renderNavigation(role); if (role === 'sme') smeRoute?.updateSectionNavigation();
+  if (role !== 'sme') $('#' + role + ' .workspace-content').prepend($('#draft-storage-state'));
   $('#workspace-agent-open').hidden = role !== 'admin';
   $('#console-breadcrumb').hidden = false;
   const root = $('#console-root'), workspaceRole = role === 'checkout' ? 'shop' : role; root.href = '#' + workspaceRole;
-  root.textContent = ({ shop: 'Storefront', vendor: 'Catalog', admin: 'Projects' })[workspaceRole];
-  $('#console-location').textContent = ({ shop: 'Storefront preview', checkout: 'Checkout', vendor: 'Offers', 'vendor-editor': 'Offer editor', 'vendor-preview': 'Storefront preview', admin: 'All projects', 'admin-project': 'Project', 'admin-runtime': 'Environment', 'admin-reviews': 'Launch reviews', 'admin-data': 'Data & portability', 'admin-tools': 'Tools & commands' })[view] || '';
-  document.querySelectorAll('[data-role-panel]').forEach(panel => { panel.hidden = panel.dataset.rolePanel !== role; });
+  root.textContent = WORKSPACE_ROLES[workspaceRole].breadcrumb;
+  setRolePanels(role);
   document.querySelectorAll('[data-view-panel]').forEach(panel => { panel.hidden = panel.dataset.viewPanel !== view; });
-  if (!['collection', 'shop-sandbox', 'main'].includes(hash)) window.scrollTo({ top: 0, behavior: 'instant' });
+  if (!switchedWorkspace && !sectionRoute && hash !== 'main') window.scrollTo({ top: 0, behavior: 'instant' });
   for (const mount of document.querySelectorAll('[data-graph-mount]')) if (mount.closest('[hidden]')) { mount.parentElement.dataset.graphGeneration = String(++tableGeneration); graphView?.disposeTable(mount); mount.remove(); }
-  document.querySelectorAll('[data-role]').forEach(link => { if (link.dataset.role === (role === 'checkout' ? 'shop' : role)) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current'); });
   document.querySelectorAll('[data-view]').forEach(link => { if (link.dataset.view === view || (view === 'admin-project' && link.dataset.view === 'admin')) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current'); });
   $('#workspace-context').hidden = role !== 'vendor';
-  document.title = `${role === 'checkout' ? 'Checkout' : role === 'shop' ? 'Shopper' : role === 'vendor' ? 'Vendor workspace' : 'Admin workspace'} · Airvio`;
+  document.title = `${role === 'checkout' ? 'Checkout' : WORKSPACE_ROLES[role].title} · Airvio`;
   if (view === 'vendor-editor' || view === 'admin-data') await loadEditor();
   if (revision !== navigation) return;
   if (view === 'admin-tools') await loadTools();
   if (revision !== navigation) return;
   if (view === 'checkout') await (await import('./checkout.js')).openCheckout();
   if (revision !== navigation) return;
-  renderCurrent();
+  if (role === 'sme') void smeRoute.activate().catch(message);
+  else smeRoute?.deactivate();
+  renderCurrent(); if (role === 'sme' && requested !== 'sme') document.getElementById(requested)?.scrollIntoView({ block: 'start' });
   if (view === 'admin-runtime' && new URLSearchParams(hash.split('?')[1]).get('section') === 'checks') $('#environment-checks').scrollIntoView({ block: 'start' });
-  else if (hash === 'collection' || hash === 'shop-sandbox') document.getElementById(hash)?.scrollIntoView({ block: 'start' });
+  else if (['collection', 'shop-sandbox'].includes(hash)) document.getElementById(hash)?.scrollIntoView({ block: 'start' });
   if (searchRequested) { const target = searchRequested; searchRequested = null; if (view === role && target.startsWith('#' + (role === 'admin' ? 'project' : role) + '-')) { $(target).focus(); return; } }
-  if (hash !== 'collection' && hash !== 'main') document.querySelector(`#${role} [data-view-panel="${view}"] h1, #${role}-heading`)?.focus({ preventScroll: true });
+  if (hash !== 'collection' && hash !== 'main' && !(role === 'sme' && requested !== 'sme')) {
+    const heading = view === 'admin-runtime' && new URLSearchParams(hash.split('?')[1]).get('section') === 'checks' ? $('#environment-history-heading') : hash === 'shop-sandbox' ? $('#live-offer-heading') : document.querySelector(`#${role} [data-view-panel="${view}"] h1, #${role}-heading`);
+    if (heading && !switchedWorkspace) { const x = window.scrollX, y = window.scrollY; heading.focus({ preventScroll: true }); const restore = () => revision === navigation && (window.scrollX !== x || window.scrollY !== y) && window.scrollTo({ left: x, top: y, behavior: 'instant' }); restore(); requestAnimationFrame(restore); }
+  }
+  if (switchedWorkspace) { $('#workspace-role-switcher').focus({ preventScroll: true }); window.scrollTo({ left: switchState.x, top: 0, behavior: 'instant' }); }
 }
-$('#shop-search').addEventListener('submit', event => event.preventDefault());
-for (const id of ['shop-query', 'shop-store', 'shop-sort']) $('#' + id).addEventListener('input', () => { shopPage = 0; renderShop(); });
+$('#shop-search').addEventListener('submit', event => event.preventDefault()); $('#shop-reset-filters').addEventListener('click', () => { $('#shop-query').value = ''; $('#shop-store').value = ''; $('#shop-sort').value = 'recent'; $('#shop-demo-filters input[value="all"]').checked = true; shopPage = 0; renderShop(); $('#shop-query').focus({ preventScroll: true }); });
+for (const id of ['shop-query', 'shop-store', 'shop-sort']) $('#' + id).addEventListener('input', () => { shopPage = 0; renderShop(); }); $('#shop-demo-filters').addEventListener('change', () => { shopPage = 0; renderShop(); });
 $('#shop-previous').addEventListener('click', () => { shopPage--; renderShop(); });
 $('#shop-next').addEventListener('click', () => { shopPage++; renderShop(); });
 for (const role of ['vendor', 'admin']) for (const field of ['query', 'state']) $('#' + role + '-' + field).addEventListener('input', () => { tablePages[role] = 0; renderTable(role); });
@@ -243,8 +252,8 @@ $('#draft-storage-retry').addEventListener('click', async () => {
   } catch (error) { message(error); }
 });
 if (channel) channel.onmessage = () => { void refresh().catch(message); void editor?.externalChange().catch(message); };
-function connection() { $('#connection').textContent = navigator.onLine ? 'Local workspace · Online' : 'Offline · Drafts available'; }
-window.addEventListener('online', connection); window.addEventListener('offline', connection); connection();
+function connection() { const status = $('#connection'), label = status.querySelector('.workspace-status-label'), online = navigator.onLine, full = online ? 'Local workspace · Online' : 'Offline · Drafts available'; label.textContent = matchMedia('(max-width:680px)').matches ? (online ? 'Online' : 'Offline') : (online ? 'Local · Online' : 'Offline · Local drafts'); status.title = full; status.setAttribute('aria-label', full); }
+window.addEventListener('online', connection); window.addEventListener('offline', connection); matchMedia('(max-width:680px)').addEventListener('change', connection); connection();
 function projectPreview(project) {
   const preview = node('figure', undefined, 'console-preview'); preview.setAttribute('aria-label', 'Storefront preview for ' + project.name); preview.dataset.selectionTarget = 'project-storefront-preview';
   const frame = node('section', undefined, 'mini-storefront');
@@ -275,7 +284,7 @@ function projectCard(project, detail = false) {
     node('dt', 'Offers'), node('dd', saved + ' saved · ' + reviewed + ' ready for review'));
   const activity = node('footer', undefined, 'project-activity'), latest = [...project.offers].sort((a, b) => b.updatedAt - a.updatedAt)[0];
   activity.append(node('span', 'Latest local activity', 'muted'), node('p', latest ? latest.title : 'Create your first offer to begin.'),
-    node('small', latest ? 'Saved ' + new Date(latest.updatedAt).toLocaleString() : 'No saved activity yet', 'muted'));
+    node('small', latest ? 'Saved ' + new Date(latest.updatedAt).toLocaleString(displayLocale) : 'No saved activity yet', 'muted'));
   content.append(title, facts, activity);
   const actions = node('footer', undefined, 'project-actions');
   actions.append(projectLink(detail ? 'Environment details' : 'Project details', (detail ? '#admin-runtime?project=' : '#admin-project?project=') + encodeURIComponent(project.id)));
@@ -296,7 +305,6 @@ function renderProjects() {
   const project = requested === null ? projects[0] : projects.find(item => item.id === requested);
   const detail = $('#project-detail'); clearNativeTable(detail);
   $('#project-heading').textContent = project?.name || 'Project unavailable';
-  $('#console-location').textContent = project?.name || 'Project unavailable';
   $('#project-description').textContent = project ? 'Local-first · ' + project.offers.length + ' saved offers · Private to this browser' : 'This project is not saved on this device. Return to your projects or import its backup.';
   if (!project) return;
   detail.append(node('p', 'Environments', 'console-section-label'), projectCard(project, true));
@@ -310,7 +318,7 @@ function renderProjects() {
 }
 function offerRecords(offers, label) {
   const section = node('section', undefined, 'project-records offer-records'), heading = node('header', undefined, 'records-heading');
-  const search = node('input'); search.type = 'search'; search.maxLength = 120; search.placeholder = 'Search saved offers'; search.setAttribute('aria-label', 'Search ' + label.toLowerCase());
+  const search = node('input'); search.type = 'search'; search.name = label.toLowerCase().replace(/[^a-z0-9]+/gu, '-') + '-search'; search.maxLength = 120; search.placeholder = 'Search saved offers'; search.setAttribute('aria-label', 'Search ' + label.toLowerCase());
   const field = node('section', undefined, 'console-query'); field.append(search); heading.append(node('h2', label), field);
   const content = node('section'), pager = node('nav', undefined, 'pagination'); pager.setAttribute('aria-label', label + ' pagination');
   const previous = node('button', 'Previous', 'secondary'), next = node('button', 'Next', 'secondary'), count = node('span');
@@ -324,7 +332,7 @@ function offerRecords(offers, label) {
     else {
       renderNativeTable(content, filtered.slice(page * 10, page * 10 + 10), 'admin', label);
     }
-    previous.disabled = page === 0; next.disabled = page + 1 >= pages;
+    pager.hidden = pages <= 1; previous.disabled = page === 0; next.disabled = page + 1 >= pages;
     count.textContent = filtered.length + ' offers · Page ' + (page + 1) + ' of ' + pages;
   };
   search.addEventListener('input', () => { page = 0; render(); });
@@ -363,40 +371,36 @@ function renderAdminContext(projects) {
   $('#environment-preview').replaceChildren(...(project ? [projectPreview(project)] : []));
   const latest = project && [...project.offers].sort((a, b) => b.updatedAt - a.updatedAt)[0];
   $('#environment-latest').textContent = latest?.title || 'No saved activity yet';
-  $('#environment-latest-time').textContent = latest ? 'Saved ' + new Date(latest.updatedAt).toLocaleString() : 'Create an offer in the offer workspace.';
-  if (location.hash.startsWith('#admin-runtime')) $('#console-location').textContent = (selected ? (project?.name || 'Project unavailable') + ' / ' : '') + 'Environment';
+  $('#environment-latest-time').textContent = latest ? 'Saved ' + new Date(latest.updatedAt).toLocaleString(displayLocale) : 'Create an offer in the offer workspace.';
 }
-$('#admin-project-select').addEventListener('change', event => {
+document.addEventListener('change', event => {
+  if (!(event.target instanceof HTMLSelectElement) || event.target.id !== 'admin-project-select') return;
   const params = new URLSearchParams(), environment = location.hash.split('?')[0] === '#admin-runtime';
   if (event.target.value) params.set('project', event.target.value);
   if (environment && new URLSearchParams(location.hash.split('?')[1]).get('section') === 'checks') params.set('section', 'checks');
   location.hash = (environment ? 'admin-runtime' : event.target.value ? 'admin-project' : 'admin') + (params.size ? '?' + params : '');
 });
-function renderNavigation(role = document.body.dataset.workspaceRole) {
-  const toggle = $('#workspace-navigation-toggle'), expanded = !document.body.classList.contains('navigation-collapsed');
+function renderNavigation(role = document.body.dataset.workspaceRole || 'shop') {
+  const activeRole = role === 'checkout' ? 'shop' : role, sidebarRole = role === 'sme' ? 'sme' : activeRole, sidebar = mountWorkspaceSidebar({ host: $('#workspace-shell'), template: $('#' + sidebarRole + '-navigation-content'), variant: sidebarRole, id: sidebarRole + '-navigation', className: 'sidebar console-sidebar', label: WORKSPACE_ROLES[sidebarRole].label + ' navigation' }), toggle = $('#workspace-navigation-toggle'), expanded = !document.body.classList.contains('navigation-collapsed');
   toggle.hidden = false;
-  toggle.setAttribute('aria-controls', (role === 'checkout' ? 'shop' : role) + '-navigation');
+  toggle.setAttribute('aria-controls', sidebar.id);
   toggle.setAttribute('aria-expanded', String(expanded));
   toggle.setAttribute('aria-label', expanded ? 'Hide navigation' : 'Show navigation'); toggle.title = toggle.getAttribute('aria-label');
-  for (const sidebar of document.querySelectorAll('.console-sidebar')) sidebar.hidden = !expanded;
+  sidebar.hidden = !expanded;
 }
-$('#workspace-navigation-toggle').addEventListener('click', () => {
-  document.body.classList.toggle('navigation-collapsed'); renderNavigation();
-});
-$('#project-query').addEventListener('input', renderProjects);
+bindWorkspaceNavigation({ onChange: () => renderNavigation(), onWorkspaceChange: role => { workspaceSwitchPending = { role, x: window.scrollX }; } });
+document.addEventListener('input', event => { if (event.target instanceof HTMLInputElement && event.target.id === 'project-query') renderProjects(); }); document.addEventListener('click', event => { const trigger = event.target.closest('[data-workspace-tour], [data-workspace-intro]'); if (!trigger) return; event.preventDefault(); const action = trigger.dataset.workspaceIntro ? 'openWorkspaceIntro' : 'openWorkspaceTour', role = trigger.dataset.workspaceIntro || trigger.dataset.workspaceTour; void import('./workspace-tour.js').then(module => module[action](role, trigger)).catch(message); });
 async function focusWorkspaceSearch() {
   const currentRole = document.body.dataset.workspaceRole, role = currentRole === 'checkout' ? 'shop' : currentRole;
   const target = ({ shop: '#shop-query', vendor: '#vendor-query', admin: '#project-query' })[role];
-  if (!target) return;
+  if (!target || (target === '#shop-query' && $('#shop-search').hidden)) return;
   if (location.hash === '#' + role) { $(target).focus(); return; }
   searchRequested = target; location.hash = role;
 }
-for (const button of document.querySelectorAll('#project-search-shortcut, [data-workspace-search]')) {
-  button.addEventListener('click', () => void focusWorkspaceSearch().catch(message));
-}
+document.addEventListener('click', event => { if (event.target instanceof Element && event.target.closest('#project-search-shortcut, [data-workspace-search]')) void focusWorkspaceSearch().catch(message); });
 window.addEventListener('keydown', event => {
   if (document.querySelector('dialog[open]')) return;
-  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k' && document.body.classList.contains('console-mode')) {
+  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k' && document.body.classList.contains('console-mode') && (!['shop', 'checkout'].includes(document.body.dataset.workspaceRole) || !$('#shop-search').hidden)) {
     event.preventDefault(); void focusWorkspaceSearch().catch(message);
   }
 });
@@ -521,7 +525,7 @@ function renderEnvironmentHistory() {
   const filtered = environmentHistory.filter(item => (!result || item.result === result)
     && [item.label, item.message, item.version || '', item.evidence?.sourceRevision || '', 'check ' + item.id].join(' ').toLowerCase().includes(query));
   const pages = Math.max(1, Math.ceil(filtered.length / 10)); environmentHistoryPage = Math.min(environmentHistoryPage, pages - 1);
-  $('#environment-history-count').textContent = filtered.length + (filtered.length === 1 ? ' check' : ' checks') + ' · Page ' + (environmentHistoryPage + 1) + ' of ' + pages;
+  $('#environment-history-count').textContent = filtered.length + (filtered.length === 1 ? ' check' : ' checks') + ' · Page ' + (environmentHistoryPage + 1) + ' of ' + pages; $('#environment-history-count').parentElement.hidden = pages <= 1;
   $('#environment-history-previous').disabled = environmentHistoryPage === 0;
   $('#environment-history-next').disabled = environmentHistoryPage + 1 >= pages;
   const holder = $('#environment-history'); holder.replaceChildren();
@@ -539,7 +543,7 @@ function renderEnvironmentHistory() {
 }
 for (const id of ['environment-history-query', 'environment-history-result']) $('#' + id).addEventListener('input', () => { environmentHistoryPage = 0; renderEnvironmentHistory(); });
 $('#environment-history-previous').addEventListener('click', () => { environmentHistoryPage--; renderEnvironmentHistory(); });
-$('#environment-history-next').addEventListener('click', () => { environmentHistoryPage++; renderEnvironmentHistory(); });
+$('#environment-history-next').addEventListener('click', () => { environmentHistoryPage++; renderEnvironmentHistory(); }); renderEnvironmentHistory();
 $('#environment-refresh').addEventListener('click', () => void checkEnvironment().catch(() => {}));
 $('#environment-cancel').addEventListener('click', () => environmentController?.abort());
 window.addEventListener('offline', () => { if (environmentObservation) environmentObservation.stale = true; environmentController?.abort(); renderEnvironment(); });
@@ -592,4 +596,4 @@ if ('serviceWorker' in navigator) {
     .then(() => navigator.serviceWorker.ready)
     .then(() => { $('#offline-ready').textContent = 'Offline access is ready. You can return to this workspace without a connection.'; })
     .catch(() => { $('#offline-ready').textContent = 'Offline page loading is unavailable in this browser. Saved drafts still stay on this device.'; });
-} else $('#offline-ready').textContent = 'This browser needs a connection to open the page. Your saved drafts stay on this device.';
+} else $('#offline-ready').textContent = 'This browser needs a connection to open the page. Your saved drafts stay on this device.'; });

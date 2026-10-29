@@ -11,7 +11,12 @@ export function selectFulfillment(binding, title) {
     throw Error('Review a completed listing before checkout.');
   fulfillment = { runId: binding.runId, outputDigest: binding.outputDigest }; fulfillmentTitle = String(title).slice(0, 120);
 }
-function message(text) { $('#checkout-status').textContent = text; }
+function message(text, tone = 'info') {
+  const status = $('#checkout-status');
+  status.textContent = text;
+  status.dataset.tone = tone;
+}
+function showFailure(error) { verified = false; render(); message(error.message, error.name === 'CheckoutUnavailable' || !navigator.onLine ? 'warning' : 'error'); }
 function differentOrder() {
   const binding = intent?.order?.fulfillment;
   return !staticPage && !!intent?.order && !!fulfillment && (binding?.runId !== fulfillment.runId || binding?.outputDigest !== fulfillment.outputDigest);
@@ -41,6 +46,9 @@ async function api(path = '', body) {
     ...(body ? { body: JSON.stringify(body) } : {}), signal: AbortSignal.timeout(20000) }); }
   catch { throw Error('Connect to the internet and refresh checkout. Your drafts remain available offline.'); }
   const value = await response.json();
+  if (!response.ok && value.code === 'sandbox_unavailable' && mode === 'sandbox' && value.mode === mode && value.realMoney === false) {
+    const error = Error('Checkout is not configured in this local preview. No payment session was created.'); error.name = 'CheckoutUnavailable'; throw error;
+  }
   if (!response.ok || value.ok !== true || value.mode !== mode || value.realMoney !== livePage || staticPage && typeof value.salesEnabled !== 'boolean') throw Error(
     value.code === 'checkout_session_required' ? 'This checkout session has ended. Reopen checkout or restore your recovery file.'
       : staticPage ? 'Checkout could not be verified. Check the order or restore your recovery file before trying again.'
@@ -67,6 +75,7 @@ function copy() {
 }
 function render() {
   const order = intent?.order, state = order?.status, different = differentOrder(), available = verified && navigator.onLine;
+  $('#checkout-refresh').textContent = order ? 'Check payment status' : 'Retry checkout setup';
   $('#checkout-order').textContent = order ? (staticPage ? 'Order ' : 'Stripe test session ') + order.orderId : '';
   $('#checkout-download').hidden = !available || different || !order?.downloadReady;
   $('#checkout-receipt').hidden = !available || !order || state === 'pending';
@@ -81,6 +90,8 @@ function render() {
     if (target.origin !== 'https://checkout.stripe.com' || !pattern.test(target.pathname) || target.username || target.password) throw Error('Invalid Stripe destination.');
     link.href = target.href; link.hidden = false;
   }
+  const tone = state === 'succeeded' ? order?.downloadReady ? 'success' : 'warning'
+    : intent?.salesEnabled === false || different || state === 'expired' ? 'warning' : 'info';
   message(staticPage ? intent?.salesEnabled === false
     ? 'New purchases are paused. You can verify an existing order, download paid materials, or restore your recovery file.'
     : ({ succeeded: (livePage ? 'Payment verified: SGD 8 paid. ' : 'Stripe test payment verified. No real money moved. ') + (order?.downloadReady ? 'Your education materials and receipt are ready.' : 'The download is unavailable; keep your recovery file and check again.'),
@@ -93,13 +104,13 @@ function render() {
       : ({ succeeded: 'Stripe test payment verified. No real money moved. Your sample download and test receipt are ready.',
         pending: 'Test checkout is ready. Continue to Stripe and use test card details. Return here to verify payment.',
         expired: 'Stripe test checkout expired or was cancelled. No real money moved. You can start a new test.' })[state]
-        || 'Review the example offer, then continue to Stripe test checkout. No real money will move.');
+        || 'Review the example offer, then continue to Stripe test checkout. No real money will move.', tone);
   enabled();
 }
 export async function openCheckout() {
   if (busy) return;
   intent = null; verified = false; $('#checkout-confirm').checked = false; copy(); render();
-  if (!navigator.onLine) { message('Connect to use checkout. Your private drafts remain available offline.'); return; }
+  if (!navigator.onLine) { message('Connect to use checkout. Your private drafts remain available offline.', 'warning'); return; }
   busy = true; enabled();
   try {
     const next = await api();
@@ -109,7 +120,7 @@ export async function openCheckout() {
     $('#checkout-title').textContent = intent.offer.title;
     $('#checkout-price').textContent = new Intl.NumberFormat('en-SG', { style: 'currency', currency: intent.offer.currency, currencyDisplay: 'code' }).format(intent.offer.amountMinor / 100) + (livePage ? ' · One-time payment' : ' · Test mode');
     $('#checkout-description').textContent = intent.offer.description + (!staticPage && fulfillment ? ` Includes your reviewed listing: ${fulfillmentTitle}.` : ''); render(); return true;
-  } catch (error) { verified = false; render(); message(error.message); }
+  } catch (error) { showFailure(error); }
   finally { busy = false; enabled(); }
 }
 async function mutate(path) {
@@ -125,7 +136,7 @@ async function mutate(path) {
       if (value.recovery) recovery = { file: value.recovery, orderId: value.order?.orderId };
       render();
     }
-  } catch (error) { verified = false; render(); message(error.message); }
+  } catch (error) { showFailure(error); }
   finally { busy = false; enabled(); }
 }
 $('#checkout-confirm').addEventListener('change', enabled);
@@ -137,7 +148,7 @@ $('#checkout-refresh').addEventListener('click', async () => {
   if (!intent) { await openCheckout(); return; }
   busy = true; enabled();
   try { Object.assign(intent, await api('/status')); verified = true; render(); }
-  catch (error) { verified = false; render(); message(error.message); } finally { busy = false; enabled(); }
+  catch (error) { showFailure(error); } finally { busy = false; enabled(); }
 });
 $('#checkout-save-recovery').addEventListener('click', async () => {
   if (!staticPage || busy || !verified || !intent?.order || !navigator.onLine) return;
@@ -153,7 +164,7 @@ $('#checkout-save-recovery').addEventListener('click', async () => {
     const link = document.createElement('a'); link.href = url; link.download = livePage ? 'airvio-purchase-recovery.json' : 'airvio-test-recovery.json'; document.body.append(link); link.click(); link.remove();
     setTimeout(() => URL.revokeObjectURL(url), 60000); savedOrder = intent.order.orderId;
     $('#checkout-recovery-status').textContent = 'Recovery file downloaded. Check that it is saved and keep it private.'; render();
-  } catch (error) { message(error.message); } finally { busy = false; enabled(); }
+  } catch (error) { message(error.message, 'error'); } finally { busy = false; enabled(); }
 });
 $('#checkout-restore-recovery').addEventListener('change', async event => {
   const input = event.currentTarget, file = input.files?.[0]; input.value = '';
@@ -167,8 +178,8 @@ $('#checkout-restore-recovery').addEventListener('change', async event => {
     recovery = { file: value, orderId: restored.order?.orderId }; savedOrder = recovery.orderId;
     busy = false; if (!await openCheckout()) throw Error('Restored order could not be refreshed.');
     $('#checkout-recovery-status').textContent = 'Recovery file restored. The order was checked with Stripe; keep this file private.';
-  } catch { message('Recovery could not be verified. Keep the file and check your connection before trying again.'); }
+  } catch { message('Recovery could not be verified. Keep the file and check your connection before trying again.', 'error'); }
   finally { busy = false; enabled(); }
 });
-window.addEventListener('offline', () => { verified = false; render(); if (!$('#checkout').hidden) message('Checkout needs a connection. Private drafts remain available offline.'); });
+window.addEventListener('offline', () => { verified = false; render(); if (!$('#checkout').hidden) message('Checkout needs a connection. Private drafts remain available offline.', 'warning'); });
 window.addEventListener('online', enabled);

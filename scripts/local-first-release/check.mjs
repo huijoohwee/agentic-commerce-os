@@ -14,8 +14,11 @@ import { checkOfferSetup } from '../../test/local-first/offer-setup-browser.mjs'
 import { BROWSER_CHECKS, BROWSER_PROOF_SCHEMA, completeBrowserChecks, assertBrowserProof,
   LIVE_BROWSER_PROOF_SCHEMA, completeLiveBrowserChecks, assertLiveBrowserProof } from './browser-proof.mjs';
 import { LIVE_CHECKOUT_PROFILE_SHA256 } from '../../src/local-first/checkout-offer.ts';
+import { verifySharedThemeOwner } from './artifact.mjs';
 
 const root = process.cwd();
+const themeOwner = verifySharedThemeOwner();
+console.log(`PASS shared-theme-singleton ${themeOwner.tokenCount} tokens · ${themeOwner.iconCount} icons`);
 const output = path.resolve(process.env.LOCAL_FIRST_EVIDENCE_DIR || 'node_modules/.cache/local-first-verification');
 fs.mkdirSync(output, { recursive: true });
 const remote = process.argv.find(arg => arg.startsWith('--base-url='))?.slice(11);

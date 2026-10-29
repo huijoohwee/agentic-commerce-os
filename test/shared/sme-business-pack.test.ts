@@ -108,13 +108,17 @@ describe('SME takeover pack contracts', () => {
     expect(response.headers.get('x-commerce-source')).toBe(sourceRevision)
     expect(response.headers.get('cache-control')).toBe('no-store, no-transform')
     expect(await response.json()).toMatchObject({ availability: 'edge-enabled', sourceRevision })
-    for (const pathname of ['/agentic-commerce-os/sme-business-pack.js',
-      '/agentic-commerce-os/services/sme-business-pack/sme-business-pack.js']) {
-      const asset = await localFirstWorker.fetch(new Request(`https://airvio.co${pathname}`), env)
-      expect(asset.status).toBe(200)
-      expect(asset.headers.get('x-commerce-source')).toBe(sourceRevision)
-      expect(await asset.json()).toEqual({ asset: '/sme-business-pack.js' })
-    }
+    const asset = await localFirstWorker.fetch(new Request('https://airvio.co/agentic-commerce-os/sme-business-pack.js'), env)
+    expect(asset.status).toBe(200)
+    expect(asset.headers.get('x-commerce-source')).toBe(sourceRevision)
+    expect(await asset.json()).toEqual({ asset: '/sme-business-pack.js' })
+    const legacyAsset = await localFirstWorker.fetch(new Request(
+      'https://airvio.co/agentic-commerce-os/services/sme-business-pack/sme-business-pack.js'), env)
+    expect(legacyAsset.status).toBe(404)
+    const legacyPage = await localFirstWorker.fetch(new Request(
+      'https://airvio.co/agentic-commerce-os/services/sme-business-pack/'), env)
+    expect(legacyPage.status).toBe(308)
+    expect(legacyPage.headers.get('location')).toBe('https://airvio.co/agentic-commerce-os/#sme')
   })
 
   it('serves the four named capabilities through independent stateless MCP requests', async () => {

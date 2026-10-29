@@ -84,7 +84,7 @@ export async function verifyWorkspaceToolRefinements({ page, context, url, draft
     // Mount with the native API unavailable: ordinary reads remain usable.
     await page.goto(url + '#admin'); await page.reload();
     await page.evaluate(() => { document.modelContext.registerTool = undefined; });
-    await page.locator('#admin').getByRole('link', { name: 'Tools & commands', exact: true }).click();
+    await page.locator('#admin-navigation').getByRole('link', { name: 'Tools & commands', exact: true }).click();
     await expect(page.locator('#workspace-webmcp-enable')).toBeDisabled();
     await expect(page.locator('#workspace-webmcp-status')).toContainText('Unavailable in this browser');
     await run.click(); await expect(summary).toContainText('Saved on this device');
