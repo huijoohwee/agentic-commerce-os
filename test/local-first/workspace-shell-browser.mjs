@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import path from 'node:path';
 import { expect } from '@playwright/test';
 
 export async function captureSharedShell(page) {
@@ -51,4 +52,65 @@ export async function assertSharedShell(page) {
       && contentOffset === window.__sharedWorkspaceContentOffset
       && navigationFits;
   }), true);
+}
+
+export async function checkSharedWorkspaceShell({ page, url, output }) {
+  for (const width of [360, 768, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(url + '#admin-tools'); await page.reload();
+    await expect(page.locator('#workspace-run')).toBeEnabled();
+    const toggle = page.locator('#workspace-navigation-toggle'), collapsed = width <= 850;
+    await expect(toggle).toHaveAttribute('aria-controls', 'admin-navigation');
+    await expect(toggle).toHaveAttribute('aria-expanded', String(!collapsed));
+    if (collapsed) await expect(page.locator('#admin-navigation')).toBeHidden();
+    else await expect(page.locator('#admin-navigation')).toBeVisible();
+    const initial = await page.locator('#admin .workspace-content').boundingBox(); await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-expanded', String(collapsed));
+    if (collapsed) await expect(page.locator('#admin-navigation')).toBeVisible();
+    else await expect(page.locator('#admin-navigation')).toBeHidden();
+    const toggled = await page.locator('#admin .workspace-content').boundingBox();
+    if (width > 850) assert(toggled.width > initial.width); else assert(toggled.width > 0);
+    if (collapsed) { await toggle.click(); await expect(toggle).toHaveAttribute('aria-expanded', 'false'); await expect(page.locator('#admin-navigation')).toBeHidden(); }
+    for (const role of ['shop', 'vendor', 'admin']) {
+      await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }));
+      await page.locator('#workspace-role-switcher').selectOption(role); await expect(page.locator('#' + role)).toBeVisible();
+      await expect.poll(() => page.evaluate(() => Math.abs(window.scrollY) <= 1)).toBe(true);
+      await expect(toggle).toHaveAttribute('aria-controls', role + '-navigation'); await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+      await expect(page.locator('#' + role + '-navigation')).toBeHidden();
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    }
+    await toggle.click(); await expect(toggle).toHaveAttribute('aria-expanded', 'true'); await expect(page.locator('#admin-navigation')).toBeVisible();
+    const reference = await page.locator('#admin .workspace-content').boundingBox();
+    await captureSharedShell(page); await assertSharedShell(page);
+    for (const role of ['shop', 'vendor']) {
+      await page.locator('#workspace-role-switcher').selectOption(role); await expect(page.locator('#' + role)).toBeVisible();
+      await expect(toggle).toHaveAttribute('aria-controls', role + '-navigation'); await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+      const sidebar = page.locator('#' + role + '-navigation'); await expect(sidebar).toBeVisible(); await assertSharedShell(page);
+      if (width <= 680) {
+        const links = sidebar.locator('.service-nav-links > a'), [first, second] = await Promise.all([links.nth(0).boundingBox(), links.nth(1).boundingBox()]);
+        assert(Math.abs(first.y - second.y) < 1 && second.x >= first.x + first.width);
+      }
+      const content = await page.locator('#' + role + ' .workspace-content').boundingBox();
+      assert.equal(content.x, reference.x); assert.equal(content.width, reference.width);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+      await expect(page.locator('#workspace-role-switcher')).toBeVisible(); await page.keyboard.press('ControlOrMeta+k');
+      await expect(page.locator('#' + role + '-query')).toBeFocused(); await page.locator('#' + role + '-query').fill('absent offer');
+      await expect(page.locator(role === 'shop' ? '#shop-empty' : '#vendor-table')).toContainText(role === 'shop' ? 'No offers match' : 'No matching offers');
+      await page.locator('#' + role + '-query').fill(''); await page.screenshot({ path: path.join(output, `aligned-${role}-${width}.png`) });
+    }
+    const navigationCount = await page.evaluate(() => performance.getEntriesByType('navigation').length);
+    await page.locator('#workspace-role-switcher').selectOption('sme'); await expect(page.locator('#sme')).toBeVisible();
+    await expect(page.locator('#sme-navigation')).toBeVisible();
+    if (width <= 680) await expect(page.locator('#console-breadcrumb')).toBeHidden(); else await expect(page.locator('#console-breadcrumb')).toBeVisible();
+    await expect(page.locator('#console-root')).toHaveAttribute('href', '#sme'); await expect(page.locator('#console-root')).toHaveText('SME pack');
+    await expect(toggle).toHaveAttribute('aria-controls', 'sme-navigation'); await assertSharedShell(page);
+    assert.equal(await page.evaluate(() => performance.getEntriesByType('navigation').length), navigationCount);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    await page.evaluate(() => { location.hash = 'checkout'; }); await expect(page.locator('#checkout')).toBeVisible(); await assertSharedShell(page);
+    await page.locator('#workspace-role-switcher').selectOption('vendor'); await expect(page.locator('#vendor')).toBeVisible();
+  }
+  await page.locator('#workspace-navigation-toggle').click();
+  await expect(page.locator('#workspace-navigation-toggle')).toHaveAttribute('aria-expanded', 'false'); await page.reload();
+  await expect(page.locator('#workspace-navigation-toggle')).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.locator('#vendor-navigation')).toBeVisible();
 }
