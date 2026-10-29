@@ -1,19 +1,19 @@
 ---
 title: "Commerce Shared Design Token Adoption"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.1.0"
-revision: "0.1.0"
+version: "0.1.1"
+revision: "0.1.1"
 date: "2026-10-30"
 updated_date: "2026-10-30"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Commerce product function"
 continuity_id: "COMMERCE-DESIGN-SYSTEM-TOKENS-001"
-prd_revision: "0.1.0"
-tad_revision: "0.1.0"
-adr_revision: "0.1.0"
-mvp_revision: "0.1.0"
-gtm_revision: "0.1.0"
+prd_revision: "0.1.1"
+tad_revision: "0.1.1"
+adr_revision: "0.1.1"
+mvp_revision: "0.1.1"
+gtm_revision: "0.1.1"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -24,7 +24,7 @@ guideline_revision: "3.4.0"
 guideline_sha256: "8f0eda9aaf4d0b1e2bcc7388e15d19d95e6ba88fe158dbbbb53c2c0d4225d87a"
 template_revision: "1.5.0"
 template_sha256: "862369425974a704529164c02973a7ccb98b94d9a4eea73e347c8b4b57aa7966"
-worktree_id: "device-0232231d4a19--commerce-design-system-token-plan"
+worktree_id: "device-0232231d4a19--commerce-design-system-token-plan-audit"
 agent_id: "codex"
 source_revision: "6ce3bc918717b97a738ac831dfb4fb3319a02fb6"
 lifecycle_status: "proposed"
@@ -34,7 +34,7 @@ runtime_readiness_policy: "fail-closed"
 
 # Commerce Shared Design Token Adoption
 
-**Join:** `COMMERCE-DESIGN-SYSTEM-TOKENS-001@0.1.0`, under
+**Join:** `COMMERCE-DESIGN-SYSTEM-TOKENS-001@0.1.1`, under
 `COMMERCE-CONTROL-PLANE-001@0.1.0`. This plan covers Commerce's generated presentation
 projections. It does not move product component behavior, commerce capabilities, or deployment
 authority into the token registry.
@@ -49,16 +49,35 @@ future revision is covered by that grant. No unrelated reference system is an in
 | Owner / revision | Observed source and evidence | Boundary |
 |---|---|---|
 | Commerce / `6ce3bc918717b97a738ac831dfb4fb3319a02fb6` | `public/local-first/commerce-theme.css` is a generated 36-key profile from central revision `c18253b35e8bcc0bed548cfb717ec31909422dbe`, profile digest `000adeb267d0d0ff9527e1227faefcd5fd2c15faee463fa70173204783ea7c9e`; the existing owner check verifies the pinned projection. | Preserve the existing Commerce profile. A refresh is not part of this plan. |
-| Central candidate / PR #5 | `DESIGN-TOKEN-ADOPTION-001@0.6.0`; open PR head `a1c56f8ba3c3b8892897fcdbf6d61ed09784b6b7`. Graph profile JSON SHA-256 `e19a588f6b18aebe7c55e5369930dedd91263905c412c64a42baf28cb04dd64a`; CSS SHA-256 `e4be7fd758ded0ad93437e73d687f5223f44e20e9dfde6384bb446f525775c2c`. | Candidate, not protected-integrated or released. The profile contains 69 exact-grant Graph keys. |
+| Central candidate / PR #6 | `DESIGN-TOKEN-ADOPTION-001@0.7.0`; open PR head `1cb8b0ca97cef16bcea0b4ed8bb6404e7b0d704d`. Graph profile JSON SHA-256 `e19a588f6b18aebe7c55e5369930dedd91263905c412c64a42baf28cb04dd64a`; CSS SHA-256 `e4be7fd758ded0ad93437e73d687f5223f44e20e9dfde6384bb446f525775c2c`. | Candidate, not protected-integrated or released. The profile contains 69 exact-grant Graph keys. PR #5 remains open as the retained predecessor. |
 | Graph / `bed770d91a9b3f1b663eee9637a472bf19b36361` | The granted generated CSS is 5,982 bytes, SHA-256 `b676d411f7f1683a9b208b2a74f03a921d7e77a32a6f2b4a4274a41c6441dee8`; its 69 values match the central candidate profile. Rights PR #1849 is open at `513d08f3d156360606e2e35d77d9d442e1fec6c6`. | User grant is exact; PR #1849 remains unmerged. Graph PR #1239 is an open conflicting change to overlapping token sources and needs owner disposition before Graph source work. |
-| Commerce Graph adapter / `6ce3bc918717b97a738ac831dfb4fb3319a02fb6` | `config/graph-data-view.json` pins source revision `73ba0401bd785b34bd5331d3873acec0e7b873b3`, input digest `77604d3ce306386213422721835c94d687c19a3ee30b49281c1a3db7c613cd46`, and `graph-ui-tokens.css` SHA-256 `279c32d402518afef25ad46b09441255e6078033b72eacd8b4c78b4730a7f6ca` (6,997 bytes). | The projection is stale relative to the central profile and needs a Commerce-owned migration and receipt. |
+| Commerce Graph adapter / `6ce3bc918717b97a738ac831dfb4fb3319a02fb6` | `config/graph-data-view.json` pins source revision `73ba0401bd785b34bd5331d3873acec0e7b873b3`, input digest `77604d3ce306386213422721835c94d687c19a3ee30b49281c1a3db7c613cd46`, and `graph-ui-tokens.css` SHA-256 `279c32d402518afef25ad46b09441255e6078033b72eacd8b4c78b4730a7f6ca` (6,997 bytes). | All 69 authorized profile keys and values are present; source pin/adoption is still separate. Fifteen adapter-only keys and one responsive override remain unresolved. |
 
-The adapter stylesheet declares 81 `--kg-*` keys: 49 values match the central 69-key profile, 19
-values differ, one central key is absent from this stylesheet, and 13 keys are outside the profile.
-The broader generated data-view CSS contains 98 distinct `--kg-*` keys, 29 beyond the current
-central profile. These are counts and digests, not a rights grant or proof that every key is a
-shared design token. Additional Graph sources are rights-blocked until each value is classified and
-the user or Graph owner approves the exact source scope. This finding does not copy those values.
+An exact scan of the committed Commerce CSS at the pinned revision finds 84 distinct `--kg-*` keys
+in `graph-ui-tokens.css`: all 69 central profile keys are present and their values match after CSS
+numeric normalization, with 15 adapter-only keys. The broader generated `graph-data-view.css`
+contains 101 distinct `--kg-*` keys, 32 beyond the central profile. The adapter also reassigns
+`--kg-control-height` from the profile's `28px` to `var(--kg-touch-target, 44px)` for coarse pointers
+or viewports up to 768px; the installed state sets the touch target to `48px`. The profile currently
+does not represent that responsive value. Treat it as an unresolved override until it is moved to a
+separately owned semantic key or represented by an owner-approved central mode. These counts and
+digests are not a rights grant or proof that every additional key is a shared design token. Other
+Graph sources remain rights-blocked unless the user or Graph owner approves their exact source scope.
+This plan does not copy those values.
+
+The baseline in revision 0.1.0 (81 keys, 19 conflicts, one missing key, 13 adapter-only keys; 98
+bundle keys and 29 extras) is not reproduced by a fresh scan of the exact commit and digests above.
+Do not use those historical counts as acceptance evidence.
+
+## Current integration gate
+
+Central PR #6 is open, clean, and has a successful Integration Gate at the exact head above; PR #5
+remains open as its predecessor. PR #6 adds `protected-integration:pull-request` to the central
+repository profile and public-release check. AOS promotion remains blocked because the central lane
+record has no PR number and current GitHub protection does not require the PR rule. The repository
+authority must apply that protection and bind the exact provider observation before `promote plan`
+can proceed. Phase A waits for both receipts. This Commerce plan does not authorize a protection or
+provider-policy change, merge, or lane cleanup.
 
 The manifest inputs identify five Graph files that define additional or overridden custom
 properties. Their exact current `bed770d91a9b3f1b663eee9637a472bf19b36361` digests are:
@@ -79,10 +98,11 @@ must not mix the old Commerce `responsive-toolbar.css` digest with the current G
 
 ### User, pain, and evidence
 
-**P1 — observed drift; impact unmeasured:** maintainers can receive different Graph presentation
-values through a shared profile and an older generated Commerce adapter. A local token check does
-not currently establish uniqueness across the complete Graph data-view bundle. Repeated lookup,
-visual defects, support cost, buyer impact, and willingness to pay have not been measured.
+**P1 — observed unclassified values; impact unmeasured:** maintainers have one exact central value for
+each of the 69 authorized shared Graph profile keys in the committed Commerce adapter, alongside 15
+adapter-only keys and a mobile `--kg-control-height` override. The complete generated data-view CSS
+has 32 keys outside the central profile. Their ownership and rights are not all established. Repeated
+lookup, visual defects, support cost, buyer impact, and willingness to pay have not been measured.
 
 **Users:** Commerce maintainers need one owner for shared values; Graph maintainers need their
 component behavior to remain native; reviewers need exact rights, source revision, generated output,
@@ -100,9 +120,10 @@ and rollback evidence before an adoption claim.
 | CST-06 | Keep delivery separate from source integration. | No deploy, promotion, production readback, or rollback claim without the Commerce release owner’s exact receipts and authority. |
 
 **Success metric:** zero shared-key duplicates, overrides, and unclassified definitions in the exact
-Commerce artifact. Baseline measured values are 19 conflicts, one missing profile key, and 13
-adapter-only keys in `graph-ui-tokens.css`; bundle-wide inventory has 29 keys beyond the current
-profile. Implementation and user time savings remain unmeasured.
+Commerce artifact. Reproduced baseline: 84 adapter keys with all 69 authorized shared keys present,
+15 adapter-only keys, one conditional override of `--kg-control-height`, and 32 keys outside the
+profile in the generated data-view CSS. No value mismatch was found among the 69 shared keys after
+CSS numeric normalization. Implementation and user time savings remain unmeasured.
 
 **TTV:** a maintainer should identify the single owner and status for a selected shared key within
 two minutes from a clean local checkout. This is a target, not a measured result.
@@ -113,7 +134,7 @@ two minutes from a clean local checkout. This is a target, not a measured result
 
 | Concern | Single owner | Consumer contract |
 |---|---|---|
-| Authorized shared design values | `agentic-design-system`, after protected integration and exact rights evidence | Versioned profile plus deterministic static CSS; no floating reference. |
+| Authorized shared design values | `agentic-design-system`, after protected integration and exact rights evidence | Versioned profile plus deterministic static CSS; no floating reference. Current candidate is PR #6, not yet integrated. |
 | Graph component behavior and component-local values | `agentic-graph` | Remains Graph-owned. Component-local values must be classified and must not override shared profile keys. |
 | Commerce shell and artifact assembly | `agentic-commerce-os` | Pins and emits the central profile locally; no runtime fetch, copied editable profile, or competing token file. |
 | Release, deploy, runtime, rollback | Commerce's existing release and product owners | Separate evidence and authority for each effect. |
@@ -163,7 +184,7 @@ scoping, and confirmation that they do not override a shared key.
 
 | Option | Decision |
 |---|---|
-| Keep the current combined adapter unchanged | Reject as the final state: the adapter has measured value drift and the bundle inventory is broader than the profile. |
+| Keep the current combined adapter unchanged | Reject as the final state: the bundle has 32 out-of-profile keys and a responsive override not modeled by the central profile. |
 | Copy the full Graph adapter into the central repo | Reject: current rights cover four exact artifacts only, and the adapter includes ungranted sources. |
 | Centralize authorized shared values and classify local component variables | Select, gated by integrated central/rights PRs, Graph conflict disposition, source inventory, and Commerce owner checks. |
 | Stop all work until every Graph value is grantable | Preserve as fail-closed fallback if a needed shared value lacks rights or owner classification. |
@@ -176,7 +197,7 @@ product owner supplies an exact, supported recovery procedure and authority.
 
 ## MVP
 
-**Slice:** migrate only after central PR #5 and rights PR #1849 are protected-integrated, Graph PR
+**Slice:** migrate only after central PR #6 and rights PR #1849 are protected-integrated, Graph PR
 #1239 has an owner disposition, and every emitted Graph custom property is classified. The Commerce
 build then consumes the exact central profile for the 69 authorized shared keys, rejects any local
 override or duplicate for those keys, and emits a bound predecessor/output receipt. Keep all
@@ -193,7 +214,7 @@ not passed acceptance checks.
 
 | Phase | Exit condition | Stop/recovery |
 |---|---|---|
-| A · rights and owner baseline | Central and rights PRs integrated; Graph conflict resolved; all emitted keys mapped to exact source and owner. | Keep the present Commerce artifact and record the exact blocker. |
+| A · rights and owner baseline | Central PR #6 and rights PR #1849 integrated; Graph conflict resolved; all emitted keys mapped to exact source and owner; AOS/provider PR promotion preflight unblocked. | Keep the present Commerce artifact and record the exact blocker. |
 | B · shared-key projection | All 69 authorized keys match centrally; no duplicate or override remains in the consumer artifact. | Restore the exact predecessor pin/output; no deployment. |
 | C · component boundary | Remaining keys have owner-approved local scope or exact additional grant; local/offline/mobile checks pass. | Leave delivery blocked if any key is unknown or rights are absent. |
 | D · release decision | Product owner verifies candidate, predecessor, supported recovery, and environment authority. | No production action from this plan alone. |
@@ -210,7 +231,7 @@ Commerce learning owner; do not create a second experiment ledger.
 
 | Domain | Decision / evidence | Owner and next trigger |
 |---|---|---|
-| C01 Purpose and pain | Covered: stale and conflicting generated values observed; user impact unmeasured. | Product · five maintainer tasks. |
+| C01 Purpose and pain | Covered: out-of-profile keys and one responsive override observed; user impact unmeasured. | Product · five maintainer tasks. |
 | C02 Market and timing | Deferred: no sourced market evidence for this maintenance slice. | Product · only if monetization is proposed. |
 | C03 Offer and alternatives | Covered: no-change/manual/FOSS central registry alternatives identified; offer unvalidated. | Product · repeated user pain. |
 | C04 Product and experience | Covered: local/offline/mobile and zero-duplicate outcome defined; browser proof pending. | UX · Phase C. |
@@ -223,7 +244,7 @@ Commerce learning owner; do not create a second experiment ledger.
 | C11 Organization and obligations | Covered with open rights gate: only four exact Graph artifacts are granted. | Product/Graph owner · before more values publish. |
 | C12 Financial viability | Covered as $0 incremental spend and 0 model calls; labor/provider savings unknown. | Finance · comparable measurements. |
 | C13 Capital and milestones | Not applicable: no capital request or paid service in this slice. | Reopen only if scope changes. |
-| C14 ADLC execution | Covered: one reserved docs lane; implementation, source merge, deploy, and rollback are separate. | ADLC owner · after plan integration. |
+| C14 ADLC execution | Covered: one reserved docs successor; implementation, source merge, deploy, and rollback are separate; central PR promotion still needs AOS/provider binding. | ADLC owner · after exact promotion preflight. |
 | C15 Audience projections | Not applicable: this operational adoption plan has no external fundraising audience. | Reopen on audience change. |
 | C16 Learning and next increment | Covered: timed maintainer tasks and phase triggers use the existing learning owner. | Product · after Phase B. |
 
@@ -234,8 +255,9 @@ readiness.
 ## ADLC and release boundary
 
 This revision changes only this planning document. It does not change the application, generated CSS,
-Graph sources, CSP work, package pins, deployment, or production runtime. PR #5, PR #1849, and PR
-#1239 are dependencies or owner records, not merge authority. Source integration of this document
+Graph sources, CSP work, package pins, deployment, or production runtime. PR #6, its retained
+predecessor PR #5, PR #1849, and PR #1239 are dependencies or owner records, not merge authority.
+Source integration of this document
 does not grant code, deploy, promotion, or rollback authority. The current delivered rung remains
 `undocumented` for this scope.
 
@@ -247,7 +269,7 @@ does not grant code, deploy, promotion, or rollback authority. The current deliv
   `c38de561057191a71ccd1b63a4a06cc625164bf67813ee8ac20e07066a3eaa70`.
 - Commerce adapter CSS: `public/local-first/graph-ui-tokens.css` SHA-256
   `279c32d402518afef25ad46b09441255e6078033b72eacd8b4c78b4730a7f6ca`.
-- Central candidate plan SHA-256 `3f16a93449d60e0d9bbb878929d9e8b01597dded1b2326a77becdb14ed99295b`;
-  central PR #5 and Graph rights PR #1849 remain open.
+- Central candidate plan SHA-256 `9bf7df4b134067d046ba4ddbfcddb37d2d51b95b5ed49d4519e2402812d9dbb4`;
+  central PR #6 and its retained predecessor PR #5 remain open; Graph rights PR #1849 remains open.
 - Graph data-view source revision and output digests are pinned by the Commerce manifest; the
   additional Graph values are not copied into this document or granted for central publication.
