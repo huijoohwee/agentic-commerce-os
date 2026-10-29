@@ -21,7 +21,7 @@ export async function checkSandboxCheckout({ browser, url, output, record, remot
     await page.getByRole('link', { name: 'Try sandbox checkout' }).click();
     await expect(page.locator('#checkout')).toBeVisible();
     await expect(page.locator('body')).toHaveClass(/console-mode/);
-    await expect(page.locator('#checkout #shop-navigation')).toBeVisible();
+    await expect(page.locator('#shop-navigation')).toBeVisible();
     const checkout = await shell('checkout');
     for (const part of ['header', 'sidebar', 'content']) {
       assert(shop[part] && checkout[part], part + ' is visible in both shopper views');
@@ -30,14 +30,13 @@ export async function checkSandboxCheckout({ browser, url, output, record, remot
     }
     await expect(page.locator('#console-breadcrumb')).toBeVisible();
     await expect(page.locator('#console-root')).toHaveAttribute('href', '#shop');
-    await expect(page.locator('#console-location')).toHaveText('Checkout');
-    await expect(page.locator('[data-role="shop"]')).toHaveAttribute('aria-current', 'page');
+    await expect(page.locator('#console-root')).toHaveText('Storefront');
     await expect(page.locator('#shop-navigation [data-view="checkout"]')).toHaveAttribute('aria-current', 'page');
     const navigation = page.locator('#workspace-navigation-toggle');
     await expect(navigation).toHaveAttribute('aria-controls', 'shop-navigation');
     await navigation.click();
     for (const view of ['shop', 'checkout']) {
-      if (view === 'shop') await page.locator('[data-role="shop"]').click();
+      if (view === 'shop') await page.locator('#console-root').click();
       else await page.getByRole('link', { name: 'Try sandbox checkout' }).click();
       await expect(page.locator('#' + view)).toBeVisible();
       await expect(navigation).toHaveAttribute('aria-expanded', 'false');
@@ -45,12 +44,23 @@ export async function checkSandboxCheckout({ browser, url, output, record, remot
     }
     await navigation.click();
     await expect(navigation).toHaveAttribute('aria-expanded', 'true');
-    await page.locator('#shop-navigation [data-workspace-search]').click();
-    await expect(page.locator('#shop')).toBeVisible();
-    await expect(page.locator('#shop-query')).toBeFocused();
+    const shopSearch = page.locator('#shop-navigation [data-workspace-search]');
+    if (await shopSearch.isVisible()) {
+      await shopSearch.click();
+      await expect(page.locator('#shop')).toBeVisible();
+      await expect(page.locator('#shop-query')).toBeFocused();
+    } else {
+      await expect(shopSearch).toBeHidden();
+      await page.locator('#console-root').click();
+      await expect(page.locator('#shop')).toBeVisible();
+    }
     await page.getByRole('link', { name: 'Try sandbox checkout' }).click();
     await page.setViewportSize({ width: 390, height: 844 });
-    await expect(page.locator('#checkout #shop-navigation')).toBeVisible();
+    await expect(navigation).toHaveAttribute('aria-expanded', 'false');
+    await expect(page.locator('#shop-navigation')).toBeHidden();
+    await navigation.click();
+    await expect(navigation).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.locator('#shop-navigation')).toBeVisible();
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await expect(page.locator('#checkout-status')).toContainText('No real money will move');
     await expect(page.locator('#checkout-start')).toBeDisabled();

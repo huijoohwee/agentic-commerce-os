@@ -14,10 +14,13 @@ export type LocalFirstEnv = Readonly<CheckoutEnv & ListingRelayEnv & {
 }>
 const ASSET_PATHS = new Map([
   ...[
-    '/', '/app.js', '/drafts.js', '/checkout.js', '/launch.js', '/workspace.js',
-    ...['workspace-graph.js', 'agentic-base-data-view.js', 'agentic-base-data-view.css', 'graph-data-view.js', 'graph-data-view.css', 'graph-ui-tokens.css'].map(file => '/' + file),
+    '/', '/favicon.svg', '/app.js', '/drafts.js', '/checkout.js', '/launch.js', '/workspace.js', '/workspace-tour.js',
+    ...['workspace-graph.js', 'workspace-navigation.js', 'workspace-singleton.js', 'shopper-demo-detail.js', 'agentic-base-data-view.js', 'agentic-base-data-view.css', 'graph-data-view.js', 'graph-data-view.css', 'graph-ui-tokens.css', 'commerce-theme.css', 'workspace-shell.css'].map(file => '/' + file),
     '/style.css', '/sw.js', '/workflow.js', '/workspace-capabilities.js', '/workspace-tools.js',
   ].map(path => [path, path] as [string, string]),
+  ...(import.meta.commerceLiveCheckout === false ? [] : [
+    '/sme-business-pack.js', '/sme-business-pack.css', '/sme-business-pack-core.js', '/sme-pack-sg.js', '/sme-pack-my.js',
+  ].map(path => [path, path] as [string, string])),
   ['/services/workspace-pack/', '/workspace-pack.html'],
   ['/services/workspace-pack/workspace-pack.js', '/workspace-pack.js'],
   ['/services/workspace-pack/workspace-pack.simulation.js', '/workspace-pack.simulation.js'],
@@ -50,16 +53,10 @@ export async function fetchLocalFirst(request: Request, env: LocalFirstEnv, tran
     // The durable listing host shares this router but must omit the public SME service.
     // Its build sets import.meta.commerceLiveCheckout=false; Worker/dev builds leave it undefined.
     if (import.meta.commerceLiveCheckout !== false) {
-      const rootAsset = ['/sme-business-pack.html', '/sme-business-pack.js', '/sme-business-pack.css',
-        '/sme-business-pack-core.js', '/sme-pack-sg.js', '/sme-pack-my.js']
-        .find(asset => url.pathname === `${prefix}${asset}`)
-      if (rootAsset) {
-        const response = await env.ASSETS.fetch(new Request(new URL(rootAsset, url.origin), { method: 'GET' }))
-        return finish(response.ok ? response : new Response('Asset unavailable', { status: 503 }))
-      }
       const smePackRoute = `${prefix}/services/sme-business-pack`
-      if (url.pathname === smePackRoute && ['GET', 'HEAD'].includes(request.method)) {
-        url.pathname += '/'; url.search = ''; return finish(Response.redirect(url.href, 308))
+      if ([smePackRoute, `${smePackRoute}/`].includes(url.pathname) && ['GET', 'HEAD'].includes(request.method)) {
+        url.pathname = `${prefix}/`; url.hash = 'sme'; url.search = ''
+        return finish(Response.redirect(url.href, 308))
       }
       if (url.pathname.startsWith(`${smePackRoute}/`)) {
         const route = url.pathname.slice(smePackRoute.length)
@@ -67,13 +64,6 @@ export async function fetchLocalFirst(request: Request, env: LocalFirstEnv, tran
           const { handleSmeBusinessPackRequest } = await import('./sme-business-pack.ts')
           const response = await handleSmeBusinessPackRequest(request, env.RELEASE_CANDIDATE_SHA)
           if (response) return finish(response)
-        }
-        const asset = route === '/' ? '/sme-business-pack.html'
-          : ['/sme-business-pack.js', '/sme-business-pack.css', '/sme-business-pack-core.js', '/sme-pack-sg.js', '/sme-pack-my.js']
-            .find(file => route === file)
-        if (asset) {
-          const response = await env.ASSETS.fetch(new Request(new URL(asset, url.origin), { method: 'GET' }))
-          return finish(response.ok ? response : new Response('Asset unavailable', { status: 503 }))
         }
       }
     }

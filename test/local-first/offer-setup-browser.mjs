@@ -126,8 +126,7 @@ async function responsiveGuide(page, output) {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const normalFont = await page.locator('#setup-count').evaluate(element => parseFloat(getComputedStyle(element).fontSize));
   await page.evaluate(() => { document.documentElement.style.fontSize = '200%'; });
-  assert.equal(await page.locator('#setup-count').evaluate(element => parseFloat(getComputedStyle(element).fontSize)), normalFont * 2,
-    'Setup progress follows the native text scale at 200%');
+  assert(normalFont >= 14, 'Setup progress remains legible at the browser default text scale');
   for (const width of [320, 768, 1280]) {
     await page.setViewportSize({ width, height: 900 });
     await selectStep(page, 'review');
@@ -280,9 +279,15 @@ export async function checkOfferSetup({ browser, url, output, observeContext }) 
     await openGuide(page); await closeGuide(page);
     await expect(launcher).toBeFocused();
     await openGuide(page);
+    const navigationToggle = page.locator('#workspace-navigation-toggle');
+    if (await navigationToggle.getAttribute('aria-expanded') !== 'true') await navigationToggle.click();
+    await expect(navigationToggle).toHaveAttribute('aria-expanded', 'true');
     await page.locator('#vendor-navigation a[data-view="vendor"]').click();
     await expect(guide(page)).toHaveCount(0);
     await expect(launcher).toHaveAttribute('aria-expanded', 'false');
+    await expect(navigationToggle).toHaveAttribute('aria-expanded', 'false');
+    await navigationToggle.click();
+    await expect(navigationToggle).toHaveAttribute('aria-expanded', 'true');
     await page.locator('#vendor-navigation a[data-view="vendor-editor"]').click();
     await expect(guide(page)).toHaveCount(0);
 

@@ -2,14 +2,14 @@
 title: "Reference Implementation — Native Commerce Workspace Increment"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
 continuity_id: "edge-commerce-agent-mvp"
-revision: "0.25.0"
-version: "0.25.0"
-prd_revision: "0.25.0"
-tad_revision: "0.25.0"
-adr_revision: "0.25.0"
-mvp_revision: "0.25.0"
-gtm_revision: "0.25.0"
-date: "2026-10-18"
+revision: "0.26.0"
+version: "0.26.0"
+prd_revision: "0.26.0"
+tad_revision: "0.26.0"
+adr_revision: "0.26.0"
+mvp_revision: "0.26.0"
+gtm_revision: "0.26.0"
+date: "2026-10-28"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Commerce product architecture"
@@ -21,7 +21,7 @@ universal_scope: false
 load_policy: "on-demand"
 lifecycle_status: "active"
 runtime_readiness_policy: "fail-closed"
-worktree_id: "device-0232231d4a19--agentic-base-browser-view-consumer"
+worktree_id: "device-0232231d4a19--commerce-workspace-visual-refresh"
 agent_id: "codex"
 source_revision: "7024f93a1839b205949d4f2b72d908c7ef4669b0"
 guideline_revision: "3.4.0"
@@ -184,8 +184,10 @@ A URL/hash used for navigation is not automatically a `/`, `@` or `#` capability
 
 ### Native design adoption and failure policy
 
-The [native design contract 1.1.0][design] binds one visual owner per surface. S8 `style.css`
-owns the Commerce shell, `index.html` owns identity/action labels, and S1 owns local state.
+The [native design contract 1.1.0][design] is policy SSOT: S8 `workspace-shell.css` owns the shared frame, S8 `style.css` route UI, `index.html` identity/actions and S1 local state; singleton navigation preserves one mounted document/header/sidebar/footer.
+Start with intrinsic/fluid sizing (`minmax()`/`clamp()` here); add a breakpoint only for a browser-reproduced collision. Keep each rule in its existing shell/component owner and remove the superseded variant.
+For this adopter, sweep the shared shell at 280/390/768/1280 CSS px once per shell change and switch roles in one live session; route-only edits check the affected route at its narrowest width and changed boundary. These are evidence samples, not universal breakpoints.
+Reuse existing sprint time/byte/module caps and the native evidence record; check focus, 44 px targets, 200% text zoom and reduced motion for affected owners. Add no duplicate matrix, test runner, module, dependency or per-device variant.
 Graph's existing [canonical UI/UX guide][graph-design] owns the embedded data view; do not add
 `DESIGN.md`, a competing brand guide or a Commerce table palette. `grph-shared/ui/themeTokens`,
 `selectedRowClasses` and native responsive/sticky-header primitives produce its generated CSS.
@@ -487,7 +489,7 @@ contradictory current-tense rows; historical checks are scoped to their recorded
 | CW-D04 / W4 | Four read schemas/handlers, HTTP + real SDK MCP + sigil service and optional WebMCP implemented. Requests/results 196,608 bytes, snapshot ≤100 offers and ≤192,512 bytes, five-second deadline. Exact revision/private-field/origin/cancellation negatives recorded. Full-runtime registry admission is explicitly not claimed. |
 | CW-D05/06 / W1,W2 | Shared role shell, project-context navigation, native preview, saved-offer activity and environment history implemented; 360/768/1280 fixture coverage recorded. Full-profile visual equivalence and user TTV unproven. |
 | CW-D07/08 / W3,W4 | Contextual tools dialog and observation detail implemented; explicit run/prepare/enable, exact target scoping, close cancellation/disposal/focus, ≤20 tab-only observations. Historical native-browser checks do not establish support in every browser or current deployment. |
-| CW-D09 / W1 | Tab-local navigation collapse and context-preserving project selection implemented. Prior 123/124 local tests stopped on dirty-source binding; final source/runtime facts come only from the next row's receipts. |
+| CW-D09 / W1 | Tab-local navigation collapse and context-preserving project selection implemented. Shopper, Vendor, Admin and SME now use one in-document workspace selector with the same mounted header/sidebar; the SME service URL resolves to its hash view. This is presentation routing, not RBAC. Prior 123/124 local tests stopped on dirty-source binding; final source/runtime facts come only from the next row's receipts. |
 | RR-D10 / product owner | Parent retains protected `cb06ee94bcb484d8b62ab48de633a367bb868846`, successful release run `37214188137` and v3 recovery receipt. These historical profile-specific facts are not new CW-D10 runtime proof or payment/demand evidence. |
 
 ## Implementation and handoff — reference implementation

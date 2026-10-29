@@ -62,8 +62,8 @@ change the public site. The [local-first Worker](../src/local-first/worker.ts),
 
 | Public-profile view | Working native flow | Explicit limit |
 |---|---|---|
-| Shopper | Editorial landing, 12-card catalog, store/search/name filters, pagination, native details with Escape/focus restore | Private draft previews exclude notes/costs. A separate fixed education offer opens Stripe test checkout; no live payment or multi-item cart. |
-| Vendor | Offer table, state/search filters, 10 rows/page, responsive cards, editor, storefront preview | Existing 100-draft IndexedDB store; no new product schema, tenant identity or inventory authority. |
+| Shopper | Editorial landing, 12-card catalog, store/search/name filters, pagination, native details with Escape/focus restore, local workspace overview and five-step tour | Private draft previews exclude notes/costs. A separate fixed education offer opens Stripe test checkout; no live payment or multi-item cart. |
+| Vendor | Offer table, state/search filters, 10 rows/page, responsive cards, editor, storefront preview, local workspace overview and four-step tour | Existing 100-draft IndexedDB store; no new product schema, tenant identity or inventory authority. |
 | Admin | Store/review/attention counts derived from drafts, review queue, exact existing human launch review, portable import/export | No invented sales metrics or production credentials; role navigation is not RBAC. |
 | Offline/update | Every role reloads offline. Release-scoped module/style URLs bypass legacy cache-first asset keys | One release cache; old unversioned asset paths retained for upgrade compatibility. |
 
