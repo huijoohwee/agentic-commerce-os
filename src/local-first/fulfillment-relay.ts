@@ -8,6 +8,8 @@ export const LISTING_HOST_CONTRACT = 'commerce.listing-host/v1';
 export const LISTING_HOST_READY_PATH = '/agentic-commerce-os/fulfillment/host-ready';
 export type ListingHostPins = Readonly<DeviceHostPins & { sourceRevision: string }>;
 export type ListingRelayEnv = Readonly<{ LISTING_HOST_PINS_JSON?: string; LISTING_HOST_BEARER?: string }>;
+type AgentRunClientCostOptions = Pick<Parameters<typeof createAgentRunClient>[0], 'verifyProviderCostEvidence' | 'now'>;
+export type ListingProviderCostVerification = Readonly<AgentRunClientCostOptions>;
 
 export function parseListingHostPins(value: unknown): ListingHostPins {
   if (!isRecord(value) || Object.keys(value).sort().join() !== 'bundleSha256,imageId,origin,sourceRevision'
@@ -40,7 +42,8 @@ export function listingHostIdentity(pins: ListingHostPins) {
 }
 
 /** Construction does no I/O. Each invocation receives immutable server-derived context. */
-export function createFulfillmentRelay(env: ListingRelayEnv, send: typeof fetch = fetch): FulfillmentRuntime | undefined {
+export function createFulfillmentRelay(env: ListingRelayEnv, send: typeof fetch = fetch,
+  costVerification: ListingProviderCostVerification = {}): FulfillmentRuntime | undefined {
   if (env.LISTING_HOST_PINS_JSON === undefined && env.LISTING_HOST_BEARER === undefined) return undefined;
   if (typeof env.LISTING_HOST_PINS_JSON !== 'string' || env.LISTING_HOST_PINS_JSON.length > 2048
     || typeof env.LISTING_HOST_BEARER !== 'string') throw Error('listing_host_configuration_incomplete');
@@ -64,7 +67,9 @@ export function createFulfillmentRelay(env: ListingRelayEnv, send: typeof fetch 
     async invoke(operation, input, context, signal) {
       const headers = listingHostHeaders(pins, token, Object.freeze({ ...context }));
       const client = createAgentRunClient({ endpoint: pins.origin + '/api/agent-swarm/',
-        fetchImpl: send, getHeaders: () => headers, timeoutMs: 55000 });
+        fetchImpl: send, getHeaders: () => headers, timeoutMs: 55000,
+        ...(costVerification.verifyProviderCostEvidence ? { verifyProviderCostEvidence: costVerification.verifyProviderCostEvidence } : {}),
+        ...(costVerification.now ? { now: costVerification.now } : {}) });
       const result = await client.invoke(operation, input, { signal });
       // Transport refusal is not a terminal job state. Keep the browser's prior handle/result.
       if (result.writeResultUnknown === true || typeof result.httpStatus === 'number'

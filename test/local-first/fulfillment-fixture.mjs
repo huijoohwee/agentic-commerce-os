@@ -18,3 +18,14 @@ export const listingOutputFixture = () => ({ status: 'completed', effect: 'read-
     cache_hits: 0, estimated_cost_usd: 0 },
   output: { text: 'Ceramic mug\n- Blue\n- 300 ml', definitionDigest: LISTING_DEFINITION_SHA256,
     usage: { promptTokens: 10, completionTokens: 8 }, costUsd: null } });
+
+// Test-only evidence for the Agentic OS HTTPS cost-verification contract.
+export const freeCostEvidenceFixture = async scope => ({
+  schema: 'agentic-os/verified-effect-cost-evidence/v1', status: 'verified-zero-cost',
+  provider: scope.provider, mode: 'free-fail-closed', billingPlan: 'free',
+  providerHardCapUsd: null, quotaExhaustion: 'deny', paidPlanActive: false,
+  addOnsActive: false, overagesEnabled: false, autoUpgradeEnabled: false,
+  evidenceDigest: 'f'.repeat(64), scopeDigest: scope.scopeDigest,
+  verifiedAt: scope.observedAt,
+  expiresAt: new Date(Date.parse(scope.observedAt) + 60_000).toISOString(),
+});
