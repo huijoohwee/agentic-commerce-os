@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, writeFileSync, copyFileSync } from 'node:fs';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { DESIGN_SYSTEM_CSP } from '../src/design-system-edge/content-security-policy.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const PUBLIC = join(ROOT, 'public/agentic-design-system');
@@ -66,6 +67,15 @@ function loadConfig() {
 function compareEntries(actual, expected) {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) fail('payload_hash_mismatch');
 }
+function verifyStaticCsp(indexHtml) {
+  const match = indexHtml.match(/<meta\s+http-equiv="Content-Security-Policy"\s+content="([^"]+)"\s*>/iu);
+  if (match?.[1] !== DESIGN_SYSTEM_CSP) fail('csp_policy_mismatch');
+  if (/<[^>]+\sstyle\s*=/iu.test(indexHtml)) fail('inline_style_attribute_not_allowed');
+  const styleSources = new Set((DESIGN_SYSTEM_CSP.match(/(?:^|;)\s*style-src\s+([^;]+)/iu)?.[1] ?? '').split(/\s+/u));
+  const inlineStyleHashes = [...indexHtml.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style\s*>/giu)]
+    .map(([, css]) => `'sha256-${createHash('sha256').update(css).digest('base64')}'`);
+  if (inlineStyleHashes.some((source) => !styleSources.has(source))) fail('inline_style_hash_missing');
+}
 function writeJson(path, value) {
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`, { flag: 'w', mode: 0o644 });
@@ -79,6 +89,7 @@ function syncSource(sourceRoot, expectedRevision) {
     if (!stat.isFile() || stat.isSymbolicLink()) fail('source_file_invalid');
     return { path: to, bytes: read(path).length, sha256: hash(read(path)) };
   }).sort((a, b) => a.path.localeCompare(b.path));
+  verifyStaticCsp(read(join(source, 'site/index.html')).toString('utf8'));
   const license = read(join(source, 'LICENSE')).toString('utf8');
   if (!license.startsWith('MIT License\n')) fail('source_license_unverified');
   const current = pathsUnder(PUBLIC);
@@ -107,6 +118,7 @@ function verifyDirectory(directory) {
   const config = loadConfig(), entries = entriesAt(resolve(directory));
   compareEntries(entries, config.files);
   if (digestEntries(entries) !== config.payloadDigest) fail('payload_digest_mismatch');
+  verifyStaticCsp(read(join(resolve(directory), 'index.html')).toString('utf8'));
   return { config, entries };
 }
 
@@ -163,7 +175,12 @@ async function fetchCandidateAsset(url, item, config, candidateSha) {
     const provenanceMatches = response.headers.get('x-design-system-source') === config.source.revision
       && response.headers.get('x-design-system-release') === candidateSha
       && response.headers.get('x-design-system-payload') === config.payloadDigest;
-    if (provenanceMatches) return { response, bytes, attempts: attempt + 1 };
+    if (provenanceMatches) {
+      if (item.path === 'index.html' && response.headers.get('content-security-policy') !== DESIGN_SYSTEM_CSP) {
+        fail('response_csp_policy_mismatch');
+      }
+      return { response, bytes, attempts: attempt + 1 };
+    }
   }
   fail(`asset_provenance_mismatch:${item.path}`);
 }
@@ -199,17 +216,20 @@ async function readback(base, directory, candidateSha, outputPath) {
       sha256: hash(bytes),
       bytes: bytes.length,
       provenanceAttempts: attempts,
+      ...(item.path === 'index.html' ? { contentSecurityPolicy: response.headers.get('content-security-policy') } : {}),
     });
   }
   const head = await fetchBounded(urlFor('index.html'), { method: 'HEAD' });
   if (head.response.status !== 200 || head.bytes.length !== 0) fail('head_readback_mismatch');
+  if (head.response.headers.get('content-security-policy') !== DESIGN_SYSTEM_CSP) fail('head_response_csp_policy_mismatch');
+  proof.push({ path: `${PREFIX}/`, method: 'HEAD', status: head.response.status, contentSecurityPolicy: head.response.headers.get('content-security-policy') });
   for (const path of ['registry/owner-ledger.json', 'review-inventory.json', 'vendor/agentic-base-browser-data-view.manifest.json']) {
     const { response } = await fetchBounded(urlFor(path));
     if (response.status !== 404) fail(`excluded_file_exposed:${path}`);
     proof.push({ path: `${PREFIX}/${path}`, status: 404 });
   }
   writeJson(outputPath, {
-    schema: 'agentic-commerce-design-system-runtime-readback/v1',
+    schema: 'agentic-commerce-design-system-runtime-readback/v2',
     origin: origin.origin,
     candidateRevision: candidateSha,
     sourceRevision: config.source.revision,

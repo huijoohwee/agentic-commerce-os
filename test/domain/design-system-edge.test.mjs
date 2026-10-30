@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import worker from '../../src/design-system-edge/index.mjs';
+import { DESIGN_SYSTEM_CSP } from '../../src/design-system-edge/content-security-policy.mjs';
 
 const env = Object.freeze({
   PAGES_ORIGIN: 'dev.agentic-design-system.pages.dev',
@@ -81,6 +82,7 @@ test('HTML responses prevent zone-level body transforms while preserving cache p
       },
     }));
   assert.equal(response.headers.get('cache-control'), 'public, max-age=0, must-revalidate, no-transform');
+  assert.equal(response.headers.get('content-security-policy'), DESIGN_SYSTEM_CSP);
 });
 
 test('non-HTML cache policy remains unchanged', async () => {
@@ -92,6 +94,7 @@ test('non-HTML cache policy remains unchanged', async () => {
       },
     }));
   assert.equal(response.headers.get('cache-control'), 'public, max-age=0, must-revalidate');
+  assert.equal(response.headers.get('content-security-policy'), null);
 });
 
 test('HEAD retains status and headers without a body', async () => {
@@ -102,6 +105,7 @@ test('HEAD retains status and headers without a body', async () => {
     });
   assert.equal(response.status, 200);
   assert.equal(response.headers.get('content-length'), '4');
+  assert.equal(response.headers.get('content-security-policy'), DESIGN_SYSTEM_CSP);
   assert.equal(await response.text(), '');
 });
 

@@ -1,0 +1,1 @@
+export const DESIGN_SYSTEM_CSP = "default-src 'self'; connect-src 'self'; script-src 'self'; worker-src 'self'; style-src 'self' 'sha256-d36sQyE88yx9+DhNBzl89YuQ47Vh6oeyCtJ7ypEXFZ0='; object-src 'none'; base-uri 'none'; form-action 'none'"

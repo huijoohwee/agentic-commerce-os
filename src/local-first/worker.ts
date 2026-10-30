@@ -7,6 +7,7 @@ import { handleWorkspacePack, WORKSPACE_PACK_PATH } from './workspace-pack.ts'
 import { handleFulfillment } from './fulfillment.ts'
 import type { FulfillmentRuntime } from './fulfillment-contract.ts'
 import { createFulfillmentRelay, type ListingRelayEnv } from './fulfillment-relay.ts'
+import { LOCAL_FIRST_CSP, LOCAL_FIRST_DEV_CSP } from './content-security-policy.ts'
 
 export type LocalFirstEnv = Readonly<CheckoutEnv & ListingRelayEnv & {
   RELEASE_CANDIDATE_SHA: string
@@ -29,11 +30,10 @@ const ASSET_PATHS = new Map([
   ['/services/workspace-pack/workspace-pack.console.js', '/workspace-pack.console.js'],
   ['/services/workspace-pack/workspace-pack.css', '/workspace-pack.css'],
 ])
-const CSP = "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; worker-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
-
 function secured(response: Response, source: string, head: boolean): Response {
   const headers = new Headers(response.headers)
-  headers.set('content-security-policy', CSP)
+  headers.set('content-security-policy', source === 'local-unreleased' && headers.get('content-type')?.startsWith('text/html')
+    ? LOCAL_FIRST_DEV_CSP : LOCAL_FIRST_CSP)
   headers.set('x-content-type-options', 'nosniff')
   headers.set('referrer-policy', 'no-referrer')
   headers.set('permissions-policy', 'camera=(), microphone=(), geolocation=(), payment=()')
