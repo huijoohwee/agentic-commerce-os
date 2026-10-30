@@ -3,6 +3,7 @@ import { test } from 'node:test'
 
 import { PRODUCTION_ROUTE_URL } from '../../scripts/production-release/contracts.ts'
 import { proveProductionRoute } from '../../scripts/production-release/route-proof.ts'
+import { LOCAL_FIRST_CSP } from '../../src/local-first/content-security-policy.ts'
 
 const CANDIDATE = 'a'.repeat(40)
 const CANDIDATE_DIGEST = 'c'.repeat(64)
@@ -45,6 +46,9 @@ test('Route proof rejects stale identity, missing storefront authority, malforme
   await assert.rejects(() => probe((request) => routeResponse(request, {
     rootHeaders: { 'x-commerce-release-candidate': 'b'.repeat(40) },
   })), /header_candidate_invalid/u)
+  await assert.rejects(() => probe((request) => routeResponse(request, {
+    rootHeaders: { 'content-security-policy': "default-src 'none'" },
+  })), /header_content_security_policy_invalid/u)
   await assert.rejects(() => probe((request) => routeResponse(request, {
     rootBody: '<!doctype html><html><body>status only</body></html>',
   })), /storefront_script_missing/u)
@@ -109,6 +113,7 @@ function routeResponse(request: Request, options: Readonly<{
 function rootHeaders(): Record<string, string> {
   return {
     'cache-control': 'no-store',
+    'content-security-policy': LOCAL_FIRST_CSP,
     'x-commerce-live-readiness-contract': 'commerce.edge-route-live-readiness/v1',
     'x-commerce-live-readiness': 'ready',
     'x-commerce-live-readiness-reason': 'none',

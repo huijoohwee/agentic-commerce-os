@@ -1,6 +1,7 @@
 import { fileURLToPath } from 'node:url'
 
 import { sha256 } from '../evidence-integrity.ts'
+import { LOCAL_FIRST_CSP } from '../../src/local-first/content-security-policy.ts'
 import {
   PRODUCTION_ROUTE_PROOF_SCHEMA,
   PRODUCTION_ROUTE_URL,
@@ -16,6 +17,7 @@ const ROUTE_READINESS_CONTRACT = 'commerce.edge-route-live-readiness/v1'
 const EXPECTED_STATIC_HEADERS = Object.freeze({
   'cache-control': 'no-store',
   'content-type': 'text/html; charset=utf-8',
+  'content-security-policy': LOCAL_FIRST_CSP,
   'x-commerce-live-readiness-contract': ROUTE_READINESS_CONTRACT,
   'x-commerce-live-readiness': 'ready',
   'x-commerce-live-readiness-reason': 'none',
@@ -32,6 +34,7 @@ export type ProductionRouteProof = Readonly<{
   coreVersionId: string
   status: 200
   contentType: 'text/html; charset=utf-8'
+  contentSecurityPolicy: typeof LOCAL_FIRST_CSP
   readinessContract: typeof ROUTE_READINESS_CONTRACT
   readiness: 'ready'
   readinessReason: 'none'
@@ -95,6 +98,7 @@ export async function proveProductionRoute(input: Readonly<{
     coreVersionId: input.coreVersionId,
     status: 200,
     contentType: 'text/html; charset=utf-8',
+    contentSecurityPolicy: LOCAL_FIRST_CSP,
     readinessContract: ROUTE_READINESS_CONTRACT,
     readiness: 'ready',
     readinessReason: 'none',

@@ -1,3 +1,5 @@
+import { DESIGN_SYSTEM_CSP } from './content-security-policy.mjs';
+
 const PREFIX = '/agentic-design-system';
 const FORWARDED_HEADERS = ['accept', 'if-modified-since', 'if-none-match', 'if-range', 'range'];
 
@@ -98,6 +100,7 @@ export default {
       if (value) responseHeaders.set(name, value);
     }
     if (/^\s*text\/html(?:\s*;|$)/iu.test(responseHeaders.get('content-type') ?? '')) {
+      responseHeaders.set('content-security-policy', DESIGN_SYSTEM_CSP);
       const cacheControl = responseHeaders.get('cache-control') ?? '';
       const directives = cacheControl.split(',').map((value) => value.trim().toLowerCase());
       if (!directives.includes('no-transform')) {

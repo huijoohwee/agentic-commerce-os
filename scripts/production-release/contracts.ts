@@ -11,7 +11,7 @@ import { parseHumanPresenceAnchorProof } from './human-presence-anchor.ts'
 
 export const PRODUCTION_WORKER_DEPLOYMENT_SCHEMA = 'agentic-commerce-worker-deployment/v3'
 export const PRODUCTION_TOPOLOGY_SCHEMA = 'agentic-commerce-production-topology/v1'
-export const PRODUCTION_ROUTE_PROOF_SCHEMA = 'agentic-commerce-production-route-proof/v1'
+export const PRODUCTION_ROUTE_PROOF_SCHEMA = 'agentic-commerce-production-route-proof/v2'
 export const PRODUCTION_STORAGE_TRANSITION_SCHEMA = 'agentic-commerce-storage-transition/v1'
 export const PRODUCTION_ROUTE_PATTERN = 'airvio.co/agentic-commerce-os*'
 export const PRODUCTION_ROUTE_URL = 'https://airvio.co/agentic-commerce-os/' as const
