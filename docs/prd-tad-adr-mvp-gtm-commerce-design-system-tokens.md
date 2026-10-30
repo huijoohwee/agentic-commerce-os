@@ -34,7 +34,7 @@ runtime_readiness_policy: "fail-closed"
 
 # Commerce Shared Design Token Adoption
 
-**Join:** `COMMERCE-DESIGN-SYSTEM-TOKENS-001@0.1.3`, superseding `0.1.2` and `0.1.1` under
+**Join:** `COMMERCE-DESIGN-SYSTEM-TOKENS-001@0.1.4`, superseding `0.1.3`, `0.1.2`, and `0.1.1` under
 `COMMERCE-CONTROL-PLANE-001@0.1.0`. This plan covers Commerce's generated presentation
 projections. It does not move product component behavior, commerce capabilities, or deployment
 authority into the token registry.
@@ -80,10 +80,12 @@ removes the central candidate integration blocker. Commerce's own `.agentic-os.j
 the Integration Gate are active. This Commerce plan grants no merge, lane-cleanup, or deployment
 authority. Graph rights PR #1849 and the conflicting Graph PR #1239 remain separate owner gates.
 
-The current local AOS `doctor` observation still reports `hook.installation` blocked in this lane:
-the pinned AOS package resolves outside the worktree instead of from a repository-local package
-closure. Provider facts were observed, but this local harness finding must be repaired and checked
-again before using the lane's AOS publish or promotion flow.
+The latest AOS `doctor` run in this plan worktree passes local hook integrity and remote PR-policy
+checks. `check:plan` selects the mandatory ADLC, evidence-contract, and named checks for this exact
+document. The lane remains active and unpublished, so this is not promotion or deployment evidence.
+The canonical Commerce checkout still contains preserved CSP edits; this read-only plan audit left
+those paths untouched. Publish and END ADLC evidence remain open until this exact lane is published
+and integrated.
 
 The manifest inputs identify five Graph files that define additional or overridden custom
 properties. Their exact current `bed770d91a9b3f1b663eee9637a472bf19b36361` digests are:
