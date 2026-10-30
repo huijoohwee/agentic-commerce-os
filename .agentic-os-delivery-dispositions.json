@@ -4,6 +4,24 @@
   "dispositions": [
     {
       "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/commerce-design-system-token-pin-014",
+      "laneHead": "dbd9456b972a40f04fb3418c1743e84f68edcf05",
+      "paths": [
+        "docs/prd-tad-adr-mvp-gtm-commerce-design-system-tokens.md"
+      ],
+      "disposition": "no-deploy",
+      "candidateRevision": "3dc1302e1e1908cc7197e6e25be4ae985ffb44f3",
+      "candidateDigest": "a0cffb1d7d4c5cefe9ebfb7f7e11eba3d1beb14636cdcc1c0ebea77cf0ae5c9d",
+      "sourceReleaseReceiptDigest": null,
+      "deploymentReceiptDigest": null,
+      "runtimeVerificationReceiptDigest": null,
+      "evidencePath": "docs/prd-tad-adr-mvp-gtm-commerce-design-system-tokens.md",
+      "evidenceDigest": "f020e699c4b0a7e499bbe127eaa85c3b8d49aa2dad22ca6b69d48d58f8e45f9d",
+      "decisionRef": "https://github.com/huijoohwee/agentic-commerce-os/pull/175",
+      "reason": "The plan is the sole documentation-only path, outside the production Worker asset boundary (./public/local-first in wrangler.local-first.jsonc); it changes no application, generated asset, deployment configuration, route, or runtime state. No Dev, Production, or runtime pass is claimed."
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/design-system-html-no-transform",
       "laneHead": "6b1fd0f23a6b125a273ce6d86012cebf1dce2250",
       "paths": [
@@ -97,5 +115,5 @@
       "reason": "The PRD is repository documentation outside the local-first Worker and static asset inputs enumerated by the committed artifact builder; this candidate changes no deployed runtime input."
     }
   ],
-  "receiptDigest": "3d8fc545adb75496d875fe8cb2a56732e77ced237190c2dc7ff4bd1fa695a191"
+  "receiptDigest": "c9be6d97ef1b9d7e32294f2be06dc2a848a6cbfe936c2de5fd15963dd15fc0da"
 }
