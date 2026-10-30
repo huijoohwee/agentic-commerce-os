@@ -1,19 +1,19 @@
 ---
 title: "Commerce Shared Design Token Adoption"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.1.1"
-revision: "0.1.1"
+version: "0.1.2"
+revision: "0.1.2"
 date: "2026-10-30"
 updated_date: "2026-10-30"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Commerce product function"
 continuity_id: "COMMERCE-DESIGN-SYSTEM-TOKENS-001"
-prd_revision: "0.1.1"
-tad_revision: "0.1.1"
-adr_revision: "0.1.1"
-mvp_revision: "0.1.1"
-gtm_revision: "0.1.1"
+prd_revision: "0.1.2"
+tad_revision: "0.1.2"
+adr_revision: "0.1.2"
+mvp_revision: "0.1.2"
+gtm_revision: "0.1.2"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -34,7 +34,7 @@ runtime_readiness_policy: "fail-closed"
 
 # Commerce Shared Design Token Adoption
 
-**Join:** `COMMERCE-DESIGN-SYSTEM-TOKENS-001@0.1.1`, under
+**Join:** `COMMERCE-DESIGN-SYSTEM-TOKENS-001@0.1.2`, superseding `0.1.1` under
 `COMMERCE-CONTROL-PLANE-001@0.1.0`. This plan covers Commerce's generated presentation
 projections. It does not move product component behavior, commerce capabilities, or deployment
 authority into the token registry.
@@ -49,7 +49,7 @@ future revision is covered by that grant. No unrelated reference system is an in
 | Owner / revision | Observed source and evidence | Boundary |
 |---|---|---|
 | Commerce / `6ce3bc918717b97a738ac831dfb4fb3319a02fb6` | `public/local-first/commerce-theme.css` is a generated 36-key profile from central revision `c18253b35e8bcc0bed548cfb717ec31909422dbe`, profile digest `000adeb267d0d0ff9527e1227faefcd5fd2c15faee463fa70173204783ea7c9e`; the existing owner check verifies the pinned projection. | Preserve the existing Commerce profile. A refresh is not part of this plan. |
-| Central candidate / PR #6 | `DESIGN-TOKEN-ADOPTION-001@0.7.0`; open PR head `1cb8b0ca97cef16bcea0b4ed8bb6404e7b0d704d`. Graph profile JSON SHA-256 `e19a588f6b18aebe7c55e5369930dedd91263905c412c64a42baf28cb04dd64a`; CSS SHA-256 `e4be7fd758ded0ad93437e73d687f5223f44e20e9dfde6384bb446f525775c2c`. | Candidate, not protected-integrated or released. The profile contains 69 exact-grant Graph keys. PR #5 remains open as the retained predecessor. |
+| Central candidate / PR #6 | `DESIGN-TOKEN-ADOPTION-001@0.9.0`; open PR head `178990d7ac70dd5569287a54dc95195c48d9741e`. Graph profile JSON SHA-256 `e19a588f6b18aebe7c55e5369930dedd91263905c412c64a42baf28cb04dd64a`; CSS SHA-256 `e4be7fd758ded0ad93437e73d687f5223f44e20e9dfde6384bb446f525775c2c`. | Candidate, not protected-integrated or released. The profile contains 69 exact-grant Graph keys. PR #5 remains open as the retained predecessor. |
 | Graph / `bed770d91a9b3f1b663eee9637a472bf19b36361` | The granted generated CSS is 5,982 bytes, SHA-256 `b676d411f7f1683a9b208b2a74f03a921d7e77a32a6f2b4a4274a41c6441dee8`; its 69 values match the central candidate profile. Rights PR #1849 is open at `513d08f3d156360606e2e35d77d9d442e1fec6c6`. | User grant is exact; PR #1849 remains unmerged. Graph PR #1239 is an open conflicting change to overlapping token sources and needs owner disposition before Graph source work. |
 | Commerce Graph adapter / `6ce3bc918717b97a738ac831dfb4fb3319a02fb6` | `config/graph-data-view.json` pins source revision `73ba0401bd785b34bd5331d3873acec0e7b873b3`, input digest `77604d3ce306386213422721835c94d687c19a3ee30b49281c1a3db7c613cd46`, and `graph-ui-tokens.css` SHA-256 `279c32d402518afef25ad46b09441255e6078033b72eacd8b4c78b4730a7f6ca` (6,997 bytes). | All 69 authorized profile keys and values are present; source pin/adoption is still separate. Fifteen adapter-only keys and one responsive override remain unresolved. |
 
@@ -71,8 +71,9 @@ Do not use those historical counts as acceptance evidence.
 
 ## Current integration gate
 
-Central PR #6 is open, clean, and has a successful Integration Gate at the exact head above; PR #5
-remains open as its predecessor. PR #6 adds `protected-integration:pull-request` to the central
+Central PR #6 is open, clean, and has a successful Integration Gate at head
+`178990d7ac70dd5569287a54dc95195c48d9741e`; it binds plan `DESIGN-TOKEN-ADOPTION-001@0.9.0` and
+retains PR #5 as its open predecessor. PR #6 adds `protected-integration:pull-request` to the central
 repository profile and public-release check. AOS promotion remains blocked because the central lane
 record has no PR number and current GitHub protection does not require the PR rule. The repository
 authority must apply that protection and bind the exact provider observation before `promote plan`
@@ -254,7 +255,8 @@ readiness.
 
 ## ADLC and release boundary
 
-This revision changes only this planning document. It does not change the application, generated CSS,
+Revision 0.1.2 supersedes 0.1.1 and updates the central candidate pin without changing the acceptance
+scope. This revision changes only this planning document. It does not change the application, generated CSS,
 Graph sources, CSP work, package pins, deployment, or production runtime. PR #6, its retained
 predecessor PR #5, PR #1849, and PR #1239 are dependencies or owner records, not merge authority.
 Source integration of this document
@@ -269,7 +271,8 @@ does not grant code, deploy, promotion, or rollback authority. The current deliv
   `c38de561057191a71ccd1b63a4a06cc625164bf67813ee8ac20e07066a3eaa70`.
 - Commerce adapter CSS: `public/local-first/graph-ui-tokens.css` SHA-256
   `279c32d402518afef25ad46b09441255e6078033b72eacd8b4c78b4730a7f6ca`.
-- Central candidate plan SHA-256 `9bf7df4b134067d046ba4ddbfcddb37d2d51b95b5ed49d4519e2402812d9dbb4`;
-  central PR #6 and its retained predecessor PR #5 remain open; Graph rights PR #1849 remains open.
+- Central candidate plan `DESIGN-TOKEN-ADOPTION-001@0.9.0` at `178990d7ac70dd5569287a54dc95195c48d9741e`,
+  SHA-256 `e033a88b968faa3cf2d42d5af78442c59ac182c74b8227b39019498aabbdcaf7`; central PR #6 and
+  retained predecessor PR #5 remain open; Graph rights PR #1849 remains open.
 - Graph data-view source revision and output digests are pinned by the Commerce manifest; the
   additional Graph values are not copied into this document or granted for central publication.
