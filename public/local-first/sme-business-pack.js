@@ -384,7 +384,16 @@ async function createSmeBusinessPack() {
     const registered = Boolean(registration); registration?.abort(); registration = null
     if (registered) for (const tool of TOOL_SCHEMAS) modelContext?.unregisterTool?.(tool.name)
   }
+  function updateSectionNavigation() {
+    const section = location.hash.slice(1).split('?')[0] || 'sme'
+    for (const link of document.querySelectorAll('#sme-navigation .service-nav a')) {
+      if (link.hash === '#' + section) link.setAttribute('aria-current', 'location')
+      else link.removeAttribute('aria-current')
+    }
+  }
+  window.addEventListener('hashchange', updateSectionNavigation)
   window.addEventListener('pagehide', deactivate, { once: true })
   window.addEventListener('pageshow', () => { if (document.body.dataset.workspaceRole === 'sme') void activate() })
-  return { activate, deactivate }
+  updateSectionNavigation()
+  return { activate, deactivate, updateSectionNavigation }
 }
