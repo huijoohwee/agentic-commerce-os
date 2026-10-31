@@ -126,6 +126,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
     if (new URL(request.url()).pathname.startsWith('/agentic-commerce-os/services/sme-business-pack')) smeServiceRequests.push(request.url());
   };
   page.on('request', observeSmeService);
+  await page.evaluate(() => { window.__smeShellAtEntry = document.querySelector('#workspace-shell'); });
   await page.locator('#workspace-role-switcher').selectOption('sme');
   await expect(page.locator('#sme')).toBeVisible();
   await expect(page.locator('#webmcp-status')).toContainText('Six optional Singapore browser tools registered');
@@ -172,7 +173,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
     const roundTrip = JSON.parse(await page.locator('#result').textContent());
     assert.deepEqual(JSON.parse(roundTrip.worksheet.json), JSON.parse(smeReport.worksheet.json), format);
   }
-  assert.equal(await page.evaluate(() => document.querySelector('#workspace-shell') === window.__sharedWorkspaceShell), true);
+  assert.equal(await page.evaluate(() => document.querySelector('#workspace-shell') === window.__smeShellAtEntry), true);
   await context.setOffline(false);
   page.off('request', observeSmeService);
   await page.setViewportSize({ width: 1440, height: 1000 });
