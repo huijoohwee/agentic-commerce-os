@@ -152,7 +152,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   const inPageBudget = await page.evaluate(async () => {
     const plan = JSON.parse(document.querySelector('#result').textContent);
     const worksheet = JSON.parse(plan.worksheet.json);
-    const result = await document.modelContext.executeTool('takeover.budget', {
+    const result = await document.modelContext.executeTool({ name: 'takeover.budget' }, {
       pack_id: worksheet.pack_id, claims: worksheet.claims, evidence: worksheet.evidence,
     });
     return JSON.parse(result.content[0].text);
