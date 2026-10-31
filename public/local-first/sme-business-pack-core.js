@@ -1,9 +1,12 @@
 export const PACK_PATH = '/agentic-commerce-os/services/sme-business-pack'
 export const PACK_INDEX = Object.freeze([
   Object.freeze({ id: 'sg.fnb.takeover', country: 'SG', asset_type: 'fnb', currency: 'SGD', version: '1.0.0', as_of: '2026-10-22', review_status: 'provisional' }),
-  Object.freeze({ id: 'my.fnb.takeover', country: 'MY', asset_type: 'fnb', currency: 'MYR', version: '1.0.0', as_of: '2026-10-22', review_status: 'provisional' }),
 ])
-export const TOOL_NAMES = Object.freeze(['pack.list', 'pack.required_fields', 'takeover.check_listing', 'takeover.transfer_checklist'])
+export const TOOL_NAMES = Object.freeze(['pack.list', 'pack.protocol', 'takeover.check', 'takeover.budget', 'takeover.plan', 'takeover.transfer_checklist'])
+export const LEGACY_TOOL_NAMES = Object.freeze(['pack.required_fields', 'takeover.check_listing'])
+const provenanceTiers = Object.freeze({ seller_stated: 0, buyer_assumed: 0, observed_on_site: 1, measured_on_foot: 1,
+  counted_on_site: 1, document_sighted: 2, third_party_confirmed: 3 })
+const roles = Object.freeze(['buyer', 'adviser', 'field_checker'])
 const REQUIRED = Object.freeze([
   ['asset_subtype', 'Business type', ['cafe', 'restaurant', 'food_stall', 'bakery', 'other']],
   ['business_age_band', 'Business age band', ['under_1', '1_3', '3_5', '5_plus', 'unknown']],
@@ -37,8 +40,7 @@ function fieldRows(pack) {
   })
 }
 export async function loadPack(packId) {
-  const module = packId === 'sg.fnb.takeover' ? await import('./sme-pack-sg.js')
-    : packId === 'my.fnb.takeover' ? await import('./sme-pack-my.js') : null
+  const module = packId === 'sg.fnb.takeover' ? await import('./sme-pack-sg.js') : null
   if (!module?.PACK) fail('sme_pack_not_found')
   const pack = module.PACK, indexed = PACK_INDEX.find(item => item.id === packId)
   if (!indexed || ['country', 'asset_type', 'currency', 'version', 'as_of', 'review_status'].some(key => pack[key] !== indexed[key])) {
@@ -56,13 +58,21 @@ function assertFactsArgs(args) {
     || !record(args.facts) || Object.keys(args.facts).length > 40) fail('sme_pack_arguments_invalid')
 }
 export async function invokeSmePackTool(name, args = {}, now = Date.now()) {
-  if (!TOOL_NAMES.includes(name)) fail('sme_pack_tool_not_found')
+  if (!TOOL_NAMES.includes(name) && !LEGACY_TOOL_NAMES.includes(name)) fail('sme_pack_tool_not_found')
   if (name === 'pack.list') {
     assertExactKeys(args, [])
     return { packs: clone(PACK_INDEX), inference_tokens: 0 }
   }
+  if (name === 'takeover.check' || name === 'takeover.budget' || name === 'takeover.plan') {
+    const { pack, input } = await validatedCashInput(args)
+    const check = cashCheck(pack, input, now), budget = cashBudget(pack, input, now)
+    if (name === 'takeover.check') return check
+    if (name === 'takeover.budget') return budget
+    return cashPlan(pack, input, check, budget)
+  }
   assertPackArgs(name === 'takeover.check_listing' ? { pack_id: args?.pack_id } : args)
   const pack = await loadPack(args.pack_id)
+  if (name === 'pack.protocol') return protocol(pack)
   if (name === 'pack.required_fields') return { pack: clone(summary(pack)), fields: fieldRows(pack), inference_tokens: 0 }
   if (name === 'takeover.transfer_checklist') {
     const available = pack.review_status === 'reviewed' && Array.isArray(pack.transfer_checklist)
@@ -71,6 +81,269 @@ export async function invokeSmePackTool(name, args = {}, now = Date.now()) {
   }
   assertFactsArgs(args)
   return checkListing(pack, args.facts, now)
+}
+
+const cashClaimKinds = ['listing_source', 'subtype', 'price', 'equipment_included', 'equipment_cost', 'rent_monthly',
+  'lease_remaining_months', 'deposit_months', 'utilities_deposits', 'transfer_cost', 'repairs_provision',
+  'monthly_sales', 'staff_count', 'payroll_monthly', 'utilities_monthly', 'runway_months', 'variable_cost_bps', 'licence_status']
+const moneyValueSchema = { oneOf: [
+  { type: 'integer', minimum: 0, maximum: 100000000 },
+  { type: 'object', required: ['low', 'high'], properties: {
+    low: { type: 'integer', minimum: 0, maximum: 100000000 },
+    high: { type: 'integer', minimum: 0, maximum: 100000000 },
+  }, additionalProperties: false },
+] }
+const claimProperties = {
+  listing_source: { type: 'string', enum: ['portal', 'classifieds', 'broker_brochure', 'social_post', 'word_of_mouth', 'direct', 'other'] },
+  subtype: { type: 'string', enum: ['cafe', 'restaurant', 'coffee_shop', 'hawker_stall', 'other'] },
+  price: moneyValueSchema, equipment_included: { type: 'boolean' }, equipment_cost: moneyValueSchema,
+  rent_monthly: moneyValueSchema, lease_remaining_months: { type: 'integer', minimum: 0, maximum: 600 },
+  deposit_months: { type: 'integer', minimum: 0, maximum: 12 }, utilities_deposits: moneyValueSchema,
+  transfer_cost: moneyValueSchema, repairs_provision: moneyValueSchema, monthly_sales: moneyValueSchema,
+  staff_count: { type: 'integer', minimum: 0, maximum: 300 }, payroll_monthly: moneyValueSchema,
+  utilities_monthly: moneyValueSchema, runway_months: { type: 'integer', minimum: 1, maximum: 24 },
+  variable_cost_bps: { type: 'integer', minimum: 0, maximum: 9999 },
+  licence_status: { type: 'string', enum: ['held', 'not_held', 'unknown'] },
+}
+const cashInput = { type: 'object', required: ['pack_id', 'claims'], properties: {
+  pack_id: { type: 'string', enum: ['sg.fnb.takeover'] },
+  claims: { type: 'object', maxProperties: 32, properties: claimProperties, additionalProperties: false },
+  evidence: { type: 'array', maxItems: 40, items: { type: 'object',
+    required: ['claim_kind', 'provenance', 'observer_role', 'date', 'value'], properties: {
+      claim_kind: { type: 'string', enum: cashClaimKinds }, provenance: { type: 'string', enum: Object.keys(provenanceTiers) },
+      observer_role: { type: 'string', enum: roles }, date: { type: 'string', format: 'date' },
+      value: { oneOf: [{ type: 'integer' }, { type: 'boolean' }, { type: 'string' }, moneyValueSchema] },
+    }, additionalProperties: false } },
+}, additionalProperties: false }
+const newToolInputs = Object.freeze({
+  'pack.list': { type: 'object', properties: {}, additionalProperties: false },
+  'pack.protocol': { type: 'object', required: ['pack_id'], properties: { pack_id: { type: 'string', enum: ['sg.fnb.takeover'] } }, additionalProperties: false },
+  'takeover.check': cashInput, 'takeover.budget': cashInput, 'takeover.plan': cashInput,
+  'takeover.transfer_checklist': { type: 'object', required: ['pack_id'], properties: { pack_id: { type: 'string', enum: ['sg.fnb.takeover'] } }, additionalProperties: false },
+})
+export const TOOL_SCHEMAS = Object.freeze(TOOL_NAMES.map(name => Object.freeze({
+  name, inputSchema: newToolInputs[name],
+  annotations: Object.freeze({ readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }),
+})))
+
+function protocol(pack) {
+  return { schema: 'sme-business-pack/protocol/v1', pack: clone(summary(pack)),
+    fields: fieldRows(pack), claim_kinds: clone(pack.claim_kinds), budget_lines: clone(pack.budget_lines),
+    parameters: [], protocols: clone(pack.protocols), tolerances: [],
+    review_note: 'Pack content and task guidance are provisional; no market parameter or comparison tolerance is supplied.',
+    inference_tokens: 0 }
+}
+function claimDefinitions(pack) { return Object.fromEntries(pack.claim_kinds.map(field => [field.name, field])) }
+function validCashValue(definition, value) {
+  if (definition.type === 'money') {
+    const validAmount = amount => Number.isSafeInteger(amount) && amount >= 0 && amount <= 100000000
+    if (validAmount(value)) return value
+    if (record(value)) {
+      assertExactKeys(value, ['low', 'high'])
+      if (validAmount(value.low) && validAmount(value.high) && value.low <= value.high) return { low: value.low, high: value.high }
+    }
+    return null
+  }
+  if (definition.type === 'integer') return Number.isSafeInteger(value) && value >= definition.min && value <= definition.max ? value : null
+  if (definition.type === 'boolean') return typeof value === 'boolean' ? value : null
+  if (definition.type === 'enum') return definition.values.includes(value) ? value : null
+  return null
+}
+function validateEvidence(pack, rows) {
+  if (rows === undefined) return []
+  if (!Array.isArray(rows) || rows.length > 40) fail('sme_pack_arguments_invalid')
+  const definitions = claimDefinitions(pack), cleaned = []
+  for (const row of rows) {
+    assertExactKeys(row, ['claim_kind', 'provenance', 'observer_role', 'date', 'value'])
+    const definition = definitions[row.claim_kind]
+    if (!definition?.retiring_tier || !(row.provenance in provenanceTiers) || !roles.includes(row.observer_role)
+      || typeof row.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/u.test(row.date)
+      || !Number.isFinite(Date.parse(row.date)) || new Date(row.date).toISOString().slice(0, 10) !== row.date
+      || validCashValue(definition, row.value) === null) fail('sme_pack_evidence_invalid')
+    cleaned.push({ claim_kind: row.claim_kind, provenance: row.provenance, observer_role: row.observer_role,
+      date: row.date, value: clone(row.value) })
+  }
+  return cleaned
+}
+async function validatedCashInput(args) {
+  if (!record(args)) fail('sme_pack_arguments_invalid')
+  const expected = Object.hasOwn(args, 'evidence') ? ['pack_id', 'claims', 'evidence'] : ['pack_id', 'claims']
+  assertExactKeys(args, expected)
+  if (typeof args.pack_id !== 'string' || args.pack_id !== 'sg.fnb.takeover' || !record(args.claims)
+    || Object.keys(args.claims).length > 32 || new TextEncoder().encode(JSON.stringify(args)).byteLength > 32768) {
+    fail('sme_pack_arguments_invalid')
+  }
+  const pack = await loadPack(args.pack_id), definitions = claimDefinitions(pack), claims = Object.create(null), invalid = []
+  let unknown = 0
+  for (const [key, value] of Object.entries(args.claims)) {
+    const definition = definitions[key]
+    if (!definition) {
+      if (/name|address|contact|email|phone|url/iu.test(key) || typeof value === 'string' || record(value) || Array.isArray(value)) {
+        fail('sme_pack_free_text_refused')
+      }
+      unknown++; continue
+    }
+    if (typeof value === 'string') {
+      if (definition.type !== 'enum' || /https?:\/\/|www\.|@/iu.test(value) || !definition.values.includes(value)) {
+        fail('sme_pack_free_text_refused')
+      }
+    }
+    const normalized = validCashValue(definition, value)
+    if (normalized === null) invalid.push(key)
+    else claims[key] = clone(normalized)
+  }
+  const missing = pack.claim_kinds.filter(field => field.required && !Object.hasOwn(claims, field.name)).map(field => field.name)
+  return { pack, input: { claims, evidence: validateEvidence(pack, args.evidence), missing, invalid: [...new Set(invalid)], unknown } }
+}
+function amountRange(value) {
+  if (typeof value === 'number') return { low: value, high: value }
+  return value ? { low: value.low, high: value.high } : null
+}
+function addRanges(left, right) {
+  if (!left || !right) return null
+  const low = left.low + right.low, high = left.high + right.high
+  return Number.isSafeInteger(low) && Number.isSafeInteger(high) ? { low, high } : null
+}
+function multiplyRanges(left, right) {
+  if (!left || !right) return null
+  const low = left.low * right.low, high = left.high * right.high
+  return Number.isSafeInteger(low) && Number.isSafeInteger(high) ? { low, high } : null
+}
+function tierForEvidence(kind, entries) {
+  return entries.filter(row => row.claim_kind === kind).reduce((highest, row) => Math.max(highest, provenanceTiers[row.provenance]), 0)
+}
+function tierLabel(tier) { return 'T' + tier }
+function lineChecked(line, input, tiers) {
+  return line.claim_kinds.filter(kind => input.definitions[kind]?.owner !== 'buyer')
+    .every(kind => tiers[kind] >= Number(line.retiring_tier.slice(1)))
+}
+function cashLines(pack, input) {
+  const c = input.claims, rent = amountRange(c.rent_monthly), payroll = amountRange(c.payroll_monthly)
+  const utilities = amountRange(c.utilities_monthly), fixed = addRanges(addRanges(rent, payroll), utilities)
+  const month = name => Number.isSafeInteger(c[name]) ? { low: c[name], high: c[name] } : null
+  const raw = {
+    L1: amountRange(c.price), L2: amountRange(c.equipment_cost),
+    L3: multiplyRanges(rent, month('deposit_months')), L4: amountRange(c.utilities_deposits),
+    L5: amountRange(c.transfer_cost), L6: amountRange(c.repairs_provision),
+    L7: multiplyRanges(month('runway_months'), fixed),
+  }
+  return { lines: pack.budget_lines.map(line => ({ ...clone(line), range: raw[line.id] || null,
+    complete: Boolean(raw[line.id]), missing_claims: line.claim_kinds.filter(kind => c[kind] === undefined) })), fixed }
+}
+function cashCheck(pack, input, now) {
+  const definitions = claimDefinitions(pack), tiers = Object.create(null), differences = []
+  const tierCounts = { T0: 0, T1: 0, T2: 0, T3: 0 }, results = []
+  for (const field of pack.claim_kinds) {
+    if (!Object.hasOwn(input.claims, field.name)) continue
+    const entries = input.evidence.filter(row => row.claim_kind === field.name)
+    const tier = tierForEvidence(field.name, entries); tiers[field.name] = tier; tierCounts[tierLabel(tier)]++
+    const raw = entries.filter(row => provenanceTiers[row.provenance] > 0
+      && JSON.stringify(row.value) !== JSON.stringify(input.claims[field.name]))
+      .map(row => ({ provenance: row.provenance, tier: tierLabel(provenanceTiers[row.provenance]),
+        claimed: input.claims[field.name], observed: row.value }))
+    differences.push(...raw.map(row => ({ claim_kind: field.name, ...row })))
+    results.push({ claim_kind: field.name, status: 'unsupported', tier: tierLabel(tier),
+      reason: entries.some(row => provenanceTiers[row.provenance] > 0)
+        ? 'provisional_comparator_not_available' : 'no_independent_evidence', raw_differences: raw })
+  }
+  for (const field of pack.claim_kinds) if (!Object.hasOwn(input.claims, field.name)) tiers[field.name] = 0
+  const parts = cashLines(pack, { ...input, definitions })
+  const lines = parts.lines.map(line => ({ ...line, checked: line.complete && lineChecked(line, { ...input, definitions }, tiers),
+    evidence_basis: 'tier only; pack remains provisional' }))
+  return { schema: 'sme-business-pack/check-report/v2', pack: clone(summary(pack)), label: 'Indicative, not verified',
+    disclaimer: 'Buyer-reported inputs and sighted evidence are not authenticated. This arithmetic is not valuation, legal, tax, or transaction advice.',
+    completeness: { required: pack.claim_kinds.filter(field => field.required).length,
+      supplied: pack.claim_kinds.filter(field => field.required && Object.hasOwn(input.claims, field.name)).length,
+      missing_claims: input.missing, invalid_claims: input.invalid },
+    evidence_results: results, claim_counts_by_tier: tierCounts, raw_differences: differences,
+    lines, unknown_fields_dropped: input.unknown, stale: Date.parse(pack.as_of) + 180 * 86400000 < now,
+    inference_tokens: 0, persisted: false, tolerances_applied: false }
+}
+function rangeMidpoint(range) { return range ? (range.low + range.high) / 2 : null }
+function percentRange(numerator, denominator) {
+  if (!numerator || !denominator || denominator.low <= 0) return null
+  return { low: Math.round(numerator.low / denominator.high * 10000) / 10000,
+    high: Math.round(numerator.high / denominator.low * 10000) / 10000 }
+}
+function cashBudget(pack, input, now) {
+  const check = cashCheck(pack, input, now), parts = cashLines(pack, { ...input, definitions: claimDefinitions(pack) })
+  const known = parts.lines.filter(line => line.range)
+  const sum = known.reduce((total, line) => addRanges(total, line.range), { low: 0, high: 0 })
+  const complete = known.length === parts.lines.length && Boolean(sum)
+  const price = amountRange(input.claims.price), sales = amountRange(input.claims.monthly_sales)
+  const rent = amountRange(input.claims.rent_monthly)
+  const cash = complete ? { ...sum, incomplete: false, basis: 'complete-user-input-range' }
+    : { low: known.length ? sum?.low ?? null : null, high: null, incomplete: true,
+      basis: known.length ? 'known-subtotal-lower-bound' : 'no-known-lines' }
+  const gap = complete && price ? { low: sum.low - price.high, high: sum.high - price.low } : null
+  const leaseMonths = Number.isSafeInteger(input.claims.lease_remaining_months)
+    ? { low: input.claims.lease_remaining_months, high: input.claims.lease_remaining_months } : null
+  const lease = multiplyRanges(leaseMonths, rent), bps = input.claims.variable_cost_bps
+  let breakEven = null, runway = null
+  if (parts.fixed && Number.isSafeInteger(bps) && bps < 10000) {
+    const denominator = 10000 - bps
+    breakEven = { low: Math.ceil(parts.fixed.low * 10000 / denominator), high: Math.ceil(parts.fixed.high * 10000 / denominator) }
+  }
+  if (parts.fixed && sales && Number.isSafeInteger(bps) && bps < 10000) {
+    const contribution = { low: Math.floor(sales.low * (10000 - bps) / 10000),
+      high: Math.ceil(sales.high * (10000 - bps) / 10000) }
+    const shortfall = { low: parts.fixed.low - contribution.high, high: parts.fixed.high - contribution.low }
+    const working = parts.lines.find(line => line.id === 'L7')?.range
+    runway = shortfall.high <= 0 ? { status: 'no_monthly_shortfall', months: null }
+      : shortfall.low <= 0 || !working ? { status: 'range_crosses_zero_or_incomplete', months: null }
+        : { status: 'calculated', months: { low: Math.floor(working.low / shortfall.high * 100) / 100,
+          high: Math.ceil(working.high / shortfall.low * 100) / 100 } }
+  }
+  const share = complete ? (() => {
+    const denominator = known.reduce((total, line) => total + rangeMidpoint(line.range), 0)
+    const unchecked = known.filter(line => !check.lines.find(row => row.id === line.id)?.checked)
+      .reduce((total, line) => total + rangeMidpoint(line.range), 0)
+    return denominator === 0 ? 0 : Math.round(unchecked / denominator * 10000) / 10000
+  })() : null
+  const ratios = { rent_to_sales: percentRange(rent, sales),
+    payroll_to_sales: percentRange(amountRange(input.claims.payroll_monthly), sales) }
+  const arithmeticFlags = breakEven && sales && breakEven.low > sales.high
+    ? [{ code: 'break_even_above_claimed_sales', kind: 'arithmetic_observation' }] : []
+  const budgetLines = parts.lines.map(line => ({ id: line.id, label: line.label, low: line.range?.low ?? null,
+    high: line.range?.high ?? null, complete: line.complete, missing_claims: line.missing_claims,
+    retiring_tier: line.retiring_tier, checked: check.lines.find(row => row.id === line.id)?.checked ?? false,
+    review_status: pack.review_status, formula: line.formula || null }))
+  return { schema: 'sme-business-pack/budget-report/v1', pack: clone(summary(pack)), label: 'Indicative, not verified',
+    disclaimer: 'Cash amounts use buyer-entered claims only. Missing lines are unknown, not zero; no pack estimate or professional advice is included.',
+    budget: { incomplete: !complete, cash_to_close: cash, gap_above_asking_price: gap,
+      monthly_fixed_cost: parts.fixed, break_even_monthly_sales: breakEven,
+      lease_exposure: lease ? { ...lease, basis: 'remaining lease months × claimed rent' } : null,
+      opening_runway: runway, unchecked_share: share,
+      unchecked_share_basis: share === null ? 'incomplete budget' : 'cash-line midpoint by provisional retiring tier',
+      lines: budgetLines, ratios, arithmetic_flags: arithmeticFlags },
+    claim_counts_by_tier: check.claim_counts_by_tier, stale: Date.parse(pack.as_of) + 180 * 86400000 < now,
+    inference_tokens: 0, persisted: false }
+}
+function csvCell(value) { return '"' + String(value ?? '').replaceAll('"', '""') + '"' }
+function cashPlan(pack, input, check, budget) {
+  const tiers = Object.fromEntries(check.evidence_results.map(row => [row.claim_kind, Number(row.tier.slice(1))]))
+  const tasks = budget.budget.lines.filter(line => line.complete && !line.checked).map(line => {
+    const source = pack.budget_lines.find(row => row.id === line.id)
+    const outstanding = source.claim_kinds.filter(kind => pack.claim_kinds.find(field => field.name === kind)?.owner !== 'buyer'
+      && (tiers[kind] ?? 0) < Number(source.retiring_tier.slice(1)))
+    return { line_id: line.id, label: line.label, cash_retired_midpoint: rangeMidpoint({ low: line.low, high: line.high }),
+      claim_kinds: outstanding, tasks: outstanding.map(kind => pack.protocols.find(row => row.claim_kind === kind)).filter(Boolean) }
+  }).sort((left, right) => right.cash_retired_midpoint - left.cash_retired_midpoint || left.line_id.localeCompare(right.line_id))
+    .map((task, index) => ({ order: index + 1, ...task }))
+  const worksheet = { schema: 'sme-business-pack/worksheet/v1', pack_id: pack.id,
+    claims: clone(input.claims), evidence: clone(input.evidence) }
+  const json = JSON.stringify(worksheet, null, 2), rows = [['kind', 'key', 'value', 'provenance', 'observer_role', 'date']]
+  for (const [key, value] of Object.entries(worksheet.claims)) rows.push(['claim', key, JSON.stringify(value), '', '', ''])
+  for (const row of worksheet.evidence) rows.push(['evidence', row.claim_kind, JSON.stringify(row.value), row.provenance, row.observer_role, row.date])
+  const csv = rows.map(row => row.map(csvCell).join(',')).join('\n')
+  const fence = String.fromCharCode(96).repeat(3)
+  const markdown = '# SME takeover worksheet\n\nIndicative, not verified. Evidence is sighted, not authenticated.\n\n'
+    + '| Kind | Field | Value | Provenance | Observer | Date |\n|---|---|---|---|---|---|\n'
+    + rows.slice(1).map(row => '| ' + row.map(value => String(value).replaceAll('|', '\\|').replaceAll('\n', ' ')).join(' | ') + ' |').join('\n')
+    + '\n\n' + fence + 'json\n' + json + '\n' + fence + '\n'
+  return { schema: 'sme-business-pack/plan-report/v1', pack: clone(summary(pack)), label: 'Indicative, not verified',
+    check, budget, tasks, worksheet: { json, csv, markdown }, evidence_status: 'provisional; raw differences only',
+    inference_tokens: 0, persisted: false }
 }
 function summary(pack) {
   return { id: pack.id, country: pack.country, asset_type: pack.asset_type, currency: pack.currency,
