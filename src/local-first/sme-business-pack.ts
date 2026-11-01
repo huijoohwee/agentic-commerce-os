@@ -12,6 +12,7 @@ const descriptions: Record<string, string> = {
   'takeover.check': 'Check closed buyer claims and entered evidence; raw differences only while the pack is provisional.',
   'takeover.budget': 'Compute cash-to-close ranges, lease exposure and unchecked share from buyer inputs only.',
   'takeover.plan': 'Order offline evidence tasks by cash line and produce a local worksheet.',
+  'takeover.compare_claim_sets': 'Compare two or three anonymous Singapore claim sets in entry order using identical fixed report rows; no ranking or winner.',
   'takeover.transfer_checklist': 'Read a transfer checklist only after qualified reviewer approval.',
 }
 export const SME_PACK_TOOLS = Object.freeze(TOOL_SCHEMAS.map((tool: any) => Object.freeze({

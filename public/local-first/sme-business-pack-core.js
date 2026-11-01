@@ -2,7 +2,7 @@ export const PACK_PATH = '/agentic-commerce-os/services/sme-business-pack'
 export const PACK_INDEX = Object.freeze([
   Object.freeze({ id: 'sg.fnb.takeover', country: 'SG', asset_type: 'fnb', currency: 'SGD', version: '1.0.0', as_of: '2026-10-22', review_status: 'provisional' }),
 ])
-export const TOOL_NAMES = Object.freeze(['pack.list', 'pack.protocol', 'takeover.check', 'takeover.budget', 'takeover.plan', 'takeover.transfer_checklist'])
+export const TOOL_NAMES = Object.freeze(['pack.list', 'pack.protocol', 'takeover.check', 'takeover.budget', 'takeover.plan', 'takeover.compare_claim_sets', 'takeover.transfer_checklist'])
 export const LEGACY_TOOL_NAMES = Object.freeze(['pack.required_fields', 'takeover.check_listing'])
 const provenanceTiers = Object.freeze({ seller_stated: 0, buyer_assumed: 0, observed_on_site: 1, measured_on_foot: 1,
   counted_on_site: 1, document_sighted: 2, third_party_confirmed: 3 })
@@ -70,6 +70,7 @@ export async function invokeSmePackTool(name, args = {}, now = Date.now()) {
     if (name === 'takeover.budget') return budget
     return cashPlan(pack, input, check, budget)
   }
+  if (name === 'takeover.compare_claim_sets') return compareClaimSets(args, now)
   assertPackArgs(name === 'takeover.check_listing' ? { pack_id: args?.pack_id } : args)
   const pack = await loadPack(args.pack_id)
   if (name === 'pack.protocol') return protocol(pack)
@@ -115,16 +116,58 @@ const cashInput = { type: 'object', required: ['pack_id', 'claims'], properties:
       value: { oneOf: [{ type: 'integer' }, { type: 'boolean' }, { type: 'string' }, moneyValueSchema] },
     }, additionalProperties: false } },
 }, additionalProperties: false }
+const comparisonSet = { type: 'object', required: ['pack_id', 'pack_version', 'currency', 'claims'], properties: {
+  pack_id: { type: 'string', enum: ['sg.fnb.takeover'] }, pack_version: { type: 'string', enum: ['1.0.0'] },
+  currency: { type: 'string', enum: ['SGD'] }, claims: cashInput.properties.claims,
+  evidence: cashInput.properties.evidence,
+}, additionalProperties: false }
 const newToolInputs = Object.freeze({
   'pack.list': { type: 'object', properties: {}, additionalProperties: false },
   'pack.protocol': { type: 'object', required: ['pack_id'], properties: { pack_id: { type: 'string', enum: ['sg.fnb.takeover'] } }, additionalProperties: false },
   'takeover.check': cashInput, 'takeover.budget': cashInput, 'takeover.plan': cashInput,
+  'takeover.compare_claim_sets': { type: 'object', required: ['claim_sets'], properties: {
+    claim_sets: { type: 'array', minItems: 2, maxItems: 3, items: comparisonSet },
+  }, additionalProperties: false },
   'takeover.transfer_checklist': { type: 'object', required: ['pack_id'], properties: { pack_id: { type: 'string', enum: ['sg.fnb.takeover'] } }, additionalProperties: false },
 })
 export const TOOL_SCHEMAS = Object.freeze(TOOL_NAMES.map(name => Object.freeze({
   name, inputSchema: newToolInputs[name],
   annotations: Object.freeze({ readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }),
 })))
+
+async function compareClaimSets(args, now) {
+  assertExactKeys(args, ['claim_sets'])
+  const bytes = new TextEncoder().encode(JSON.stringify(args)).byteLength
+  if (bytes > 32768 || !Array.isArray(args.claim_sets) || args.claim_sets.length < 2 || args.claim_sets.length > 3) {
+    fail('sme_pack_arguments_invalid')
+  }
+  const sets = args.claim_sets
+  for (const set of sets) {
+    const keys = Object.hasOwn(set ?? {}, 'evidence')
+      ? ['pack_id', 'pack_version', 'currency', 'claims', 'evidence'] : ['pack_id', 'pack_version', 'currency', 'claims']
+    assertExactKeys(set, keys)
+    if (typeof set.pack_id !== 'string' || typeof set.pack_version !== 'string' || typeof set.currency !== 'string') {
+      fail('sme_pack_arguments_invalid')
+    }
+  }
+  const identity = sets[0]
+  if (sets.some(set => set.pack_id !== identity.pack_id || set.pack_version !== identity.pack_version || set.currency !== identity.currency)) {
+    fail('sme_pack_comparison_identity_mismatch')
+  }
+  const pack = await loadPack(identity.pack_id)
+  if (identity.pack_version !== pack.version || identity.currency !== pack.currency) fail('sme_pack_comparison_identity_mismatch')
+  const slots = []
+  for (let index = 0; index < sets.length; index++) {
+    const set = sets[index], input = { pack_id: set.pack_id, claims: set.claims,
+      ...(Object.hasOwn(set, 'evidence') ? { evidence: set.evidence } : {}) }
+    slots.push({ slot: ['A', 'B', 'C'][index], status: 'included', report: await invokeSmePackTool('takeover.plan', input, now) })
+  }
+  if (slots.length === 2) slots.push({ slot: 'C', status: 'not_supplied', report: null })
+  const result = { schema: 'sme-business-pack/comparison-report/v1', pack: clone(summary(pack)), slots,
+    inference_tokens: 0, persisted: false }
+  if (new TextEncoder().encode(JSON.stringify(result)).byteLength > 65536) fail('sme_pack_response_too_large')
+  return result
+}
 
 function protocol(pack) {
   return { schema: 'sme-business-pack/protocol/v1', pack: clone(summary(pack)),
@@ -302,8 +345,17 @@ function cashBudget(pack, input, now) {
   })() : null
   const ratios = { rent_to_sales: percentRange(rent, sales),
     payroll_to_sales: percentRange(amountRange(input.claims.payroll_monthly), sales) }
-  const arithmeticFlags = breakEven && sales && breakEven.low > sales.high
-    ? [{ code: 'break_even_above_claimed_sales', kind: 'arithmetic_observation' }] : []
+  const arithmeticFlags = [], rentRule = pack.ratios.find(rule => rule.id === 'rent_to_sales')
+  const rentRatio = ratios.rent_to_sales
+  if (rentRule && rentRatio && rentRatio.high > rentRule.max_ratio) arithmeticFlags.push({
+    code: 'rent_to_sales_arithmetic_bound', ratio: rentRule.id,
+    observation: rentRatio.low > rentRule.max_ratio ? 'above' : 'range_crosses', value: rentRatio,
+    limit: rentRule.max_ratio, basis: rentRule.basis, reviewed: rentRule.reviewed,
+    kind: 'arithmetic_observation',
+  })
+  if (breakEven && sales && breakEven.low > sales.high) arithmeticFlags.push({
+    code: 'break_even_above_claimed_sales', kind: 'arithmetic_observation',
+  })
   const budgetLines = parts.lines.map(line => ({ id: line.id, label: line.label, low: line.range?.low ?? null,
     high: line.range?.high ?? null, complete: line.complete, missing_claims: line.missing_claims,
     retiring_tier: line.retiring_tier, checked: check.lines.find(row => row.id === line.id)?.checked ?? false,

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
+import { Client } from '@modelcontextprotocol/sdk/client/index.js'
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 // @ts-expect-error The browser-safe JavaScript module is shared by the Worker and UI.
 import { invokeSmePackTool, PACK_INDEX, TOOL_NAMES, TOOL_SCHEMAS } from '../../public/local-first/sme-business-pack-core.js'
 import { handleSmeBusinessPackRequest, SME_PACK_LIMITS, SME_PACK_TOOLS } from '../../src/local-first/sme-business-pack'
@@ -54,8 +56,8 @@ describe('SME takeover pack contracts', () => {
     expect(await invokeSmePackTool('pack.list')).toMatchObject({ inference_tokens: 0, packs: [
       { id: 'sg.fnb.takeover', review_status: 'provisional', as_of: '2026-10-22' },
     ] })
-    expect(TOOL_NAMES).toEqual(['pack.list', 'pack.protocol', 'takeover.check', 'takeover.budget', 'takeover.plan', 'takeover.transfer_checklist'])
-    expect(TOOL_SCHEMAS).toHaveLength(6)
+    expect(TOOL_NAMES).toEqual(['pack.list', 'pack.protocol', 'takeover.check', 'takeover.budget', 'takeover.plan', 'takeover.compare_claim_sets', 'takeover.transfer_checklist'])
+    expect(TOOL_SCHEMAS).toHaveLength(7)
     expect(JSON.stringify(TOOL_SCHEMAS)).not.toContain('my.fnb.takeover')
     const protocol = await invokeSmePackTool('pack.protocol', { pack_id: 'sg.fnb.takeover' })
     expect(protocol).toMatchObject({ schema: 'sme-business-pack/protocol/v1', parameters: [], tolerances: [], inference_tokens: 0 })
@@ -103,12 +105,17 @@ describe('SME takeover pack contracts', () => {
 
   it('matches an independent budget oracle across 30 labelled SG fixtures', async () => {
     expect(fixture.cash_cases).toHaveLength(30)
-    const durations: number[] = []
+    const durations: number[] = [], checkDurations: number[] = []
     for (const row of fixture.cash_cases) {
       const claims = { ...baseCashClaims, ...row.claims }, expected = oracleBudget(claims)
       const started = performance.now()
       const report = await invokeSmePackTool('takeover.budget', { pack_id: 'sg.fnb.takeover', claims })
       durations.push(performance.now() - started)
+      const checkStarted = performance.now()
+      const check = await invokeSmePackTool('takeover.check', { pack_id: 'sg.fnb.takeover', claims })
+      checkDurations.push(performance.now() - checkStarted)
+      expect(check.schema, row.id).toBe('sme-business-pack/check-report/v2')
+      expect(check.inference_tokens, row.id).toBe(0)
       expect(report.schema, row.id).toBe('sme-business-pack/budget-report/v1')
       expect(report.budget.cash_to_close).toMatchObject({ ...expected.total, incomplete: false })
       expect(report.budget.gap_above_asking_price).toEqual(expected.gap)
@@ -118,11 +125,170 @@ describe('SME takeover pack contracts', () => {
         high: oracleRange(claims.rent_monthly).high + claims.payroll_monthly + claims.utilities_monthly,
       })
       expect(report.budget.break_even_monthly_sales).toEqual(expected.breakEven)
+      expect(report.budget.arithmetic_flags.some((flag: any) => flag.ratio === 'rent_to_sales')).toBe(false)
       expect(report.budget.lines.map((line: any) => ({ low: line.low, high: line.high }))).toEqual(expected.lines)
+      expect(report.budget.cash_to_close.low).toBeLessThanOrEqual(report.budget.cash_to_close.high)
+      expect(report.budget.lines.every((line: any) => line.low <= line.high)).toBe(true)
       expect(report.budget.unchecked_share).toBe(1)
       expect(report.persisted).toBe(false)
     }
     expect([...durations].sort((a, b) => a - b)[28]).toBeLessThan(2000)
+    expect([...checkDurations].sort((a, b) => a - b)[28]).toBeLessThan(2000)
+  })
+
+  it('reports every omitted required cash claim from the pack protocol', async () => {
+    const protocol = await invokeSmePackTool('pack.protocol', { pack_id: 'sg.fnb.takeover' })
+    for (const field of protocol.claim_kinds.filter((row: any) => row.required)) {
+      const claims = { ...baseCashClaims }; delete (claims as Record<string, unknown>)[field.name]
+      const report = await invokeSmePackTool('takeover.check', { pack_id: 'sg.fnb.takeover', claims })
+      expect(report.completeness.missing_claims).toContain(field.name)
+    }
+  })
+
+  it('compares two or three claim sets in fixed slots with the individual plan result across 30 cash fixtures', async () => {
+    const identity = { pack_id: 'sg.fnb.takeover', pack_version: '1.0.0', currency: 'SGD' }
+    const cases = fixture.cash_cases, testedAt = 1793481600000
+    let firstPair, firstTriple
+    const pairDurations: number[] = [], tripleDurations: number[] = []
+    const p95 = (samples: number[]) => [...samples].sort((left, right) => left - right)[Math.ceil(samples.length * 0.95) - 1]!
+    for (let index = 0; index < cases.length; index++) {
+      const selected = [cases[index], cases[(index + 1) % cases.length], cases[(index + 2) % cases.length]]
+      const pairs = selected.slice(0, 2).map(row => ({ ...identity, claims: row.claims }))
+      expect(new TextEncoder().encode(JSON.stringify({ claim_sets: pairs })).byteLength).toBeLessThanOrEqual(32768)
+      const pairStarted = performance.now()
+      const compared = await invokeSmePackTool('takeover.compare_claim_sets', { claim_sets: pairs }, testedAt)
+      pairDurations.push(performance.now() - pairStarted)
+      expect(new TextEncoder().encode(JSON.stringify(compared)).byteLength).toBeLessThanOrEqual(65536)
+      expect(JSON.stringify(compared)).not.toMatch(/winner|rank|score|recommendation/iu)
+      expect(compared.slots.map((slot: any) => slot.slot)).toEqual(['A', 'B', 'C'])
+      expect(compared.slots[2]).toEqual({ slot: 'C', status: 'not_supplied', report: null })
+      for (let slotIndex = 0; slotIndex < pairs.length; slotIndex++) {
+        const individual = await invokeSmePackTool('takeover.plan', { pack_id: identity.pack_id, claims: pairs[slotIndex]!.claims }, testedAt)
+        expect(compared.slots[slotIndex]).toMatchObject({ status: 'included', report: individual })
+        expect(compared.slots[slotIndex].report.pack).toMatchObject({ id: identity.pack_id,
+          version: identity.pack_version, currency: identity.currency, as_of: '2026-10-22' })
+      }
+      expect(compared).toMatchObject({ inference_tokens: 0, persisted: false, pack: { id: identity.pack_id,
+        version: identity.pack_version, currency: identity.currency, as_of: '2026-10-22' } })
+
+      const claim_sets = selected.map(row => ({ ...identity, claims: row.claims }))
+      expect(new TextEncoder().encode(JSON.stringify({ claim_sets })).byteLength).toBeLessThanOrEqual(32768)
+      const tripleStarted = performance.now()
+      const three = await invokeSmePackTool('takeover.compare_claim_sets', { claim_sets }, testedAt)
+      tripleDurations.push(performance.now() - tripleStarted)
+      expect(new TextEncoder().encode(JSON.stringify(three)).byteLength).toBeLessThanOrEqual(65536)
+      expect(JSON.stringify(three)).not.toMatch(/winner|rank|score|recommendation/iu)
+      expect(three.slots.map((slot: any) => slot.slot)).toEqual(['A', 'B', 'C'])
+      for (let slotIndex = 0; slotIndex < claim_sets.length; slotIndex++) {
+        const individual = await invokeSmePackTool('takeover.plan', { pack_id: identity.pack_id,
+          claims: claim_sets[slotIndex]!.claims }, testedAt)
+        expect(three.slots[slotIndex]).toMatchObject({ status: 'included', report: individual })
+        expect(three.slots[slotIndex].report.pack).toMatchObject({ id: identity.pack_id,
+          version: identity.pack_version, currency: identity.currency, as_of: '2026-10-22' })
+      }
+      if (index === 0) { firstPair = { claim_sets: pairs, result: compared }; firstTriple = { claim_sets, result: three } }
+    }
+    const repeatedPair = await invokeSmePackTool('takeover.compare_claim_sets', { claim_sets: firstPair!.claim_sets }, testedAt)
+    const repeatedTriple = await invokeSmePackTool('takeover.compare_claim_sets', { claim_sets: firstTriple!.claim_sets }, testedAt)
+    expect(p95(pairDurations)).toBeLessThan(2000)
+    expect(p95(tripleDurations)).toBeLessThan(2000)
+    expect(repeatedPair).toEqual(firstPair!.result)
+    expect(repeatedTriple).toEqual(firstTriple!.result)
+    const three = firstTriple!.result
+    expect(three.slots.every((slot: any) => slot.status === 'included' && slot.report?.tasks)).toBe(true)
+  })
+
+  it('rejects comparison identity drift before evaluating claims and refuses open candidate data', async () => {
+    const base = { pack_id: 'sg.fnb.takeover', pack_version: '1.0.0', currency: 'SGD', claims: { private_contact: 'name@example.invalid' } }
+    for (const second of [{ ...base, pack_version: '0.9.0' }, { ...base, currency: 'MYR' }, { ...base, pack_id: 'my.fnb.takeover' }]) {
+      await expect(invokeSmePackTool('takeover.compare_claim_sets', { claim_sets: [base, second] }))
+        .rejects.toThrow('sme_pack_comparison_identity_mismatch')
+    }
+    for (const forbidden of [
+      { candidate_name: 'Cafe A' }, { url: 'https://example.invalid' },
+      { contact: 'buyer@example.invalid' }, { address: '1 Example Road' },
+    ]) await expect(invokeSmePackTool('takeover.compare_claim_sets', { claim_sets: [base, { ...base, ...forbidden }] }))
+      .rejects.toThrow('sme_pack_arguments_invalid')
+    await expect(invokeSmePackTool('takeover.compare_claim_sets', { claim_sets: [
+      { ...base, claims: { ...base.claims, subtype: 'https://example.invalid' } }, { ...base, claims: {} },
+    ] })).rejects.toThrow('sme_pack_free_text_refused')
+    for (const claim_sets of [[], [base], [base, base, base, base]]) {
+      await expect(invokeSmePackTool('takeover.compare_claim_sets', { claim_sets })).rejects.toThrow('sme_pack_arguments_invalid')
+    }
+  })
+
+  it('keeps evidence tier calculations isolated to the comparison slot that supplied them', async () => {
+    const identity = { pack_id: 'sg.fnb.takeover', pack_version: '1.0.0', currency: 'SGD' }
+    const evidence = [{ claim_kind: 'price', value: 150000, provenance: 'document_sighted',
+      observer_role: 'adviser', date: '2026-10-31' }]
+    const result: any = await invokeSmePackTool('takeover.compare_claim_sets', { claim_sets: [
+      { ...identity, claims: { price: 150000 }, evidence }, { ...identity, claims: { price: 180000 } },
+    ] })
+    expect(result.slots[0].report.check.claim_counts_by_tier.T2).toBe(1)
+    expect(result.slots[0].report.budget.budget.lines.find((line: any) => line.id === 'L1').checked).toBe(true)
+    expect(result.slots[1].report.check.claim_counts_by_tier.T2).toBe(0)
+  })
+
+  it('keeps unchecked share monotonic as each cash claim reaches its retiring tier', async () => {
+    const protocol = await invokeSmePackTool('pack.protocol', { pack_id: 'sg.fnb.takeover' }), evidence: any[] = []
+    const cashClaims = baseCashClaims as Record<string, unknown>
+    let share = (await invokeSmePackTool('takeover.budget', { pack_id: 'sg.fnb.takeover', claims: baseCashClaims })).budget.unchecked_share
+    expect(share).toBe(1)
+    for (const field of protocol.claim_kinds.filter((row: any) => row.retiring_tier && cashClaims[row.name] !== undefined)) {
+      evidence.push({ claim_kind: field.name, value: cashClaims[field.name], provenance: 'document_sighted',
+        observer_role: 'adviser', date: '2026-10-31' })
+      const report = await invokeSmePackTool('takeover.budget', { pack_id: 'sg.fnb.takeover', claims: baseCashClaims, evidence })
+      expect(report.budget.unchecked_share).toBeLessThanOrEqual(share); share = report.budget.unchecked_share
+    }
+    evidence.push({ claim_kind: 'rent_monthly', value: baseCashClaims.rent_monthly, provenance: 'third_party_confirmed',
+      observer_role: 'adviser', date: '2026-10-31' })
+    const final = await invokeSmePackTool('takeover.budget', { pack_id: 'sg.fnb.takeover', claims: baseCashClaims, evidence })
+    expect(final.budget.unchecked_share).toBeLessThanOrEqual(share)
+  })
+
+  it('reports planted claim conflicts without claiming a verified discrepancy', async () => {
+    for (const row of fixture.cash_cases) {
+      const claims = { ...baseCashClaims, ...row.claims }, price = claims.price
+      const priceRange = typeof price === 'object' && price !== null ? price : null
+      const observed = priceRange ? { low: priceRange.low + 1, high: priceRange.high + 1 } : Number(price) + 1
+      const report = await invokeSmePackTool('takeover.check', { pack_id: 'sg.fnb.takeover', claims,
+        evidence: [{ claim_kind: 'price', value: observed, provenance: 'document_sighted', observer_role: 'adviser', date: '2026-10-31' }] })
+      expect(report.raw_differences).toContainEqual(expect.objectContaining({ claim_kind: 'price', observed }))
+      expect(report.raw_differences.some((difference: any) => difference.status === 'discrepancy')).toBe(false)
+      expect(report.evidence_results.find((item: any) => item.claim_kind === 'price').status).toBe('unsupported')
+      expect(report.tolerances_applied).toBe(false)
+    }
+    const exact = await invokeSmePackTool('takeover.check', { pack_id: 'sg.fnb.takeover', claims: baseCashClaims,
+      evidence: [{ claim_kind: 'price', value: baseCashClaims.price, provenance: 'document_sighted', observer_role: 'adviser', date: '2026-10-31' }] })
+    expect(exact.raw_differences).toEqual([])
+  })
+
+  it('serves the same seven tools offline through the local stdio MCP adapter', async () => {
+    const transport = new StdioClientTransport({ command: process.execPath, args: ['scripts/sme-business-pack-local.mjs'] })
+    const client = new Client({ name: 'sme-local-contract', version: '1.0.0' }, { capabilities: {} })
+    try {
+      await client.connect(transport)
+      const listed = await client.listTools()
+      expect(listed.tools.map(tool => tool.name)).toEqual(TOOL_NAMES)
+      expect(JSON.stringify(listed.tools)).not.toContain('my.fnb.takeover')
+      const compare = { claim_sets: [150000, 180000].map(price => ({ pack_id: 'sg.fnb.takeover',
+        pack_version: '1.0.0', currency: 'SGD', claims: { price } })) }
+      const routes: Record<string, Record<string, unknown>> = {
+        'pack.list': {}, 'pack.protocol': { pack_id: 'sg.fnb.takeover' },
+        'takeover.check': { pack_id: 'sg.fnb.takeover', claims: baseCashClaims },
+        'takeover.budget': { pack_id: 'sg.fnb.takeover', claims: baseCashClaims },
+        'takeover.plan': { pack_id: 'sg.fnb.takeover', claims: baseCashClaims },
+        'takeover.compare_claim_sets': compare, 'takeover.transfer_checklist': { pack_id: 'sg.fnb.takeover' },
+      }
+      for (const name of TOOL_NAMES) {
+        const expected = await invokeSmePackTool(name, routes[name]!)
+        const actual = await client.callTool({ name, arguments: routes[name]! })
+        expect(actual.structuredContent).toEqual(expected)
+      }
+      expect((await client.callTool({ name: 'takeover.check_listing', arguments: {
+        pack_id: 'sg.fnb.takeover', facts: baseFacts,
+      } })).structuredContent).toMatchObject({ schema: 'sme-business-pack/check-report/v1' })
+    } finally { await client.close() }
   })
 
   it('keeps missing cash lines unknown, computes evidence tiers without unreviewed tolerances, and ranks tasks', async () => {
@@ -148,6 +314,14 @@ describe('SME takeover pack contracts', () => {
     expect(check.raw_differences.some((row: any) => row.status === 'discrepancy')).toBe(false)
     const report = await invokeSmePackTool('takeover.budget', { pack_id: 'sg.fnb.takeover', claims: baseCashClaims, evidence })
     expect(report.budget.unchecked_share).toBeLessThan(1)
+    expect(report.budget.arithmetic_flags).toEqual([])
+    const rentRatio = await invokeSmePackTool('takeover.budget', { pack_id: 'sg.fnb.takeover', claims: {
+      ...baseCashClaims, rent_monthly: 60000,
+    } })
+    expect(rentRatio.budget.arithmetic_flags).toContainEqual(expect.objectContaining({
+      code: 'rent_to_sales_arithmetic_bound', ratio: 'rent_to_sales', observation: 'above',
+      limit: 1, basis: 'arithmetic-sanity-only', reviewed: false,
+    }))
     const plan = await invokeSmePackTool('takeover.plan', { pack_id: 'sg.fnb.takeover', claims: baseCashClaims, evidence })
     expect(plan.tasks.map((task: any) => task.cash_retired_midpoint)).toEqual(
       [...plan.tasks.map((task: any) => task.cash_retired_midpoint)].sort((a: number, b: number) => b - a))
@@ -168,6 +342,15 @@ describe('SME takeover pack contracts', () => {
       { ...baseCashClaims, subtype: 'a free-form story' },
     ]) await expect(invokeSmePackTool('takeover.check', { pack_id: 'sg.fnb.takeover', claims }))
       .rejects.toThrow('sme_pack_free_text_refused')
+    const prohibited = [
+      'business_name', 'business_description', 'candidate_name', 'seller_name', 'buyer_name', 'counterparty_name',
+      'contact', 'phone', 'email', 'address', 'website', 'listing_url', 'photo', 'image', 'valuation',
+      'price_opinion', 'brokerage_fee', 'success_fee', 'introduction', 'private_notes',
+    ] as const
+    expect(prohibited).toHaveLength(20)
+    for (const field of prohibited) await expect(invokeSmePackTool('takeover.check', { pack_id: 'sg.fnb.takeover',
+      claims: { ...baseCashClaims, [field]: field === 'image' || field === 'photo' ? { data: 'base64' } : 'restricted' } }))
+      .rejects.toThrow('sme_pack_free_text_refused')
     await expect(invokeSmePackTool('takeover.check', { pack_id: 'sg.fnb.takeover', claims: {
       ...baseCashClaims, price: 100000001,
     } })).resolves.toMatchObject({ completeness: { invalid_claims: ['price'] } })
@@ -181,6 +364,30 @@ describe('SME takeover pack contracts', () => {
     }
   })
 
+  it('keeps local SME computation free of network clients and browser storage', () => {
+    for (const file of ['public/local-first/sme-business-pack-core.js', 'public/local-first/sme-business-pack.js']) {
+      const source = fs.readFileSync(path.resolve(file), 'utf8')
+      expect(source).not.toMatch(/\b(?:fetch|XMLHttpRequest|WebSocket|sendBeacon|localStorage|sessionStorage|indexedDB)\b/u)
+    }
+  })
+
+  it('keeps every buyer report typed, versioned, sourced and neutral in its output wording', async () => {
+    const args = { pack_id: 'sg.fnb.takeover', claims: baseCashClaims }
+    const comparison: any = await invokeSmePackTool('takeover.compare_claim_sets', { claim_sets: [
+      { pack_id: args.pack_id, pack_version: '1.0.0', currency: 'SGD', claims: baseCashClaims },
+      { pack_id: args.pack_id, pack_version: '1.0.0', currency: 'SGD', claims: baseCashClaims },
+    ] })
+    const reports = [await invokeSmePackTool('takeover.check', args), await invokeSmePackTool('takeover.budget', args),
+      await invokeSmePackTool('takeover.plan', args), ...comparison.slots.map((slot: any) => slot.report).filter(Boolean)]
+    for (const report of reports) {
+      expect(report.label).toBe('Indicative, not verified')
+      expect(report.pack).toMatchObject({ id: 'sg.fnb.takeover', version: '1.0.0', as_of: '2026-10-22' })
+      const counts = report.check?.claim_counts_by_tier ?? report.claim_counts_by_tier
+      expect(counts).toEqual(expect.objectContaining({ T0: expect.any(Number), T1: expect.any(Number), T2: expect.any(Number), T3: expect.any(Number) }))
+    }
+    expect(JSON.stringify(reports)).not.toMatch(/\b(?:fair|overpriced|good deal|price opinion|composite score|verdict|recommendation)\b/iu)
+  })
+
   it('rejects credentials, foreign origins, oversized bodies, invalid release identity, and unknown routes', async () => {
     const request = (body: unknown, extra: Record<string, string> = {}) => new Request('https://local.test' + '/agentic-commerce-os/services/sme-business-pack/api', {
       method: 'POST', headers: { 'content-type': 'application/json', ...extra }, body: JSON.stringify(body),
@@ -191,6 +398,13 @@ describe('SME takeover pack contracts', () => {
       arguments: { pack_id: 'sg.fnb.takeover', claims: baseCashClaims } }), 'local-unreleased')
     expect(apiBudget?.status).toBe(200)
     expect(await apiBudget?.json()).toEqual(localBudget)
+    const claim_sets = [150000, 180000].map(price => ({ pack_id: 'sg.fnb.takeover', pack_version: '1.0.0',
+      currency: 'SGD', claims: { ...baseCashClaims, price } }))
+    const localComparison = await invokeSmePackTool('takeover.compare_claim_sets', { claim_sets })
+    const apiComparison = await handleSmeBusinessPackRequest(request({ tool: 'takeover.compare_claim_sets',
+      arguments: { claim_sets } }), 'local-unreleased')
+    expect(apiComparison?.status).toBe(200)
+    expect(await apiComparison?.json()).toEqual(localComparison)
     for (const headers of [{ authorization: 'Bearer secret' }, { cookie: 'sid=secret' }, { origin: 'https://other.invalid' }]) {
       expect((await handleSmeBusinessPackRequest(request({ tool: 'pack.list', arguments: {} }, headers), 'local-unreleased'))?.status).toBe(403)
     }
@@ -224,6 +438,16 @@ describe('SME takeover pack contracts', () => {
     expect(response.headers.get('x-commerce-source')).toBe(sourceRevision)
     expect(response.headers.get('cache-control')).toBe('no-store, no-transform')
     expect(await response.json()).toMatchObject({ availability: 'edge-enabled', sourceRevision })
+    const claim_sets = [150000, 180000].map(price => ({ pack_id: 'sg.fnb.takeover', pack_version: '1.0.0',
+      currency: 'SGD', claims: { ...baseCashClaims, price } }))
+    const expectedComparison = await invokeSmePackTool('takeover.compare_claim_sets', { claim_sets })
+    const comparison = await localFirstWorker.fetch(new Request(
+      'https://airvio.co/agentic-commerce-os/services/sme-business-pack/api', { method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ tool: 'takeover.compare_claim_sets', arguments: { claim_sets } }) }), env)
+    expect(comparison.status).toBe(200)
+    expect(comparison.headers.get('x-commerce-source')).toBe(sourceRevision)
+    expect(await comparison.json()).toEqual(expectedComparison)
     const asset = await localFirstWorker.fetch(new Request('https://airvio.co/agentic-commerce-os/sme-business-pack.js'), env)
     expect(asset.status).toBe(200)
     expect(asset.headers.get('x-commerce-source')).toBe(sourceRevision)
@@ -237,9 +461,9 @@ describe('SME takeover pack contracts', () => {
     expect(legacyPage.headers.get('location')).toBe('https://airvio.co/agentic-commerce-os/#sme')
   })
 
-  it('serves six canonical Singapore capabilities plus direct legacy compatibility over stateless MCP', async () => {
+  it('serves seven canonical Singapore capabilities plus direct legacy compatibility over stateless MCP', async () => {
     expect(SME_PACK_TOOLS.map((tool: { name: string }) => tool.name)).toEqual([
-      'pack.list', 'pack.protocol', 'takeover.check', 'takeover.budget', 'takeover.plan', 'takeover.transfer_checklist',
+      'pack.list', 'pack.protocol', 'takeover.check', 'takeover.budget', 'takeover.plan', 'takeover.compare_claim_sets', 'takeover.transfer_checklist',
     ])
     expect(JSON.stringify(SME_PACK_TOOLS)).not.toContain('my.fnb.takeover')
     const endpoint = 'https://local.test/agentic-commerce-os/services/sme-business-pack/mcp'
@@ -274,6 +498,12 @@ describe('SME takeover pack contracts', () => {
     expect(budgetCall?.status).toBe(200)
     const mcpBudget: any = await budgetCall?.json()
     expect(mcpBudget.result.structuredContent).toEqual(expected)
+    const claim_sets = [0, 1].map(() => ({ pack_id: 'sg.fnb.takeover', pack_version: '1.0.0', currency: 'SGD', claims: baseCashClaims }))
+    const expectedComparison = await invokeSmePackTool('takeover.compare_claim_sets', { claim_sets })
+    const comparisonCall = await handleSmeBusinessPackRequest(rpc({ jsonrpc: '2.0', id: 6, method: 'tools/call',
+      params: { name: 'takeover.compare_claim_sets', arguments: { claim_sets } } }), revision)
+    expect(comparisonCall?.status).toBe(200)
+    expect(await comparisonCall?.json()).toMatchObject({ result: { structuredContent: expectedComparison } })
     const oldClient = await handleSmeBusinessPackRequest(rpc({ jsonrpc: '2.0', id: 4, method: 'tools/call',
       params: { name: 'takeover.check_listing', arguments: { pack_id: 'sg.fnb.takeover', facts: baseFacts } } }), revision)
     expect(oldClient?.status).toBe(200)

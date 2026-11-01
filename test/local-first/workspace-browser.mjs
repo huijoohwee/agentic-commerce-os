@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { expect } from '@playwright/test';
 import { verifyWorkspaceToolRefinements } from './workspace-tools-browser.mjs';
 import { checkSharedWorkspaceShell } from './workspace-shell-browser.mjs';
+import { checkSmeComparisonBrowser } from './sme-comparison-browser.mjs';
 import { BROWSER_CHECKS } from '../../scripts/local-first-release/browser-proof.mjs';
 
 export async function checkRoleWorkspace({ browser, url, output, observeContext, record }) {
@@ -129,7 +130,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await page.evaluate(() => { window.__smeShellAtEntry = document.querySelector('#workspace-shell'); });
   await page.locator('#workspace-role-switcher').selectOption('sme');
   await expect(page.locator('#sme')).toBeVisible();
-  await expect(page.locator('#webmcp-status')).toContainText('Six optional Singapore browser tools registered');
+  await expect(page.locator('#webmcp-status')).toContainText('Seven optional Singapore browser tools registered');
   await context.setOffline(true);
   await page.locator('#sample').click();
   await page.locator('#sme-check-form button[type="submit"]').click();
@@ -159,6 +160,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
     return JSON.parse(result.content[0].text);
   });
   assert.deepEqual(inPageBudget, smeReport.budget);
+  await checkSmeComparisonBrowser({ browser, page, url, output, smeServiceRequests, record });
   for (const [format, selector] of [['json', '[data-export="json"]'], ['csv', '[data-export="csv"]'], ['markdown', '[data-export="markdown"]']]) {
     const downloadEvent = page.waitForEvent('download');
     await page.locator(selector).click();
