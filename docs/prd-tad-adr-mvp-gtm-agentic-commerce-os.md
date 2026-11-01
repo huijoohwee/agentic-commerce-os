@@ -1,19 +1,19 @@
 ---
 title: "Commerce Workspaces and Shared Shell"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.1.0"
-revision: "0.1.0"
-date: "2026-10-28"
-updated_date: "2026-10-28"
+version: "0.2.0"
+revision: "0.2.0"
+date: "2026-10-31"
+updated_date: "2026-10-31"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Commerce product function"
 continuity_id: "COMMERCE-CONTROL-PLANE-001"
-prd_revision: "0.1.0"
-tad_revision: "0.1.0"
-adr_revision: "0.1.0"
-mvp_revision: "0.1.0"
-gtm_revision: "0.1.0"
+prd_revision: "0.2.0"
+tad_revision: "0.2.0"
+adr_revision: "0.2.0"
+mvp_revision: "0.2.0"
+gtm_revision: "0.2.0"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -26,9 +26,9 @@ guideline_revision: "3.4.0"
 guideline_sha256: "8f0eda9aaf4d0b1e2bcc7388e15d19d95e6ba88fe158dbbbb53c2c0d4225d87a"
 template_revision: "1.5.0"
 template_sha256: "862369425974a704529164c02973a7ccb98b94d9a4eea73e347c8b4b57aa7966"
-worktree_id: "device-0232231d4a19--generate-commerce-prd"
+worktree_id: "device-0232231d4a19--commerce-shell-asbuilt-reference"
 agent_id: "codex"
-source_revision: "88bd730c8f35da249fb23349c50820cc1932a95c"
+source_revision: "2fb00defb2f9a057eaaa659338500c2b6b07aafc"
 lifecycle_status: "proposed"
 load_policy: "on-demand"
 runtime_readiness_policy: "fail-closed"
@@ -36,18 +36,20 @@ runtime_readiness_policy: "fail-closed"
 
 # Commerce Workspaces and Shared Shell
 
-**Join:** `COMMERCE-CONTROL-PLANE-001@0.1.0`. This parent-level proposal specifies one persistent workspace shell across Shopper, Vendor, Admin and the SME pack. The feature companion continues to own its existing workspace implementation details; the first-dollar learning record remains the sole owner of validation/payment learnings. This document does not claim the shell consolidation is implemented.
+**Join:** `COMMERCE-CONTROL-PLANE-001@0.2.0`. This parent-level specification covers one persistent workspace shell across Shopper, Vendor, Admin and the SME pack. The feature companion continues to own its workspace details; the first-dollar learning record remains the sole owner of validation/payment learnings. Source revision `2fb00def` already mounts the SME view in the shared app document. This is code-level evidence only: COM-01..08 have not been run or satisfied, and no delivery claim is made.
+
+**Revision 0.2.0 (2026-10-31):** replaces the older separate-document source observation with the current same-document SME mount. Records the exact code baseline and keeps route, browser, responsive, offline and production acceptance unverified.
 
 **Objective:** switching workspace roles or opening the SME pack changes the active view while one app document keeps the shared header, navigation rail, contextual side panel and footer mounted. Route, focus, scroll and responsive state remain coherent, including direct entry, reload, back/forward and offline use.
 
 ## Reference implementation — Agentic Commerce OS
 
-Only this block names repository-specific source facts. The requirements and architecture below remain portable.
+The reference section pins the source snapshot; following sections label code-level observations separately from unverified acceptance.
 
 | Source / revision | Exact observation | Product consequence |
 |---|---|---|
-| `agentic-commerce-os` / `88bd730c8f35da249fb23349c50820cc1932a95c` | `public/local-first/index.html` contains the role views and shared `.topbar`; `public/local-first/sme-business-pack.html`, `sme-business-pack.css` and `sme-business-pack.js` form a separate document/surface. The main document links to `services/sme-business-pack/`. | Current route crosses document boundaries; perceived refresh is expected. Same shell is a new acceptance target, not a current property. |
-| Same revision | `public/local-first/style.css`, `workspace.js`, `graph-ui-tokens.css` and `scripts/local-first-release/artifact.mjs` define local presentation/build boundaries. The release checker selects the local-first output. | Extend the current native shell/style owner and release projection; do not create a second header/sidebar/footer or token profile. |
+| `agentic-commerce-os` / `2fb00defb2f9a057eaaa659338500c2b6b07aafc` | `public/local-first/index.html` contains the role views, shared shell and SME section. `workspace.js` resolves the SME hash route and lazy-loads `sme-business-pack.js`; that module mounts into `#sme .workspace-content`. The artifact manifest includes its JS, CSS and core modules, not a separate SME HTML document. | Same-document SME integration is present in source. Route history, focus, offline, responsive and race acceptance remain unverified. This supersedes the separate-document observation in 0.1.0. |
+| Same revision | `style.css`, `workspace.js`, `workspace-navigation.js`, `graph-ui-tokens.css` and `scripts/local-first-release/artifact.mjs` define current shell, navigation, style and artifact owners. | Reuse these owners; do not build a second shell, router, token profile or SME page. |
 | Same revision | `docs/prd-tad-adr-mvp-gtm-edge-commerce-agent.md` (`edge-commerce-agent-mvp@0.23.0`) owns product/commerce capability contracts; `docs/prd-tad-adr-mvp-gtm-commerce-workspaces.md` (`0.25.0`) is an implementation companion. `docs/prd-tad-adr-mvp-gtm-20260909T1320Z-solopreneur-mvp-gtm.md` owns first-dollar learning. | Keep this as shell/route continuity; do not fork the roadmap, capability registry, payment ledger or learning owner. |
 | `agentic-os` / `3405dc1246a1b32cfb10c044602505c4cf169c48` | Runtime policy and ADLC contracts require exact scoped source and delivery evidence; no policy grants UI code authority to publish or settle. | Role navigation is presentation state only; existing capability/effect owners remain authoritative. |
 
@@ -57,32 +59,32 @@ These are current single owners at the inspected source revision, not claims of 
 
 | Concern | Native owner at exact revision | Reused surface or utility | Acceptance check and result | Gap / next check |
 |---|---|---|---|---|
-| Identity and illustration | `public/local-first/index.html` at `88bd730c8f35da249fb23349c50820cc1932a95c` | Existing product brand and inline assets | `commerce-shell-singleton-check` — not run | Inventory asset rights before any new use. |
+| Identity and illustration | `public/local-first/index.html` at `2fb00defb2f9a057eaaa659338500c2b6b07aafc` | Existing product brand and inline assets | `commerce-shell-singleton-check` — not run | Inventory asset rights before any new use. |
 | Settings and preferences | `public/local-first/workspace.js` at the same revision | Existing navigation/view state | `commerce-route-history-check` — not run | Do not add a second preferences store. |
 | Tokens and render adapters | `public/local-first/graph-ui-tokens.css` plus `style.css` at the same revision | Existing generated token projection | `commerce-shell-singleton-check` — not run | Verify source digest and all role views. |
 | Typography and ideograms | `style.css` and `index.html` at the same revision | Current type and icon treatment | `commerce-responsive-shell-check` — not run | Contrast, font fallback and icon labels need browser evidence. |
-| Editor surface | Role content in `index.html`; separate pack surface in `sme-business-pack.html` at the same revision | Move pack view into one content slot | `commerce-shell-continuity-check` — not run | Current document boundary is divergent; no integrated parity claimed. |
+| Editor surface | SME view in `index.html`, mounted by `workspace.js` into `#sme .workspace-content` | Existing single-document workspace and lazy view module | `commerce-shell-continuity-check` — not run | Source mount is observed; route/history/visual parity is not yet verified. |
 | Status and evidence | Existing status/readiness owners projected through `workspace.js` at the same revision | Preserve loading, stale, empty and failure states | `commerce-route-race-check` — not run | Runtime observation source and human comprehension require separate evidence. |
 
 ## PRD
 
 ### User, pain and evidence
 
-**P1 — observed transition, unvalidated buyer pain:** a person selecting the SME pack leaves the current app document and enters a standalone document. This replaces the shared header and navigation and resets document-level UI state. The route/link/source boundary is observed at the pinned revision; its frequency, task loss, delay and buyer impact are not measured. Reuse one shell to reduce interruption; do not claim savings before timing real tasks.
+**P1 — route continuity, user impact unvalidated:** the earlier separate-document route is no longer current. At source revision `2fb00def`, `workspace.js` resolves the SME hash route and mounts its lazy view into the existing document. User impact, back/forward behavior, focus continuity, task loss and time remain unmeasured; source integration alone does not prove acceptance.
 
 | Role | Job | Evidence state |
 |---|---|---|
 | Shopper | Browse a local offer preview and understand its current state. | Existing role view observed; user study absent. |
 | Seller / Vendor | Prepare and inspect a product or offer. | Existing role view and draft boundary observed; willingness to pay unknown. |
 | Operator / Admin | Navigate projects and inspect bounded environment evidence. | Existing view observed; complete operational product not claimed. |
-| SME pack user | Check a listing and understand gaps without saving input. | Standalone interface observed; user acceptance absent. |
+| SME pack user | Check a listing and understand gaps without saving input. | View is mounted in the shared document at source; user acceptance absent. |
 | Maintainer | Change a view once while preserving shared shell behavior. | Target job; integration cost not measured. |
 
 ### Pain-to-feature, journey and criteria
 
 | Pain / rank | Hook → break → fix → close | Minimum change and value hypothesis |
 |---|---|---|
-| P1, rank 1: route transition replaces shell | Click SME pack → document reloads and replaces top/side navigation → render the pack as a view inside the already mounted shell → return to same role/context and use back/forward. | Reuse one shell, route resolver and native style owner; adapt pack markup and event boundary. Measure transition time, focus continuity and support reports before savings claims. |
+| P1, rank 1: route continuity remains unverified | Select SME pack → existing code swaps to its lazy view inside the same document → verify route/history/focus/input/offline behavior → return to the same role/context. | Reuse the existing shell, hash route, lazy module and style owner; fix only observed gaps. Measure transition time and focus continuity before savings claims. |
 | P2, rank 2: role-specific shell drift | Switch role → header/rail spacing or control position differs → shared semantic layout tokens and one component owner → compare same viewport and shell state. | Reuse current theme token mapping; do not impose another product’s palette. |
 | P3, rank 3: mobile navigation inconsistency | Collapse/expand side rail → ARIA state or content width disagrees → one state owner with ellipsis on constrained labels → keyboard/touch path stays reachable. | Reuse the existing navigation owner; no duplicate mobile variant. |
 
@@ -91,7 +93,7 @@ These are current single owners at the inspected source revision, not claims of 
 | VCC | Given / when / then | Named check | Constraint |
 |---|---|---|---|
 | COM-01 | Given Shop, Vendor, Admin or SME pack route, when changing route, then one shell root/header/nav/side panel/footer remains mounted and only the workspace slot changes. | `commerce-shell-continuity-check` | No full document navigation or duplicated shell DOM. |
-| COM-02 | Given direct SME path, reload and browser back/forward, when the route resolves, then the same shell and intended view appear with correct canonical URL. | `commerce-route-history-check` | No redirect to a separate app document; preserve query/hash context. |
+| COM-02 | Given direct `#sme` entry, reload and browser back/forward, when the route resolves, then the same shell and intended view appear with the correct app URL. | `commerce-route-history-check` | Preserve existing hash/history conventions; no separate SME document. |
 | COM-03 | Given a role switch at one viewport, when shell views are compared, then header, rail, side panel, footer, spacing and shared controls use one owner and consistent geometry. | `commerce-shell-singleton-check` | Role content may differ; shell has no per-role layout override. |
 | COM-04 | Given 320/360/390/768/1280 CSS px and 200% text zoom, when using every role and the pack, then content reflows, labels ellipsize safely, controls remain reachable and no page-level horizontal overflow occurs. | `commerce-responsive-shell-check` | Inner data tables may scroll in labelled regions. |
 | COM-05 | Given keyboard, touch and reduced-motion use, when navigating/opening/closing side panel, then focus, expanded state, Escape and ≥44 px targets are correct. | `commerce-shell-accessibility-check` | Do not claim human or physical-device acceptance from automation alone. |
@@ -107,7 +109,7 @@ The Agentic OS-ready status surface, AI Agent-ready discovery/execution surface,
 
 | Metric | Baseline | Target / window |
 |---|---|---|
-| Role-to-pack route continuity | Current source has separate document; no timed task baseline. | One-document transition in direct route/back-forward checks; time five users/tasks before savings claim. |
+| Role-to-pack route continuity | Same-document mount observed in source revision `2fb00def`; no timed task baseline. | Verify direct route/back-forward behavior; time five user tasks before any savings claim. |
 | Shared shell drift | Not exhaustively measured. | Zero duplicated shell owners and zero per-role layout override at candidate release. |
 | Task completion / TTV | Unknown. | Measure open role → pack → review report; ≤60 seconds is a hypothesis, not acceptance evidence until five observed tasks. |
 | Mobile reach | Existing browser coverage is not complete parity proof. | 320/360/390/768/1280 plus 200% zoom and keyboard/touch checks; human-device acceptance open. |
@@ -128,9 +130,11 @@ Current alternatives: keep separate local pages; use manual links between tools;
 
 ### One shell and routing contract
 
-The app document owns one `WorkspaceShell`: header, role/workspace navigation, single side panel, content slot and shared footer. A route resolver reads pathname plus existing hash/query context and selects a view module. Role changes update route and current-view state; SME content is loaded into the slot and unmounted independently. Use existing router/history conventions if present; if none can represent the direct service path, add one thin path adapter and configure the existing local/edge host to serve the same app document at that path. Do not create a parallel router or an extra shell.
+At source revision `2fb00def`, `index.html` contains the shared shell and SME view; `workspace.js` resolves the existing hash route, increments a navigation generation, lazy-loads the SME module and mounts it into `#sme .workspace-content`. The release artifact includes the SME module, styles and core, not a separate SME HTML document. This is source inspection, not browser acceptance.
 
-Maintain one shell DOM identity across route changes. Preserve user input and scroll when returning to a view unless the view’s existing contract explicitly resets it; restore focus to the destination heading or initiating control. Use `pushState` for user navigation and `popstate` for back/forward; direct entry and reload must resolve the same view. Route-level async work carries a navigation generation/abort signal; stale responses are discarded. A missing route is explicit and recoverable in the same shell.
+The app document owns one `WorkspaceShell`: header, role/workspace navigation, single side panel, content slot and shared footer. Preserve the existing hash/history route conventions and load the SME module into the slot. Do not add a second router, a dedicated SME page or a path adapter for this feature. Role changes update route and current-view state; asynchronous work remains generation-bound and late results cannot overwrite the active route.
+
+Maintain one shell DOM identity across route changes. Preserve user input and scroll when returning to a view unless the view’s existing contract explicitly resets it; restore focus to the destination heading or initiating control. Native hash navigation must support direct entry, reload and back/forward; do not replace it with a second history owner. Guard awaited route work with the existing navigation generation and discard stale results; add cancellation only where the owner supports it. A missing route is explicit and recoverable in the same shell.
 
 | Component / owner | Single responsibility | Boundary / recovery |
 |---|---|---|
@@ -219,16 +223,16 @@ All local page assets must stay under the existing local-first artifact root. Th
 
 ## ADR-01 — Route the pack inside the mounted app
 
-**Status:** proposed. Use one application document and one shell, with a route-driven content slot. A direct service path must resolve to that same document at the host boundary. Keep module boundaries for the existing pack logic; remove only its separate shell presentation after its behavior is carried into the shared host.
+**Status:** implemented in source revision `2fb00def`; acceptance remains unverified. **Decision:** keep the existing application document, shared shell, hash route and lazy SME module. Preserve the module boundary and do not add a separate SME page or path adapter. This decision records source architecture; it does not establish browser or production behavior.
 
 | Alternative | Benefit | Cost / decision |
 |---|---|---|
-| Keep standalone document | Lowest immediate change; isolated assets. | Preserves reload and shell divergence; does not satisfy COM-01/02. Reject for target. |
-| Link by hash only | Simple client route. | Does not preserve the required direct service path and can break existing bookmarks. Reject unless a canonical URL adapter keeps both. |
-| Shared host document + path resolver | Stable shell and shareable route; local view remains modular. | Requires host fallback/readback and careful history/focus. Selected for the proposed MVP. |
+| Keep standalone document | Isolated assets and independent entry. | Older design state; current source already mounts the SME view in the shared document. Do not restore. |
+| Hash route in the shared document | Reuses the existing shell, history convention and view owner. | Current source choice; COM-01/02 still need browser evidence. |
+| Add a dedicated path resolver | Could provide another URL form. | Not needed for the existing `#sme` route; adds routing and host fallback work. Reject for this increment. |
 | Rebuild the app in a new SPA framework | Familiar routing ecosystem. | Paid/free-tier risk, migration, duplicated state and bundle cost without need. Reject. |
 
-Recovery: revert route projection and resolver together; restore the previous exact route behavior, keep existing pack assets, and verify direct path plus prior role navigation. No data migration is needed. Revisit only if the host cannot serve the path as one document within the $0 cap. Self-hosted local artifact remains preferred; managed deployment cost is unknown and not selected.
+Recovery: if a future route change regresses, revert that exact route change, retain the SME modules and verify `#sme`, back/forward and prior role navigation. No data migration is needed. Revisit only if the existing hash route cannot resolve reliably within the $0 cap. Self-hosted local artifact remains preferred; managed deployment cost is unknown and not selected.
 
 | TCO dimension | Chosen: existing static/local FOSS | Best alternative: keep two local documents | Evidence state |
 |---|---|---|---|
@@ -239,22 +243,22 @@ Recovery: revert route projection and resolver together; restore the previous ex
 
 ## MVP
 
-**MVP:** place the current SME pack view inside the existing shared shell; retain its local behavior and limitations; route to/from Shop, Vendor and Admin without document replacement; keep direct path/history, responsive nav, side panel, focus, offline and failure states. No new commerce capability or authority.
+**MVP:** the current source already places the SME pack view inside the shared document and shell. Retain this code path; verify route/history, responsive navigation, side panel, focus, offline and failure states, and fix only evidenced gaps. No new commerce capability or authority. The source mount is not acceptance proof.
 
 | VCC | Evidence Reference | Local rung | Delivered rung |
 |---|---|---|---|
 | COM-01–08 | None; criteria specified, not yet executed or satisfied. | spec-complete | undocumented |
 
-**Demo Skeleton:** Hook (select SME pack from Vendor/Admin) → Probe (observe document and shell IDs) → Reveal=COM-01 (one document/shell persists) → back/forward, resize and reload → Close (show exact route, state and offline boundary); ≤2 minutes, not timed. Domain-object rubric: unassessed; blocker for next level is independent route and visual review.
+**Demo Skeleton:** Hook (open `#sme` from the workspace) → Probe (observe the one document and shell while the lazy view mounts) → Reveal=COM-01 (source behavior confirmed; browser check pending) → back/forward, resize and reload → Close (show route, state and offline boundary); ≤2 minutes, not timed. Domain-object rubric: unassessed; independent route and visual review remain open.
 
 ### Roadmap
 
-**Owner and join:** product function · `COMMERCE-CONTROL-PLANE-001@0.1.0`; the existing first-dollar record remains the owner of validation and payment learning.
+**Owner and join:** product function · `COMMERCE-CONTROL-PLANE-001@0.2.0`; the existing first-dollar record remains the owner of validation and payment learning.
 
 | Phase | Rank / reuse | Exit condition and cap | Stop / recovery |
 |---|---|---|---|
-| A: baseline | P1 first; use five timed transitions at current source. | Record document count, shell geometry, focus, route, task time; ≤20 min. | Stop on unowned behavior or dirty source; preserve exact baseline. |
-| B: route/shell adapter | Reuse current shell, pack logic and release artifact. | COM-01/02/06; ≤3 modules, ≤25 paths, ≤100 kB, ≤90 min. | Revert route + shell projection; no store changes. |
+| A: source baseline and task measure | P1 first; source already shows same-document hash routing and lazy SME mount. | Record document count, shell geometry, focus, route and five task times; ≤20 min. | Stop on unowned behavior or dirty source; preserve exact baseline. |
+| B: route/shell acceptance | Reuse current shell, pack logic and release artifact; no duplicate adapter. | Verify COM-01/02/06 on the exact candidate; any source fix stays within ≤3 modules, ≤25 paths, ≤100 kB, ≤90 min. | Revert only an evidenced route fix; no store changes. |
 | C: responsive parity | Reuse shared tokens and navigation owner. | COM-03/04/05 across named widths/zoom and keyboard/touch. | Keep known-good route; fix one shared owner. |
 | D: delivery decision | Existing delivery owner only. | COM-07/08 and exact candidate, route, asset, rollback receipts. | No deployment until explicit promotion instruction. |
 
@@ -278,30 +282,30 @@ Assumptions: qualified prospects, conversion, price, support load, retention and
 
 Acquisition channel, sales cycle, activation-to-paid conversion, repeat-use cohort and support capacity remain unknown. The first experiment measures completion of five internal tasks; channel and retention experiments wait for observed pain and explicit outreach authority.
 
-Operations reuse existing source and release owners. Support classifies route/history, storage, offline and shell accessibility failures; no telemetry is added. Incident recovery reverts the exact route and shell candidate, retains local drafts and verifies direct URL/back-forward. Delivery, deployment and rollback require their own receipts and authority.
+Operations reuse existing source and release owners. Support classifies route/history, storage, offline and shell accessibility failures; no telemetry is added. Incident recovery reverts the exact route and shell candidate, retains local drafts and verifies the direct hash URL/back-forward. Delivery, deployment and rollback require their own receipts and authority.
 
 ## C01–C16 coverage
 
-**Join:** `COMMERCE-CONTROL-PLANE-001@0.1.0` · **As of:** 2026-10-28 · **Owner:** Commerce product function. **0:** a separate document transition and an existing shared role document are observed; user pain, price and demand are unknown. **1:** one person opens the pack, completes a report, and returns with shell, route and focus retained within 60 seconds; no observation yet.
+**Join:** `COMMERCE-CONTROL-PLANE-001@0.2.0` · **As of:** 2026-10-31 · **Owner:** Commerce product function. **0:** same-document SME routing is observed in source; user pain, route acceptance, price and demand remain unmeasured. **1:** one person opens the pack, completes a report, and returns with shell, route and focus retained within 60 seconds; no observation yet.
 
 | Domain | Decision | Source section@revision | Evidence / gap | Owner | Next check / trigger |
 |---|---|---|---|---|---|
-| C01 Purpose, customer, pain | covered | PRD@0.1.0 | Route transition observed; user impact unmeasured | Product | Five timed tasks before baseline sign-off |
-| C02 Market, timing | covered | GTM@0.1.0 | Population sources cited; price/fit unknown | Product | Segment and offer evidence before TAM claim |
-| C03 Offer, alternatives | covered | GTM/ADR@0.1.0 | Manual/no-change/FOSS options; offer unvalidated | Product | Revisit after repeated pain evidence |
-| C04 Product, experience | covered | PRD@0.1.0 | Route, mobile, accessibility/offline VCCs defined | UX | Run COM-01–07 with human review |
-| C05 Architecture, data | covered | TAD@0.1.0 | Shell, route, data boundaries and five flows defined | Architecture | Verify host fallback and route identity |
-| C06 Quality, security, AI | covered | TAD@0.1.0 | Race, privacy, offline and $0 bounds; no implementation proof | Security | Run COM-06–08 before candidate |
-| C07 Decisions, tradeoffs | covered | ADR@0.1.0 | Single document selected; recovery stated | Architecture | Revisit if host path cannot resolve same document |
-| C08 Smallest validated slice | covered | MVP@0.1.0 | Dependency-closed slice and VCCs; no checks passed | Product | Execute COM-01/02/04 |
-| C09 Acquisition, retention | covered | GTM@0.1.0 | Existing learning owner; no channel/payment evidence | GTM | Review internal task outcomes first |
-| C10 Operations | covered | TAD/GTM@0.1.0 | Support/recovery and accountable owners named | Operations | Review first route incident or pilot |
-| C11 Organization, obligations | covered | TAD/ADR@0.1.0 | Existing authority/privacy boundaries retained; legal review open | Product counsel | Check before new hosted or customer data scope |
-| C12 Financial viability | covered | GTM@0.1.0 | Formulae stated; input and statements unresolved | Finance | Populate from exact payment/cost receipts |
-| C13 Capital, milestones | covered | Roadmap@0.1.0 | $0 bootstrap target; no ask or funding evidence | Product | Revisit if verified free limit fails |
-| C14 ADLC execution | covered | Roadmap@0.1.0 | Authoring lane scoped; release/deploy separated | ADLC owner | Exact source integration and no-deploy disposition |
-| C15 Audience projections | deferred | Venture@0.1.0 | Depends on validated demand and sourced financial inputs; audience claims are not yet evidenced | Product | Revisit after those inputs exist |
-| C16 Learning, next increment | covered | MVP/GTM@0.1.0 | Five-task experiment and successor trigger defined | Product | Record outcome in existing learning owner |
+| C01 Purpose, customer, pain | covered | PRD@0.2.0 | Same-document route observed in source; user impact unmeasured | Product | Five timed tasks before baseline sign-off |
+| C02 Market, timing | covered | GTM@0.2.0 | Population sources cited; price/fit unknown | Product | Segment and offer evidence before TAM claim |
+| C03 Offer, alternatives | covered | GTM/ADR@0.2.0 | Manual/no-change/FOSS options; offer unvalidated | Product | Revisit after repeated pain evidence |
+| C04 Product, experience | covered | PRD@0.2.0 | Route, mobile, accessibility/offline VCCs defined | UX | Run COM-01–07 with human review |
+| C05 Architecture, data | covered | TAD@0.2.0 | Existing shell/hash route and data boundaries recorded; parity unverified | Architecture | Verify browser history, focus and route identity |
+| C06 Quality, security, AI | covered | TAD@0.2.0 | Race, privacy, offline and $0 bounds; no acceptance proof | Security | Run COM-06–08 before candidate |
+| C07 Decisions, tradeoffs | covered | ADR@0.2.0 | Existing same-document route retained; recovery stated | Architecture | Revisit only if host route cannot serve the app document |
+| C08 Smallest validated slice | covered | MVP@0.2.0 | Source integration observed; no checks passed | Product | Execute COM-01/02/04 |
+| C09 Acquisition, retention | covered | GTM@0.2.0 | Existing learning owner; no channel/payment evidence | GTM | Review internal task outcomes first |
+| C10 Operations | covered | TAD/GTM@0.2.0 | Support/recovery and accountable owners named | Operations | Review first route incident or pilot |
+| C11 Organization, obligations | covered | TAD/ADR@0.2.0 | Existing authority/privacy boundaries retained; legal review open | Product counsel | Check before new hosted or customer data scope |
+| C12 Financial viability | covered | GTM@0.2.0 | Formulae stated; input and statements unresolved | Finance | Populate from exact payment/cost receipts |
+| C13 Capital, milestones | covered | Roadmap@0.2.0 | $0 bootstrap target; no ask or funding evidence | Product | Revisit if verified free limit fails |
+| C14 ADLC execution | covered | Roadmap@0.2.0 | Authoring lane scoped; release/deploy separated | ADLC owner | Exact source integration and no-deploy disposition |
+| C15 Audience projections | deferred | Venture@0.2.0 | Depends on validated demand and sourced financial inputs; audience claims are not yet evidenced | Product | Revisit after those inputs exist |
+| C16 Learning, next increment | covered | MVP/GTM@0.2.0 | Five-task experiment and successor trigger defined | Product | Record outcome in existing learning owner |
 
 **Coverage:** 16/16 dispositioned; 15/15 applicable covered; 1 deferred; 0 not applicable. This is specification coverage, not implementation readiness. Revisit at baseline, MVP acceptance and audience handoff.
 
