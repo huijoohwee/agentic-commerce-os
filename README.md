@@ -98,6 +98,17 @@ a third Dev runtime entry point. `npm run dev:apex` starts the same Dev topology
 on port 5173. This preserves the pre-existing `dev:offline` contract while the
 feature specification counts exactly the two Wrangler launch commands.
 
+The Singapore SME Business Pack also runs as a local stdio MCP server:
+
+```bash
+npm run sme:local
+```
+
+Configure an MCP host to launch this command from the repository root. It reads
+and writes protocol messages through stdin/stdout, uses the shared local
+evaluator, and performs no network requests or input persistence. The Singapore
+pack remains provisional; outputs are arithmetic and evidence status only.
+
 Open the edge root (Wrangler defaults to `http://localhost:8787/`) for the
 mobile-first Storefront Console. The page offers public sanitized catalog reads,
 same-origin session-scoped discovery and checkout preparation, and a WebMCP

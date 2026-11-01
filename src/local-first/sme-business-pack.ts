@@ -3,27 +3,21 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprot
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js'
 import { isHttpFailure, isRecord, readJsonObject } from '../shared/http.ts'
 // @ts-expect-error The browser-safe JavaScript module is shared by the UI and the Worker.
-import { invokeSmePackTool, PACK_INDEX, PACK_PATH, TOOL_NAMES } from '../../public/local-first/sme-business-pack-core.js'
+import { invokeSmePackTool, PACK_INDEX, PACK_PATH, TOOL_SCHEMAS } from '../../public/local-first/sme-business-pack-core.js'
 
 export const SME_PACK_LIMITS = Object.freeze({ requestBytes: 32768, responseBytes: 65536, deadlineMs: 2000 })
-const inputSchemas = Object.freeze({
-  'pack.list': { type: 'object', properties: {}, additionalProperties: false },
-  'pack.required_fields': { type: 'object', required: ['pack_id'], properties: { pack_id: { type: 'string', enum: PACK_INDEX.map((pack: any) => pack.id) } }, additionalProperties: false },
-  'takeover.check_listing': { type: 'object', required: ['pack_id', 'facts'], properties: {
-    pack_id: { type: 'string', enum: PACK_INDEX.map((pack: any) => pack.id) }, facts: { type: 'object', maxProperties: 40 },
-  }, additionalProperties: false },
-  'takeover.transfer_checklist': { type: 'object', required: ['pack_id'], properties: { pack_id: { type: 'string', enum: PACK_INDEX.map((pack: any) => pack.id) } }, additionalProperties: false },
-})
 const descriptions: Record<string, string> = {
-  'pack.list': 'List provisional Singapore and Malaysia F&B takeover packs. No inference or external data call.',
-  'pack.required_fields': 'Read the closed F&B takeover facts required by one versioned jurisdiction pack.',
-  'takeover.check_listing': 'Compute completeness and a labelled arithmetic report. Inputs are not stored or verified.',
-  'takeover.transfer_checklist': 'Read a transfer checklist only after qualified review; provisional packs return no checklist content.',
+  'pack.list': 'List the Singapore F&B takeover pack. No inference or external data call.',
+  'pack.protocol': 'Read the provisional closed claim fields, cash lines and offline evidence tasks.',
+  'takeover.check': 'Check closed buyer claims and entered evidence; raw differences only while the pack is provisional.',
+  'takeover.budget': 'Compute cash-to-close ranges, lease exposure and unchecked share from buyer inputs only.',
+  'takeover.plan': 'Order offline evidence tasks by cash line and produce a local worksheet.',
+  'takeover.compare_claim_sets': 'Compare two or three anonymous Singapore claim sets in entry order using identical fixed report rows; no ranking or winner.',
+  'takeover.transfer_checklist': 'Read a transfer checklist only after qualified reviewer approval.',
 }
-export const SME_PACK_TOOLS = Object.freeze(TOOL_NAMES.map((name: string) => Object.freeze({
-  name, title: name.replaceAll('.', ' ').replace(/\b\w/g, letter => letter.toUpperCase()),
-  description: descriptions[name]!, inputSchema: inputSchemas[name as keyof typeof inputSchemas]!,
-  annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+export const SME_PACK_TOOLS = Object.freeze(TOOL_SCHEMAS.map((tool: any) => Object.freeze({
+  name: tool.name, title: tool.name.replaceAll('.', ' ').replace(/\b\w/g, (letter: string) => letter.toUpperCase()),
+  description: descriptions[tool.name]!, inputSchema: tool.inputSchema, annotations: tool.annotations,
 })))
 
 function failure(status: number, code: string) {
