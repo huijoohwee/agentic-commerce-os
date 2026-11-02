@@ -1,17 +1,20 @@
 /** Shared completeness contract for the browser producer and protected release consumer. */
-export const BROWSER_PROOF_SCHEMA = 'commerce.local-first-browser-proof/v2';
+export const BROWSER_PROOF_SCHEMA = 'commerce.local-first-browser-proof/v3';
 export const BROWSER_CHECKS = Object.freeze({
   scope: 'exact production scope and server mutation refusal',
   mobile: 'mobile draft creation, safe canvas link and responsive layout',
   offline: 'offline navigation, editing and durable reload',
   concurrency: 'concurrent tabs reject stale overwrites and retain editor text',
   portability: 'portable JSON roundtrip and atomic import conflict preservation',
+  firstReport: 'fresh anonymous mobile session reaches a local SME report within five minutes with zero SME service calls',
   launch: 'offline merchant review, exact economics and private-note-free native launch export',
   review: 'unsaved and concurrently changed offers require fresh merchant review',
   economics: 'launch terms survive offline reload and loss-making estimates fail review',
   roles: 'shopper, vendor and admin views use durable drafts, private projections, human review and offline mobile navigation',
+  smeComparison: 'offline mobile SME comparison and printable worksheet, WebMCP parity, fixed slots/rows, ≤4-page print output, afterprint cleanup, back-forward, stale-report clearing, stale-result suppression, route-exit clearing and no service writes',
   checkout: 'Stripe test checkout review, provider identity, pending delivery refusal, cancellation, reload and offline safety',
   privacy: 'imported text cannot inject markup; no private draft network writes',
+  housing: 'one Housing workflow using the shared Base Multi-dimensional Table, listing facts, local plans, privacy and final mobile/offline journeys',
 });
 const required = Object.values(BROWSER_CHECKS);
 export function completeBrowserChecks(checks) {

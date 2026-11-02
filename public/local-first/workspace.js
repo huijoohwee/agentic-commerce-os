@@ -1,5 +1,5 @@
 import { listDrafts, groupProjects } from './drafts.js'; import { getOrCreateSingleton } from './workspace-singleton.js'; import { bindDemoOfferDetails } from './shopper-demo-detail.js';
-import { WORKSPACE_ROLES, bindWorkspaceNavigation, mountWorkspaceShell, mountWorkspaceSidebar } from './workspace-navigation.js?v=workspace-navigation-mobile-50';
+import { WORKSPACE_ROLES, bindWorkspaceNavigation, mountWorkspaceShell, mountWorkspaceSidebar } from './workspace-navigation.js?v=workspace-navigation-mobile-51';
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; await getOrCreateSingleton('workspace-application', async () => { mountWorkspaceShell();
 const displayLocale = document.documentElement.lang || 'en'; const $ = selector => document.querySelector(selector); const monogram = title => { const words = title.trim().split(/\s+/u); return (words.length > 1 ? words.slice(0, 2).map(word => [...word][0]).join('') : [...words[0]].slice(0, 2).join('')).toUpperCase(); }; const merchantName = id => String(id || '').replace(/[-._]+/gu, ' ').replace(/(^|\s)\p{L}/gu, initial => initial.toUpperCase());
 const checkoutMode = document.querySelector('meta[name="commerce-checkout-mode"]')?.content, shopCheckoutNav = document.querySelector('#shop-navigation-content')?.content.querySelector('#shop-checkout-nav');
@@ -12,9 +12,9 @@ if (liveCheckout && shopCheckoutNav) {
   $('#shop-checkout-action').textContent = checkoutMode === 'live-reader' ? 'Restore a purchase ↗' : 'Review education materials ↗';
   $('#shop-checkout-note').textContent = checkoutMode === 'live-reader' ? 'Restore a purchase · Save your recovery file' : 'One-time payment · Save your recovery file before payment';
 }
-const views = new Set(['shop', 'checkout', 'vendor', 'vendor-editor', 'vendor-preview', 'admin', 'admin-reviews', 'admin-data', 'admin-runtime', 'admin-project', 'admin-tools', 'sme']), resolveRoute = hash => { const requested = hash.split('?')[0], view = views.has(requested) ? requested : requested.startsWith('sme-') ? 'sme' : 'shop'; return { requested, view, role: view === 'sme' ? 'sme' : view.split('-')[0] }; }, setRolePanels = role => document.querySelectorAll('[data-role-panel]').forEach(panel => { panel.hidden = panel.dataset.rolePanel !== role; }), initialRole = resolveRoute(location.hash.slice(1)).role; document.body.dataset.workspaceRole = initialRole; setRolePanels(initialRole === 'sme' ? '' : initialRole);
+const views = new Set(['shop', 'checkout', 'vendor', 'vendor-editor', 'vendor-preview', 'admin', 'admin-reviews', 'admin-data', 'admin-runtime', 'admin-project', 'admin-tools', 'sme', 'housing']), resolveRoute = hash => { const requested = hash.split('?')[0], view = views.has(requested) ? requested : requested.startsWith('sme-') ? 'sme' : requested.startsWith('housing-') ? 'housing' : 'shop'; return { requested, view, role: view === 'sme' ? 'sme' : view.split('-')[0] }; }, setRolePanels = role => document.querySelectorAll('[data-role-panel]').forEach(panel => { panel.hidden = panel.dataset.rolePanel !== role; }), initialRole = resolveRoute(location.hash.slice(1)).role; document.body.dataset.workspaceRole = initialRole; setRolePanels(initialRole === 'sme' ? '' : initialRole);
 const channel = typeof BroadcastChannel === 'function' ? new BroadcastChannel('commerce-local-drafts') : null;
-let drafts = [], draftsLoaded = false, launch, editor, editorPromise, generation = 0, navigation = 0, shopPage = 0, detailId = null, searchRequested = null, smeRoute = null, workspaceSwitchPending = null, draftLoading = true, draftError = '', graphView, tableGeneration = 0;
+let drafts = [], draftsLoaded = false, launch, editor, editorPromise, generation = 0, navigation = 0, shopPage = 0, detailId = null, searchRequested = null, smeRoute = null, housingRoute = null, workspaceSwitchPending = null, draftLoading = true, draftError = '', graphView, tableGeneration = 0;
 const tablePages = { vendor: 0, admin: 0 };
 const node = (tag, text, className) => {
   const element = document.createElement(tag);
@@ -197,14 +197,14 @@ function renderCurrent() {
   renderEnvironment();
 }
 async function route() {
-  const revision = ++navigation, hash = location.hash.slice(1), { requested, view, role } = resolveRoute(hash), switchState = workspaceSwitchPending?.role === role ? workspaceSwitchPending : null, switchedWorkspace = !!switchState, sectionRoute = (role === 'sme' && requested !== 'sme') || ['collection', 'shop-sandbox'].includes(requested); workspaceSwitchPending = null;
+  const revision = ++navigation, legacyHousingRoute = ['housing-needs', 'housing-priorities', 'housing-listings', 'housing-compare', 'housing-plan'].includes(location.hash.slice(1).split('?')[0]);
+  if (legacyHousingRoute) history.replaceState(history.state, '', `${location.pathname}${location.search}#housing`);
+  const hash = location.hash.slice(1), { requested, view, role } = resolveRoute(hash), switchState = workspaceSwitchPending?.role === role ? workspaceSwitchPending : null, switchedWorkspace = !!switchState, sectionRoute = (role === 'sme' && requested !== 'sme') || (role === 'housing' && requested !== 'housing') || ['collection', 'shop-sandbox'].includes(requested); workspaceSwitchPending = null;
   $('#status').textContent = ''; $('#status').removeAttribute('data-error');
   if (role === 'sme') try { const module = await import('./sme-business-pack.js?v=workspace-singleton-2'); if (revision !== navigation) return; await module.prepareSmeBusinessPackStyles(); if (revision !== navigation) return; if (!smeRoute) smeRoute = await module.mountSmeBusinessPack(); if (revision !== navigation) { smeRoute?.deactivate(); return; } } catch (error) { if (revision === navigation) throw error; return; }
-  document.body.classList.add('console-mode'); document.body.dataset.workspaceRole = role;
-  $('#workspace-role-switcher').value = role === 'checkout' ? 'shop' : role;
-  // Shopper and checkout share one navigation node, including its search handler.
-  renderNavigation(role); if (role === 'sme') smeRoute?.updateSectionNavigation();
-  if (role !== 'sme') $('#' + role + ' .workspace-content').prepend($('#draft-storage-state'));
+  if (role === 'housing') try { const module = await import('./housing-comparison.js?v=housing-comparison-23'); if (revision !== navigation) return; if (!housingRoute) housingRoute = module.mountHousingWorkspace($('#housing-root')); if (revision !== navigation) { housingRoute?.deactivate(); housingRoute = null; return; } housingRoute.activate(requested); } catch (error) { if (revision === navigation) throw error; return; } else if (housingRoute) { housingRoute.deactivate(); housingRoute = null; }
+  document.body.classList.add('console-mode'); document.body.dataset.workspaceRole = role; $('#workspace-role-switcher').value = role === 'checkout' ? 'shop' : role;
+  renderNavigation(role); if (role === 'sme') smeRoute?.updateSectionNavigation(); if (role !== 'sme') $('#' + role + ' .workspace-content').prepend($('#draft-storage-state'));
   $('#workspace-agent-open').hidden = role !== 'admin';
   $('#console-breadcrumb').hidden = false;
   const root = $('#console-root'), workspaceRole = role === 'checkout' ? 'shop' : role; root.href = '#' + workspaceRole;
@@ -228,7 +228,7 @@ async function route() {
   if (view === 'admin-runtime' && new URLSearchParams(hash.split('?')[1]).get('section') === 'checks') $('#environment-checks').scrollIntoView({ block: 'start' });
   else if (['collection', 'shop-sandbox'].includes(hash)) document.getElementById(hash)?.scrollIntoView({ block: 'start' });
   if (searchRequested) { const target = searchRequested; searchRequested = null; if (view === role && target.startsWith('#' + (role === 'admin' ? 'project' : role) + '-')) { $(target).focus(); return; } }
-  if (hash !== 'collection' && hash !== 'main' && !(role === 'sme' && requested !== 'sme')) {
+  if (hash !== 'collection' && hash !== 'main' && !(role === 'sme' && requested !== 'sme') && !(role === 'housing' && requested !== 'housing')) {
     const heading = view === 'admin-runtime' && new URLSearchParams(hash.split('?')[1]).get('section') === 'checks' ? $('#environment-history-heading') : hash === 'shop-sandbox' ? $('#live-offer-heading') : document.querySelector(`#${role} [data-view-panel="${view}"] h1, #${role}-heading`);
     if (heading && !switchedWorkspace) { const x = window.scrollX, y = window.scrollY; heading.focus({ preventScroll: true }); const restore = () => revision === navigation && (window.scrollX !== x || window.scrollY !== y) && window.scrollTo({ left: x, top: y, behavior: 'instant' }); restore(); requestAnimationFrame(restore); }
   }
@@ -594,6 +594,6 @@ void Promise.all([refresh(), route()]).catch(message);
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js', { scope: './', updateViaCache: 'none' })
     .then(() => navigator.serviceWorker.ready)
-    .then(() => { $('#offline-ready').textContent = 'Offline access is ready. You can return to this workspace without a connection.'; })
+    .then(() => { const status = $('#offline-ready'); if (!status.dataset.housingOfflineState) status.textContent = 'Offline access is ready. Core workspace is cached; open Housing to prepare its offline files.'; })
     .catch(() => { $('#offline-ready').textContent = 'Offline page loading is unavailable in this browser. Saved drafts still stay on this device.'; });
 } else $('#offline-ready').textContent = 'This browser needs a connection to open the page. Your saved drafts stay on this device.'; });

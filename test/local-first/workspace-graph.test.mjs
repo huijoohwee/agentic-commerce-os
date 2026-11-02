@@ -41,16 +41,26 @@ test('missing launch fields have explicit presentation defaults and private fiel
     ['Untitled launch', 'Store not set', 'Needs human review', '$12.00', 'Not set', 'Not set', 'Review the saved offer', '1']);
 });
 
-test('Commerce table uses the exact private Agentic Base browser artifact', () => {
+test('Commerce table uses the exact Agentic Base browser artifact candidate', () => {
   const pin = JSON.parse(fs.readFileSync('config/agentic-base-data-view.json', 'utf8'));
   assert.equal(pin.schema, 'agentic-base/consumer-artifact/v1');
   assert.equal(pin.source.repository, 'github.com/huijoohwee/agentic-base');
-  assert.equal(pin.source.revision, '093d2592449d19892170eac928606cd5d5da58b8');
+  assert.equal(pin.source.revision, '0cd7602d0b968bf27ecdaee0d8726138bf7997df');
   assert.equal(pin.source.sourceDirty, false);
   assert.equal(pin.contract.browserExport, 'mountDataView');
+  assert.equal(pin.contract.defaultLayout, 'table');
+  assert.deepEqual(pin.contract.layoutModes, ['table', 'multiDimensional']);
+  assert(pin.inputs.some(input => input.path === 'packages/views-react/src/table/MultiDimTableView.tsx'));
   assert.deepEqual(pin.outputs.map(output => output.path).sort(), [...baseAssets].sort());
   const verified = verifyAgenticBaseDataView();
   assert.deepEqual(verified.outputs, pin.outputs);
+  const baseJs = fs.readFileSync('public/local-first/agentic-base-data-view.js', 'utf8');
+  const baseCss = fs.readFileSync('public/local-first/agentic-base-data-view.css', 'utf8');
+  const housing = fs.readFileSync('public/local-first/housing-comparison.js', 'utf8');
+  assert.match(baseJs, /multiDimensional/);
+  assert.match(baseJs, /base-multi-dimensional-table/);
+  assert.match(baseCss, /base-multi-dimensional-table/);
+  assert.match(housing, /layout: 'multiDimensional'/);
   const source = fs.readFileSync('public/local-first/workspace-graph.js', 'utf8');
   assert.match(source, /import\('\.\/agentic-base-data-view\.js'\)/);
   assert.match(source, /import\('\.\/graph-data-view\.js'\)/);

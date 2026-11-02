@@ -1,0 +1,401 @@
+{
+  "schema": "commerce.housing-workspace-browser-proof/v1",
+  "scope": "local-dev-candidate-only",
+  "observedAt": "2026-11-02T02:55:40.451Z",
+  "baseRevision": "93f0fb232a3d3fb33b7adfb4ec3883367f396abd",
+  "candidateSourceDigest": "207309b83f01b7edc5c0b20602e5da4ac45784e6e69defabc00ce5329bf18197",
+  "sourceDigestAlgorithm": "SHA-256 over UTF-8 rows <path><TAB><file SHA-256>, joined by LF with no trailing LF, paths sorted lexically",
+  "sourceFiles": [
+    {"path":"config/agentic-base-data-view.json","bytes":4132,"sha256":"2b20633c6245bda16c59a5cfd875a18969f5e618929eb066ffc84fb85e9c3d18"},
+    {"path":"docs/commerce-graph-runtime.md","bytes":18571,"sha256":"ea958f10409aabc0a88a1e1b93d4a4b22773584432f73ce6ac766989093447c2"},
+    {"path":"docs/prd-tad-adr-mvp-gtm-commerce-workspaces.md","bytes":68199,"sha256":"39b1b889d294067a199f8900d8a5043168072b8ab6d1bd8fe8d874e72c101acb"},
+    {"path":"docs/prd-tad-adr-mvp-gtm-student-housing-workspace.md","bytes":18344,"sha256":"c6012c260d8a817b4ae4d9a70a97bc176593765ad81ea0388829cbe0bb837dc2"},
+    {"path":"public/local-first/agentic-base-data-view.css","bytes":17396,"sha256":"8f3150e6897087417a19f41cae1b86f45cd7f211372085f69b7b08356c984d8d"},
+    {"path":"public/local-first/agentic-base-data-view.js","bytes":213845,"sha256":"390ded9cf3feb3ce3c3b17906750003b6c7f51327f6ffa74b93b53dbd50681ab"},
+    {"path":"public/local-first/housing-comparison.css","bytes":6367,"sha256":"cb89bf5d874cfb31162b8144709b40641bd3964eb63137708b58489a699af395"},
+    {"path":"public/local-first/housing-comparison.js","bytes":44935,"sha256":"9bc33a5cb2ff92d91f26908f2e7636c48f0080363ae2c9fec0c979d8fc2166c8"},
+    {"path":"public/local-first/housing-engine.js","bytes":9002,"sha256":"f31db6d23567c25eb1bd9b280a10281ed3cef205fa51eabc3c37523567657d07"},
+    {"path":"public/local-first/housing-sample.js","bytes":1265,"sha256":"99cffbe6f2757dfa4b7dd4b94ea53f0ea0602616074c72cbdbf487a33d839442"},
+    {"path":"public/local-first/index.html","bytes":56523,"sha256":"90ae16b3f24fb9a918211d859de83f83eb39421ca97e05b07f50a5557496856d"},
+    {"path":"public/local-first/sw.js","bytes":4224,"sha256":"238109d3ad6ee3c088384ca519cbadd18786e7fa7c6e8451915c17b031bb26fd"},
+    {"path":"public/local-first/workspace-navigation.js","bytes":15406,"sha256":"2838d3b542de8487fd7b0920ae749d9487b76dec4dab47889417ebd2fa22809e"},
+    {"path":"public/local-first/workspace.js","bytes":61073,"sha256":"a6af3a64a0a8867731d6b7dd1608547c1ae63967a029a5820b3a21709966aee5"},
+    {"path":"scripts/local-first-release/artifact.mjs","bytes":21132,"sha256":"002fa03ac277a0049e6665a74a12ff196a2fb3019624d687ef964adf0a3c133a"},
+    {"path":"scripts/local-first-release/browser-proof.mjs","bytes":4689,"sha256":"acac19b38149f1fc4f3521a8ad2548a56234af797e7d131ac37081c788934db5"},
+    {"path":"scripts/local-first-release/check.mjs","bytes":14740,"sha256":"e64cbe96537c5d1b60f938872bf13d08f8e2c7a821beb74d519bb3ed961a9c2c"},
+    {"path":"src/local-first/worker.ts","bytes":9443,"sha256":"70de15b49cb6897cd403e6c1aa29f3c8a60ab28db20475b953a99b9b62823875"},
+    {"path":"test/local-first/availability.test.mjs","bytes":4131,"sha256":"d4eb55247bb56a0ad0762f3be79290027866eb61332b3f1463a12f6b5f88e6a5"},
+    {"path":"test/local-first/browser-proof.test.mjs","bytes":1940,"sha256":"ca173da8ad4220bb9727fbdcc09fcf10c407df9784ae6bf14d3ff221e8bf6767"},
+    {"path":"test/local-first/housing-browser.mjs","bytes":27059,"sha256":"cfd053337bc87df28601661b68cfe15e15dbdaeafc0799f5251b3bd31d49ad42"},
+    {"path":"test/local-first/housing-workspace.test.mjs","bytes":4332,"sha256":"0cde427e95720090cd11c9ba4783de482f748e517c78e33beecf9c065807fe5d"},
+    {"path":"test/local-first/workspace-graph.test.mjs","bytes":9694,"sha256":"c524c3f009aa6fe92fb95a0074fdd6c6ee066526dc395e7b396cb16c4e3e5dcb"},
+    {"path":"test/local-first/workspace-shell-browser.mjs","bytes":8766,"sha256":"0ddf4b9e7019f39239ee2c117b5db1068d767d8fc7a7f020d08b57b3eedc88be"}
+  ],
+  "devServer": {
+    "command": "npm run dev -- --local-first",
+    "origin": "http://127.0.0.1:55466",
+    "state": "running for visible local review",
+    "route": "/agentic-commerce-os/#housing"
+  },
+  "runtimeBudget": {
+    "authoredRuntimeBytes": 57929,
+    "capBytes": 58000,
+    "remainingBytes": 71,
+    "authoredRuntimeOwners": 3,
+    "authoredRuntimeFiles": [
+      "public/local-first/housing-comparison.js",
+      "public/local-first/housing-comparison.css",
+      "public/local-first/housing-engine.js",
+      "public/local-first/housing-sample.js"
+    ],
+    "reusedComparisonAdapterBytes": 212861,
+    "reusedComparisonStylesheetBytes": 16507,
+    "comparisonRouteRuntimeBytes": 287297,
+    "largestComparisonRouteChunkBytes": 212861,
+    "workspaceJsLines": 599,
+    "lineCap": 600
+  },
+  "liveBrowser": {
+    "browser": "Playwright Chromium; integrated local-first run",
+    "verifiedAt": "2026-11-02T02:55:40.451Z",
+    "sourceRevision": "93f0fb232a3d3fb33b7adfb4ec3883367f396abd",
+    "candidateSourceDigest": "207309b83f01b7edc5c0b20602e5da4ac45784e6e69defabc00ce5329bf18197",
+    "summary": "All 14 integrated browser groups passed with Housing as the final group. Detailed run proof is recorded under latestBrowserProof.",
+    "proofPath": "node_modules/.cache/local-first-verification/browser-proof.json"
+  },
+  "verification": {
+    "targetedTests": {
+      "command": "node --test test/local-first/workspace-graph.test.mjs test/local-first/housing-workspace.test.mjs",
+      "passed": 14,
+      "failed": 0,
+      "runContext": "current local candidate source",
+      "verifiedAt": "2026-11-02T03:03:47.346Z"
+    },
+    "authoredLimits": {
+      "command": "npm run check:authored-limits",
+      "scannedFiles": 543,
+      "findings": 0,
+      "runContext": "current local candidate source",
+      "verifiedAt": "2026-11-02T03:04:46.440Z"
+    },
+    "repositoryCheck": {
+      "command": "npm run check",
+      "result": "not run on dirty candidate",
+      "detail": "Run after the exact candidate is committed; the earlier pre-commit run stopped on a clean-source guard."
+    },
+    "evidenceCheck": {
+      "command": "npm run check:evidence",
+      "result": "blocked-external-evaluator-inputs-missing",
+      "detail": "The checker is observation-only and lacks the external dispatch trust anchor, pinned trusted Git executable, Agentic Canvas OS root, isolated executor module, and enrolled evaluator issuer."
+    },
+    "fullSuite": {
+      "command": "node scripts/local-first-release/check.mjs",
+      "result": "passed; all 14/14 browser groups including Housing last",
+      "sourceRevision": "93f0fb232a3d3fb33b7adfb4ec3883367f396abd",
+      "candidateSourceDigest": "207309b83f01b7edc5c0b20602e5da4ac45784e6e69defabc00ce5329bf18197",
+      "runAt": "2026-11-02T02:55:40.451Z",
+      "note": "The integrated run covered the shared Base Multi-dimensional Table, Housing setup and comparison, local plans and privacy, plus final mobile/offline checks."
+    },
+    "separateReleaseCheck": "No separate Housing release run; the latest integrated browser run is the current verification.",
+    "diffCheck": "git diff --check and node --check passed for the Housing modules and browser fixture.",
+    "liveUI": {
+      "command": "npm run dev -- --local-first; visible local preview spot check",
+      "processState": "running; Multi-dimensional Table visibly rendered in rows-as-records mode",
+      "browser": "Local Chromium",
+      "route": "http://127.0.0.1:55466/agentic-commerce-os/#housing",
+      "integratedRunOrigin": "http://127.0.0.1:55147",
+      "responsiveMatrix": [
+        {
+          "width": 320,
+          "documentWidth": 320
+        },
+        {
+          "width": 360,
+          "documentWidth": 360
+        },
+        {
+          "width": 390,
+          "documentWidth": 390
+        },
+        {
+          "width": 768,
+          "documentWidth": 768
+        },
+        {
+          "width": 1280,
+          "documentWidth": 1280
+        }
+      ],
+      "mobileTable": {
+        "mobileWidth": 390,
+        "documentWidth": 390,
+        "scrollLeftAfterArrowRight": 40,
+        "scrollRegionWidth": 320,
+        "tableScrollWidth": 3648
+      },
+      "housingReadyStatus": "Housing comparison is ready for offline use.",
+      "offlineReplay": {
+        "networkBlocked": true,
+        "serviceWorkerControlled": true,
+        "route": "/agentic-commerce-os/#housing",
+        "routesCovered": [
+          "#housing"
+        ],
+        "localSaveRead": true,
+        "pageErrors": 0,
+        "thirdPartyOrWriteRequests": 0
+      },
+      "sharedComparisonAdapterLazyLoaded": true,
+      "pageErrors": 0,
+      "verifiedAt": "2026-11-02T02:55:40.451Z"
+    }
+  },
+  "screenshot": {
+    "path": "docs/evidence/housing-workspace-candidate/mobile-comparison.png",
+    "bytes": 393792,
+    "sha256": "becc4b2716bc1a24a67fe9797f948f099d1e1eff41160abc685755011f9d359a",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "fullPage": true,
+    "imageWidth": 390,
+    "imageHeight": 5256,
+    "contents": "Synthetic Photo Loft A/B/C comparison and local image fixture gallery.",
+    "status": "candidate image retained from prior local manual journey; current integrated Housing screenshot is comparisonTableScreenshot"
+  },
+  "releaseAuthority": false,
+  "liveScreenshot": {
+    "path": "docs/evidence/housing-workspace-candidate/mobile-comparison-photo-retention-live-2026-11-01.jpg",
+    "bytes": 192584,
+    "sha256": "adddff6af3c0fc87c49b089c76fba72dfdd9630cf42cf51fadb2a53cb47671fe",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "fullPage": true,
+    "imageWidth": 390,
+    "imageHeight": 3663,
+    "contents": "Mobile comparison showing Harborline Rooms and the edited Photo Retention Fixture at SGD 925 with one retained local image preview."
+  },
+  "listingLibraryScreenshot": {
+    "path": "docs/evidence/housing-workspace-candidate/mobile-listings-library-2026-11-01.jpg",
+    "bytes": 80495,
+    "sha256": "c90ffd74b6781a2fcc5a5f6325a41b2507648b033e104d83302bb3e25abce7c0",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "fullPage": true,
+    "imageWidth": 390,
+    "imageHeight": 2148,
+    "contents": "Clean mobile local-listing library with Cedar saved, Harborline selected, search and saved-only controls, and expandable listing facts."
+  },
+  "reusedRuntimeArtifacts": [
+    {
+      "contractPath": "config/agentic-base-data-view.json",
+      "contractSha256": "23fe247c1f69880a817a755bdb062ed6798808914626ea53659da93eaaa3930e",
+      "contractSchema": "agentic-base/browser-data-view/v1",
+      "sourceRevision": "ed29b2226be83824d0bd447a015d6cb21d0afb3e",
+      "layout": "multiDimensional",
+      "javascript": {
+        "path": "public/local-first/agentic-base-data-view.js",
+        "bytes": 212861,
+        "sha256": "9618f31a8d4ae5b7edd6a4ab4257b8b472f241dadb8cbf2af6a9a55b7bdce366"
+      },
+      "stylesheet": {
+        "path": "public/local-first/agentic-base-data-view.css",
+        "bytes": 16507,
+        "sha256": "c640c9359bd32357d6249b079863b5ae311211d4f37f5b876f094a800a67f199"
+      },
+      "loading": "lazy on housing-compare; local shadow-root stylesheet; multi-dimensional layout",
+      "serviceWorkerPrecached": true,
+      "newPackageDependency": false
+    }
+  ],
+  "comparisonTableScreenshot": {
+    "path": "docs/evidence/housing-workspace-candidate/mobile-comparison-live.png",
+    "bytes": 80901,
+    "sha256": "04b913d7dc05f8897dedf214d310ef753df9f682bb828a7224d28232af5ba0ce",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "fullPage": true,
+    "imageWidth": 390,
+    "imageHeight": 1123,
+    "contents": "Current integrated browser run: Housing Multi-dimensional Table in rows-as-records mode; horizontal scroll is local to the Base table and document width stays 390px."
+  },
+  "currentSourceRefresh": {
+    "observedAt": "2026-11-02T02:55:40.451Z",
+    "route": "/agentic-commerce-os/#housing",
+    "candidateSourceDigest": "207309b83f01b7edc5c0b20602e5da4ac45784e6e69defabc00ce5329bf18197",
+    "responsive": [
+      {
+        "width": 320,
+        "documentWidth": 320
+      },
+      {
+        "width": 360,
+        "documentWidth": 360
+      },
+      {
+        "width": 390,
+        "documentWidth": 390
+      },
+      {
+        "width": 768,
+        "documentWidth": 768
+      },
+      {
+        "width": 1280,
+        "documentWidth": 1280
+      }
+    ],
+    "comparisonTable": {
+      "mobileWidth": 390,
+      "documentWidth": 390,
+      "scrollLeftAfterArrowRight": 40,
+      "scrollRegionWidth": 320,
+      "tableScrollWidth": 3648
+    },
+    "serviceWorkerControlled": true,
+    "cachedHousingAssets": [
+      "housing-comparison.js",
+      "housing-engine.js",
+      "housing-sample.js",
+      "housing-comparison.css"
+    ],
+    "housingReadyStatus": "Housing comparison is ready for offline use.",
+    "offlineNetworkProbeBlocked": true,
+    "offlineRoutes": [
+      "#housing"
+    ],
+    "pageErrors": 0,
+    "thirdPartyOrWriteRequests": 0,
+    "fullIntegratedBrowserGroups": 14,
+    "finalOfflineRoute": "/agentic-commerce-os/#housing",
+    "baseArtifact": {
+      "revision": "ed29b2226be83824d0bd447a015d6cb21d0afb3e",
+      "javascriptBytes": 212861,
+      "javascriptSha256": "9618f31a8d4ae5b7edd6a4ab4257b8b472f241dadb8cbf2af6a9a55b7bdce366",
+      "stylesheetBytes": 16507,
+      "stylesheetSha256": "c640c9359bd32357d6249b079863b5ae311211d4f37f5b876f094a800a67f199"
+    }
+  },
+  "latestBrowserProof": {
+    "schema": "commerce.housing-workspace-candidate-proof/v2",
+    "candidateSourceDigest": "207309b83f01b7edc5c0b20602e5da4ac45784e6e69defabc00ce5329bf18197",
+    "sourceRevision": "93f0fb232a3d3fb33b7adfb4ec3883367f396abd",
+    "scope": "local-dev-candidate-only",
+    "fullIntegratedRun": {
+      "schema": "commerce.local-first-browser-proof/v3",
+      "ok": true,
+      "sourceRevision": "93f0fb232a3d3fb33b7adfb4ec3883367f396abd",
+      "origin": "http://127.0.0.1:55147",
+      "checkout": "sandbox",
+      "checks": [
+        "exact production scope and server mutation refusal",
+        "mobile draft creation, safe canvas link and responsive layout",
+        "offline navigation, editing and durable reload",
+        "concurrent tabs reject stale overwrites and retain editor text",
+        "portable JSON roundtrip and atomic import conflict preservation",
+        "fresh anonymous mobile session reaches a local SME report within five minutes with zero SME service calls",
+        "offline mobile SME comparison and printable worksheet, WebMCP parity, fixed slots/rows, ≤4-page print output, afterprint cleanup, back-forward, stale-report clearing, stale-result suppression, route-exit clearing and no service writes",
+        "shopper, vendor and admin views use durable drafts, private projections, human review and offline mobile navigation",
+        "offline merchant review, exact economics and private-note-free native launch export",
+        "unsaved and concurrently changed offers require fresh merchant review",
+        "launch terms survive offline reload and loss-making estimates fail review",
+        "imported text cannot inject markup; no private draft network writes",
+        "Stripe test checkout review, provider identity, pending delivery refusal, cancellation, reload and offline safety",
+        "one Housing workflow using the shared Base Multi-dimensional Table, listing facts, local plans, privacy and final mobile/offline journeys"
+      ],
+      "verifiedAt": "2026-11-02T02:55:40.451Z",
+      "candidateSourceDigest": "207309b83f01b7edc5c0b20602e5da4ac45784e6e69defabc00ce5329bf18197"
+    },
+    "finalHousingRun": {
+      "schema": "commerce.housing-workspace-browser-proof/v1",
+      "origin": "http://127.0.0.1:55147",
+      "route": "housing",
+      "acceptanceIds": [
+        "HU-V01",
+        "HU-V02",
+        "HU-V03",
+        "HU-V04",
+        "HU-V05",
+        "HU-V06",
+        "HU-V07",
+        "HU-V08",
+        "HU-V09",
+        "HU-V10",
+        "HU-V11",
+        "HU-V12",
+        "HU-V13",
+        "HU-V14",
+        "HU-V15"
+      ],
+      "responsive": [
+        {
+          "width": 320,
+          "documentWidth": 320
+        },
+        {
+          "width": 360,
+          "documentWidth": 360
+        },
+        {
+          "width": 390,
+          "documentWidth": 390
+        },
+        {
+          "width": 768,
+          "documentWidth": 768
+        },
+        {
+          "width": 1280,
+          "documentWidth": 1280
+        }
+      ],
+      "table": {
+        "mobileWidth": 390,
+        "documentWidth": 390,
+        "scrollLeftAfterArrowRight": 40,
+        "scrollRegionWidth": 320,
+        "tableScrollWidth": 3648
+      },
+      "offline": {
+        "networkBlocked": true,
+        "serviceWorkerControlled": true,
+        "route": "/agentic-commerce-os/#housing",
+        "routesCovered": [
+          "#housing"
+        ],
+        "localSaveRead": true,
+        "pageErrors": 0,
+        "thirdPartyOrWriteRequests": 0
+      },
+      "lazySharedTableAdapter": true,
+      "onlySavedIdsPersisted": true,
+      "requestCount": 73,
+      "verifiedAt": "2026-11-02T02:55:40.446Z",
+      "candidateSourceDigest": "207309b83f01b7edc5c0b20602e5da4ac45784e6e69defabc00ce5329bf18197",
+      "sourceRevision": "93f0fb232a3d3fb33b7adfb4ec3883367f396abd",
+      "command": "node scripts/local-first-release/check.mjs · integrated Housing group"
+    },
+    "artifactDirectories": [
+      "node_modules/.cache/local-first-verification"
+    ],
+    "releaseAuthority": false
+  },
+  "sprintBudget": {
+    "candidatePathCount": 32,
+    "pathCap": 32,
+    "newJavaScriptOwners": 3,
+    "newDependencies": 0,
+    "authoredRuntimeBytes": 57929,
+    "runtimeCapBytes": 58000,
+    "largestAlwaysLoadedJavaScriptLines": 599,
+    "lineCap": 600
+  },
+  "evidenceUpdatedAt": "2026-11-02T03:08:48.447Z"
+}

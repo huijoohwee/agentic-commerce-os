@@ -93,10 +93,16 @@ export async function checkSharedWorkspaceShell({ page, url, output }) {
       const content = await page.locator('#' + role + ' .workspace-content').boundingBox();
       assert.equal(content.x, reference.x); assert.equal(content.width, reference.width);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
-      await expect(page.locator('#workspace-role-switcher')).toBeVisible(); await page.keyboard.press('ControlOrMeta+k');
-      await expect(page.locator('#' + role + '-query')).toBeFocused(); await page.locator('#' + role + '-query').fill('absent offer');
-      await expect(page.locator(role === 'shop' ? '#shop-empty' : '#vendor-table')).toContainText(role === 'shop' ? 'No offers match' : 'No matching offers');
-      await page.locator('#' + role + '-query').fill(''); await page.screenshot({ path: path.join(output, `aligned-${role}-${width}.png`) });
+      const query = page.locator('#' + role + '-query');
+      if (role === 'vendor' && await query.isHidden()) {
+        await expect(page.locator('#vendor-table')).toContainText('Your first offer starts with three clear details.');
+      } else {
+        await expect(page.locator('#workspace-role-switcher')).toBeVisible(); await page.keyboard.press('ControlOrMeta+k');
+        await expect(query).toBeFocused(); await query.fill('absent offer');
+        await expect(page.locator(role === 'shop' ? '#shop-empty' : '#vendor-table')).toContainText(role === 'shop' ? /No (?:example )?offers match/ : 'No matching offers');
+        await query.fill('');
+      }
+      await page.screenshot({ path: path.join(output, `aligned-${role}-${width}.png`) });
     }
     const navigationCount = await page.evaluate(() => performance.getEntriesByType('navigation').length);
     await page.locator('#workspace-role-switcher').selectOption('sme'); await expect(page.locator('#sme')).toBeVisible();

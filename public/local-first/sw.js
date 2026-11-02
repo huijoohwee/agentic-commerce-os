@@ -3,8 +3,10 @@ const RELEASE = '__RELEASE__';
 const CACHE = CACHE_PREFIX + RELEASE;
 const SCOPE = new URL(self.registration.scope);
 const FILES = ['', 'favicon.svg', 'workspace.js', 'workspace-navigation.js', 'workspace-singleton.js', 'shopper-demo-detail.js', 'workspace-tour.js', 'workspace-capabilities.js', 'workspace-tools.js', 'workspace-graph.js', 'agentic-base-data-view.js', 'agentic-base-data-view.css', 'graph-data-view.js', 'graph-data-view.css', 'graph-ui-tokens.css', 'commerce-theme.css', 'workspace-shell.css', 'services/workspace/service.json', 'services/sme-business-pack/service.json', 'sme-business-pack.js', 'sme-business-pack.css', 'sme-business-pack-core.js', 'sme-pack-sg.js', 'sme-pack-my.js', 'app.js', 'drafts.js', 'launch.js', 'checkout.js', 'workflow.js', 'style.css'];
+const LAZY_FILES = ['housing-comparison.js', 'housing-engine.js', 'housing-sample.js', 'housing-comparison.css'];
 const assetUrl = file => new URL(file.startsWith('services/') || file === 'favicon.svg' ? file : file ? `assets/${RELEASE}/${file}` : '', SCOPE);
 const PATHS = new Set(FILES.map(file => assetUrl(file).pathname));
+const LAZY_PATHS = new Set(LAZY_FILES.map(file => assetUrl(file).pathname));
 self.addEventListener('install', event => event.waitUntil((async () => {
   const cache = await caches.open(CACHE);
   // A failed asset refuses this installation and keeps the previous offline shell.
@@ -31,7 +33,7 @@ self.addEventListener('activate', event => event.waitUntil((async () => {
 })()));
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
-  if (event.request.method !== 'GET' || url.origin !== SCOPE.origin || !PATHS.has(url.pathname)) return;
+  if (event.request.method !== 'GET' || url.origin !== SCOPE.origin || !PATHS.has(url.pathname) && !LAZY_PATHS.has(url.pathname)) return;
   event.respondWith((async () => {
     const cache = await caches.open(CACHE), key = new URL(url.pathname, SCOPE.origin).href;
     if (event.request.mode === 'navigate') {
@@ -44,7 +46,13 @@ self.addEventListener('fetch', event => {
         if (response.status < 500 && !(response.status === 403 && self.navigator.onLine === false)) return response;
       } catch { /* use the verified shell */ }
     }
-    if (RELEASE === 'local-unreleased' && event.request.mode !== 'navigate') {
+    if (LAZY_PATHS.has(url.pathname)) {
+      try {
+        const response = await fetch(event.request);
+        if (response.ok) { await cache.put(key, response.clone()); return response; }
+        if (response.status < 500 && !(response.status === 403 && self.navigator.onLine === false)) return response;
+      } catch { /* use the lazy module warmed during an earlier visit */ }
+    } else if (RELEASE === 'local-unreleased' && event.request.mode !== 'navigate') {
       try {
         const response = await fetch(event.request);
         if (response.ok) { await cache.put(key, response.clone()); return response; }

@@ -11,6 +11,7 @@ import { waitForAssets } from './availability.mjs';
 import { checkRoleWorkspace } from '../../test/local-first/workspace-browser.mjs';
 import { checkMerchantLaunch } from '../../test/local-first/merchant-browser.mjs';
 import { checkOfferSetup } from '../../test/local-first/offer-setup-browser.mjs';
+import { checkHousingWorkspace } from '../../test/local-first/housing-browser.mjs';
 import { BROWSER_CHECKS, BROWSER_PROOF_SCHEMA, completeBrowserChecks, assertBrowserProof,
   LIVE_BROWSER_PROOF_SCHEMA, completeLiveBrowserChecks, assertLiveBrowserProof } from './browser-proof.mjs';
 import { LIVE_CHECKOUT_PROFILE_SHA256 } from '../../src/local-first/checkout-offer.ts';
@@ -177,6 +178,7 @@ try {
     .checkWorkspacePack({ browser, url, output, revision });
   if (!remote) await (await import('../../test/local-first/fulfillment-browser.mjs'))
     .checkDurableFulfillment({ browser, url, output, revision });
+  if (!remote && checkout === 'sandbox') await checkHousingWorkspace({ browser, url, output, observeContext, record });
   proof = assertBrowserProof({ schema: BROWSER_PROOF_SCHEMA, ok: true, sourceRevision: revision,
     origin, checkout: 'sandbox', checks, verifiedAt: new Date().toISOString() }, revision);
   }

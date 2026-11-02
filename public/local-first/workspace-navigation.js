@@ -20,7 +20,7 @@ function createIcon(symbolId) {
 }
 
 function createWorkspaceSearch(variant) {
-  if (variant === 'sme') return null
+  if (variant === 'sme' || variant === 'housing') return null
   const label = variant === 'admin' ? 'Search projects' : 'Search offers'
   const button = createElement('button', undefined, 'console-search secondary')
   button.type = 'button'
@@ -36,7 +36,8 @@ export const WORKSPACE_ROLES = Object.freeze({
   shop: Object.freeze({ label: 'Shopper', helpLabel: 'shopper', breadcrumb: 'Storefront', title: 'Shopper' }),
   vendor: Object.freeze({ label: 'Vendor', helpLabel: 'vendor', breadcrumb: 'Catalog', title: 'Vendor workspace' }),
   admin: Object.freeze({ label: 'Admin', helpLabel: 'admin', breadcrumb: 'Projects', title: 'Admin workspace' }),
-  sme: Object.freeze({ label: 'SME pack', helpLabel: 'SME pack', breadcrumb: 'SME pack', title: 'SME business pack' })
+  sme: Object.freeze({ label: 'SME pack', helpLabel: 'SME pack', breadcrumb: 'SME pack', title: 'SME business pack' }),
+  housing: Object.freeze({ label: 'Housing', helpLabel: 'housing comparison', breadcrumb: 'Housing', title: 'Housing comparison' })
 })
 function uniqueElement(selector, error) {
   const matches = document.querySelectorAll(selector)
@@ -67,7 +68,8 @@ const SIDEBAR_NOTES = Object.freeze({
   shop: Object.freeze({ label: 'Offer preview details', status: 'Preview details', title: 'What shoppers see', body: 'Offer title, outcome, audience and planned price. Private notes stay in your workspace.' }),
   vendor: Object.freeze({ label: 'Workspace information', status: 'Private workspace status', title: 'Local-first workspace', body: 'Private drafts on this device. Human review before publication.' }),
   admin: Object.freeze({ label: 'Workspace information', status: 'Private workspace status', title: 'Local-first workspace', body: 'Private drafts on this device. Human review before publication.' }),
-  sme: Object.freeze({ label: 'Privacy details', status: 'Local input', title: 'Your facts stay here', body: 'Checks run on this device. Inputs are not saved.' })
+  sme: Object.freeze({ label: 'Privacy details', status: 'Local input', title: 'Your facts stay here', body: 'Checks run on this device. Inputs are not saved.' }),
+  housing: Object.freeze({ label: 'Privacy details', status: 'Local input', title: 'Compare on this device', body: 'Listing facts stay in this visit. Only saved listing IDs persist.' })
 })
 
 function createSidebarNote(variant) {
@@ -170,10 +172,12 @@ export function mountWorkspaceSidebar({ host, template, variant, id, label, clas
     tour.href = '#' + variant
     tour.dataset.workspaceTour = variant
     tour.setAttribute('aria-label', `Take a quick tour of the ${definition.helpLabel} workspace`)
-    const actionNav = createElement('nav', undefined, 'sidebar-actions')
-    actionNav.setAttribute('aria-label', 'Workspace help')
-    actionNav.append(actions)
-    sidebar.append(actionNav)
+    if (variant !== 'housing') {
+      const actionNav = createElement('nav', undefined, 'sidebar-actions')
+      actionNav.setAttribute('aria-label', 'Workspace help')
+      actionNav.append(actions)
+      sidebar.append(actionNav)
+    }
     for (const link of sidebar.querySelectorAll('a')) {
       const label = [...link.childNodes].filter(node => node.nodeType === Node.TEXT_NODE)
         .map(node => node.textContent.trim()).filter(Boolean).join(' ')

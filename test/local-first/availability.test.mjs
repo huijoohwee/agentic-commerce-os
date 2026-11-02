@@ -1,9 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { digest } from '../../scripts/local-first-release/artifact.mjs';
-import { waitForAssets } from '../../scripts/local-first-release/availability.mjs';
+import { authoredAssets, waitForAssets } from '../../scripts/local-first-release/availability.mjs';
 const revision = 'a'.repeat(40);
 const assets = ['app.js', 'drafts.js'].map(path => ({ path, bytes: path.length, digest: digest(path), contentType: /javascript/ }));
+test('Housing modules are covered by source asset convergence and loaded lazily', () => {
+  const names = ['housing-comparison.js', 'housing-engine.js', 'housing-sample.js', 'housing-comparison.css'];
+  const inventory = authoredAssets(revision).map(asset => asset.path);
+  for (const name of names) assert(inventory.includes(name));
+  const worker = fs.readFileSync('public/local-first/sw.js', 'utf8');
+  const precache = worker.match(/const FILES = \[([^\]]+)\]/u)?.[1] ?? '';
+  const lazy = worker.match(/const LAZY_FILES = \[([^\]]+)\]/u)?.[1] ?? '';
+  for (const name of names) { assert(!precache.includes(name)); assert(lazy.includes(name)); }
+});
 function response(body, status = 200, source = revision) {
   return new Response(body, { status, headers: { 'content-type': 'application/javascript',
     'cache-control': 'no-store, no-transform', 'x-commerce-source': source } });
