@@ -7,7 +7,7 @@
   <meta name="description" content="Build your independent business. Preview offers, prepare your storefront, and review your next launch.">
   <title>Commerce · Airvio</title>
   <link rel="icon" type="image/svg+xml" href="./favicon.svg">
-  <link rel="stylesheet" href="./assets/__RELEASE__/graph-ui-tokens.css"><link rel="stylesheet" href="./assets/__RELEASE__/commerce-theme.css?v=design-system-profile-c18253b"><link rel="stylesheet" href="./assets/__RELEASE__/workspace-shell.css?v=workspace-shell-theme-singleton-99"><link rel="stylesheet" href="./assets/__RELEASE__/style.css?v=commerce-console-theme-singleton-115"><script type="module" src="./assets/__RELEASE__/workspace.js?v=workspace-responsive-shell-14"></script>
+  <link rel="stylesheet" href="./assets/__RELEASE__/graph-ui-tokens.css"><link rel="stylesheet" href="./assets/__RELEASE__/commerce-theme.css?v=design-system-profile-c18253b"><link rel="stylesheet" href="./assets/__RELEASE__/workspace-shell.css?v=workspace-shell-theme-singleton-99"><link rel="stylesheet" href="./assets/__RELEASE__/style.css?v=commerce-console-theme-singleton-115"><script type="module" src="./assets/__RELEASE__/workspace.js?v=workspace-responsive-shell-26"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -40,6 +40,9 @@
                     <a href="#sme-report"><svg viewBox="0 0 20 20" aria-hidden="true"><use href="#icon-reviews"/></svg> Report</a>
                     <a href="#sme-agent-tools"><svg viewBox="0 0 20 20" aria-hidden="true"><use href="#icon-tools"/></svg> Agent tools</a>
                   </nav>
+        </template>
+        <template id="housing-navigation-content">
+          <nav class="service-nav" aria-label="Housing workspace"><p class="sidebar-label">Housing</p><a href="#housing" data-view="housing" aria-label="Multi-dimensional Table"><svg viewBox="0 0 20 20" aria-hidden="true"><use href="#icon-offers"/></svg> Multi-dimensional Table</a></nav>
         </template>
         <section id="shop" data-role-panel="shop" aria-labelledby="shop-heading" data-selection-target="storefront" data-selection-label="Storefront preview">
           <section class="workspace-content" aria-labelledby="shop-heading">
@@ -197,6 +200,7 @@
                     <section id="sme-agent-tools" class="card agent-card" aria-labelledby="agent-heading"><div class="agent-copy"><p class="eyebrow">MCP + WEBMCP</p><h2 id="agent-heading">Agent tools</h2><p>Use the same deterministic checks from an agent or browser tool.</p></div><div class="agent-details"><span class="agent-label">Headless MCP endpoint</span><code id="mcp-url"></code><p id="webmcp-status" role="status" aria-live="polite">Checking browser tool support…</p><p class="footnote">Browser tool registration is optional and never implies an agent connection.</p></div></section>
                   </section>
         </section>
+        <section id="housing" data-role-panel="housing" hidden aria-labelledby="housing-heading"><section class="workspace-content housing-workspace" aria-labelledby="housing-heading"><div id="housing-root"></div></section></section>
       </div>
     </section>
     <dialog id="environment-check-detail" class="environment-check-detail" aria-labelledby="environment-check-title" aria-describedby="environment-check-note">
@@ -211,6 +215,6 @@
     <dialog id="workspace-tour" class="workspace-tour" aria-labelledby="tour-heading" aria-describedby="tour-copy"><header class="workspace-tour-head"><p id="tour-kicker" class="eyebrow"></p><button id="tour-close" type="button" class="secondary" aria-label="Close workspace guide">✕</button></header><section aria-live="polite"><h2 id="tour-heading" tabindex="-1"></h2><p id="tour-copy" class="workspace-tour-copy"></p></section><div id="tour-overview" class="tour-overview" aria-hidden="true" hidden><div class="tour-overview-bar"><strong>airvio commerce</strong><span></span><span></span><span></span></div><div class="tour-preview"><div class="tour-preview-bar"><span class="tour-preview-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="tour-preview-title">Storefront preview</span><strong>THIS DEVICE</strong></div><article class="tour-preview-offer"><svg viewBox="0 0 128 160" aria-hidden="true"><use href="#sample-offer-cover"></use></svg><div class="tour-preview-copy"><small>SAMPLE OFFER</small><strong>Education materials — sandbox</strong><span>Practical guide and worksheets</span></div><strong class="tour-preview-price">SGD 8.00</strong></article></div><div class="tour-flow"><article><small>01 · PRIVATE</small><strong>Offer draft</strong><span>Buyer · outcome · terms</span></article><b aria-hidden="true">→</b><article><small>02 · HUMAN CHECK</small><strong>Launch review</strong><span>Confirm before sharing</span></article><b aria-hidden="true">→</b><article><small>03 · PUBLIC VIEW</small><strong>Storefront</strong><span>Reviewed details only</span></article></div></div><div class="workspace-tour-progress"><span id="tour-step"></span><div id="tour-dots" class="workspace-tour-dots" aria-hidden="true"></div></div><footer class="workspace-tour-controls"><button id="tour-skip" type="button" class="secondary">Close</button><div class="workspace-tour-actions"><button id="tour-back" type="button" class="secondary">Back</button><button id="tour-next" type="button">Next →</button></div></footer></dialog>
     <noscript><p class="panel">Enable JavaScript to open your private offers. Saved drafts remain in this browser.</p></noscript>
   </main>
-  <footer id="workspace-footer" class="workspace-footer" data-workspace-footer><section><a class="brand" href="#shop">airvio<span>commerce</span></a><p>Independent businesses. Thoughtful beginnings.</p></section><section><p id="offline-ready">Preparing offline access. Keep this page open until it is ready.</p><a href="https://airvio.co/agentic-graph/?openEditorWorkspace=1" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Open Graph canvas ↗</a></section></footer>
+  <footer id="workspace-footer" class="workspace-footer" data-workspace-footer><section><a class="brand" href="#shop">airvio<span>commerce</span></a><p>Independent businesses. Thoughtful beginnings.</p></section><section><p id="offline-ready" role="status" aria-live="polite">Preparing offline access. Keep this page open until it is ready.</p><a href="https://airvio.co/agentic-graph/?openEditorWorkspace=1" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Open Graph canvas ↗</a></section></footer>
 </body>
 </html>

@@ -9,7 +9,7 @@ import { readCheckoutRelease, liveAuthorizationScope } from './live-profile.mjs'
 
 export const CONFIG = 'wrangler.local-first.jsonc';
 export const WORKER = 'agentic-commerce-edge-production';
-export const FILES = Object.freeze(['index.html', 'favicon.svg', 'workspace.js', 'workspace-navigation.js', 'workspace-singleton.js', 'shopper-demo-detail.js', 'workspace-tour.js', 'workspace-capabilities.js', 'workspace-tools.js', 'workspace-graph.js', 'agentic-base-data-view.js', 'agentic-base-data-view.css', 'graph-data-view.js', 'graph-data-view.css', 'graph-ui-tokens.css', 'commerce-theme.css', 'workspace-shell.css', 'app.js', 'drafts.js', 'launch.js', 'checkout.js', 'workflow.js', 'style.css', 'sw.js', 'workspace-pack.html', 'workspace-pack.js', 'workspace-pack.css', 'workspace-pack.simulation.js', 'workspace-pack.console.js', 'sme-business-pack.js', 'sme-business-pack.css', 'sme-business-pack-core.js', 'sme-pack-sg.js', 'sme-pack-my.js']);
+export const FILES = Object.freeze(['index.html', 'favicon.svg', 'workspace.js', 'workspace-navigation.js', 'workspace-singleton.js', 'shopper-demo-detail.js', 'workspace-tour.js', 'workspace-capabilities.js', 'workspace-tools.js', 'workspace-graph.js', 'agentic-base-data-view.js', 'agentic-base-data-view.css', 'graph-data-view.js', 'graph-data-view.css', 'graph-ui-tokens.css', 'commerce-theme.css', 'workspace-shell.css', 'app.js', 'drafts.js', 'launch.js', 'checkout.js', 'workflow.js', 'style.css', 'sw.js', 'workspace-pack.html', 'workspace-pack.js', 'workspace-pack.css', 'workspace-pack.simulation.js', 'workspace-pack.console.js', 'sme-business-pack.js', 'sme-business-pack.css', 'sme-business-pack-core.js', 'sme-pack-sg.js', 'sme-pack-my.js', 'housing-comparison.js', 'housing-engine.js', 'housing-sample.js', 'housing-comparison.css']);
 export const PRIVATE_FILES = Object.freeze(['education-materials.md']);
 export const digest = value => createHash('sha256').update(value).digest('hex');
 const COMMERCE_THEME_PIN = Object.freeze({
@@ -38,7 +38,8 @@ export function verifyAgenticBaseDataView() {
     || pin.source?.packagePath !== 'packages/views-react' || pin.source?.buildManifest !== 'packages/views-react/dist/browser-data-view.manifest.json'
     || !/^[0-9a-f]{64}$/.test(pin.source?.buildManifestSha256 ?? '')) throw Error('Agentic Base data view provenance invalid');
   if (pin.contract?.source !== 'agentic-base/browser-data-view/v1' || pin.contract?.browserExport !== 'mountDataView'
-    || pin.contract?.cssScope !== 'shadow-root'
+    || pin.contract?.cssScope !== 'shadow-root' || pin.contract?.defaultLayout !== 'table'
+    || JSON.stringify(pin.contract?.layoutModes) !== JSON.stringify(['table', 'multiDimensional'])
     || JSON.stringify(pin.contract?.hostThemeSlots) !== JSON.stringify(['--agentic-base-text', '--agentic-base-surface', '--agentic-base-border', '--agentic-base-muted', '--agentic-base-header', '--agentic-base-selected', '--agentic-base-hover', '--agentic-base-focus'])
     || !Array.isArray(pin.inputs) || !pin.inputs.length || pin.inputs.length > 20
     || !/^\d+\.\d+\.\d+$/.test(pin.build?.esbuild ?? '')) throw Error('Agentic Base data view source contract invalid');
@@ -50,7 +51,8 @@ export function verifyAgenticBaseDataView() {
     inputPaths.add(input.path); totalInputBytes += input.bytes;
   }
   if (totalInputBytes > 8000000 || !inputPaths.has('packages/views-react/src/browser/DataViewBrowserAdapter.tsx')
-    || !inputPaths.has('packages/views-react/src/table/DataTableCore.tsx') || !inputPaths.has('packages/views-react/src/table/TableCore.tsx')) {
+    || !inputPaths.has('packages/views-react/src/table/MultiDimTableView.tsx')
+    || !inputPaths.has('packages/views-react/src/table/TableView.tsx') || !inputPaths.has('packages/views-react/src/table/TableCore.tsx')) {
     throw Error('Agentic Base data view native owner missing or over budget');
   }
   const outputs = ['agentic-base-data-view.js', 'agentic-base-data-view.css'];
@@ -64,7 +66,8 @@ export function verifyAgenticBaseDataView() {
     const text = bytes.toString('utf8');
     if (output.path.endsWith('.css') ? /@import\b|url\(\s*['"]?(?:https?:|\/\/)/i.test(text)
       : /\bimport\s*(?:\(|['"]|[^;\n]*?\bfrom\s*['"])|\b(?:fetch|XMLHttpRequest|WebSocket|EventSource)\s*\(/.test(text)
-        || !text.includes('mountDataView') || !text.includes('DATA_VIEW_BROWSER_LIMITS')) throw Error('Agentic Base data view asset must remain self-contained and offline');
+        || !text.includes('mountDataView') || !text.includes('multiDimensional')
+        || !text.includes('DATA_VIEW_BROWSER_LIMITS')) throw Error('Agentic Base data view asset must remain self-contained and offline');
   }
   return pin;
 }
@@ -156,7 +159,7 @@ export function verifySharedThemeOwner() {
     if (stale) throw Error(`Shared Commerce palette literal remains in ${file}: ${stale}`);
   }
   const illustrationPalette = new Set(['#eaf0f9', '#edf1f8', '#e8eef8', '#dce7fb', '#d7e2f5', '#e3ebfa', '#526587', '#7183a3', '#34445f', '#eaf0fb', '#00000004']);
-  for (const file of ['style.css', 'sme-business-pack.css', 'workspace-shell.css']) {
+  for (const file of ['style.css', 'sme-business-pack.css', 'housing-comparison.css', 'workspace-shell.css']) {
     const source = fs.readFileSync(path.join(directory, file), 'utf8');
     if (/var\(\s*--commerce-[^)]+\)[a-f0-9]{2,8}/i.test(source)) throw Error(`Malformed Commerce color token in ${file}`);
     const unowned = [...source.matchAll(/#[a-f0-9]{3,8}\b/gi)].map(match => match[0].toLowerCase()).find(color => !illustrationPalette.has(color));
@@ -171,8 +174,8 @@ export function verifySharedThemeOwner() {
   for (const symbol of ['icon-navigation', 'icon-search']) {
     if (symbols.filter(id => id === symbol).length !== 1) throw Error(`Shared Commerce icon missing or duplicated: ${symbol}`);
   }
-  const navigationTemplates = [...html.matchAll(/<template\s+id="(shop|vendor|admin|sme)-navigation-content">([\s\S]*?)<\/template>/g)];
-  if (navigationTemplates.length !== 4) throw Error('Each commerce role must use the shared navigation icon template contract');
+  const navigationTemplates = [...html.matchAll(/<template\s+id="(shop|vendor|admin|sme|housing)-navigation-content">([\s\S]*?)<\/template>/g)];
+  if (navigationTemplates.length !== 5) throw Error('Each commerce role must use the shared navigation icon template contract');
   for (const [, role, source] of navigationTemplates) {
     const refs = [...source.matchAll(/<use\b[^>]*href=["']#(icon-[\w-]+)["']/g)].map(match => match[1]);
     if (!refs.length || refs.some(ref => !symbols.includes(ref)) || /<(?:path|circle|rect|line|polyline|polygon)\b/.test(source))

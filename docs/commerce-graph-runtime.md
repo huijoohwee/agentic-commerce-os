@@ -87,8 +87,17 @@ npm run build:browser-data-view
 
 The Base generator emits `browser-data-view.js`, `browser-data-view.css` and their build manifest.
 Commerce serves `agentic-base-data-view.js/css`; [config/agentic-base-data-view.json](../config/agentic-base-data-view.json)
-pins clean private Base commit `093d2592449d19892170eac928606cd5d5da58b8`, the source manifest digest,
-five input hashes and both output hashes. Current sizes are 148,590 and 1,883 bytes. The bundle is
+pins the exact Base PR #22 candidate `0cd7602d0b968bf27ecdaee0d8726138bf7997df`, the source manifest digest,
+13 input hashes and both output hashes. Current sizes are 213,845 and 17,396 bytes. Housing opts into the existing
+MultiDimTableView through the browser adapter layout contract and supplies an orientation callback; Base renders the shared pivot control and grid while Commerce updates orientation and owns Housing data and workflow. The shared Table grid remains the sole renderer. Container fit now applies in both pivot orientations, with minimum content width preserving horizontal scrolling when the matrix exceeds its host. The
+columns-oriented browser table carries the same Base style class as the row-oriented table, so the shared stylesheet
+applies its cell, padding, and text layout rules inside the Commerce shadow root. Shared header controls also constrain
+long field labels to their column and ellipsize them instead of letting them cover adjacent values. Base positions
+sticky header cells above the background layer so those labels remain visible inside hosts without Base's utility CSS.
+Hierarchy controls use fixed grip, chevron, and checkbox slots in that order; header toggles and checkboxes align with row controls, regardless of nesting depth.
+Column menus portal into the host's document or ShadowRoot so the same Base menu styles apply in isolated hosts; the
+read-only Housing adapter keeps mutation actions disabled.
+The bundle is
 self-contained and offline; Graph tokens are mapped by the host into Base's semantic slots. There is
 no runtime CDN or package install. Commerce keeps its existing Graph-generated token CSS and
 sequence-guide artifact for that distinct guide feature; Shoply never calls the legacy table export

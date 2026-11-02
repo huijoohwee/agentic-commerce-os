@@ -19,9 +19,15 @@ test('release rejects missing merchant checks, duplicates and unknown results ev
   }
 });
 
+test('release rejects a proof that omits the SME comparison browser check', () => {
+  const checks = proof.checks.filter(check => check !== BROWSER_CHECKS.smeComparison);
+  assert.throws(() => assertBrowserProof({ ...proof, checks }, revision), /browser proof/);
+});
+
 test('a complete suite cannot substitute a different source, profile or failed proof', () => {
   for (const changed of [null, {}, { ...proof, ok: false }, { ...proof, sourceRevision: 'b'.repeat(40) },
-    { ...proof, checkout: 'enabled' }, { ...proof, schema: 'unrecognized' }]) {
+    { ...proof, checkout: 'enabled' }, { ...proof, schema: 'unrecognized' },
+    { ...proof, schema: 'commerce.local-first-browser-proof/v2' }]) {
     assert.throws(() => assertBrowserProof(changed, revision), /browser proof/);
   }
   assert.throws(() => assertBrowserProof(proof, ''), /browser proof/);
