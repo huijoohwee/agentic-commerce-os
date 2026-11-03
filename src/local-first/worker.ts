@@ -24,6 +24,7 @@ const ASSET_PATHS = new Map([
     '/shopper-demo-detail.js', '/commerce-theme.css', '/workspace-shell.css', '/sme-business-pack.js',
     '/sme-business-pack.css', '/sme-business-pack-core.js', '/sme-pack-sg.js', '/sme-pack-my.js',
     '/housing-comparison.js', '/housing-engine.js', '/housing-sample.js', '/housing-comparison.css',
+    '/shared-ui-profile.css',
   ].map(path => [path, path] as [string, string])),
   ['/services/workspace-pack/', '/workspace-pack.html'],
   ['/services/workspace-pack/workspace-pack.js', '/workspace-pack.js'],
