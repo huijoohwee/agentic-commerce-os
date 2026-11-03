@@ -45,7 +45,7 @@ if ('serviceWorker' in navigator) {
 }
 const baseViewCss = new URL('./agentic-base-data-view.css?v=base-0cd7602-multi-dimensional-table-v1', import.meta.url).href
 let state, live = false, styleLink, saved = readSaved(), activeHash = 'housing', importTicket = 0, photoAssets = new Map(), photoIndexes = new Map(), tableAdapter, tableHandle, tableViewState, tableGeneration = 0
-const freshState = () => ({ profile: null, listings: SAMPLE_LISTINGS.map(item => structuredClone(item)), selected: SAMPLE_LISTINGS.slice(0, 3).map(item => item.id), priorities: [], manualIds: new Set(), query: '', savedOnly: false, editingId: null, inputsOpen: false, orientation: 'columns' })
+const freshState = () => ({ profile: null, listings: SAMPLE_LISTINGS.map(item => structuredClone(item)), selected: SAMPLE_LISTINGS.slice(0, 3).map(item => item.id), priorities: [], manualIds: new Set(), query: '', dimensionQuery: '', savedOnly: false, editingId: null, inputsOpen: false, orientation: 'columns' })
 const orientationStatus = orientation => orientation === 'columns'
   ? 'Each listing is a column. Scroll horizontally to compare all options.'
   : 'Each listing is a row. Scroll horizontally to compare every fact.'
@@ -64,7 +64,8 @@ function loadTableAdapter() {
 function comparisonScroller(region = root.querySelector('.housing-comparison-table-scroll')) {
   return region?.querySelector('[data-housing-table-host]')?.shadowRoot?.querySelector('.agentic-base-data-view') || null
 }
-function disposeComparisonTable() { tableGeneration++; tableHandle?.destroy(); tableHandle = null; tableViewState = null }
+let comparisonReports = null
+function disposeComparisonTable() { tableGeneration++; tableHandle?.destroy(); tableHandle = null; tableViewState = null; comparisonReports = null }
 function comparisonSurface(host) {
   const shadow = host.attachShadow({ mode: 'open' }), stylesheet = document.createElement('link'), target = document.createElement('div')
   host.style.width = '100%'; host.style.height = '100%'
@@ -126,7 +127,50 @@ function comparisonFields() {
     { id: 'questions', name: 'Questions to resolve', value: report => [...report.mismatch, ...report.unknowns].join(' · ') || 'No explicit mismatch found; confirm source details.' },
   ]
 }
+function matchingComparisonFields(reports) {
+  const all = comparisonFields(), query = state.dimensionQuery.trim().toLowerCase()
+  const matched = query ? all.filter(field => field.name.toLowerCase().includes(query)
+    || reports.some(report => String(field.value(report)).toLowerCase().includes(query))) : all
+  return { all, matched }
+}
+function displayedComparisonFields(matched, all) {
+  const listing = all.find(field => field.id === 'listing')
+  return state.orientation === 'rows' && matched.length && !matched.some(field => field.id === 'listing') && listing
+    ? [listing, ...matched] : matched
+}
+function dimensionCountText(matched, all) {
+  const keepsListing = state.orientation === 'rows' && matched.length > 0 && !matched.some(field => field.id === 'listing')
+  return `Showing ${matched.length} of ${all.length} dimensions.${keepsListing ? ' Listing names remain visible in this pivot.' : ''}`
+}
+function updateComparisonDimensions() {
+  if (!comparisonReports) return
+  const { all, matched } = matchingComparisonFields(comparisonReports)
+  const count = root.querySelector('[data-housing-dimension-count]')
+  if (count) count.textContent = dimensionCountText(matched, all)
+  const clear = root.querySelector('[data-action="clear-dimension-query"]')
+  if (clear) clear.hidden = !state.dimensionQuery.trim()
+  const region = root.querySelector('.housing-comparison-table-scroll')
+  const empty = root.querySelector('[data-housing-table-empty]')
+  if (!matched.length) {
+    if (region) region.hidden = true
+    if (empty) { empty.hidden = false; empty.textContent = `No dimensions match “${state.dimensionQuery.trim()}”. Clear the search to view every dimension.` }
+    return
+  }
+  if (empty) empty.hidden = true
+  if (region) region.hidden = false
+  if (!tableHandle || !tableViewState) return
+  const fields = displayedComparisonFields(matched, all)
+  tableViewState = {
+    ...tableViewState,
+    columns: fields.map(({ id, name }) => ({ id, name })),
+    rows: comparisonReports.map((report, index) => ({ id: `${String.fromCharCode(65 + index)}. ${report.label}`, cells: fields.map(field => field.value(report)) })),
+  }
+  tableHandle.update(tableViewState)
+  syncComparisonOrientation()
+}
 async function mountComparisonTable(reports, generation) {
+  comparisonReports = reports
+  updateComparisonDimensions()
   const host = root.querySelector('[data-housing-table-host]'), status = root.querySelector('[data-housing-table-status]')
   if (!host || !status) return
   try {
@@ -135,7 +179,7 @@ async function mountComparisonTable(reports, generation) {
     const { target, ready } = comparisonSurface(host)
     await ready
     if (!live || generation !== tableGeneration || activeHash !== 'housing' || !host.isConnected) return
-    const fields = comparisonFields()
+    const { all, matched } = matchingComparisonFields(reports), fields = matched.length ? displayedComparisonFields(matched, all) : all
     tableViewState = {
       columns: fields.map(({ id, name }) => ({ id, name })),
       rows: reports.map((report, index) => ({ id: `${String.fromCharCode(65 + index)}. ${report.label}`, cells: fields.map(field => field.value(report)) })),
@@ -144,8 +188,7 @@ async function mountComparisonTable(reports, generation) {
         if (!live || generation !== tableGeneration || activeHash !== 'housing' || !host.isConnected || !tableHandle) return
         state.orientation = orientation
         tableViewState = { ...tableViewState, orientation }
-        tableHandle.update(tableViewState)
-        syncComparisonOrientation()
+        updateComparisonDimensions()
         const scroller = comparisonScroller()
         if (scroller) { scroller.scrollLeft = 0; scroller.scrollTop = 0 }
       },
@@ -277,10 +320,14 @@ function comparisonPanel(reports) {
   const regionLabel = state.orientation === 'columns'
     ? 'Listing comparison; listings are columns and shared facts are rows.'
     : 'Listing comparison; listings are rows and shared facts are columns.'
+  const dimensionControls = reports.length ? (() => {
+    const { all, matched } = matchingComparisonFields(reports), query = state.dimensionQuery.trim()
+    return `<div class="housing-table-toolbar"><label>Search table dimensions<input type="search" name="dimension-query" value="${escapeHtml(state.dimensionQuery)}" placeholder="Try rent, lease, or Unknown"></label><button type="button" class="secondary" data-action="clear-dimension-query" aria-label="Clear table dimension search"${query ? '' : ' hidden'}>Clear</button><p data-housing-dimension-count role="status" aria-live="polite">${dimensionCountText(matched, all)}</p></div><p class="housing-status" data-housing-table-empty role="status" aria-live="polite" hidden></p>`
+  })() : ''
   const table = reports.length
     ? `<div class="housing-comparison-table-scroll" data-orientation="${state.orientation}" tabindex="0" role="region" aria-label="${regionLabel}"><div class="housing-comparison-table-host" data-housing-table-host></div></div><p class="housing-status" data-housing-table-status role="status" aria-live="polite">Loading the shared comparison table…</p>`
     : `<div class="housing-table-empty" role="status">Choose up to three options to add listings to the table.<button type="button" class="secondary" data-action="show-inputs">Choose listings</button></div>`
-  return `<section class="panel housing-table-panel" aria-labelledby="housing-table-title"><header><p class="eyebrow">HOUSING · LOCAL WORKSPACE</p><h1 id="housing-table-title" tabindex="-1">Multi-dimensional Table</h1><p>Stay context and listing facts share one matrix. Pivot to place each listing in rows or columns; shared facts stay the same. Samples are fictional and unverified.</p></header><details class="housing-workflow" data-housing-workflow${state.inputsOpen ? ' open' : ''}><summary>Workflow inputs &amp; listing actions <span>${selectedCount} of 3 listings selected</span></summary><div class="housing-controls">${profilePanel()}${listingPanel()}</div>${listingActions(reports)}</details>${table}${reports.map(planDialog).join('')}<p>No listing is contacted, submitted, or saved remotely.</p>${statusLine('Local only · no listing search or contact.')}</section>`
+  return `<section class="panel housing-table-panel" aria-labelledby="housing-table-title"><header><p class="eyebrow">HOUSING · LOCAL WORKSPACE</p><h1 id="housing-table-title" tabindex="-1">Multi-dimensional Table</h1><p>Stay context and listing facts share one matrix. Pivot to place each listing in rows or columns; shared facts stay the same. Samples are fictional and unverified.</p></header><details class="housing-workflow" data-housing-workflow${state.inputsOpen ? ' open' : ''}><summary>Workflow inputs &amp; listing actions <span>${selectedCount} of 3 listings selected</span></summary><div class="housing-controls">${profilePanel()}${listingPanel()}</div>${listingActions(reports)}</details>${dimensionControls}${table}${reports.map(planDialog).join('')}<p>No listing is contacted, submitted, or saved remotely.</p>${statusLine('Local only · no listing search or contact.')}</section>`
 }
 function syncComparisonOrientation() {
   const orientation = state.orientation
@@ -363,7 +410,7 @@ async function importComparison(input) {
     const listings = parseComparison(await file.text())
     if (!live || ticket !== importTicket || route !== activeHash || session !== state || selection !== state?.selected) return
     clearPhotos(); state.listings = listings; state.manualIds = new Set(listings.map(item => item.id)); state.selected = listings.map(item => item.id)
-    state.profile = null; state.priorities = []; state.editingId = null; state.query = ''; state.savedOnly = false
+    state.profile = null; state.priorities = []; state.editingId = null; state.query = ''; state.dimensionQuery = ''; state.savedOnly = false
     const message = `Imported ${listings.length} listings. Enter stay details to compare.`
     render('housing')
     showError({ message })
@@ -402,6 +449,7 @@ export function mountHousingWorkspace(target = root) {
   function onClick(event) {
     const button = event.target.closest('[data-action]'); if (!button) return
     const action = button.dataset.action
+    if (action === 'clear-dimension-query') { state.dimensionQuery = ''; const input = root.querySelector('[name="dimension-query"]'); if (input) { input.value = ''; input.focus() }; updateComparisonDimensions(); return }
     if (action === 'photo-open') { root.querySelector(`dialog[data-photo-dialog="${button.dataset.id}"]`).showModal(); return }
     if (action === 'photo-close') { button.closest('dialog').close(); return }
     if (action === 'plan-open') { root.querySelector(`dialog[data-plan-dialog="${button.dataset.id}"]`)?.showModal(); return }
@@ -418,8 +466,8 @@ export function mountHousingWorkspace(target = root) {
     if (action === 'copy-message') { const area = root.querySelector(`[data-plan-message="${button.dataset.id}"]`); if (!area || !navigator.clipboard?.writeText) { showError({ message: 'Clipboard unavailable. Select and copy the message manually.' }); return } const status = button.closest('dialog')?.querySelector('[data-plan-status]'); void navigator.clipboard.writeText(area.value).then(() => { if (status) status.textContent = 'Message copied after your request. Nothing was sent.' }).catch(() => { if (status) status.textContent = 'Clipboard unavailable. Select and copy the message manually.' }) }
   }
   function onInput(event) {
-    if (!event.target.matches('[name="listing-query"]')) return
-    state.query = event.target.value; filterChoices()
+    if (event.target.matches('[name="dimension-query"]')) { state.dimensionQuery = event.target.value; updateComparisonDimensions(); return }
+    if (event.target.matches('[name="listing-query"]')) { state.query = event.target.value; filterChoices() }
   }
   function onKeyDown(event) {
     if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return
