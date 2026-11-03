@@ -9,13 +9,20 @@ import { readCheckoutRelease, liveAuthorizationScope } from './live-profile.mjs'
 
 export const CONFIG = 'wrangler.local-first.jsonc';
 export const WORKER = 'agentic-commerce-edge-production';
-export const FILES = Object.freeze(['index.html', 'favicon.svg', 'workspace.js', 'workspace-navigation.js', 'workspace-singleton.js', 'shopper-demo-detail.js', 'workspace-tour.js', 'workspace-capabilities.js', 'workspace-tools.js', 'workspace-graph.js', 'agentic-base-data-view.js', 'agentic-base-data-view.css', 'graph-data-view.js', 'graph-data-view.css', 'graph-ui-tokens.css', 'commerce-theme.css', 'workspace-shell.css', 'app.js', 'drafts.js', 'launch.js', 'checkout.js', 'workflow.js', 'style.css', 'sw.js', 'workspace-pack.html', 'workspace-pack.js', 'workspace-pack.css', 'workspace-pack.simulation.js', 'workspace-pack.console.js', 'sme-business-pack.js', 'sme-business-pack.css', 'sme-business-pack-core.js', 'sme-pack-sg.js', 'sme-pack-my.js', 'housing-comparison.js', 'housing-engine.js', 'housing-sample.js', 'housing-comparison.css']);
+export const FILES = Object.freeze(['index.html', 'favicon.svg', 'workspace.js', 'workspace-navigation.js', 'workspace-singleton.js', 'shopper-demo-detail.js', 'workspace-tour.js', 'workspace-capabilities.js', 'workspace-tools.js', 'workspace-graph.js', 'agentic-base-data-view.js', 'agentic-base-data-view.css', 'graph-data-view.js', 'graph-data-view.css', 'graph-ui-tokens.css', 'commerce-theme.css', 'workspace-shell.css', 'shared-ui-profile.css', 'app.js', 'drafts.js', 'launch.js', 'checkout.js', 'workflow.js', 'style.css', 'sw.js', 'workspace-pack.html', 'workspace-pack.js', 'workspace-pack.css', 'workspace-pack.simulation.js', 'workspace-pack.console.js', 'sme-business-pack.js', 'sme-business-pack.css', 'sme-business-pack-core.js', 'sme-pack-sg.js', 'sme-pack-my.js', 'housing-comparison.js', 'housing-engine.js', 'housing-sample.js', 'housing-comparison.css']);
 export const PRIVATE_FILES = Object.freeze(['education-materials.md']);
 export const digest = value => createHash('sha256').update(value).digest('hex');
 const COMMERCE_THEME_PIN = Object.freeze({
   sourceRevision: 'c18253b35e8bcc0bed548cfb717ec31909422dbe',
   profileDigest: '000adeb267d0d0ff9527e1227faefcd5fd2c15faee463fa70173204783ea7c9e',
   stylesheetDigest: 'c512ee76dc6160ff41e8bac9706b8e8d0b9e56f42b6c4b128594605e19c93474',
+});
+const SHARED_UI_ICON_PIN = Object.freeze({
+  owner: 'github.com/huijoohwee/agentic-design-system',
+  sourceRevision: '3224afd19c086e511dcfd892d82d12b68460b971',
+  registryRevision: 'f5faa7887d22ffbd61121f30485a8d9ecca957e4',
+  profileSha256: 'f335bd273298f267eddffdf3b3f344a69e31e965223e527e6f599b2947ac9856',
+  projectionSha256: 'c1b166161b7d85ee3bfe8aa085e3427718086de4dfd1445225b52b747fbe475d',
 });
 export const git = (...args) => execFileSync('git', args, { encoding: 'utf8', timeout: 20000 }).trim();
 export function assertLocalFirstConfig(config) {
@@ -192,12 +199,37 @@ export function verifySharedThemeOwner() {
   }
   return { owner: 'commerce-theme.css', tokenCount: tokenNames.length, iconCount: symbols.length };
 }
+export function verifySharedUiIconProfile(directory = 'public/local-first') {
+  if (!FILES.includes('shared-ui-profile.css')) throw Error('Shared UI icon profile must be a released local-first asset');
+  const cssBytes = fs.readFileSync(path.join(directory, 'shared-ui-profile.css'));
+  const css = cssBytes.toString('utf8');
+  const provenance = css.match(/^\/\* Generated from agentic-design-system@([a-f0-9]{40}); profile sha256 ([a-f0-9]{64})\. Do not edit\. \*\//u);
+  if (!provenance || provenance[1] !== SHARED_UI_ICON_PIN.sourceRevision
+    || provenance[2] !== SHARED_UI_ICON_PIN.profileSha256 || digest(cssBytes) !== SHARED_UI_ICON_PIN.projectionSha256
+    || /@import\b|url\(\s*["']?(?:https?:|\/\/)/i.test(css))
+    throw Error('Shared UI icon projection differs from its pinned Design System profile or uses a network dependency');
+  const shell = fs.readFileSync(path.join(directory, 'workspace-shell.css'), 'utf8');
+  const rule = shell.match(/\.workspace-shell>\.sidebar \.console-search>svg\s*\{([^}]*)\}/u)?.[1] ?? '';
+  if (!shell.startsWith('@import "./shared-ui-profile.css";')
+    || !rule.includes('width: var(--agentic-icon-size-default)')
+    || !rule.includes('height: var(--agentic-icon-size-default)')
+    || !rule.includes('flex: 0 0 var(--agentic-icon-size-default)')
+    || /(?:width|height|flex):[^;]*(?:16px|1rem)/.test(rule))
+    throw Error('Commerce console search icon must use the owned default icon-size token');
+  const serviceWorker = fs.readFileSync(path.join(directory, 'sw.js'), 'utf8');
+  if (!/\bshared-ui-profile\.css\b/u.test(serviceWorker))
+    throw Error('Shared UI icon projection must be cached for offline use');
+  return { owner: SHARED_UI_ICON_PIN.owner, sourceRevision: SHARED_UI_ICON_PIN.sourceRevision,
+    registryRevision: SHARED_UI_ICON_PIN.registryRevision, profileSha256: SHARED_UI_ICON_PIN.profileSha256,
+    projectionSha256: SHARED_UI_ICON_PIN.projectionSha256 };
+}
 export function sourceManifest(revision, selection = readCheckoutRelease()) {
   if (!/^[0-9a-f]{40}$/.test(revision) || git('rev-parse', 'HEAD') !== revision) throw Error('Candidate source mismatch');
   verifyGraphBundle();
   verifyAgenticBaseDataView();
   verifyGraphDataView();
   verifySharedThemeOwner();
+  verifySharedUiIconProfile();
   assertLocalFirstConfig(JSON.parse(fs.readFileSync(CONFIG, 'utf8')));
   if (fs.readdirSync('public/local-first').sort().join() !== [...FILES, ...PRIVATE_FILES].sort().join()) throw Error('Unexpected static asset inventory');
   const paths = [CONFIG, 'src/local-first/worker.ts', 'src/local-first/workspace-pack.ts', 'src/local-first/workspace-service.ts', 'src/local-first/sme-business-pack.ts', 'public/local-first/sme-business-pack-core.js', 'config/capability-token-map.json',
