@@ -1,3 +1,5 @@
+@import "./shared-ui-profile.css";
+
 /* Shared workspace layout owner for Shopper, Vendor, Admin, and SME surfaces. */
 :root {
   --workspace-header-height: 82px;
@@ -36,7 +38,7 @@ body.console-mode>main{flex:1 0 auto}
 .console-mode .workspace-content{background-image:radial-gradient(circle at 1px 1px,var(--workspace-canvas-grid-dot) 1px,transparent 1.1px);background-size:var(--workspace-canvas-grid-step) var(--workspace-canvas-grid-step);background-repeat:repeat}
 body.console-mode main { max-width: none; margin: 0; padding: 0; }
 .console-search { width: 100%; min-width: 0; justify-content: flex-start; overflow: hidden; padding: 8px 10px; gap: 8px; font-size: .8125rem; color: var(--commerce-text-muted); white-space: nowrap; box-shadow: 0 1px 2px #00000004; }
-.workspace-shell>.sidebar .console-search>svg { width: 16px; height: 16px; flex: 0 0 16px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.5; }
+.workspace-shell>.sidebar .console-search>svg { width: var(--agentic-icon-size-default); height: var(--agentic-icon-size-default); flex: 0 0 var(--agentic-icon-size-default); fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.5; }
 .workspace-shell>.sidebar .console-search>.sidebar-search-label { min-width: 0; flex: 1 1 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .console-mode .workspace-content { width: 100%; max-width: 1200px; min-width: 0; margin: 0 auto; padding: 46px 32px 48px 48px; }
 /* Shared fragment targets clear the sticky shell. */
