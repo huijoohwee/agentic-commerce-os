@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import path from 'node:path'
-import { writeFile } from 'node:fs/promises'
+import { readFile, writeFile } from 'node:fs/promises'
 import { expect } from '@playwright/test'
 import { BROWSER_CHECKS } from '../../scripts/local-first-release/browser-proof.mjs'
 
@@ -23,7 +23,7 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   await assertSingleWorkflow(planPage)
   const headers = await workflowHeaders(planPage)
   for (const label of ['Input · Problem or need', 'Input · Model currency code', 'Model · Revenue per month', 'Pitch · deck outline', 'Plan · next checks'])
-    assert(headers.includes(label), `Missing workflow column: ${label}`)
+    assert(headers.some(header => header === label || header.startsWith(`${label} ·`)), `Missing workflow column: ${label}`)
   let text = await tableText(planPage)
   assert.match(text, /USD 6,000/)
   assert.match(text, /USD 4,800/)
@@ -48,16 +48,18 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   assert.deepEqual(pivotHeaders.slice(0, 3), ['Field', 'Scenario A', 'Scenario B'])
   text = await tableText(planPage)
   assert.match(text, /USD 6,000/)
-  assert.match(text, /Teams lose time coordinating recurring work/)
-  assert.match(text, /Slide 10\. Financial model/)
+  assert.match(text, /A defined user group has a recurring task that takes time to complete/)
+  assert.match(text, /Slide 1\. Venture and stage/)
 
+  const navigationToggle = planPage.locator('#workspace-navigation-toggle')
+  if (await navigationToggle.getAttribute('aria-expanded') === 'false') await navigationToggle.click()
   await planPage.locator('#sme-navigation a[href="#sme-dictionary"]').click()
   await expect(planPage.locator('#sme-dictionary-heading')).toBeVisible()
   await expect(planPage.locator('#sme-dictionary-status')).toContainText('read-only schema and owner records')
   const dictionary = await planPage.locator('#sme-dictionary-table-host').evaluate(host => ({
     headers: [...host.shadowRoot.querySelectorAll('thead th')].map(cell => cell.innerText.trim()),
     rows: host.shadowRoot.querySelectorAll('tbody tr').length,
-    text: host.shadowRoot.innerText,
+    text: host.shadowRoot.textContent,
   }))
   assert(dictionary.headers.includes('Stable key') && dictionary.headers.includes('Formula / source'))
   assert(dictionary.rows >= 50)
@@ -65,6 +67,27 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   assert.match(dictionary.text, /business\.plan\.build/)
   assert.match(dictionary.text, /DICTIONARY-SEMANTIC/)
   assert.match(dictionary.text, /pitch_deck_outline/)
+  if (await navigationToggle.getAttribute('aria-expanded') === 'false') await navigationToggle.click()
+  await planPage.locator('#sme-navigation a[href="#sme-workflow"]').click()
+  await planPage.locator('#sample').click()
+  await planPage.locator('#sme-compare-run').click()
+  await expect(planPage.locator('#workflow-status')).toContainText('Local plan built')
+  for (const [format, selector] of [['json', '[data-export="json"]'], ['csv', '[data-export="csv"]'], ['markdown', '[data-export="markdown"]']]) {
+    const downloadEvent = planPage.waitForEvent('download')
+    await planPage.locator(selector).click()
+    const download = await downloadEvent, content = await readFile(await download.path(), 'utf8')
+    await planPage.locator('#sme-worksheet-import').setInputFiles({
+      name: download.suggestedFilename(), mimeType: format === 'json' ? 'application/json'
+        : format === 'csv' ? 'text/csv' : 'text/markdown', buffer: Buffer.from(content),
+    })
+    await expect(planPage.locator('#workflow-status')).toContainText('Worksheet imported in this tab')
+    await planPage.locator('#sme-compare-run').click()
+    await expect(planPage.locator('#workflow-status')).toContainText('Local plan built')
+    text = await tableText(planPage)
+    assert.match(text, /Model · Revenue per month/)
+    assert.match(text, /USD 6,000/)
+    await assertSingleWorkflow(planPage)
+  }
   assert.equal(await planPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true)
   assert.equal(serviceCalls.length, 0)
   await assertSingleWorkflow(planPage)

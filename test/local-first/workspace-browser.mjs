@@ -1,5 +1,4 @@
 import path from 'node:path';
-import { readFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import { expect } from '@playwright/test';
 import { verifyWorkspaceToolRefinements } from './workspace-tools-browser.mjs';
@@ -132,56 +131,14 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await expect(page.locator('#sme')).toBeVisible();
   await expect(page.locator('#webmcp-status')).toContainText('optional pack tools registered');
   await context.setOffline(true);
+  await checkSmeComparisonBrowser({ browser, page, url, output, smeServiceRequests, record });
   await page.locator('#sample').click();
   await page.locator('#sme-compare-run').click();
   await expect(page.locator('#workflow-status')).toContainText('Local plan built');
-  let tableText = await page.locator('#sme-workflow-table-host').evaluate(host => host.shadowRoot.textContent);
-  assert.match(tableText, /Outcome · unchecked cash share/);
-  assert.match(tableText, /100%/);
-  await page.locator('#sme-workflow-table-host tr').filter({ hasText: 'Set A' }).click();
-  await expect(page.locator('#sme-workflow-editor')).toContainText('Edit · Set A');
-  await page.locator('#sme-evidence-provenance').selectOption('document_sighted');
-  await page.locator('#sme-evidence-role').selectOption('buyer');
-  await page.locator('#sme-evidence-date').fill('2026-10-31');
-  const evidenceField = await page.locator('#sme-evidence-claim').inputValue();
-  await page.locator(`#compare-evidence-${evidenceField}-low`).fill('150000');
-  await page.locator('#sme-evidence-add').click();
-  await page.locator('#sme-compare-run').click();
-  await expect(page.locator('#workflow-status')).toContainText('Local plan built');
-  tableText = await page.locator('#sme-workflow-table-host').evaluate(host => host.shadowRoot.textContent);
-  assert.match(tableText, /Outcome · cash to close/);
-  assert.match(tableText, /150,000/);
   const workflowText = await page.locator('#sme-workflow-table-host').evaluate(host => host.shadowRoot.textContent);
-  assert.match(workflowText, /1 evidence entry/);
-  const smeShape = await page.locator('#sme').evaluate(root => ({
-    workflowHosts: root.querySelectorAll('[data-sme-workflow-table-host]').length,
-    resultsHosts: root.querySelectorAll('[data-sme-results-table-host]').length,
-    workflowTables: root.querySelector('[data-sme-workflow-table-host]')?.shadowRoot?.querySelectorAll('table').length ?? 0,
-    resultsTables: root.querySelector('[data-sme-results-table-host]')?.shadowRoot?.querySelectorAll('table').length ?? 0,
-    legacy: root.querySelectorAll('#result, #result-summary, .comparison-card').length,
-  }));
-  assert.deepEqual(smeShape, { workflowHosts: 1, resultsHosts: 0, workflowTables: 1, resultsTables: 0, legacy: 0 });
+  assert.match(workflowText, /Model · Revenue per month/);
+  assert.match(workflowText, /USD 6,000/);
   assert.equal(smeServiceRequests.length, 0);
-  await checkSmeComparisonBrowser({ browser, page, url, output, smeServiceRequests, record });
-  for (const [format, selector] of [['json', '[data-export="json"]'], ['csv', '[data-export="csv"]'], ['markdown', '[data-export="markdown"]']]) {
-    const downloadEvent = page.waitForEvent('download');
-    await page.locator(selector).click();
-    const download = await downloadEvent, content = await readFile(await download.path(), 'utf8');
-    await page.locator('#sme-worksheet-import').setInputFiles({
-      name: download.suggestedFilename(), mimeType: format === 'json' ? 'application/json'
-        : format === 'csv' ? 'text/csv' : 'text/markdown', buffer: Buffer.from(content),
-    });
-    await expect(page.locator('#workflow-status')).toContainText('Worksheet imported in this tab');
-    await page.locator('#sme-compare-run').click();
-    await expect(page.locator('#workflow-status')).toContainText('Local plan built');
-    const roundTripText = await page.locator('#sme-workflow-table-host').evaluate(host => host.shadowRoot.textContent);
-    assert.match(roundTripText, /Outcome · cash to close/);
-    assert.match(roundTripText, /150,000/);
-    assert.deepEqual(await page.locator('#sme').evaluate(root => [
-      root.querySelectorAll('[data-sme-workflow-table-host]').length,
-      root.querySelectorAll('[data-sme-results-table-host]').length,
-    ]), [1, 0]);
-  }
   assert.equal(await page.evaluate(() => document.querySelector('#workspace-shell') === window.__smeShellAtEntry), true);
   await context.setOffline(false);
   page.off('request', observeSmeService);

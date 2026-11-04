@@ -201,8 +201,8 @@ async function createSmeBusinessPack() {
     const text = await file.text(), suffix = file.name.split('.').pop().toLowerCase()
     let worksheet
     if (suffix === 'md' || suffix === 'markdown') {
-      const fence = String.fromCharCode(96).repeat(3) + 'json'
-      const start = text.indexOf(fence), end = start < 0 ? -1 : text.indexOf(String.fromCharCode(96).repeat(3), start + fence.length)
+      const fence = '~~~json'
+      const start = text.indexOf(fence), end = start < 0 ? -1 : text.indexOf('~~~', start + fence.length)
       if (start < 0 || end < 0) throw Error('worksheet_markdown_invalid')
       worksheet = JSON.parse(text.slice(start + fence.length, end).trim())
     } else if (suffix === 'csv') worksheet = parseCsv(text)
