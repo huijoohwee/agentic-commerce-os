@@ -34,19 +34,28 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   await page.goto(url + '#sme-workflow')
   await expect(page.locator('#sme-workflow')).toBeInViewport()
   await page.locator('#sme-compare-count').selectOption('2')
-  await page.locator('#sme-workflow-table-host tr[aria-label*="Takeover price"]').click()
+  const workflowColumns = await workflowHeaders(page)
+  assert.equal(workflowColumns.length, 19, 'the workflow table should show the set label and every pack field')
+  assert.deepEqual(workflowColumns.slice(0, 4), ['Claim set', 'Listing source', 'Business type', 'Takeover price'])
+  assert(workflowColumns.includes('Staff count · people'))
+  assert(workflowColumns.includes('Variable costs as basis points of sales'))
+  assert(workflowColumns.includes('Licence status'))
+  await page.locator('#sme-workflow-table-host tr[aria-label*="Set A"]').click()
   const parameters = page.locator('#sme-workflow-parameter-details')
   await expect(parameters).toContainText('Required for a complete local check')
   await expect(parameters).toContainText('single value or range')
   await expect(parameters).toContainText('Sight the written offer or agreement terms supplied by the buyer.')
   await expect(page.getByRole('spinbutton', { name: 'Set A Takeover price minimum amount in SGD' })).toBeVisible()
-  await expect(page.getByRole('spinbutton', { name: 'Set B Takeover price minimum amount in SGD' })).toBeVisible()
+  assert.equal(await page.getByRole('spinbutton', { name: 'Set B Takeover price minimum amount in SGD' }).count(), 0,
+    'the selected set editor should contain one coherent set of parameter inputs')
   await expect(page.getByRole('spinbutton', { name: 'Evidence value Takeover price minimum amount in SGD' })).toBeVisible()
-  await page.locator('#sme-workflow-table-host tr[aria-label*="Staff count"]').click()
+  await page.locator('#compare-a-staff_count').focus()
   await expect(parameters).toContainText('0–300 people')
-  await page.locator('#sme-workflow-table-host tr[aria-label*="Takeover price"]').click()
   await page.locator('#compare-a-price-low').fill('150000')
+  await page.locator('#sme-workflow-table-host tr[aria-label*="Set B"]').click()
   await page.locator('#compare-b-price-low').fill('180000')
+  await page.locator('#sme-workflow-table-host tr[aria-label*="Set A"]').click()
+  await page.locator('#sme-evidence-claim').selectOption('price')
   await page.locator('#sme-evidence-provenance').selectOption('document_sighted')
   await page.locator('#sme-evidence-role').selectOption('adviser')
   await page.locator('#sme-evidence-date').fill('2026-10-31')
@@ -87,6 +96,11 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
     return { clientWidth: view.clientWidth, scrollWidth: view.scrollWidth }
   })
   assert(mobileScroll.scrollWidth > mobileScroll.clientWidth, 'mobile table should remain horizontally scrollable inside Base')
+  const workflowScroll = await page.locator('#sme-workflow-table-host').evaluate(host => {
+    const view = host.shadowRoot.querySelector('.agentic-base-data-view')
+    return { clientWidth: view.clientWidth, scrollWidth: view.scrollWidth }
+  })
+  assert(workflowScroll.scrollWidth > workflowScroll.clientWidth, 'the 19-column workflow should scroll inside the shared table on mobile')
   const region = page.locator('#sme-results-table-region')
   await region.focus()
   assert.equal(await region.evaluate(element => document.activeElement === element), true, 'table region should be keyboard focusable')
@@ -135,7 +149,7 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   }, null, 2) + '\n')
 
   await page.locator('#sme-compare-count').selectOption('3')
-  await page.locator('#sme-workflow-table-host tr[aria-label*="Takeover price"]').click()
+  await page.locator('#sme-workflow-table-host tr[aria-label*="Set C"]').click()
   await page.locator('#compare-c-price-low').fill('210000')
   await page.locator('#sme-compare-run').click()
   await expect(page.locator('#result-status')).toContainText('Local comparison')
@@ -147,6 +161,7 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   await holdNextComparison(page)
   await page.locator('#sme-compare-run').click()
   await expect(page.locator('#result-status')).toContainText('Comparing locally')
+  await page.locator('#sme-workflow-table-host tr[aria-label*="Set A"]').click()
   await page.locator('#compare-a-price-low').fill('160000')
   await releaseComparison(page)
   await expect(page.locator('#result-status')).toContainText('Inputs changed')
@@ -161,7 +176,7 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   await expect(page.locator('#vendor')).toBeVisible()
   await releaseComparison(page)
   await page.locator('#workspace-role-switcher').selectOption('sme')
-  await page.locator('#sme-workflow-table-host tr[aria-label*="Takeover price"]').click()
+  await page.locator('#sme-workflow-table-host tr[aria-label*="Set A"]').click()
   await expect(page.locator('#compare-a-price-low')).toHaveValue('')
   await expect(page.locator('#sme-workflow-evidence-editor .sme-evidence-list')).toBeEmpty()
   await assertPurposeTables(page)
@@ -178,6 +193,10 @@ async function tableText(page) {
 
 async function workflowTableText(page) {
   return page.locator('#sme-workflow-table-host').evaluate(host => host.shadowRoot?.textContent ?? '')
+}
+
+async function workflowHeaders(page) {
+  return page.locator('#sme-workflow-table-host').evaluate(host => [...host.shadowRoot.querySelectorAll('table thead th')].map(cell => cell.innerText.trim()))
 }
 
 async function optionLabels(page) {

@@ -1,9 +1,10 @@
 import { invokeSmePackTool, PACK_INDEX, TOOL_SCHEMAS } from './sme-business-pack-core.js'
 import { getOrCreateSingleton } from './workspace-singleton.js'
+import { createSmeWorkflowEditor } from './sme-workflow-editor.js'
 
 const style = document.createElement('link')
 style.rel = 'stylesheet'
-style.href = new URL('./sme-business-pack.css?v=sme-e2e-workflow-multidim-5', import.meta.url).href
+style.href = new URL('./sme-business-pack.css?v=sme-e2e-workflow-multidim-6', import.meta.url).href
 let stylePromise
 const attachStyles = () => {
   if (!stylePromise) stylePromise = new Promise((resolve, reject) => {
@@ -32,76 +33,17 @@ async function createSmeBusinessPack() {
   const runtimeMode = $('#runtime-mode'), runtimeStatus = $('#runtime-status')
   let currentFields = [], currentProtocol, registration, active = false, previousScrollRestoration = null,
     comparisonGeneration = 0, packGeneration = 0, comparisonPending = false, tableOrientation = 'columns',
-    workflowOrientation = 'rows', tableMessage = null, selectedWorkflowField = null, tableAdapter = null
+    tableMessage = null, selectedWorkflowSet = null, selectedEvidenceField = 'price', tableAdapter = null
   const comparisonSlotElements = ['A', 'B', 'C'].map(slot => ({ slot, claims: {}, evidence: [] }))
   const resultTableMount = { handle: null, ready: null, generation: 0 }
   const workflowTableMount = { handle: null, ready: null, generation: 0 }
   const node = (tag, text, className) => { const element = document.createElement(tag); if (text !== undefined) element.textContent = text; if (className) element.className = className; return element }
   const option = (select, value, label) => { const item = node('option', label); item.value = value; select.append(item) }
   const enumLabel = value => value.replaceAll('_', ' ').replace(/^\w/, letter => letter.toUpperCase())
-  const inputControl = (field, prefix) => {
-    const wrap = node('section', undefined, 'field')
-    const label = node('label', field.label + (field.unit ? ' · ' + field.unit : ''))
-    const id = prefix + '-' + field.name, scope = prefix === 'compare-evidence' ? 'Evidence value' : `Set ${prefix.at(-1).toUpperCase()}`
-    if (field.type === 'enum' || field.type === 'boolean') {
-      const control = node('select'); control.id = id; control.dataset.claim = field.name; control.autocomplete = 'off'
-      option(control, '', 'Choose…')
-      const values = field.type === 'boolean' ? [['true', 'Yes'], ['false', 'No']] : field.values.map(value => [value, enumLabel(value)])
-      for (const value of values) option(control, value[0], value[1])
-      label.htmlFor = id; control.setAttribute('aria-label', `${scope} ${field.label}`); control.setAttribute('aria-required', String(Boolean(field.required))); wrap.append(label, control); return wrap
-    }
-    if (field.type === 'money') {
-      const currency = currentProtocol?.pack.currency || 'SGD', range = node('div', undefined, 'cash-range-input')
-      const heading = node('span', field.label + ' · ' + currency, 'field-label')
-      range.setAttribute('role', 'group'); range.setAttribute('aria-label', field.label + ' range')
-      for (const bound of ['low', 'high']) {
-        const control = node('input'); control.type = 'number'; control.min = '0'; control.max = '100000000'; control.step = '1'
-        control.inputMode = 'numeric'; control.autocomplete = 'off'
-        control.id = id + '-' + bound; control.dataset.claim = field.name; control.dataset.bound = bound
-        control.setAttribute('aria-label', `${scope} ${field.label} ${bound === 'low' ? 'minimum' : 'maximum'} amount in ${currency}${bound === 'high' ? ' (optional)' : ''}`)
-        control.setAttribute('aria-required', String(Boolean(field.required) && bound === 'low'))
-        control.placeholder = bound === 'low' ? 'Amount' : 'Optional'
-        const boundLabel = node('label', `${bound === 'low' ? 'Minimum' : 'Maximum'} · ${currency}`, 'cash-bound')
-        boundLabel.htmlFor = control.id; boundLabel.append(control); range.append(boundLabel)
-      }
-      const hint = node('span', 'Whole amounts · enter one value or a low–high range; leave maximum blank for one amount.', 'field-help')
-      hint.id = id + '-range-help'
-      for (const control of range.querySelectorAll('input')) control.setAttribute('aria-describedby', hint.id)
-      wrap.append(heading, range, hint); return wrap
-    }
-    const control = node('input'); control.type = 'number'; control.step = '1'; control.inputMode = 'numeric'
-    control.min = String(field.min ?? 0); control.max = String(field.max ?? 100000000)
-    control.id = id; control.dataset.claim = field.name; control.autocomplete = 'off'
-    label.htmlFor = id; control.setAttribute('aria-label', `${scope} ${label.textContent}`); control.setAttribute('aria-required', String(Boolean(field.required))); wrap.append(label, control); return wrap
-  }
-  const readValue = (field, prefix) => {
-    const id = prefix + '-' + field.name, raw = (field.type === 'money' ? $('#' + id + '-low') : $('#' + id))?.value
-    if (field.type === 'enum' || field.type === 'boolean') return raw === '' || raw === undefined ? undefined : field.type === 'boolean' ? raw === 'true' : raw
-    if (field.type === 'money') { const highText = $('#' + id + '-high')?.value; if (raw === '' || raw === undefined) return undefined; const low = Number(raw), high = highText === '' ? low : Number(highText); return highText === '' ? low : { low, high } }
-    return raw === '' || raw === undefined ? undefined : Number(raw)
-  }
   const readClaims = item => ({ ...item.claims })
-  function writeValue(field, prefix, value, scope = root) {
-    const id = prefix + '-' + field.name
-    if (field.type === 'money') {
-      const range = value === undefined ? null : typeof value === 'number' ? { low: value, high: value } : value
-      const low = scope.querySelector('#' + id + '-low'), high = scope.querySelector('#' + id + '-high')
-      if (low) low.value = range ? String(range.low) : ''
-      if (high) high.value = range && range.high !== range.low ? String(range.high) : ''
-    } else {
-      const control = scope.querySelector('#' + id)
-      if (control) control.value = value === undefined ? '' : String(value)
-    }
-  }
   const formatMoney = (value, currency = currentProtocol?.pack.currency || 'SGD') => new Intl.NumberFormat(document.documentElement.lang || 'en', { style: 'currency', currency, maximumFractionDigits: 0 }).format(value)
   const lineLabel = id => currentFields.find(field => field.name === id)?.label || id.replaceAll('_', ' ')
   function download(name, mime, content) { const url = URL.createObjectURL(new Blob([content], { type: mime })); const anchor = node('a'); anchor.href = url; anchor.download = name; anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 1000) }
-  const provenanceValues = [
-    ['seller_stated', 'Seller stated · T0'], ['buyer_assumed', 'Buyer assumed · T0'],
-    ['observed_on_site', 'Observed on site · T1'], ['measured_on_foot', 'Measured on foot · T1'],
-    ['counted_on_site', 'Counted on site · T1'], ['document_sighted', 'Document sighted · T2'],
-    ['third_party_confirmed', 'Third party confirmed · T3'],
-  ]
   const worksheetSection = node('section', undefined, 'worksheet-controls')
   worksheetSection.append(node('h3', 'Offline worksheet'))
   const worksheetActions = node('div', undefined, 'actions')
@@ -124,22 +66,15 @@ async function createSmeBusinessPack() {
       return formatMoney(value.low) + (value.high === value.low ? '' : '–' + formatMoney(value.high))
     return field.type === 'enum' ? enumLabel(value) : String(value).replaceAll('_', ' ')
   }
-  function fieldGuidance(field) {
-    const details = node('dl', undefined, 'workflow-parameter-grid')
-    const add = (name, value) => { const row = node('div'); row.append(node('dt', name), node('dd', value)); details.append(row) }
-    const protocols = currentProtocol?.protocols ?? []
-    const protocol = protocols.find(row => row.claim_kind === field.name)
-    const lines = (currentProtocol?.budget_lines ?? []).filter(row => row.claim_kinds.includes(field.name))
-    const bounds = field.type === 'money' ? `0–${formatMoney(100000000)} · whole amounts; single value or range`
-      : field.type === 'integer' ? `${field.min ?? 0}–${field.max ?? 'no upper limit'}${field.unit ? ' ' + field.unit : ''} · whole numbers`
-        : field.type === 'enum' ? field.values.map(enumLabel).join(' · ')
-          : field.type === 'boolean' ? 'Yes · No' : field.type
-    add('Input', field.type === 'money' ? `Amount · ${currentProtocol?.pack.currency || 'SGD'}` : field.type === 'integer' ? `Whole number${field.unit ? ' · ' + field.unit : ''}` : field.type === 'enum' ? 'Choose one' : 'Yes or no')
-    add('Completeness', field.required ? 'Required for a complete local check · blank stays unknown' : 'Optional pack field')
-    add(field.type === 'enum' || field.type === 'boolean' ? 'Allowed values' : field.type === 'money' || field.type === 'integer' ? 'Entry limits' : 'Entry rule', bounds)
-    if (lines.length) add('Budget use', lines.map(line => `${line.id} · ${line.label}${line.formula ? ` (${line.formula})` : ''}`).join(' · ')); add('Evidence target', protocol ? `${protocol.tier} · ${protocol.provenance.replaceAll('_', ' ')}${protocol.effort_min ? ` · ${protocol.effort_min} min planned` : ''}` : field.retiring_tier ? `${field.retiring_tier} target · see the pack review note` : 'No evidence tier defined for this input')
-    if (protocol) add('Next evidence check', protocol.task); return details
-  }
+  const workflowEditorView = createSmeWorkflowEditor({
+    workflowEditor, claimInputs, evidenceEditor, heading: $('#sme-workflow-editor-heading'), note: $('#sme-workflow-editor-note'),
+    evidenceHeading: $('#sme-workflow-evidence-heading'), parameterDetails: $('#sme-workflow-parameter-details'), workflowStatus,
+    getFields: () => currentFields, getProtocol: () => currentProtocol,
+    getSlots: () => comparisonSlotElements.slice(0, Number(comparisonCount.value)), getSelectedSlot: () => selectedWorkflowSet,
+    getEvidenceField: () => selectedEvidenceField, setEvidenceField: value => { selectedEvidenceField = value },
+    node, option, enumLabel, formatClaim, formatMoney, invalidate: invalidateComparison,
+  })
+  function renderWorkflowEditor() { workflowEditorView.render() }
   function tableSlots(value) {
     const supplied = new Map((value?.slots ?? []).map(slot => [slot.slot, slot]))
     return comparisonSlotElements.map((item, index) => {
@@ -193,84 +128,24 @@ async function createSmeBusinessPack() {
   }
   function workflowTableView() {
     const slots = comparisonSlotElements.slice(0, Number(comparisonCount.value))
-    const columns = [{ id: 'workflow-step', name: 'Workflow item' }, ...slots.map(item => ({ id: 'set-' + item.slot, name: 'Set ' + item.slot }))]
-    const rows = currentFields.map((field, index) => ({ id: field.name, cells: [`Step ${index + 1} · ${field.label}${field.unit ? ' · ' + field.unit : ''}`,
-      ...slots.map(item => {
+    const columns = [{ id: 'claim-set', name: 'Claim set' }, ...currentFields.map(field => ({ id: field.name, name: field.label + (field.unit ? ' · ' + field.unit : '') }))]
+    const rows = slots.map(item => ({ id: item.slot, cells: [`Set ${item.slot}`,
+      ...currentFields.map(field => {
         const count = item.evidence.filter(row => row.claim_kind === field.name).length
         return formatClaim(field, item.claims[field.name]) + (count ? ` · ${count} evidence ${count === 1 ? 'entry' : 'entries'}` : '')
       })] }))
-    return { columns, rows, layout: 'multiDimensional', orientation: workflowOrientation,
-      ariaLabel: 'SME E2E workflow claims and evidence Multi-dimensional Table', selectedRowId: selectedWorkflowField ?? undefined,
-      onActivateRow: fieldId => { selectedWorkflowField = fieldId; renderWorkflowEditor(); workflowStatus.textContent = 'Editing ' + lineLabel(fieldId) + '. Values stay on this device.'; void renderWorkflowTable() },
-      onOrientationChange: orientation => {
-        workflowOrientation = orientation; workflowTableRegion.dataset.orientation = orientation
-        workflowTableRegion.setAttribute('aria-label', orientation === 'rows'
-          ? 'SME E2E workflow; claim items are rows and active sets are columns.' : 'SME E2E workflow pivoted to active sets as rows.')
+    return { columns, rows, layout: 'multiDimensional', orientation: 'rows',
+      ariaLabel: 'SME E2E workflow; claim sets are rows and every pack field is a column.', selectedRowId: selectedWorkflowSet ?? undefined,
+      onActivateRow: slot => {
+        if (!slots.some(item => item.slot === slot)) return
+        selectedWorkflowSet = slot; renderWorkflowEditor()
+        workflowStatus.textContent = `Editing Set ${slot}. Values and evidence stay on this device.`
         void renderWorkflowTable()
       } }
   }
   async function renderWorkflowTable() {
     if (!await renderSharedTable(workflowTableHost, workflowTableView(), workflowTableMount))
       workflowStatus.textContent = 'Shared workflow table unavailable. Reload this page to retry.'
-  }
-  function renderWorkflowEditor() {
-    const field = currentFields.find(row => row.name === selectedWorkflowField)
-    workflowEditor.hidden = !field
-    claimInputs.replaceChildren(); evidenceEditor.replaceChildren()
-    if (!field) return
-    $('#sme-workflow-editor-heading').textContent = 'Edit · ' + field.label
-    $('#sme-workflow-editor-note').textContent = 'Enter one value per active set. Blank stays unknown; values stay in this tab and evidence is not authenticated.'
-    $('#sme-workflow-parameter-details').replaceChildren(fieldGuidance(field))
-    for (const item of comparisonSlotElements.slice(0, Number(comparisonCount.value))) {
-      const prefix = 'compare-' + item.slot.toLowerCase(), fieldset = node('fieldset', undefined, 'workflow-edit-set')
-      fieldset.append(node('legend', 'Set ' + item.slot))
-      const control = inputControl(field, prefix); fieldset.append(control); writeValue(field, prefix, item.claims[field.name], fieldset)
-      for (const input of fieldset.querySelectorAll('input, select')) input.addEventListener(input instanceof HTMLSelectElement ? 'change' : 'input', () => {
-        const value = readValue(field, prefix)
-        if (value === undefined) delete item.claims[field.name]; else item.claims[field.name] = value
-        invalidateComparison()
-      })
-      claimInputs.append(fieldset)
-    }
-    if (!field.retiring_tier) { evidenceEditor.append(node('p', 'No evidence tier is defined for this workflow item.', 'muted')); return }
-    const setField = node('section', undefined, 'field'), setLabel = node('label', 'Evidence set'), setSelect = node('select')
-    setSelect.id = 'sme-evidence-set'; setLabel.htmlFor = setSelect.id
-    for (const item of comparisonSlotElements.slice(0, Number(comparisonCount.value))) option(setSelect, item.slot, 'Set ' + item.slot)
-    setField.append(setLabel, setSelect)
-    const provenance = node('select'); provenance.id = 'sme-evidence-provenance'; option(provenance, '', 'Evidence source…')
-    for (const row of provenanceValues) option(provenance, row[0], row[1])
-    const role = node('select'); role.id = 'sme-evidence-role'; option(role, '', 'Observer role…')
-    for (const name of ['buyer', 'adviser', 'field_checker']) option(role, name, name.replaceAll('_', ' '))
-    const date = node('input'); date.type = 'date'; date.id = 'sme-evidence-date'
-    const metadata = node('div', undefined, 'evidence-fields')
-    for (const [control, labelText] of [[provenance, 'Provenance'], [role, 'Observer'], [date, 'Date']]) {
-      const fieldWrap = node('section', undefined, 'field'), label = node('label', labelText)
-      label.htmlFor = control.id; fieldWrap.append(label, control); metadata.append(fieldWrap)
-    }
-    const valuePrefix = 'compare-evidence', valueControl = inputControl(field, valuePrefix)
-    const list = node('ul', undefined, 'sme-evidence-list'), add = node('button', 'Add evidence'); add.type = 'button'; add.id = 'sme-evidence-add'
-    const renderEvidenceRows = () => {
-      list.replaceChildren()
-      const item = comparisonSlotElements.find(row => row.slot === setSelect.value)
-      item?.evidence.forEach((row, index) => {
-        if (row.claim_kind !== field.name) return
-        const entry = node('li', `${formatClaim(field, row.value)} · ${row.provenance.replaceAll('_', ' ')} · ${row.observer_role.replaceAll('_', ' ')} · ${row.date}`)
-        const remove = node('button', 'Remove'); remove.type = 'button'
-        remove.addEventListener('click', () => { item.evidence.splice(index, 1); invalidateComparison(); renderWorkflowEditor() })
-        entry.append(remove); list.append(entry)
-      })
-    }
-    setSelect.addEventListener('change', renderEvidenceRows)
-    add.addEventListener('click', () => {
-      const item = comparisonSlotElements.find(row => row.slot === setSelect.value), value = readValue(field, valuePrefix)
-      if (!item || value === undefined || !provenance.value || !role.value || !date.value || item.evidence.length >= 40) {
-        workflowStatus.textContent = item?.evidence.length >= 40 ? 'A set can include at most 40 evidence entries.'
-          : 'Choose a value, provenance, observer and date before adding evidence.'; return
-      }
-      item.evidence.push({ claim_kind: field.name, value, provenance: provenance.value, observer_role: role.value, date: date.value })
-      invalidateComparison(); renderWorkflowEditor()
-    })
-    evidenceEditor.append(setField, metadata, valueControl, add, list); renderEvidenceRows()
   }
   async function runPlan(item = comparisonSlotElements[0]) {
     return invokeSmePackTool('takeover.plan', { pack_id: packSelect.value, claims: readClaims(item), evidence: item.evidence })
@@ -283,7 +158,7 @@ async function createSmeBusinessPack() {
     const item = comparisonSlotElements[0]
     item.claims = { ...worksheet.claims }
     item.evidence.splice(0, item.evidence.length, ...worksheet.evidence.map(row => ({ ...row })))
-    selectedWorkflowField = currentFields[0]?.name ?? null
+    selectedWorkflowSet = 'A'
     renderWorkflowEditor(); invalidateComparison()
   }
   function parseCsv(text) {
@@ -329,7 +204,6 @@ async function createSmeBusinessPack() {
     if (packId !== packSelect.value) return false
     currentProtocol = protocol
     currentFields = currentProtocol.claim_kinds
-    if (!currentFields.some(field => field.name === selectedWorkflowField)) selectedWorkflowField = null
     serviceStatus.textContent = `${currentProtocol.pack.country} · ${currentProtocol.pack.currency} · v${currentProtocol.pack.version} · ${currentProtocol.pack.review_status}`
     return true
   }
@@ -338,6 +212,7 @@ async function createSmeBusinessPack() {
     for (const [index, item] of comparisonSlotElements.entries()) {
       if (index >= count) { item.claims = {}; item.evidence.length = 0 }
     }
+    if (selectedWorkflowSet && !comparisonSlotElements.slice(0, count).some(item => item.slot === selectedWorkflowSet)) selectedWorkflowSet = 'A'
     renderWorkflowEditor()
     compareButton.textContent = count === 1 ? 'Run local check' : `Compare ${count} sets locally`
   }
@@ -355,7 +230,7 @@ async function createSmeBusinessPack() {
     for (const item of comparisonSlotElements) {
       item.claims = {}; item.evidence.length = 0
     }
-    selectedWorkflowField = null; renderWorkflowEditor()
+    selectedWorkflowSet = null; renderWorkflowEditor()
     updateComparisonSlotVisibility(); invalidateComparison()
   }
   function formatComparisonRange(range) {
@@ -448,7 +323,7 @@ async function createSmeBusinessPack() {
       : 'SME calculated results pivoted to dimensions as records.')
   }
   syncOrientation()
-  workflowTableRegion.setAttribute('aria-label', 'SME E2E workflow; claim items are rows and active sets are columns.')
+  workflowTableRegion.setAttribute('aria-label', 'SME E2E workflow; claim sets are rows and every pack field is a column.')
   void renderWorkflowTable()
   void renderComparison(null, comparisonGeneration)
   comparisonCount.addEventListener('change', () => { updateComparisonSlotVisibility(); invalidateComparison() })
@@ -488,7 +363,7 @@ async function createSmeBusinessPack() {
       if (value === undefined) continue
       item.claims[field.name] = value
     }
-    item.evidence.length = 0; selectedWorkflowField = currentFields.find(field => field.name === 'price')?.name ?? currentFields[0]?.name
+    item.evidence.length = 0; selectedWorkflowSet = 'A'; selectedEvidenceField = currentFields.find(field => field.name === 'price')?.name ?? currentFields[0]?.name ?? null
     renderWorkflowEditor(); invalidateComparison()
     resultStatus.textContent = 'Sample values are illustrative buyer inputs and remain in this tab.'
   })
