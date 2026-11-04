@@ -31,9 +31,7 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   if (BROWSER_CHECKS.firstReport) record(BROWSER_CHECKS.firstReport)
 
   await page.setViewportSize({ width: 360, height: 780 })
-  const workflowUrl = new URL(url); workflowUrl.searchParams.set('sme-e2e', 'workflow'); workflowUrl.hash = 'sme-workflow'
-  await page.goto(workflowUrl.toString())
-  await page.evaluate(() => history.replaceState(history.state, '', `${location.pathname}#sme-workflow`))
+  await page.goto(url + '#sme-workflow')
   await expect(page.locator('#sme-workflow')).toBeInViewport()
   await page.locator('#sme-compare-count').selectOption('2')
   await page.locator('#sme-workflow-table-host tr[aria-label*="Takeover price"]').click()
