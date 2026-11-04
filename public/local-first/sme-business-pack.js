@@ -38,6 +38,7 @@ async function createSmeBusinessPack() {
   const workflowTableMount = { handle: null, ready: null, generation: 0 }
   const node = (tag, text, className) => { const element = document.createElement(tag); if (text !== undefined) element.textContent = text; if (className) element.className = className; return element }
   const option = (select, value, label) => { const item = node('option', label); item.value = value; select.append(item) }
+  const enumLabel = value => value.replaceAll('_', ' ').replace(/^\w/, letter => letter.toUpperCase())
   const inputControl = (field, prefix) => {
     const wrap = node('section', undefined, 'field')
     const label = node('label', field.label + (field.unit ? ' · ' + field.unit : ''))
@@ -45,26 +46,33 @@ async function createSmeBusinessPack() {
     if (field.type === 'enum' || field.type === 'boolean') {
       const control = node('select'); control.id = id; control.dataset.claim = field.name; control.autocomplete = 'off'
       option(control, '', 'Choose…')
-      const values = field.type === 'boolean' ? [['true', 'Yes'], ['false', 'No']] : field.values.map(value => [value, value.replaceAll('_', ' ')])
+      const values = field.type === 'boolean' ? [['true', 'Yes'], ['false', 'No']] : field.values.map(value => [value, enumLabel(value)])
       for (const value of values) option(control, value[0], value[1])
-      label.htmlFor = id; wrap.append(label, control); return wrap
+      label.htmlFor = id; control.setAttribute('aria-required', String(Boolean(field.required))); wrap.append(label, control); return wrap
     }
     if (field.type === 'money') {
-      const range = node('div', undefined, 'cash-range-input')
+      const currency = currentProtocol?.pack.currency || 'SGD', range = node('div', undefined, 'cash-range-input')
+      const heading = node('span', field.label + ' · ' + currency, 'field-label')
+      range.setAttribute('role', 'group'); range.setAttribute('aria-label', field.label + ' range')
       for (const bound of ['low', 'high']) {
         const control = node('input'); control.type = 'number'; control.min = '0'; control.max = '100000000'; control.step = '1'
         control.inputMode = 'numeric'; control.autocomplete = 'off'
         control.id = id + '-' + bound; control.dataset.claim = field.name; control.dataset.bound = bound
-        control.setAttribute('aria-label', field.label + ' ' + bound)
-        control.placeholder = bound === 'low' ? 'SGD · minimum' : 'SGD · maximum (optional)'
-        range.append(control)
+        control.setAttribute('aria-label', `${field.label} ${bound === 'low' ? 'minimum' : 'maximum'} amount in ${currency}${bound === 'high' ? ' (optional)' : ''}`)
+        control.setAttribute('aria-required', String(Boolean(field.required) && bound === 'low'))
+        control.placeholder = bound === 'low' ? 'Amount' : 'Optional'
+        const boundLabel = node('label', `${bound === 'low' ? 'Minimum' : 'Maximum'} · ${currency}`, 'cash-bound')
+        boundLabel.htmlFor = control.id; boundLabel.append(control); range.append(boundLabel)
       }
-      wrap.append(label, range); return wrap
+      const hint = node('span', 'Whole amounts · enter one value or a low–high range; leave maximum blank for one amount.', 'field-help')
+      hint.id = id + '-range-help'
+      for (const control of range.querySelectorAll('input')) control.setAttribute('aria-describedby', hint.id)
+      wrap.append(heading, range, hint); return wrap
     }
     const control = node('input'); control.type = 'number'; control.step = '1'; control.inputMode = 'numeric'
     control.min = String(field.min ?? 0); control.max = String(field.max ?? 100000000)
     control.id = id; control.dataset.claim = field.name; control.autocomplete = 'off'
-    label.htmlFor = id; wrap.append(label, control); return wrap
+    label.htmlFor = id; control.setAttribute('aria-required', String(Boolean(field.required))); wrap.append(label, control); return wrap
   }
   const readValue = (field, prefix) => {
     const id = prefix + '-' + field.name, raw = (field.type === 'money' ? $('#' + id + '-low') : $('#' + id))?.value
@@ -114,7 +122,23 @@ async function createSmeBusinessPack() {
     if (typeof value === 'number') return field.type === 'money' ? formatMoney(value) : `${new Intl.NumberFormat().format(value)}${field.unit ? ' ' + field.unit : ''}`
     if (typeof value === 'object' && value !== null && Number.isFinite(value.low) && Number.isFinite(value.high))
       return formatMoney(value.low) + (value.high === value.low ? '' : '–' + formatMoney(value.high))
-    return String(value).replaceAll('_', ' ')
+    return field.type === 'enum' ? enumLabel(value) : String(value).replaceAll('_', ' ')
+  }
+  function fieldGuidance(field) {
+    const details = node('dl', undefined, 'workflow-parameter-grid')
+    const add = (name, value) => { const row = node('div'); row.append(node('dt', name), node('dd', value)); details.append(row) }
+    const protocols = currentProtocol?.protocols ?? []
+    const protocol = protocols.find(row => row.claim_kind === field.name)
+    const lines = (currentProtocol?.budget_lines ?? []).filter(row => row.claim_kinds.includes(field.name))
+    const bounds = field.type === 'money' ? `0–${formatMoney(100000000)} · whole amounts; single value or range`
+      : field.type === 'integer' ? `${field.min ?? 0}–${field.max ?? 'no upper limit'}${field.unit ? ' ' + field.unit : ''} · whole numbers`
+        : field.type === 'enum' ? field.values.map(enumLabel).join(' · ')
+          : field.type === 'boolean' ? 'Yes · No' : field.type
+    add('Input', field.type === 'money' ? `Amount · ${currentProtocol?.pack.currency || 'SGD'}` : field.type === 'integer' ? `Whole number${field.unit ? ' · ' + field.unit : ''}` : field.type === 'enum' ? 'Choose one' : 'Yes or no')
+    add('Completeness', field.required ? 'Required for a complete local check · blank stays unknown' : 'Optional pack field')
+    add(field.type === 'enum' || field.type === 'boolean' ? 'Allowed values' : field.type === 'money' || field.type === 'integer' ? 'Entry limits' : 'Entry rule', bounds)
+    if (lines.length) add('Budget use', lines.map(line => `${line.id} · ${line.label}${line.formula ? ` (${line.formula})` : ''}`).join(' · ')); add('Evidence target', protocol ? `${protocol.tier} · ${protocol.provenance.replaceAll('_', ' ')}${protocol.effort_min ? ` · ${protocol.effort_min} min planned` : ''}` : field.retiring_tier ? `${field.retiring_tier} target · see the pack review note` : 'No evidence tier defined for this input')
+    if (protocol) add('Next evidence check', protocol.task); return details
   }
   function tableSlots(value) {
     const supplied = new Map((value?.slots ?? []).map(slot => [slot.slot, slot]))
@@ -195,7 +219,8 @@ async function createSmeBusinessPack() {
     claimInputs.replaceChildren(); evidenceEditor.replaceChildren()
     if (!field) return
     $('#sme-workflow-editor-heading').textContent = 'Edit · ' + field.label
-    $('#sme-workflow-editor-note').textContent = 'Values are local inputs. Add evidence for the selected claim and set; evidence is not authenticated.'
+    $('#sme-workflow-editor-note').textContent = 'Enter one value per active set. Blank stays unknown; values stay in this tab and evidence is not authenticated.'
+    $('#sme-workflow-parameter-details').replaceChildren(fieldGuidance(field))
     for (const item of comparisonSlotElements.slice(0, Number(comparisonCount.value))) {
       const prefix = 'compare-' + item.slot.toLowerCase(), fieldset = node('fieldset', undefined, 'workflow-edit-set')
       fieldset.append(node('legend', 'Set ' + item.slot))
