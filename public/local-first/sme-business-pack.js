@@ -26,15 +26,19 @@ async function createSmeBusinessPack() {
   const $ = selector => root.querySelector(selector)
   const form = $('#sme-check-form'), packSelect = $('#pack-id'), comparisonCount = $('#sme-compare-count')
   const workflowTableHost = $('#sme-workflow-table-host'), workflowTableRegion = $('#sme-workflow-table-region')
+  const dictionaryHost = $('#sme-dictionary-table-host'), dictionaryRegion = $('#sme-dictionary-table-region')
+  const dictionaryStatus = $('#sme-dictionary-status'), overview = $('#sme-overview'), dictionary = $('#sme-dictionary')
   const workflowEditor = $('#sme-workflow-editor'), claimInputs = $('#sme-workflow-claim-inputs')
   const evidenceEditor = $('#sme-workflow-evidence-editor')
   const workflowStatus = $('#workflow-status'), serviceStatus = $('#service-status')
   const runtimeMode = $('#runtime-mode'), runtimeStatus = $('#runtime-status')
   let currentFields = [], currentProtocol, registration, active = false, previousScrollRestoration = null,
     comparisonGeneration = 0, packGeneration = 0, comparisonPending = false, tableOrientation = 'rows',
-    comparisonValue = null, tableMessage = null, selectedWorkflowSet = null, selectedEvidenceField = null, tableAdapter = null
+    comparisonValue = null, tableMessage = null, selectedWorkflowSet = null, selectedEvidenceField = null,
+    tableAdapter = null, dictionaryModule = null, dictionaryOrientation = 'rows'
   const comparisonSlotElements = ['A', 'B', 'C'].map(slot => ({ slot, claims: {}, evidence: [] }))
   const workflowTableMount = { handle: null, ready: null, generation: 0 }
+  const dictionaryTableMount = { handle: null, ready: null, generation: 0 }
   const node = (tag, text, className) => { const element = document.createElement(tag); if (text !== undefined) element.textContent = text; if (className) element.className = className; return element }
   const option = (select, value, label) => { const item = node('option', label); item.value = value; select.append(item) }
   const enumLabel = value => value.replaceAll('_', ' ').replace(/^\w/, letter => letter.toUpperCase())
@@ -226,6 +230,7 @@ async function createSmeBusinessPack() {
     currentProtocol = protocol
     currentFields = currentProtocol.claim_kinds
     serviceStatus.textContent = `${currentProtocol.pack.country} · ${currentProtocol.pack.currency} · v${currentProtocol.pack.version} · ${currentProtocol.pack.review_status}`
+    if (location.hash.slice(1).split('?')[0] === 'sme-dictionary') void renderDictionaryTable()
     return true
   }
   function updateComparisonSlotVisibility() {
@@ -294,6 +299,27 @@ async function createSmeBusinessPack() {
       return false
     }
   }
+  async function renderDictionaryTable() {
+    if (!currentProtocol || !dictionaryHost?.isConnected) return
+    try {
+      dictionaryModule ??= await import('./sme-pack-dictionary.js?v=sme-pack-protocol-dictionary-1')
+      const view = dictionaryModule.createSmePackDictionaryView(currentProtocol, dictionaryOrientation, orientation => {
+        if (!dictionaryHost.isConnected) return
+        dictionaryOrientation = orientation
+        dictionaryRegion.dataset.orientation = orientation
+        dictionaryRegion.setAttribute('aria-label', orientation === 'rows'
+          ? 'Protocol records as rows; definitions and canonical owners as columns.'
+          : 'The same dictionary pivoted to definitions as records.')
+        void renderDictionaryTable()
+      }, TOOL_SCHEMAS)
+      if (await renderSharedTable(dictionaryHost, view, dictionaryTableMount,
+        () => location.hash.slice(1).split('?')[0] === 'sme-dictionary')) {
+        dictionaryStatus.textContent = `${currentProtocol.pack.id} · v${currentProtocol.pack.version} · read-only protocol and owner references`
+      }
+    } catch {
+      dictionaryStatus.textContent = 'Dictionary unavailable. The active pack protocol could not be rendered.'
+    }
+  }
   async function runComparison() {
     const count = Number(comparisonCount.value), identity = PACK_INDEX.find(pack => pack.id === packSelect.value)
     if (!identity) { workflowStatus.textContent = 'Check refused. The selected pack is unavailable.'; return }
@@ -341,6 +367,7 @@ async function createSmeBusinessPack() {
     clearComparison()
     if (await refreshFields(packSelect.value) && generation === packGeneration) {
       renderWorkflowEditor(); void renderWorkflowTable()
+      if (location.hash.slice(1).split('?')[0] === 'sme-dictionary') void renderDictionaryTable()
     }
   })
   form.addEventListener('submit', event => { event.preventDefault(); void runComparison() })
@@ -463,12 +490,15 @@ async function createSmeBusinessPack() {
   function updateSectionNavigation() {
     const section = location.hash.slice(1).split('?')[0] || 'sme'
     const isSmeSection = section === 'sme' || section.startsWith('sme-')
+    const isDictionary = section === 'sme-dictionary'
     const targetId = ['sme-compare', 'sme-check-form', 'sme-report'].includes(section) ? 'sme-workflow' : section
-    const activeHash = '#sme-workflow'
+    overview.hidden = isDictionary
+    dictionary.hidden = !isDictionary
     for (const link of document.querySelectorAll('#sme-navigation .service-nav a')) {
-      if (link.hash === activeHash && isSmeSection) link.setAttribute('aria-current', 'location')
+      if (link.hash === '#sme-dictionary' && isDictionary || link.hash === '#sme-workflow' && isSmeSection && !isDictionary) link.setAttribute('aria-current', 'location')
       else link.removeAttribute('aria-current')
     }
+    if (isDictionary) void renderDictionaryTable()
     if (isSmeSection) requestAnimationFrame(() => requestAnimationFrame(() => {
       if (location.hash.slice(1).split('?')[0] !== section) return
       const target = section === 'sme' ? root : document.getElementById(targetId)

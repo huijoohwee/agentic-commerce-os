@@ -33,7 +33,7 @@
                   <a id="admin-environment-link" href="#admin-runtime" data-view="admin-runtime" aria-label="Environment overview" title="Environment overview"><span class="status-dot" role="img" aria-label="Environment status"></span> Environment</a><a id="admin-environment-history-link" href="#admin-runtime?section=checks" aria-label="Environment checks" title="Environment checks"><svg viewBox="0 0 20 20" aria-hidden="true"><use href="#icon-reviews"/></svg> Checks</a></nav>
                 </template>
         <template id="sme-navigation-content">
-                  <nav class="service-nav" aria-label="SME business pack"><p class="sidebar-label">SME business pack</p><a href="#sme-workflow" aria-label="E2E workflow Multi-dimensional Table"><svg viewBox="0 0 20 20" aria-hidden="true"><use href="#icon-offers"/></svg> E2E workflow</a></nav>
+                  <nav class="service-nav" aria-label="SME business pack"><p class="sidebar-label">SME business pack</p><a href="#sme-workflow" aria-label="E2E workflow Multi-dimensional Table"><svg viewBox="0 0 20 20" aria-hidden="true"><use href="#icon-offers"/></svg> E2E workflow</a><a href="#sme-dictionary" aria-label="Data dictionary Multi-dimensional Table"><svg viewBox="0 0 20 20" aria-hidden="true"><use href="#icon-reviews"/></svg> Data dictionary</a></nav>
         </template>
         <template id="housing-navigation-content">
           <nav class="service-nav" aria-label="Housing workspace"><p class="sidebar-label">Housing</p><a href="#housing" data-view="housing" aria-label="Multi-dimensional Table"><svg viewBox="0 0 20 20" aria-hidden="true"><use href="#icon-offers"/></svg> Multi-dimensional Table</a></nav>
@@ -201,6 +201,11 @@
                 <p id="workflow-status" class="comparison-table-status" role="status" aria-live="polite">Select a claim set row to begin. Inputs remain on this device and are not saved.</p>
               </section>
               <details id="sme-agent-tools" class="agent-details" aria-labelledby="agent-heading"><summary id="agent-heading">Agent tools · MCP and WebMCP</summary><p>Use the same deterministic checks from an agent or browser tool.</p><span class="agent-label">Headless MCP endpoint</span><code id="mcp-url"></code><p id="webmcp-status" role="status" aria-live="polite">Checking browser tool support…</p><p class="footnote">Browser tool registration is optional and never implies an agent connection.</p></details>
+            </section>
+            <section id="sme-dictionary" class="panel sme-table-panel" aria-labelledby="sme-dictionary-heading" hidden>
+              <header class="sme-table-heading"><p class="eyebrow">PACK CONTRACT · LIVE PROTOCOL</p><h1 id="sme-dictionary-heading" tabindex="-1">Data dictionary</h1><p class="lede">Read-only definitions from the active pack protocol, with canonical owner references for shared interface terms. Empty collections are shown as undeclared.</p></header>
+              <div id="sme-dictionary-table-region" class="comparison-table-scroll workflow-table-scroll" data-orientation="rows" tabindex="0" role="region" aria-label="SME data dictionary; protocol records are rows and definitions and owners are columns."><div id="sme-dictionary-table-host" class="comparison-table-host"></div></div>
+              <p id="sme-dictionary-status" class="comparison-table-status" role="status" aria-live="polite">Loading active pack protocol…</p>
             </section>
                   </section>
         </section>
