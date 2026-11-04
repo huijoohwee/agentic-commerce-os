@@ -85,6 +85,11 @@ async function createSmeBusinessPack() {
   }
   function tableDimensions() {
     const lines = currentProtocol?.budget_lines ?? []
+    const parameterDimensions = (currentProtocol?.parameters ?? []).map((parameter, index) => ({
+      id: 'pack-parameter-' + (index + 1),
+      name: 'Pack parameter · ' + (parameter?.label ?? parameter?.name ?? parameter?.id ?? index + 1),
+      read: () => JSON.stringify(parameter) ?? 'Not supplied.',
+    }))
     const reportValue = (slot, read) => slot.status === 'not_supplied' ? 'Not in this comparison.' : slot.report ? read(slot.report) : 'Not run · run local check'
     const completeness = report => report.check.completeness
     const tierSummary = report => Object.entries(report.check.claim_counts_by_tier).map(([tier, count]) => `${tier} ${count}`).join(' · ')
@@ -103,6 +108,7 @@ async function createSmeBusinessPack() {
       : 'No ordered evidence-led check from current amounts.'
     const dimensions = [
       { id: 'pack-context', name: 'Workflow · pack context', read: () => currentProtocol?.pack ? `${currentProtocol.pack.country} · ${currentProtocol.pack.currency} · v${currentProtocol.pack.version} · ${currentProtocol.pack.review_status}` : 'Loading pack…' },
+      ...parameterDimensions,
       { id: 'workflow-completeness', name: 'Workflow · required inputs', read: slot => reportValue(slot, report => {
         const status = completeness(report), missing = status.required - status.supplied
         return missing ? `Incomplete · ${status.supplied}/${status.required} required fields · ${missing} unknown` : `Entered · ${status.supplied}/${status.required} required fields`
