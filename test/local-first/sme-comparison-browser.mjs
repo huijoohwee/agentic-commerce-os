@@ -15,14 +15,13 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   await firstPage.locator('#workspace-role-switcher').selectOption('sme')
   await expect(firstPage.locator('#sme')).toBeVisible()
   await expect.poll(() => tableText(firstPage)).toContain('Cash to close')
-  await firstPage.locator('#sme-workflow > summary').click()
   await firstPage.locator('#sample').click()
-  await firstPage.locator('#sme-check-form button[type="submit"]').click()
+  await firstPage.locator('#sme-compare-run').click()
   await expect(firstPage.locator('#result-status')).toContainText('On-device calculation')
   const elapsedMs = Math.round(performance.now() - started)
   assert(elapsedMs < 300000)
   assert.equal(serviceCalls.length, 0)
-  await assertSingleTable(firstPage)
+  await assertPurposeTables(firstPage)
   await writeFile(path.join(output, 'sme-first-report-timing.json'), JSON.stringify({
     schema: 'commerce.sme-first-report-timing/v1', surface: 'fresh-anonymous-mobile', viewport: '360x780',
     elapsedMs, limitMs: 300000, serviceCalls: serviceCalls.length,
@@ -32,26 +31,26 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   if (BROWSER_CHECKS.firstReport) record(BROWSER_CHECKS.firstReport)
 
   await page.setViewportSize({ width: 360, height: 780 })
-  await page.goto(url + '#sme-compare')
-  await expect(page.locator('#sme-compare')).toBeInViewport()
-  await expect(page.locator('#sme-workflow')).toHaveAttribute('open', '')
+  const workflowUrl = new URL(url); workflowUrl.searchParams.set('sme-e2e', 'workflow'); workflowUrl.hash = 'sme-workflow'
+  await page.goto(workflowUrl.toString())
+  await page.evaluate(() => history.replaceState(history.state, '', `${location.pathname}#sme-workflow`))
+  await expect(page.locator('#sme-workflow')).toBeInViewport()
   await page.locator('#sme-compare-count').selectOption('2')
+  await page.locator('#sme-workflow-table-host tr[aria-label*="Takeover price"]').click()
   await page.locator('#compare-a-price-low').fill('150000')
   await page.locator('#compare-b-price-low').fill('180000')
-  await page.locator('#compare-evidence-a-details > summary').click()
-  await page.locator('#compare-evidence-a-kind').selectOption('price')
-  await page.locator('#compare-evidence-a-provenance').selectOption('document_sighted')
-  await page.locator('#compare-evidence-a-role').selectOption('adviser')
-  await page.locator('#compare-evidence-a-date').fill('2026-10-31')
-  await page.locator('#compare-evidence-a-price-low').fill('150000')
-  await page.locator('#compare-evidence-a-add').click()
-  await page.locator('#sme-check-form button[type="submit"]').click()
+  await page.locator('#sme-evidence-provenance').selectOption('document_sighted')
+  await page.locator('#sme-evidence-role').selectOption('adviser')
+  await page.locator('#sme-evidence-date').fill('2026-10-31')
+  await page.locator('#compare-evidence-price-low').fill('150000')
+  await page.locator('#sme-evidence-add').click()
+  await page.locator('#sme-compare-run').click()
   await expect(page.locator('#result-status')).toContainText('Local comparison')
   await expect.poll(() => optionLabels(page)).toEqual(['A', 'B', 'Not supplied.'])
   await expect.poll(() => tableText(page)).toContain('Not supplied.')
   await expect.poll(() => tableText(page)).toContain('Singapore · SGD')
   await expect.poll(() => tableText(page)).toContain('Cash to close')
-  await assertSingleTable(page)
+  await assertPurposeTables(page)
   const payload = await page.evaluate(async claimSets => {
     const result = await (document.modelContext ?? navigator.modelContext).executeTool({ name: 'takeover.compare_claim_sets' }, { claim_sets: claimSets })
     return JSON.parse(result.content[0].text)
@@ -80,7 +79,7 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
     return { clientWidth: view.clientWidth, scrollWidth: view.scrollWidth }
   })
   assert(mobileScroll.scrollWidth > mobileScroll.clientWidth, 'mobile table should remain horizontally scrollable inside Base')
-  const region = page.locator('#sme-report')
+  const region = page.locator('#sme-results-table-region')
   await region.focus()
   assert.equal(await region.evaluate(element => document.activeElement === element), true, 'table region should be keyboard focusable')
   const pivot = page.locator('#sme-table-host .base-multi-dimensional-table-pivot')
@@ -104,11 +103,11 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
     location.hash = 'sme'
   })
   await expect(page).toHaveURL(url + '#sme')
-  await page.evaluate(() => { location.hash = 'sme-compare' })
+  await page.evaluate(() => { location.hash = 'sme-workflow' })
   await page.goBack(); await expect(page).toHaveURL(url + '#sme')
-  await page.goForward(); await expect(page).toHaveURL(url + '#sme-compare')
+  await page.goForward(); await expect(page).toHaveURL(url + '#sme-workflow')
   const routeEvents = await page.evaluate(() => window.__smeRouteEvents)
-  assert(routeEvents.includes('pop:#sme-compare') && routeEvents.includes('hash:#sme-compare'))
+  assert(routeEvents.includes('pop:#sme-workflow') && routeEvents.includes('hash:#sme-workflow'))
   await expect(page.locator('#compare-a-price-low')).toHaveValue('150000')
 
   await page.evaluate(() => { window.__smePrintOpened = false; window.print = () => { window.__smePrintOpened = true } })
@@ -128,16 +127,17 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   }, null, 2) + '\n')
 
   await page.locator('#sme-compare-count').selectOption('3')
+  await page.locator('#sme-workflow-table-host tr[aria-label*="Takeover price"]').click()
   await page.locator('#compare-c-price-low').fill('210000')
-  await page.locator('#sme-check-form button[type="submit"]').click()
+  await page.locator('#sme-compare-run').click()
   await expect(page.locator('#result-status')).toContainText('Local comparison')
   await expect.poll(() => optionLabels(page)).toEqual(['A', 'B', 'C'])
   await expect.poll(() => tableText(page)).toContain('210,000')
-  await assertSingleTable(page)
+  await assertPurposeTables(page)
   assert.equal(smeServiceRequests.length, 0)
 
   await holdNextComparison(page)
-  await page.locator('#sme-check-form button[type="submit"]').click()
+  await page.locator('#sme-compare-run').click()
   await expect(page.locator('#result-status')).toContainText('Comparing locally')
   await page.locator('#compare-a-price-low').fill('160000')
   await releaseComparison(page)
@@ -147,18 +147,19 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   assert(clearedTableText.includes('160,000'), 'the table should retain the changed buyer input')
 
   await holdNextComparison(page)
-  await page.locator('#sme-check-form button[type="submit"]').click()
+  await page.locator('#sme-compare-run').click()
   await expect(page.locator('#result-status')).toContainText('Comparing locally')
   await page.locator('#workspace-role-switcher').selectOption('vendor')
   await expect(page.locator('#vendor')).toBeVisible()
   await releaseComparison(page)
   await page.locator('#workspace-role-switcher').selectOption('sme')
+  await page.locator('#sme-workflow-table-host tr[aria-label*="Takeover price"]').click()
   await expect(page.locator('#compare-a-price-low')).toHaveValue('')
-  await expect(page.locator('#compare-evidence-a-list')).toBeEmpty()
-  await assertSingleTable(page)
+  await expect(page.locator('#sme-workflow-evidence-editor .sme-evidence-list')).toBeEmpty()
+  await assertPurposeTables(page)
   assert.equal(smeServiceRequests.length, 0)
   await page.locator('#sample').click()
-  await page.locator('#sme-check-form button[type="submit"]').click()
+  await page.locator('#sme-compare-run').click()
   await expect(page.locator('#result-status')).toContainText('On-device calculation')
   if (BROWSER_CHECKS.smeComparison) record(BROWSER_CHECKS.smeComparison)
 }
@@ -170,20 +171,22 @@ async function tableText(page) {
 async function optionLabels(page) {
   return page.locator('#sme-table-host').evaluate(host => {
     const table = host.shadowRoot.querySelector('table'), headers = [...table.querySelectorAll('thead th')]
-    if (document.querySelector('#sme-report').dataset.orientation === 'columns') return headers.slice(1).map(cell => cell.innerText.trim())
+    if (document.querySelector('#sme-results-table-region').dataset.orientation === 'columns') return headers.slice(1).map(cell => cell.innerText.trim())
     const index = headers.findIndex(cell => cell.innerText.includes('Option'))
     return [...table.querySelectorAll('tbody tr')].map(row => row.cells[index]?.innerText.trim())
   })
 }
 
-async function assertSingleTable(page) {
+async function assertPurposeTables(page) {
   const shape = await page.locator('#sme').evaluate(root => ({
-    hosts: root.querySelectorAll('[data-sme-comparison-table-host]').length,
-    tables: root.querySelector('[data-sme-comparison-table-host]')?.shadowRoot?.querySelectorAll('table').length ?? 0,
-    legacyResults: root.querySelectorAll('#result, #result-summary, .comparison-card').length,
+    workflowHosts: root.querySelectorAll('[data-sme-workflow-table-host]').length,
+    resultsHosts: root.querySelectorAll('[data-sme-results-table-host]').length,
+    workflowTables: root.querySelector('[data-sme-workflow-table-host]')?.shadowRoot?.querySelectorAll('table').length ?? 0,
+    resultsTables: root.querySelector('[data-sme-results-table-host]')?.shadowRoot?.querySelectorAll('table').length ?? 0,
+    legacyVariants: root.querySelectorAll('#result, #result-summary, .comparison-card, .report-section, .comparison-input-slots, .comparison-evidence').length,
     forms: root.querySelectorAll('#sme-check-form').length,
   }))
-  assert.deepEqual(shape, { hosts: 1, tables: 1, legacyResults: 0, forms: 1 })
+  assert.deepEqual(shape, { workflowHosts: 1, resultsHosts: 1, workflowTables: 1, resultsTables: 1, legacyVariants: 0, forms: 1 })
 }
 
 async function holdNextComparison(page) {
