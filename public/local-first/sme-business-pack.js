@@ -3,7 +3,7 @@ import { getOrCreateSingleton } from './workspace-singleton.js'
 
 const style = document.createElement('link')
 style.rel = 'stylesheet'
-style.href = new URL('./sme-business-pack.css?v=sme-cash-to-close-compare-print-2', import.meta.url).href
+style.href = new URL('./sme-business-pack.css?v=sme-cash-to-close-multidim-3', import.meta.url).href
 let stylePromise
 const attachStyles = () => {
   if (!stylePromise) stylePromise = new Promise((resolve, reject) => {
@@ -28,7 +28,7 @@ async function createSmeBusinessPack() {
   const resultSummary = $('#result-summary'), rawReport = $('#report-raw')
   const runtimeMode = $('#runtime-mode'), runtimeStatus = $('#runtime-status')
   let currentFields = [], evidenceRows = [], registration, active = false, previousScrollRestoration = null,
-    comparisonGeneration = 0, comparisonPending = false, lastResultKind = null
+    comparisonGeneration = 0, comparisonPending = false, comparisonTableHandle = null, comparisonTableAdapter = null, comparisonTableStatus = null, lastResultKind = null
   const node = (tag, text, className) => { const element = document.createElement(tag); if (text !== undefined) element.textContent = text; if (className) element.className = className; return element }
   const option = (select, value, label) => { const item = node('option', label); item.value = value; select.append(item) }
   const inputControl = (field, prefix) => {
@@ -147,6 +147,8 @@ async function createSmeBusinessPack() {
     })
   }
   function renderResult(value) {
+    comparisonGeneration++; comparisonPending = false; compareButton.disabled = false
+    comparisonTableHandle?.destroy(); comparisonTableHandle = null; comparisonTableStatus = null
     resultSummary.replaceChildren()
     const check = value?.check, budget = value?.budget
     if (!check || !budget) {
@@ -282,6 +284,7 @@ async function createSmeBusinessPack() {
     }
   }
   function clearDisplayedResult(message) {
+    comparisonTableHandle?.destroy(); comparisonTableHandle = null; comparisonTableStatus = null
     resultElement.textContent = ''; rawReport.hidden = true; resultStatus.textContent = ''
     resultSummary.replaceChildren(node('p', message, 'muted')); lastResultKind = null
   }
@@ -358,43 +361,42 @@ async function createSmeBusinessPack() {
     item.evidenceList = list
     details.append(controls, value, add, list); item.fieldset.append(details)
   }
-  function renderComparison(value) {
-    resultSummary.replaceChildren()
-    const context = node('div', undefined, 'report-context')
-    context.append(node('span', 'Singapore · ' + value.pack.currency, 'report-pill'),
-      node('span', 'Pack v' + value.pack.version, 'report-pill'), node('span', 'As of ' + value.pack.as_of, 'report-pill'),
-      node('span', 'No winner reported', 'report-pill quiet'))
-    resultSummary.append(context)
-    for (const slot of value.slots) {
-      const card = node('section', undefined, 'report-section comparison-card')
-      card.append(node('h3', 'Slot ' + slot.slot))
-      if (!slot.report) { card.append(node('p', 'Not supplied.', 'report-note')); resultSummary.append(card); continue }
-      const budget = slot.report.budget.budget, missing = slot.report.check.completeness.missing_claims
-      const tiers = slot.report.check.claim_counts_by_tier
-      const runway = budget.opening_runway
-      const runwayText = runway?.months ? runway.months.low + '–' + runway.months.high + ' months'
-        : runway?.status === 'no_monthly_shortfall' ? 'No monthly shortfall indicated'
-          : runway?.status ? 'Unknown · ' + runway.status.replaceAll('_', ' ') : 'Unknown · incomplete'
-      const rows = [
-        ['Cash to close', formatComparisonRange(budget.cash_to_close)],
-        ['Gap above asking price', formatComparisonRange(budget.gap_above_asking_price)],
-        ['Opening runway', runwayText],
-        ['Lease exposure', formatComparisonRange(budget.lease_exposure)],
-        ['Unchecked share', budget.unchecked_share === null ? 'Unknown · incomplete' : Math.round(budget.unchecked_share * 100) + '%'],
-        ['Missing claims', missing.length ? missing.join(', ') : 'None'],
-        ['Arithmetic observations', arithmeticText(budget.arithmetic_flags)],
-        ...budget.lines.map(line => [line.label, line.complete ? formatComparisonRange(line) : 'Unknown · incomplete']),
-      ]
-      const list = node('dl', undefined, 'comparison-report-rows')
-      for (const [label, answer] of rows) {
-        const row = node('div', undefined, 'comparison-report-row'); row.append(node('dt', label), node('dd', answer)); list.append(row)
-      }
-      card.append(list, node('p', `Claims by tier: T0 ${tiers.T0} · T1 ${tiers.T1} · T2 ${tiers.T2} · T3 ${tiers.T3}`, 'report-note'),
-        node('p', slot.report.check.disclaimer, 'report-disclaimer')); resultSummary.append(card)
-    }
-    resultSummary.append(node('p', 'Indicative, not verified. Sighted evidence is not authenticated; no professional advice is provided.', 'report-disclaimer'))
-    resultElement.textContent = JSON.stringify(value, null, 2); rawReport.hidden = false
-    resultStatus.textContent = 'Local comparison · inputs and reports are not saved or sent'; lastResultKind = 'comparison'
+  async function renderComparison(value, generation) {
+    const first = value.slots.find(slot => slot.report)?.report
+    if (!first) throw Error('comparison_report_missing')
+    const dimensions = [
+      { id: 'option', name: 'Option', read: slot => 'Slot ' + slot.slot },
+      { id: 'cash-to-close', name: 'Cash to close', read: slot => slot.report ? formatComparisonRange(slot.report.budget.budget.cash_to_close) : 'Not supplied.' },
+      { id: 'gap-above-asking', name: 'Gap above asking price', read: slot => slot.report ? formatComparisonRange(slot.report.budget.budget.gap_above_asking_price) : 'Not supplied.' },
+      { id: 'opening-runway', name: 'Opening runway', read: slot => { const runway = slot.report?.budget.budget.opening_runway; return !slot.report ? 'Not supplied.' : runway?.months ? runway.months.low + '–' + runway.months.high + ' months' : runway?.status === 'no_monthly_shortfall' ? 'No monthly shortfall indicated' : runway?.status ? 'Unknown · ' + runway.status.replaceAll('_', ' ') : 'Unknown · incomplete' } },
+      { id: 'lease-exposure', name: 'Lease exposure', read: slot => slot.report ? formatComparisonRange(slot.report.budget.budget.lease_exposure) : 'Not supplied.' },
+      { id: 'unchecked-share', name: 'Unchecked share', read: slot => !slot.report ? 'Not supplied.' : slot.report.budget.budget.unchecked_share === null ? 'Unknown · incomplete' : Math.round(slot.report.budget.budget.unchecked_share * 100) + '%' },
+      { id: 'missing-claims', name: 'Missing claims', read: slot => !slot.report ? 'Not supplied.' : slot.report.check.completeness.missing_claims.join(', ') || 'None' },
+      { id: 'arithmetic', name: 'Arithmetic observations', read: slot => slot.report ? arithmeticText(slot.report.budget.budget.arithmetic_flags) : 'Not supplied.' },
+      ...first.budget.budget.lines.map(line => ({ id: 'line-' + line.id, name: line.label, read: slot => { const item = slot.report?.budget.budget.lines.find(row => row.id === line.id); return !slot.report ? 'Not supplied.' : item?.complete ? formatComparisonRange(item) : 'Unknown · incomplete' } })),
+      { id: 'claim-tiers', name: 'Claims by tier', read: slot => slot.report ? Object.entries(slot.report.check.claim_counts_by_tier).map(([tier, count]) => tier + ' ' + count).join(' · ') : 'Not supplied.' },
+      { id: 'review-note', name: 'Review note', read: slot => slot.report ? slot.report.check.disclaimer : 'Not supplied.' },
+    ]
+    resultSummary.replaceChildren(); const context = node('div', undefined, 'report-context')
+    context.append(node('span', 'Singapore · ' + value.pack.currency, 'report-pill'), node('span', 'Pack v' + value.pack.version, 'report-pill'), node('span', 'As of ' + value.pack.as_of, 'report-pill'), node('span', 'No winner reported', 'report-pill quiet'))
+    const region = node('div', undefined, 'comparison-table-scroll'); region.tabIndex = 0
+    region.setAttribute('role', 'region'); region.setAttribute('aria-label', 'SME comparison; options are columns and fixed cash, lease and evidence rows')
+    const host = node('div', undefined, 'comparison-table-host'); host.dataset.smeComparisonTableHost = 'true'
+    const status = node('p', 'Loading the shared comparison table…', 'comparison-table-status'); status.setAttribute('role', 'status'); comparisonTableStatus = status
+    region.append(host); resultSummary.append(context, region, status); resultElement.textContent = JSON.stringify(value, null, 2); rawReport.hidden = false; lastResultKind = 'comparison'
+    const adapter = await (comparisonTableAdapter ??= import('./agentic-base-data-view.js?v=base-0cd7602-multi-dimensional-table-v1')
+      .catch(error => { comparisonTableAdapter = null; throw error }))
+    if (generation !== comparisonGeneration || !host.isConnected) return
+    const shadow = host.attachShadow({ mode: 'open' }), stylesheet = document.createElement('link'), target = document.createElement('div')
+    stylesheet.rel = 'stylesheet'; stylesheet.href = new URL('./agentic-base-data-view.css?v=base-0cd7602-multi-dimensional-table-v1', import.meta.url).href
+    target.style.cssText = 'width:100%;height:100%'
+    for (const [name, token] of Object.entries({ '--agentic-base-text': '--commerce-ink', '--agentic-base-surface': '--commerce-surface', '--agentic-base-border': '--commerce-border', '--agentic-base-muted': '--commerce-text-muted', '--agentic-base-header': '--commerce-surface-subtle', '--agentic-base-selected': '--commerce-accent-soft', '--agentic-base-hover': '--commerce-accent-soft', '--agentic-base-focus': '--commerce-focus' })) host.style.setProperty(name, `var(${token})`)
+    const ready = new Promise((resolve, reject) => { const timer = setTimeout(() => reject(Error('shared_table_styles_unavailable')), 8000); stylesheet.onload = () => { clearTimeout(timer); resolve() }; stylesheet.onerror = () => { clearTimeout(timer); reject(Error('shared_table_styles_unavailable')) } })
+    shadow.append(stylesheet, target); await ready; if (generation !== comparisonGeneration || !host.isConnected) return
+    const view = { columns: dimensions.map(({ id, name }) => ({ id, name })), rows: value.slots.map(slot => ({ id: slot.slot, cells: dimensions.map(dimension => dimension.read(slot)) })),
+      layout: 'multiDimensional', orientation: 'columns', ariaLabel: 'SME buyer-entered cash-to-close comparison',
+      onOrientationChange: orientation => { if (generation !== comparisonGeneration || !host.isConnected || !comparisonTableHandle) return; view.orientation = orientation; region.dataset.orientation = orientation; region.setAttribute('aria-label', `SME comparison; options are ${orientation} and fixed cash, lease and evidence rows`); comparisonTableHandle.update(view) } }
+    comparisonTableHandle = adapter.mountDataView(target, view); status.textContent = 'Local comparison · inputs and reports are not saved or sent'; resultStatus.textContent = 'Local comparison · inputs and reports are not saved or sent'
   }
   async function runComparison() {
     const count = Number(comparisonCount.value), identity = PACK_INDEX.find(pack => pack.id === packSelect.value)
@@ -412,18 +414,19 @@ async function createSmeBusinessPack() {
     comparisonPending = true; compareButton.disabled = true
     clearDisplayedResult('Comparison is running locally. No prior report is shown.')
     resultStatus.textContent = 'Comparing locally…'
-    let deadline, timedOut = false
+    let deadline, timedOut = false, rendering = false
     try {
       const value = await Promise.race([
         invokeSmePackTool('takeover.compare_claim_sets', { claim_sets: claimSets }),
         new Promise((_, reject) => { deadline = setTimeout(() => { timedOut = true; reject(Error('sme_pack_comparison_deadline')) }, 2000) }),
       ])
       if (generation !== comparisonGeneration || document.body.dataset.workspaceRole !== 'sme') return
-      renderComparison(value)
+      rendering = true
+      await renderComparison(value, generation)
     } catch {
       if (generation === comparisonGeneration && document.body.dataset.workspaceRole === 'sme') {
-        resultStatus.textContent = timedOut ? 'Comparison exceeded 2 seconds; no report was kept.'
-          : 'Comparison refused. Review closed values and the shared pack identity.'
+        if (rendering && comparisonTableStatus) comparisonTableStatus.textContent = 'Shared comparison table unavailable; open raw report data below.'
+        resultStatus.textContent = timedOut ? 'Comparison exceeded 2 seconds; no report was kept.' : rendering ? 'The local report is available as data, but the shared comparison table could not load.' : 'Comparison refused. Review closed values and the shared pack identity.'
       }
     } finally {
       clearTimeout(deadline)
