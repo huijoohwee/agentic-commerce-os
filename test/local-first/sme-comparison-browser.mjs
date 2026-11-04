@@ -144,7 +144,7 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   await expect(page.locator('#result-status')).toContainText('Inputs changed')
   const clearedTableText = await tableText(page)
   assert(clearedTableText.includes('Unknown · run local check'), 'input change should clear the old report values from the table')
-  assert(clearedTableText.includes('160,000'), 'the table should retain the changed buyer input')
+  assert((await workflowTableText(page)).includes('160,000'), 'the workflow table should retain the changed buyer input')
 
   await holdNextComparison(page)
   await page.locator('#sme-compare-run').click()
@@ -166,6 +166,10 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
 
 async function tableText(page) {
   return page.locator('#sme-table-host').evaluate(host => host.shadowRoot?.textContent ?? '')
+}
+
+async function workflowTableText(page) {
+  return page.locator('#sme-workflow-table-host').evaluate(host => host.shadowRoot?.textContent ?? '')
 }
 
 async function optionLabels(page) {
