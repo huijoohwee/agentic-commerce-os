@@ -1,106 +1,87 @@
-# Business-pack codebook and data dictionary
+# Business plan codebook and data dictionary
 
-**Contract:** `sme-business-pack/protocol/v1`  
-**Runtime owner:** `public/local-first/sme-business-pack-core.js` and the active module selected by its pack registry  
-**Status:** shared contract; currently one provisional pack is enabled
+Version: `sme.business-plan@2.0.0`
+Status: provisional, user-defined planning contract
+Runtime owner: `public/local-first/sme-pack-business-plan.js`
+Schema and evaluator owner: `public/local-first/sme-business-pack-core.js`
 
-## Scope and ownership
+## Contract
 
-The shared transport, table renderer, editor, and value formatting use the pack protocol rather than country, sector, currency, or field-name defaults. A pack declares its own identity, currency, fields, calculation lines, parameters, ratios, protocols, and review status. The registry is an explicit allowlist; syntactically valid but unregistered pack IDs are refused.
+The active plan is a general, local-first startup and small-business planning worksheet. It has no location, sector, benchmark, market data, default assumptions, inferred values, currency conversion, or external service dependency. The author chooses a three-letter currency code for each scenario. Text is limited to concise planning notes; unknown values remain unknown. User-recorded evidence is context and is not authenticated.
 
-This separates a reusable contract from the current pilot data. The currently enabled pack remains a single provisional specialization. Its presence does not establish that another jurisdiction, sector, or calculation is available or reviewed. The cash-to-close evaluator still implements this task's arithmetic; adding a new task or calculation requires a reviewed contract change.
+The versioned protocol is returned by `pack.protocol` as `sme-business-plan/protocol/v1`. Its source collections are `input_fields`, `model_outputs`, `artifacts`, `parameters`, `ratios`, `protocols`, and `tolerances`. The current contract declares input fields, model outputs, one pitch deck outline artifact, and evidence guidance; calculation parameters, ratios, and tolerances are explicitly empty. The tools and JSON Schemas are declared once in `sme-business-pack-core.js` and reused by local, worker, MCP, and optional WebMCP adapters.
 
-`pack.protocol` is the UI and tool dictionary. Its `claim_kinds` array is the only field collection used by the workflow table, editor, evidence selector, and field validation. Legacy `pack.required_fields` remains a separate compatibility response; it does not feed the current workflow table.
+## Input field codebook
 
-## Codebook
+Blank optional values are not zero, false, or a model estimate. Required fields are needed to call the plan complete; the evaluator still returns a partial plan when they are absent. `text` values are at most 280 characters (venture name: 80) and reject URL, email, and phone patterns. `money` is a nonnegative amount or inclusive low/high range, up to 1,000,000,000 with four decimal places. `integer` values are whole numbers within their declared bounds. `currency` is a user-selected uppercase three-letter code; no conversion is applied.
 
-| Term | Meaning |
-|---|---|
-| Pack | Versioned, allowlisted declaration with opaque `id`, country/asset metadata, ISO 4217 currency, version, `as_of`, and `review_status`. |
-| Claim field | One `claim_kinds` item. `name` is the stable key; `label` is display text; `type`, `required`, optional `unit`, bounds/values, `owner`, and `retiring_tier` describe accepted input and its use. |
-| Unknown | No value entered. Rendered as `Unknown · not entered`; it is not zero, false, or an inferred value. |
-| Evidence | A dated, person-entered observation attached to one declared field. Evidence is not authenticated or stored by the service. |
-| Provenance tier | `seller_stated` and `buyer_assumed` = T0; `observed_on_site`, `measured_on_foot`, and `counted_on_site` = T1; `document_sighted` = T2; `third_party_confirmed` = T3. |
-| Observer role | Closed shared vocabulary: `buyer`, `adviser`, `field_checker`. |
-| Budget line | Pack-declared output line with an ID, label, source claim fields, optional formula, and retiring tier. It is not another input field. |
-| Parameter | A pack-declared, reviewed calculation value separate from buyer input. Empty `parameters` means none are supplied. Do not infer one from a label or example. |
-| Ratio | Pack-declared arithmetic relation. Its basis and review flag travel with the value. An unreviewed ratio is an arithmetic observation only, not a benchmark. |
-| Tolerance | Pack-declared comparison tolerance. Empty `tolerances` means exact reported differences remain visible without an implicit allowance. |
-| Claim status | `discrepancy`, `conflicting_evidence`, `no_discrepancy_found`, or `unsupported`; status describes evidence coverage, not whether a business or price is good. |
-| Comparison slot | A buyer-entered record identified by A, B, or C in entry order. A missing slot stays `Not supplied.`; sets are not ranked or normalized. |
+| Stable key | Field | Section | Type / unit | Required | Limits or allowed values |
+|---|---|---|---|---:|---|
+| `venture_name` | Venture or project name | Venture | text | No | 80 characters |
+| `venture_stage` | Current stage | Venture | enum | Yes | idea, discovery, validation, pre-launch, operating, growth, other |
+| `problem_statement` | Problem or need | Pitch | text | Yes | 280 characters |
+| `target_customer` | Intended customer or beneficiary | Pitch | text | Yes | 280 characters |
+| `solution_offer` | Product, service, or offer | Pitch | text | Yes | 280 characters |
+| `value_proposition` | Value proposition | Pitch | text | No | 280 characters |
+| `market_definition` | Market definition and scope | Market | text | No | 280 characters; user-supplied basis |
+| `market_basis` | Market evidence or basis | Market | text | No | 280 characters; cite the user's own offline source in notes |
+| `business_model` | Revenue or operating model | Business plan | text | Yes | 280 characters |
+| `go_to_market` | Customer access and delivery plan | Business plan | text | Yes | 280 characters |
+| `progress_evidence` | Progress, tests, or traction evidence | Evidence | text | No | 280 characters; not authenticated |
+| `team_capabilities` | Team capabilities and gaps | Operations | text | No | 280 characters |
+| `key_risks` | Key risks and open assumptions | Risk | text | Yes | 280 characters |
+| `milestones` | Next milestones and measures | Execution | text | Yes | 280 characters |
+| `currency_code` | Model currency code | Financial model | currency | Yes | Three uppercase letters; no conversion |
+| `price_per_unit` | Price per unit or billing interval | Financial model | money / selected currency | No | One amount or low/high range |
+| `units_per_month` | Units or billable events per month | Financial model | integer / units per month | No | 0–100,000,000 |
+| `variable_cost_per_unit` | Variable cost per unit | Financial model | money / selected currency | No | One amount or low/high range |
+| `fixed_costs_per_month` | Other fixed costs per month | Financial model | money / selected currency per month | No | One amount or low/high range |
+| `payroll_per_month` | Team and contractor cost per month | Financial model | money / selected currency per month | No | One amount or low/high range |
+| `setup_costs` | One-time setup and launch costs | Funding | money / selected currency | No | One amount or low/high range |
+| `cash_available` | Cash available for this plan | Funding | money / selected currency | No | One amount or low/high range |
+| `runway_target_months` | Planning runway | Funding | integer / months | No | 1–120 |
+| `funding_requested` | Funding amount under consideration | Funding | money / selected currency | No | One amount or low/high range |
+| `use_of_funds` | Proposed use of funds | Funding | text | No | 280 characters |
 
-## Protocol data dictionary
+## Model output codebook
 
-The `pack.protocol` response contains:
+Every output is a deterministic arithmetic result from explicit inputs. Missing or unbounded prerequisites yield an unknown display and a list of required inputs. A range remains a range through calculations. No output is a forecast, probability, valuation, recommendation, accounting statement, or sector benchmark.
 
-| Key | Shape and use |
-|---|---|
-| `schema` | Versioned protocol identifier. |
-| `pack` | Pack identity and review metadata; currency is declared here and controls all money entry and display. |
-| `claim_kinds` | Ordered array of field definitions; the sole dynamic input-field source for the workflow table and editor. |
-| `budget_lines` | Ordered output definitions. Each line identifies its input keys and optional deterministic formula. |
-| `parameters` | Ordered reviewed pack-level values, separate from buyer inputs. Each declared entry appears as a read-only table column with its parameter metadata/value; an empty array adds no parameter columns. |
-| `ratios` | Ordered pack-declared arithmetic relations and their review state. |
-| `protocols` | Evidence task, claim key, provenance, tier, and optional effort estimate. |
-| `tolerances` | Explicit reviewed tolerance declarations, or an empty array. |
-| `review_note` | Human-readable limitation for this pack. It does not replace structured review metadata. |
-| `inference_tokens` | Always zero for this deterministic local contract. |
+| Stable key | Output | Inputs | Formula |
+|---|---|---|---|
+| `monthly_revenue` | Revenue per month | `price_per_unit`, `units_per_month` | price × monthly units |
+| `monthly_variable_cost` | Variable costs per month | `variable_cost_per_unit`, `units_per_month` | variable cost × monthly units |
+| `monthly_contribution` | Contribution after variable costs | `monthly_revenue`, `monthly_variable_cost` | revenue − variable costs |
+| `monthly_operating_costs` | Operating costs per month | `fixed_costs_per_month`, `payroll_per_month` | fixed costs + payroll |
+| `monthly_operating_result` | Operating result per month | `monthly_contribution`, `monthly_operating_costs` | contribution − operating costs |
+| `break_even_units` | Break-even volume | price, variable cost, fixed costs, payroll | operating costs ÷ positive contribution per unit; rounded up |
+| `runway` | Cash runway | cash available, monthly operating result | cash ÷ positive monthly burn; no-burn and zero-crossing states remain explicit |
+| `funding_gap` | Funding need for entered runway | setup costs, runway, operating result, cash available | max(0, setup costs + positive monthly burn × entered months − available cash) |
+| `funding_requested_difference` | Proposed funding minus modeled need | requested funding, funding gap | funding requested − funding need calculated from entered runway |
 
-Each claim field is keyed by a lowercase identifier matching `^[a-z][a-z0-9_]{0,63}$`. Runtime validation applies the active pack's exact type, enum, bounds, required status, and evidence target after the generic bounded transport schema accepts the envelope. Money is a whole amount or a low/high range in the pack currency. It is never assigned a default currency.
+## Evidence and readiness
 
-The enabled provisional pack currently declares these 18 input fields. This inventory is a reader aid only; field order, types, units, allowed values, required flags, and tiers are read from `pack.protocol.claim_kinds` at runtime.
+Evidence rows use `{ field_key, value, provenance, observer_role, date }`. Provenance is one of `assumption`, `self_reported`, `directly_observed`, `counted`, `document_reviewed`, or `independently_reported`. Observer role is `author`, `observer`, or `reviewer`. These labels describe how a person recorded context; they do not authenticate it or prove the underlying value. The protocol supplies field-specific prompts. The local table shows evidence counts beside each input and evidence details in a workflow column.
 
-| Field key | Type | Required | Unit or evidence tier |
-|---|---|---:|---|
-| `listing_source` | enum | yes | pack values |
-| `subtype` | enum | yes | pack values |
-| `price` | money | yes | T2 |
-| `equipment_included` | boolean | yes | — |
-| `equipment_cost` | money | yes | T1 |
-| `rent_monthly` | money | yes | T3 |
-| `lease_remaining_months` | integer | yes | months · T2 |
-| `deposit_months` | integer | yes | months of rent · T2 |
-| `utilities_deposits` | money | yes | T2 |
-| `transfer_cost` | money | yes | T2 |
-| `repairs_provision` | money | yes | T1 |
-| `monthly_sales` | money | yes | T2 |
-| `staff_count` | integer | yes | people · T1 |
-| `payroll_monthly` | money | yes | T2 |
-| `utilities_monthly` | money | yes | T2 |
-| `runway_months` | integer | yes | months · buyer-supplied |
-| `variable_cost_bps` | integer | yes | basis points · buyer-supplied |
-| `licence_status` | enum | no | pack values · T2 |
+The E2E table also projects required-input completeness, invalid entries, output coverage, each model output, one twelve-section pitch deck draft outline, and ordered next checks. Slide content is traced to declared input keys and calculated output keys; it does not fill gaps with generated facts. Markdown export contains the outline, financial model, and plan data. Next checks name missing model inputs or optional narrative context; they do not prescribe financing or claim a venture is viable. The selected scenario editor edits the same row's fields and evidence. There is no separate checklist or results model.
 
-The actual response is authoritative if this reader aid and the pack module ever differ. Changes to the protocol require updating this dictionary and its contract checks in the same lane.
+## Table contract
 
-## Invocation and interface dictionary
+The E2E workspace renders one `agentic-base` `multiDimensional` table. Rows are scenarios A, B, and C in entry order. Columns are the scenario key, every `input_fields` field, plan status and validation, evidence, every `model_outputs` field, the `pitch_deck_outline` artifact, and next checks. One scenario builds a draft; two or three compare entered scenarios. Comparison requires a shared contract version and currency code. It preserves order and does not rank, sort, score, choose a winner, or convert currency. Pivoting changes only the orientation of that same table.
 
-These terms align the pack with shared Agentic OS invocation dictionaries, Canvas discovery/skill contracts, and the AgenticRAG context. They are metadata references, not `sme-business-pack/protocol/v1` fields, business facts, local command definitions, or alternate tool names. The shared dictionaries own `/`, `#`, and `@` token meaning; consumers own execution and proof.
+The Data dictionary route renders a second read-only `multiDimensional` table generated from the live protocol. It documents each input, output, artifact, evidence rule, tool schema, empty optional collection, and shared vocabulary owner. It is a different concern from the workflow table, not an alternate workflow or calculation surface. Both use the existing Base adapter; Commerce theme tokens continue to come from `agentic-design-system`.
 
-| Term or route | Canonical meaning and pack relationship | Owner and constraint |
+## Tool and shared vocabulary dictionary
+
+| Tool | Input | Result |
 |---|---|---|
-| AgenticRAG invocation metadata | `invocationToken` is an optional set of already-defined tokens; `artifactFamily` may carry an existing semantic family; `continuityId` identifies related artifacts; `agentSurface` identifies a declared agent interface; `inputSchema` carries a tool's JSON Schema. None are pack fields or execution proofs. | `huijoohwee.github.io/schema/AgenticRAG/v1/context.jsonld` owns the neutral JSON-LD terms and allowed surface values. Resolve `/`, `#`, and `@` terms through the shared Agentic OS dictionaries; do not redefine them here. |
-| `/` command token | The canonical invocation grammar selects one command; a command may be accompanied by one `#` semantic and one opaque `@` binding argument. `/sme-care-agent` is a shared source-grounded assistant route, not the local pack check or a tool alias. This pack declares no new slash command. | `agentic-os/docs/INVOCATION.md` and `catalog/dictionaries/DICTIONARY-COMMAND.md` own grammar and command metadata; execution remains with the named consumer. |
-| `#` semantic token | A shared semantic filter/classifier; it is not a pack, country, sector, field, or table-view dimension. URL fragment `#sme-workflow` selects the Commerce page section and is not an invocation token. | `catalog/dictionaries/DICTIONARY-SEMANTIC.md` owns token meanings; the Commerce router owns its URL fragment. |
-| `@` binding token | A reference to a source, actor, runtime, or boundary. It does not supply credentials, authenticate evidence, or grant tool, publish, or approval authority. The local form check needs no binding. | `catalog/dictionaries/DICTIONARY-BINDING.md` owns binding meanings; do not copy its binding list into this pack dictionary. |
-| Existing skill | `agent.sme-care` is catalog metadata for provider-neutral SME source-grounded assistance. It is not an E2E workflow runner, pack calculation, or second pack skill. This pack adds no skill variant. | `agentic-canvas-os/docs/SKILLS.md` owns skill discovery and routing; shared command/semantic/binding references stay in the Agentic OS dictionaries. |
-| MCP surface | The service descriptor and `tools/list` expose the pack's canonical `TOOL_NAMES`; explicit `tools/call` dispatches supplied arguments to the shared evaluator. It is stateless and does not read the form's in-memory row. There are no pack-owned MCP resources or prompts. | `src/local-first/sme-business-pack.ts` owns the local HTTP/stdio adapter and bounds. Canvas `MCP-GATEWAY.md` owns discovery-first federation; it is not a pack proxy or duplicate dispatch layer. |
-| WebMCP surface | When the browser exposes `modelContext.registerTool` and the user enables registration, the adapter registers the same `TOOL_NAMES` and `TOOL_SCHEMAS` against the same evaluator; disabling unregisters them. Calls use explicit caller arguments and do not read the form's in-memory row. Unsupported WebMCP leaves local/offline checks available. | `public/local-first/sme-business-pack.js` owns optional browser registration. Canvas `MCP-GATEWAY.md` owns federation metadata and uses the existing `@webmcp-surface` / `#webmcp` references for graph-owned browser tools; those references do not add pack-local routing or authority. Capability discovery is not proof that WebMCP is supported or registered. |
-| URL and transport paths | `#sme-workflow` is a local route fragment; `/agentic-commerce-os/services/sme-business-pack` selects the Commerce transport. Neither is a shared `/` command or a `#` semantic token. | Commerce owns route and transport mapping; Agentic OS owns invocation parsing. |
-| Tool and schema inventory | `TOOL_NAMES` and `TOOL_SCHEMAS` in the shared pack core are the only canonical pack tool/schema inventory; browser, worker, stdio, MCP, and WebMCP adapters reuse them. Legacy client names remain compatibility inputs only. | `public/local-first/sme-business-pack-core.js` owns identity, schemas, validation, and evaluator dispatch. Do not add aliases, skill-local copies, or another registry. |
+| `pack.list` | Empty object | Registered plan identities and zero inference tokens |
+| `pack.protocol` | `pack_id` | Versioned `input_fields`, model outputs, evidence guidance, and review metadata |
+| `business.plan.build` | `pack_id`, `inputs`, optional evidence | `sme-business-plan/report/v1` with completeness, model, pitch deck draft outline, next checks, and worksheet exports |
+| `business.plan.compare` | Two or three ordered `plan_sets` | `sme-business-plan/comparison/v1`; same currency and contract required, no ranking |
 
-The pack protocol does not define MCP resources or prompts, slash-command aliases for individual tools, `@` bindings, `#` tags, or skill records. Canonical metadata stays in the existing Agentic OS dictionaries, Canvas `FACTS.md`, `MCP-GATEWAY.md` and `SKILLS.md`, and the AgenticRAG context. Dictionary resolution is metadata-only; each existing runtime owner remains responsible for execution, local proof, and approval boundaries.
+The pack defines no `/` command, `#` semantic tag, `@` binding, skill alias, MCP resource, or MCP prompt. Invocation grammar and shared tokens stay owned by `agentic-os/catalog/dictionaries`; skill discovery and MCP gateway behavior stay owned by `agentic-canvas-os/docs`; shared JSON-LD invocation metadata stays owned by `huijoohwee.github.io/schema/AgenticRAG`. The dictionary view links to those owners without copying their taxonomies or granting execution authority. The transport exposes the canonical tools through MCP and optionally WebMCP; explicit calls evaluate only their supplied arguments and do not read form memory.
 
-## Unified E2E workflow table
+## Data handling
 
-The workflow is one Base `multiDimensional` table with one row per active claim set: one set for a local check, or two/three sets for comparison. Every declared `claim_kinds` input is a column after `Claim set`; its title, type, unit, allowed values, bounds, and required flag remain pack-driven. Context columns identify the pack and its review state. Every declared `parameters` item is a read-only column carrying the pack's parameter record; an empty parameter list adds none. The same row then carries input-coverage state; each entered evidence item with claim, value, provenance, observer, date, and tier; calculation state; cash-to-close and other outcome summaries; one status/value column per runtime `budget_lines` entry; arithmetic observations; numeric evidence differences; ordered next checks; and the optional transfer checklist. Missing input stays explicitly unknown and never becomes zero, false, a benchmark, or authenticated evidence.
-
-Selecting a set row opens its single editor for the declared inputs and evidence metadata. The editor is not a second table or an alternate calculation surface. Results are invalidated when inputs change and refresh in place after a local check. With one active set, the same table shows the end-to-end check; with two or three, it shows those comparison records. The shared Base pivot transposes this same table and source projection; the default remains claim sets as rows and all input and workflow fields as columns.
-
-The table reuses the pinned offline `agentic-base` browser adapter and generated `agentic-design-system` Commerce tokens. Commerce owns pack data, editing, validation, derived columns, and route lifecycle. There is one SME table host, one table projection, and one status channel; no separate Results table or duplicated result registry is maintained.
-
-## Tool envelope and limits
-
-The transport schema contains only generic pack IDs, field-key patterns, ISO currency syntax, bounded values, closed evidence metadata, and request-size limits. It does not list the active pack ID, country, sector, currency, or field names. The registry and `pack.protocol` provide those specifics at runtime. Unknown pack identities, mixed comparison identities, unsupported field values, private/free-text keys, invalid evidence, and oversized payloads fail closed.
-
-Local form calculations run on device; their claims and reports stay in memory and clear when the route is left. The form does not send them to a service. An explicit MCP call carries only the caller-supplied bounded arguments to the stateless compute endpoint; an explicit WebMCP call runs the same evaluator in the browser with its supplied arguments. Neither tool reads the form's in-memory state. The versioned pack source, shared protocol, generated table projection, and this dictionary are the only owners for their respective concerns; no parallel pack table, renderer, tool-name inventory, or interface alias is maintained.
+Calculations run locally and deterministically. Form inputs and reports remain in tab memory and are cleared when the workspace is left. JSON, CSV, Markdown, print, and import are user-triggered local worksheet operations. There is no account, upload, persistence, market-data fetch, paid service, added dependency, or network call for a local build.

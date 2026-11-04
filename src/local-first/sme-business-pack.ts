@@ -7,13 +7,10 @@ import { invokeSmePackTool, PACK_INDEX, PACK_PATH, TOOL_SCHEMAS } from '../../pu
 
 export const SME_PACK_LIMITS = Object.freeze({ requestBytes: 32768, responseBytes: 65536, deadlineMs: 2000 })
 const descriptions: Record<string, string> = {
-  'pack.list': 'List the versioned packs available to this runtime. No inference or external data call.',
-  'pack.protocol': 'Read one pack’s closed claim fields, calculation lines and evidence tasks.',
-  'takeover.check': 'Check closed buyer claims and entered evidence; raw differences only while the pack is provisional.',
-  'takeover.budget': 'Compute cash-to-close ranges, lease exposure and unchecked share from buyer inputs only.',
-  'takeover.plan': 'Order offline evidence tasks by cash line and produce a local worksheet.',
-  'takeover.compare_claim_sets': 'Compare two or three anonymous claim sets in entry order under one pack identity; no ranking or winner.',
-  'takeover.transfer_checklist': 'Read a transfer checklist only after qualified reviewer approval.',
+  'pack.list': 'List the versioned neutral planning contract available to this runtime. No inference or external data call.',
+  'pack.protocol': 'Read the canonical planning fields, pitch artifact, deterministic model outputs and evidence guidance.',
+  'business.plan.build': 'Build a bounded pitch deck outline, business-plan draft and deterministic monthly model from supplied inputs.',
+  'business.plan.compare': 'Compare two or three plan sets in entry order and one declared currency; no conversion, ranking or winner.',
 }
 export const SME_PACK_TOOLS = Object.freeze(TOOL_SCHEMAS.map((tool: any) => Object.freeze({
   name: tool.name, title: tool.name.replaceAll('.', ' ').replace(/\b\w/g, (letter: string) => letter.toUpperCase()),
