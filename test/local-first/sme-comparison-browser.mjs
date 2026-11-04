@@ -51,10 +51,55 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   await expect(result).toContainText('Pack v1.0.0')
   await expect(result).toContainText('As of 2026-10-22')
   await expect(result).toContainText('Unknown · incomplete')
-  const fixedRows = await result.locator('.comparison-report-rows').first().locator('dt').allTextContents()
-  assert.deepEqual(fixedRows.slice(0, 6), [
-    'Cash to close', 'Gap above asking price', 'Opening runway', 'Lease exposure', 'Unchecked share', 'Missing claims',
-  ])
+  await expect(result.locator('.base-multi-dimensional-table')).toHaveCount(1)
+  await expect(result.locator('.comparison-card')).toHaveCount(0)
+  const tableText = async () => result.locator('[data-sme-comparison-table-host]').evaluate(host => host.shadowRoot.textContent)
+  const table = result.locator('[data-sme-comparison-table-host] .base-multi-dimensional-table')
+  await expect(table).toContainText('Slot A')
+  await expect(table).toContainText('Slot B')
+  const fixedRows = ['Cash to close', 'Gap above asking price', 'Opening runway', 'Lease exposure', 'Unchecked share', 'Missing claims']
+  const firstOrientationText = await tableText()
+  let previousRowIndex = -1
+  for (const label of fixedRows) {
+    const rowIndex = firstOrientationText.indexOf(label)
+    assert(rowIndex > previousRowIndex, `Expected fixed comparison row ${label} in order`)
+    previousRowIndex = rowIndex
+  }
+  const mobileScroll = await result.locator('[data-sme-comparison-table-host]').evaluate(host => {
+    const view = host.shadowRoot.querySelector('.agentic-base-data-view')
+    return { clientWidth: view.clientWidth, scrollWidth: view.scrollWidth }
+  })
+  assert(mobileScroll.scrollWidth > mobileScroll.clientWidth, 'mobile comparison should remain horizontally scrollable inside Base')
+  await result.scrollIntoViewIfNeeded()
+  const touch = await page.context().newCDPSession(page)
+  await touch.send('Emulation.setTouchEmulationEnabled', { enabled: true, configuration: 'mobile' })
+  const touchBounds = await result.locator('[data-sme-comparison-table-host]').evaluate(host => {
+    const view = host.shadowRoot.querySelector('.agentic-base-data-view'), rect = view.getBoundingClientRect()
+    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height, left: view.scrollLeft }
+  })
+  await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ id: 1, x: touchBounds.x + touchBounds.width - 12, y: touchBounds.y + 80, force: 1 }] })
+  await touch.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ id: 1, x: touchBounds.x + 24, y: touchBounds.y + 80, force: 1 }] })
+  await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+  const touchLeft = await result.locator('[data-sme-comparison-table-host]').evaluate(host => host.shadowRoot.querySelector('.agentic-base-data-view').scrollLeft)
+  await touch.send('Emulation.setTouchEmulationEnabled', { enabled: false }); await touch.detach()
+  assert(touchLeft > touchBounds.left, 'touch swipe should scroll the shared Base table')
+  const region = result.locator('.comparison-table-scroll')
+  await region.focus()
+  assert.equal(await region.evaluate(element => document.activeElement === element), true, 'comparison region should be keyboard focusable')
+  const pivot = result.locator('.base-multi-dimensional-table-pivot')
+  await expect(pivot).toHaveAttribute('aria-label', 'Current table orientation: columns as records')
+  await pivot.focus()
+  await pivot.press('Space')
+  await expect(pivot).toHaveAttribute('aria-label', 'Current table orientation: rows as records')
+  const rowOrientationText = await tableText()
+  for (const label of fixedRows) assert(rowOrientationText.includes(label), `Pivot lost comparison row ${label}`)
+  for (const label of ['Slot A', 'Slot B']) assert(rowOrientationText.includes(label), `Pivot lost ${label}`)
+  await pivot.press('Space')
+  await expect(pivot).toHaveAttribute('aria-label', 'Current table orientation: columns as records')
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'mobile page should not scroll horizontally')
+  await page.setViewportSize({ width: 1280, height: 900 })
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'desktop page should not scroll horizontally')
+  await page.setViewportSize({ width: 360, height: 780 })
   assert.equal(smeServiceRequests.length, 0)
   const payload = JSON.parse(await page.locator('#result').textContent())
   assert.equal(payload.persisted, false)
@@ -128,7 +173,10 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   await page.locator('#sme-compare-count').selectOption('3')
   await page.locator('#compare-c-price-low').fill('210000')
   await page.locator('#sme-compare-run').click()
-  await expect(result.locator('.comparison-card h3')).toHaveText(['Slot A', 'Slot B', 'Slot C'])
+  await expect(result.locator('.base-multi-dimensional-table')).toHaveCount(1)
+  await expect(result.locator('.comparison-card')).toHaveCount(0)
+  await expect(result.locator('[data-sme-comparison-table-host] .base-multi-dimensional-table')).toContainText('Slot C')
+  await expect(result.locator('[data-sme-comparison-table-host] .base-multi-dimensional-table')).toContainText('210,000')
   await expect(result).not.toContainText('Not supplied.')
   assert.equal(smeServiceRequests.length, 0)
 

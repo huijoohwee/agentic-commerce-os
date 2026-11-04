@@ -105,10 +105,10 @@
 #sme .comparison-input-slots { display: grid; gap: 12px; margin-top: 12px; }
 #sme .comparison-input-slot { min-width: 0; margin: 0; padding: 10px; border: 1px solid var(--commerce-border); border-radius: 9px; }
 #sme .comparison-input-slot legend { padding: 0 5px; color: var(--commerce-action); font-size: .76rem; font-weight: 650; }
-#sme .comparison-report-rows { margin: 8px 0 0; }
-#sme .comparison-report-row { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 10px; padding: 7px 0; border-top: 1px solid var(--commerce-border); font-size: .7rem; line-height: 1.4; }
-#sme .comparison-report-row dt { color: var(--commerce-text-muted); }
-#sme .comparison-report-row dd { margin: 0; color: var(--commerce-ink); overflow-wrap: anywhere; }
+#sme .comparison-table-scroll { box-sizing: border-box; width: 100%; max-width: 100%; min-width: 0; min-height: 260px; overflow: auto; overscroll-behavior-inline: contain; }
+#sme .comparison-table-scroll:focus-visible { outline: 3px solid var(--commerce-focus); outline-offset: 2px; }
+#sme .comparison-table-host { width: 100%; min-width: 0; min-height: 260px; }
+#sme .comparison-table-status { min-height: 1.4em; margin: 8px 0 0; color: var(--commerce-text-muted); font-size: .7rem; }
 #sme .comparison-evidence { margin-top: 10px; font-size: .72rem; }
 #sme .comparison-evidence summary { min-height: 44px; padding: 12px 0; color: var(--commerce-action); cursor: pointer; font-weight: 600; }
 #sme .comparison-evidence ul { padding-left: 18px; overflow-wrap: anywhere; }
