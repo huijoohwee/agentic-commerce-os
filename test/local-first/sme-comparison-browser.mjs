@@ -48,7 +48,7 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   await expect(page.locator('#result-status')).toContainText('Local comparison')
   await expect.poll(() => optionLabels(page)).toEqual(['A', 'B', 'Not supplied.'])
   await expect.poll(() => tableText(page)).toContain('Not supplied.')
-  await expect.poll(() => tableText(page)).toContain('Singapore · SGD')
+  await expect.poll(() => tableText(page)).toContain('SG · SGD · v1.0.0')
   await expect.poll(() => tableText(page)).toContain('Cash to close')
   await assertPurposeTables(page)
   const payload = await page.evaluate(async claimSets => {
