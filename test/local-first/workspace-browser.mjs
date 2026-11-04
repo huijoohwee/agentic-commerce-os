@@ -132,34 +132,33 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await expect(page.locator('#sme')).toBeVisible();
   await expect(page.locator('#webmcp-status')).toContainText('Seven optional Singapore browser tools registered');
   await context.setOffline(true);
+  await page.locator('#sme-workflow > summary').click();
   await page.locator('#sample').click();
   await page.locator('#sme-check-form button[type="submit"]').click();
   await expect(page.locator('#result-status')).toContainText('On-device calculation');
-  const noEvidenceReport = JSON.parse(await page.locator('#result').textContent());
-  assert.equal(noEvidenceReport.budget.budget.unchecked_share, 1);
-  await page.locator('#sme-evidence-kind').selectOption('price');
-  await page.locator('#sme-evidence-provenance').selectOption('document_sighted');
-  await page.locator('#sme-evidence-role').selectOption('buyer');
-  await page.locator('#sme-evidence-date').fill('2026-10-31');
-  await page.locator('#evidence-price-low').fill('150000');
-  await page.locator('#sme-add-evidence').click();
+  let tableText = await page.locator('#sme-table-host').evaluate(host => host.shadowRoot.textContent);
+  assert.match(tableText, /Unchecked share/);
+  assert.match(tableText, /100%/);
+  await page.locator('#compare-evidence-a-details > summary').click();
+  await page.locator('#compare-evidence-a-kind').selectOption('price');
+  await page.locator('#compare-evidence-a-provenance').selectOption('document_sighted');
+  await page.locator('#compare-evidence-a-role').selectOption('buyer');
+  await page.locator('#compare-evidence-a-date').fill('2026-10-31');
+  await page.locator('#compare-evidence-a-price-low').fill('150000');
+  await page.locator('#compare-evidence-a-add').click();
   await page.locator('#sme-check-form button[type="submit"]').click();
   await expect(page.locator('#result-status')).toContainText('On-device calculation');
-  await expect(page.locator('#result-summary')).toContainText('Cash to close');
-  const smeReport = JSON.parse(await page.locator('#result').textContent());
-  assert.equal(smeReport.budget.budget.cash_to_close.incomplete, false);
-  assert.equal(smeReport.check.persisted, false);
-  assert.ok(smeReport.budget.budget.unchecked_share < 1);
+  tableText = await page.locator('#sme-table-host').evaluate(host => host.shadowRoot.textContent);
+  assert.match(tableText, /Cash to close/);
+  assert.match(tableText, /150,000/);
+  assert.match(tableText, /Evidence entries/);
+  const smeShape = await page.locator('#sme').evaluate(root => ({
+    hosts: root.querySelectorAll('[data-sme-comparison-table-host]').length,
+    tables: root.querySelector('[data-sme-comparison-table-host]')?.shadowRoot?.querySelectorAll('table').length ?? 0,
+    legacy: root.querySelectorAll('#result, #result-summary, .comparison-card').length,
+  }));
+  assert.deepEqual(smeShape, { hosts: 1, tables: 1, legacy: 0 });
   assert.equal(smeServiceRequests.length, 0);
-  const inPageBudget = await page.evaluate(async () => {
-    const plan = JSON.parse(document.querySelector('#result').textContent);
-    const worksheet = JSON.parse(plan.worksheet.json);
-    const result = await document.modelContext.executeTool({ name: 'takeover.budget' }, {
-      pack_id: worksheet.pack_id, claims: worksheet.claims, evidence: worksheet.evidence,
-    });
-    return JSON.parse(result.content[0].text);
-  });
-  assert.deepEqual(inPageBudget, smeReport.budget);
   await checkSmeComparisonBrowser({ browser, page, url, output, smeServiceRequests, record });
   for (const [format, selector] of [['json', '[data-export="json"]'], ['csv', '[data-export="csv"]'], ['markdown', '[data-export="markdown"]']]) {
     const downloadEvent = page.waitForEvent('download');
@@ -172,8 +171,10 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
     await expect(page.locator('#result-status')).toContainText('Worksheet imported in this tab');
     await page.locator('#sme-check-form button[type="submit"]').click();
     await expect(page.locator('#result-status')).toContainText('On-device calculation');
-    const roundTrip = JSON.parse(await page.locator('#result').textContent());
-    assert.deepEqual(JSON.parse(roundTrip.worksheet.json), JSON.parse(smeReport.worksheet.json), format);
+    const roundTripText = await page.locator('#sme-table-host').evaluate(host => host.shadowRoot.textContent);
+    assert.match(roundTripText, /Cash to close/);
+    assert.match(roundTripText, /150,000/);
+    assert.equal(await page.locator('#sme').evaluate(root => root.querySelectorAll('[data-sme-comparison-table-host]').length), 1);
   }
   assert.equal(await page.evaluate(() => document.querySelector('#workspace-shell') === window.__smeShellAtEntry), true);
   await context.setOffline(false);
