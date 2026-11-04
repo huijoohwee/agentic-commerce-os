@@ -33,48 +33,61 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   await page.setViewportSize({ width: 360, height: 780 })
   await page.goto(url + '#sme-workflow')
   await expect(page.locator('#sme-workflow')).toBeInViewport()
+  await expect(page.locator('#webmcp-status')).toContainText('optional pack tools registered')
+  const pack = await page.evaluate(async () => {
+    const context = document.modelContext ?? navigator.modelContext
+    const listed = JSON.parse((await context.executeTool({ name: 'pack.list' }, {})).content[0].text)
+    const selected = listed.packs[0]
+    const protocol = JSON.parse((await context.executeTool({ name: 'pack.protocol' }, { pack_id: selected.id })).content[0].text)
+    return { ...selected, protocol }
+  })
+  const amountField = pack.protocol.claim_kinds.find(field => field.type === 'money' && field.retiring_tier)
+    ?? pack.protocol.claim_kinds.find(field => field.type === 'money')
+  const evidenceField = pack.protocol.claim_kinds.find(field => field.retiring_tier)
+  assert(amountField && evidenceField, 'the active pack protocol must declare its amount and evidence fields')
+  const amountInput = (slot, bound = 'low') => page.locator(`#compare-${slot.toLowerCase()}-${amountField.name}-${bound}`)
+  const evidenceInput = page.locator(`#compare-evidence-${evidenceField.name}-low`)
   await page.locator('#sme-compare-count').selectOption('2')
   const workflowColumns = await workflowHeaders(page)
-  assert.equal(workflowColumns.length, 19, 'the workflow table should show the set label and every pack field')
-  assert.deepEqual(workflowColumns.slice(0, 4), ['Claim set', 'Listing source', 'Business type', 'Takeover price'])
-  assert(workflowColumns.includes('Staff count · people'))
-  assert(workflowColumns.includes('Variable costs as basis points of sales'))
-  assert(workflowColumns.includes('Licence status'))
+  assert.deepEqual(workflowColumns, ['Claim set', ...pack.protocol.claim_kinds.map(field => field.label + (field.unit ? ' · ' + field.unit : ''))],
+    'the workflow table must use one protocol-derived column for every pack field')
+  assert.equal(await page.locator('#sme-workflow-table-host').evaluate(host => host.shadowRoot.querySelectorAll('.base-multi-dimensional-table-pivot').length), 0,
+    'the canonical workflow keeps every pack field in columns')
   await page.locator('#sme-workflow-table-host tr[aria-label*="Set A"]').click()
   const parameters = page.locator('#sme-workflow-parameter-details')
   await expect(parameters).toContainText('Required for a complete local check')
   await expect(parameters).toContainText('single value or range')
   await expect(parameters).toContainText('Sight the written offer or agreement terms supplied by the buyer.')
-  await expect(page.getByRole('spinbutton', { name: 'Set A Takeover price minimum amount in SGD' })).toBeVisible()
-  assert.equal(await page.getByRole('spinbutton', { name: 'Set B Takeover price minimum amount in SGD' }).count(), 0,
+  await expect(page.getByRole('spinbutton', { name: `Set A ${amountField.label} minimum amount in ${pack.currency}` })).toBeVisible()
+  assert.equal(await page.getByRole('spinbutton', { name: `Set B ${amountField.label} minimum amount in ${pack.currency}` }).count(), 0,
     'the selected set editor should contain one coherent set of parameter inputs')
-  await expect(page.getByRole('spinbutton', { name: 'Evidence value Takeover price minimum amount in SGD' })).toBeVisible()
+  await expect(page.getByRole('spinbutton', { name: `Evidence value ${evidenceField.label} minimum amount in ${pack.currency}` })).toBeVisible()
   await page.locator('#compare-a-staff_count').focus()
   await expect(parameters).toContainText('0–300 people')
-  await page.locator('#compare-a-price-low').fill('150000')
+  await amountInput('A').fill('150000')
   await page.locator('#sme-workflow-table-host tr[aria-label*="Set B"]').click()
-  await page.locator('#compare-b-price-low').fill('180000')
+  await amountInput('B').fill('180000')
   await page.locator('#sme-workflow-table-host tr[aria-label*="Set A"]').click()
-  await page.locator('#sme-evidence-claim').selectOption('price')
+  await page.locator('#sme-evidence-claim').selectOption(evidenceField.name)
   await page.locator('#sme-evidence-provenance').selectOption('document_sighted')
   await page.locator('#sme-evidence-role').selectOption('adviser')
   await page.locator('#sme-evidence-date').fill('2026-10-31')
-  await page.locator('#compare-evidence-price-low').fill('150000')
+  await evidenceInput.fill('150000')
   await page.locator('#sme-evidence-add').click()
   await page.locator('#sme-compare-run').click()
   await expect(page.locator('#result-status')).toContainText('Local comparison')
   await expect.poll(() => optionLabels(page)).toEqual(['A', 'B', 'Not supplied.'])
   await expect.poll(() => tableText(page)).toContain('Not supplied.')
-  await expect.poll(() => tableText(page)).toContain('SG · SGD · v1.0.0')
+  await expect.poll(() => tableText(page)).toContain(`${pack.country} · ${pack.currency} · v${pack.version}`)
   await expect.poll(() => tableText(page)).toContain('Cash to close')
   await assertPurposeTables(page)
   const payload = await page.evaluate(async claimSets => {
     const result = await (document.modelContext ?? navigator.modelContext).executeTool({ name: 'takeover.compare_claim_sets' }, { claim_sets: claimSets })
     return JSON.parse(result.content[0].text)
   }, [
-    { pack_id: 'sg.fnb.takeover', pack_version: '1.0.0', currency: 'SGD', claims: { price: 150000 },
-      evidence: [{ claim_kind: 'price', value: 150000, provenance: 'document_sighted', observer_role: 'adviser', date: '2026-10-31' }] },
-    { pack_id: 'sg.fnb.takeover', pack_version: '1.0.0', currency: 'SGD', claims: { price: 180000 } },
+    { pack_id: pack.id, pack_version: pack.version, currency: pack.currency, claims: { [amountField.name]: 150000 },
+      evidence: [{ claim_kind: evidenceField.name, value: 150000, provenance: 'document_sighted', observer_role: 'adviser', date: '2026-10-31' }] },
+    { pack_id: pack.id, pack_version: pack.version, currency: pack.currency, claims: { [amountField.name]: 180000 } },
   ])
   assert.equal(payload.persisted, false)
   assert.equal(payload.inference_tokens, 0)
@@ -100,7 +113,7 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
     const view = host.shadowRoot.querySelector('.agentic-base-data-view')
     return { clientWidth: view.clientWidth, scrollWidth: view.scrollWidth }
   })
-  assert(workflowScroll.scrollWidth > workflowScroll.clientWidth, 'the 19-column workflow should scroll inside the shared table on mobile')
+  assert(workflowScroll.scrollWidth > workflowScroll.clientWidth, 'pack field columns should scroll inside the shared table on mobile')
   const region = page.locator('#sme-results-table-region')
   await region.focus()
   assert.equal(await region.evaluate(element => document.activeElement === element), true, 'table region should be keyboard focusable')
@@ -130,7 +143,7 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   await page.goForward(); await expect(page).toHaveURL(url + '#sme-workflow')
   const routeEvents = await page.evaluate(() => window.__smeRouteEvents)
   assert(routeEvents.includes('pop:#sme-workflow') && routeEvents.includes('hash:#sme-workflow'))
-  await expect(page.locator('#compare-a-price-low')).toHaveValue('150000')
+  await expect(amountInput('A')).toHaveValue('150000')
 
   await page.evaluate(() => { window.__smePrintOpened = false; window.print = () => { window.__smePrintOpened = true } })
   await page.getByRole('button', { name: 'Print worksheet', exact: true }).click()
@@ -150,7 +163,7 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
 
   await page.locator('#sme-compare-count').selectOption('3')
   await page.locator('#sme-workflow-table-host tr[aria-label*="Set C"]').click()
-  await page.locator('#compare-c-price-low').fill('210000')
+  await amountInput('C').fill('210000')
   await page.locator('#sme-compare-run').click()
   await expect(page.locator('#result-status')).toContainText('Local comparison')
   await expect.poll(() => optionLabels(page)).toEqual(['A', 'B', 'C'])
@@ -162,7 +175,7 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   await page.locator('#sme-compare-run').click()
   await expect(page.locator('#result-status')).toContainText('Comparing locally')
   await page.locator('#sme-workflow-table-host tr[aria-label*="Set A"]').click()
-  await page.locator('#compare-a-price-low').fill('160000')
+  await amountInput('A').fill('160000')
   await releaseComparison(page)
   await expect(page.locator('#result-status')).toContainText('Inputs changed')
   const clearedTableText = await tableText(page)
@@ -177,7 +190,7 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   await releaseComparison(page)
   await page.locator('#workspace-role-switcher').selectOption('sme')
   await page.locator('#sme-workflow-table-host tr[aria-label*="Set A"]').click()
-  await expect(page.locator('#compare-a-price-low')).toHaveValue('')
+  await expect(amountInput('A')).toHaveValue('')
   await expect(page.locator('#sme-workflow-evidence-editor .sme-evidence-list')).toBeEmpty()
   await assertPurposeTables(page)
   assert.equal(smeServiceRequests.length, 0)

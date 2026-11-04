@@ -130,7 +130,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await page.evaluate(() => { window.__smeShellAtEntry = document.querySelector('#workspace-shell'); });
   await page.locator('#workspace-role-switcher').selectOption('sme');
   await expect(page.locator('#sme')).toBeVisible();
-  await expect(page.locator('#webmcp-status')).toContainText('Seven optional Singapore browser tools registered');
+  await expect(page.locator('#webmcp-status')).toContainText('optional pack tools registered');
   await context.setOffline(true);
   await page.locator('#sample').click();
   await page.locator('#sme-compare-run').click();
@@ -143,7 +143,8 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await page.locator('#sme-evidence-provenance').selectOption('document_sighted');
   await page.locator('#sme-evidence-role').selectOption('buyer');
   await page.locator('#sme-evidence-date').fill('2026-10-31');
-  await page.locator('#compare-evidence-price-low').fill('150000');
+  const evidenceField = await page.locator('#sme-evidence-claim').inputValue();
+  await page.locator(`#compare-evidence-${evidenceField}-low`).fill('150000');
   await page.locator('#sme-evidence-add').click();
   await page.locator('#sme-compare-run').click();
   await expect(page.locator('#result-status')).toContainText('On-device calculation');

@@ -33,7 +33,7 @@ async function createSmeBusinessPack() {
   const runtimeMode = $('#runtime-mode'), runtimeStatus = $('#runtime-status')
   let currentFields = [], currentProtocol, registration, active = false, previousScrollRestoration = null,
     comparisonGeneration = 0, packGeneration = 0, comparisonPending = false, tableOrientation = 'columns',
-    tableMessage = null, selectedWorkflowSet = null, selectedEvidenceField = 'price', tableAdapter = null
+    tableMessage = null, selectedWorkflowSet = null, selectedEvidenceField = null, tableAdapter = null
   const comparisonSlotElements = ['A', 'B', 'C'].map(slot => ({ slot, claims: {}, evidence: [] }))
   const resultTableMount = { handle: null, ready: null, generation: 0 }
   const workflowTableMount = { handle: null, ready: null, generation: 0 }
@@ -41,7 +41,10 @@ async function createSmeBusinessPack() {
   const option = (select, value, label) => { const item = node('option', label); item.value = value; select.append(item) }
   const enumLabel = value => value.replaceAll('_', ' ').replace(/^\w/, letter => letter.toUpperCase())
   const readClaims = item => ({ ...item.claims })
-  const formatMoney = (value, currency = currentProtocol?.pack.currency || 'SGD') => new Intl.NumberFormat(document.documentElement.lang || 'en', { style: 'currency', currency, maximumFractionDigits: 0 }).format(value)
+  const formatMoney = (value, currency = currentProtocol?.pack.currency) => {
+    if (!/^[A-Z]{3}$/u.test(currency ?? '')) throw Error('sme_pack_currency_missing')
+    return new Intl.NumberFormat(document.documentElement.lang || 'en', { style: 'currency', currency, maximumFractionDigits: 0 }).format(value)
+  }
   const lineLabel = id => currentFields.find(field => field.name === id)?.label || id.replaceAll('_', ' ')
   function download(name, mime, content) { const url = URL.createObjectURL(new Blob([content], { type: mime })); const anchor = node('a'); anchor.href = url; anchor.download = name; anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 1000) }
   const worksheetSection = node('section', undefined, 'worksheet-controls')
@@ -323,7 +326,7 @@ async function createSmeBusinessPack() {
       : 'SME calculated results pivoted to dimensions as records.')
   }
   syncOrientation()
-  workflowTableRegion.setAttribute('aria-label', 'SME E2E workflow; claim sets are rows and every pack field is a column.')
+  workflowTableRegion.setAttribute('aria-label', 'Pack workflow table; claim sets are rows and every declared claim field is a column.')
   void renderWorkflowTable()
   void renderComparison(null, comparisonGeneration)
   comparisonCount.addEventListener('change', () => { updateComparisonSlotVisibility(); invalidateComparison() })
@@ -363,7 +366,7 @@ async function createSmeBusinessPack() {
       if (value === undefined) continue
       item.claims[field.name] = value
     }
-    item.evidence.length = 0; selectedWorkflowSet = 'A'; selectedEvidenceField = currentFields.find(field => field.name === 'price')?.name ?? currentFields[0]?.name ?? null
+    item.evidence.length = 0; selectedWorkflowSet = 'A'; selectedEvidenceField = currentFields.find(field => field.retiring_tier)?.name ?? currentFields[0]?.name ?? null
     renderWorkflowEditor(); invalidateComparison()
     resultStatus.textContent = 'Sample values are illustrative buyer inputs and remain in this tab.'
   })
@@ -425,7 +428,7 @@ async function createSmeBusinessPack() {
     const controller = new AbortController(); registration = controller; let deadline
     try {
       await Promise.race([Promise.all(TOOL_SCHEMAS.map(tool => modelContext.registerTool({
-        name: tool.name, description: tool.name.replaceAll('.', ' ') + ' · Singapore only · provisional · no user facts persist',
+        name: tool.name, description: tool.name.replaceAll('.', ' ') + ' · pack-scoped · no user facts persist',
         inputSchema: tool.inputSchema, annotations: { readOnlyHint: true, untrustedContentHint: true, consequentialHint: false },
         execute: async (input, options) => {
           const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(2500), ...(options?.signal ? [options.signal] : [])])
@@ -435,7 +438,7 @@ async function createSmeBusinessPack() {
           return { content: [{ type: 'text', text: JSON.stringify(value) }] }
         },
       }, { signal: controller.signal }))), new Promise((_, reject) => { deadline = setTimeout(() => reject(Error('timeout')), 2000) })])
-      if (active && !controller.signal.aborted) $('#webmcp-status').textContent = 'Seven optional Singapore browser tools registered.'
+      if (active && !controller.signal.aborted) $('#webmcp-status').textContent = `${TOOL_SCHEMAS.length} optional pack tools registered.`
     } catch {
       controller.abort(); if (registration === controller) registration = null
       if (active) $('#webmcp-status').textContent = 'Browser tool registration unavailable. Local checks still work offline.'

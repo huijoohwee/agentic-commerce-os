@@ -21,7 +21,9 @@ export function createSmeWorkflowEditor({
       label.htmlFor = id; control.setAttribute('aria-label', `${scope} ${field.label}`); control.setAttribute('aria-required', String(Boolean(field.required))); wrap.append(label, control); return wrap
     }
     if (field.type === 'money') {
-      const currency = protocol?.pack.currency || 'SGD', range = node('div', undefined, 'cash-range-input')
+      const currency = protocol?.pack.currency
+      if (!/^[A-Z]{3}$/u.test(currency ?? '')) throw Error('sme_pack_currency_missing')
+      const range = node('div', undefined, 'cash-range-input')
       const heading = node('span', field.label + ' · ' + currency, 'field-label')
       range.setAttribute('role', 'group'); range.setAttribute('aria-label', field.label + ' range')
       for (const bound of ['low', 'high']) {
@@ -75,12 +77,14 @@ export function createSmeWorkflowEditor({
     const add = (name, value) => { const row = node('div'); row.append(node('dt', name), node('dd', value)); details.append(row) }
     const target = protocol?.protocols?.find(row => row.claim_kind === field.name)
     const lines = (protocol?.budget_lines ?? []).filter(row => row.claim_kinds.includes(field.name))
-    const bounds = field.type === 'money' ? `0–${formatMoney(100000000, protocol?.pack.currency || 'SGD')} · whole amounts; single value or range`
+    const currency = protocol?.pack.currency
+    if (field.type === 'money' && !/^[A-Z]{3}$/u.test(currency ?? '')) throw Error('sme_pack_currency_missing')
+    const bounds = field.type === 'money' ? `0–${formatMoney(100000000, currency)} · whole amounts; single value or range`
       : field.type === 'integer' ? `${field.min ?? 0}–${field.max ?? 'no upper limit'}${field.unit ? ' ' + field.unit : ''} · whole numbers`
         : field.type === 'enum' ? field.values.map(enumLabel).join(' · ')
           : field.type === 'boolean' ? 'Yes · No' : field.type
     add('Parameter', field.label + (field.unit ? ' · ' + field.unit : ''))
-    add('Input', field.type === 'money' ? `Amount · ${protocol?.pack.currency || 'SGD'}` : field.type === 'integer' ? `Whole number${field.unit ? ' · ' + field.unit : ''}` : field.type === 'enum' ? 'Choose one' : 'Yes or no')
+    add('Input', field.type === 'money' ? `Amount · ${currency}` : field.type === 'integer' ? `Whole number${field.unit ? ' · ' + field.unit : ''}` : field.type === 'enum' ? 'Choose one' : 'Yes or no')
     add('Completeness', field.required ? 'Required for a complete local check · blank stays unknown' : 'Optional pack field')
     add(field.type === 'enum' || field.type === 'boolean' ? 'Allowed values' : field.type === 'money' || field.type === 'integer' ? 'Entry limits' : 'Entry rule', bounds)
     if (lines.length) add('Budget use', lines.map(line => `${line.id} · ${line.label}${line.formula ? ` (${line.formula})` : ''}`).join(' · '))
@@ -93,8 +97,7 @@ export function createSmeWorkflowEditor({
     evidenceEditor.replaceChildren()
     const evidenceFields = fields.filter(field => field.retiring_tier)
     if (!evidenceFields.length) { evidenceEditor.append(node('p', 'No evidence tier is defined for this pack.', 'muted')); return }
-    let selected = evidenceFields.find(field => field.name === getEvidenceField())
-      ?? evidenceFields.find(field => field.name === 'price') ?? evidenceFields[0]
+    let selected = evidenceFields.find(field => field.name === getEvidenceField()) ?? evidenceFields[0]
     setEvidenceField(selected.name)
     evidenceHeading.textContent = `Evidence for ${selected.label} · Set ${item.slot}`
     const claimWrap = node('section', undefined, 'field'), claimLabel = node('label', 'Evidence field'), claimSelect = node('select')
@@ -146,7 +149,7 @@ export function createSmeWorkflowEditor({
     if (!item) return
     heading.textContent = `Edit · Set ${item.slot}`
     note.textContent = 'Edit every table field for this claim set. Blank stays unknown; values and sighted evidence stay in this tab and are not authenticated.'
-    const fallback = fields.find(field => field.name === 'price') ?? fields[0]
+    const fallback = fields.find(field => field.retiring_tier) ?? fields[0]
     activeParameter = fields.some(field => field.name === activeParameter) ? activeParameter : fallback?.name ?? null
     showParameter = field => { activeParameter = field.name; parameterDetails.replaceChildren(guidance(field, protocol)) }
     if (fields.length) showParameter(fields.find(field => field.name === activeParameter) ?? fields[0])
