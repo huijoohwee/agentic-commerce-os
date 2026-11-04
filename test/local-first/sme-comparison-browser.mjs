@@ -14,7 +14,7 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   await expect(firstPage.locator('#workspace-role-switcher')).toBeVisible()
   await firstPage.locator('#workspace-role-switcher').selectOption('sme')
   await expect(firstPage.locator('#sme')).toBeVisible()
-  await expect.poll(() => tableText(firstPage)).toContain('Cash to close')
+  await expect.poll(() => tableText(firstPage)).toContain('Outcome · cash to close')
   await firstPage.locator('#sample').click()
   await firstPage.locator('#sme-compare-run').click()
   await expect(firstPage.locator('#workflow-status')).toContainText('On-device calculation')
@@ -80,7 +80,7 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   await expect(page.locator('#workflow-status')).toContainText('Local comparison')
   await expect.poll(() => optionLabels(page)).toEqual(['Set A', 'Set B'])
   await expect.poll(() => tableText(page)).toContain(`${pack.country} · ${pack.currency} · v${pack.version}`)
-  await expect.poll(() => tableText(page)).toContain('Cash to close')
+  await expect.poll(() => tableText(page)).toContain('Outcome · cash to close')
   await assertPurposeTables(page)
   const payload = await page.evaluate(async claimSets => {
     const result = await (document.modelContext ?? navigator.modelContext).executeTool({ name: 'takeover.compare_claim_sets' }, { claim_sets: claimSets })
