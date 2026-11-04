@@ -138,7 +138,8 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   let tableText = await page.locator('#sme-table-host').evaluate(host => host.shadowRoot.textContent);
   assert.match(tableText, /Unchecked share/);
   assert.match(tableText, /100%/);
-  await page.locator('#sme-workflow-table-host tr[aria-label*="Takeover price"]').click();
+  await page.locator('#sme-workflow-table-host tr').filter({ hasText: 'Set A' }).click();
+  await expect(page.locator('#sme-workflow-editor')).toContainText('Edit · Set A');
   await page.locator('#sme-evidence-provenance').selectOption('document_sighted');
   await page.locator('#sme-evidence-role').selectOption('buyer');
   await page.locator('#sme-evidence-date').fill('2026-10-31');
