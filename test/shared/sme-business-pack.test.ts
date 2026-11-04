@@ -19,11 +19,14 @@ const request = (body: unknown, method = 'POST') => new Request(`https://local.t
 
 describe('SME business plan contract', () => {
   it('publishes one neutral protocol, one tool registry, and explicit field/output collections', async () => {
-    expect(PACK_INDEX).toMatchObject([{ id: packId, label: 'General business plan', version: '2.0.0', review_status: 'provisional' }])
+    expect(PACK_INDEX).toMatchObject([{ id: packId, label: 'General business plan', version: '2.1.0', review_status: 'provisional' }])
     expect(TOOL_NAMES).toEqual(['pack.list', 'pack.protocol', 'business.plan.build', 'business.plan.compare'])
     expect(JSON.stringify(TOOL_SCHEMAS)).not.toMatch(/country|sector|SGD|takeover|listing/i)
     const protocol = await invokeSmePackTool('pack.protocol', { pack_id: packId })
-    expect(protocol).toMatchObject({ schema: 'sme-business-plan/protocol/v1', inference_tokens: 0 })
+    expect(protocol).toMatchObject({ schema: 'sme-business-plan/protocol/v2', inference_tokens: 0,
+      guideline_alignment: { schema: 'sme-business-plan/guideline-alignment/v1', join_rule: 'continuity_id@revision' } })
+    expect(protocol.guideline_alignment.projections.map((row: any) => row.id)).toEqual(['pitch_deck', 'business_plan', 'financial_model'])
+    expect(protocol.guideline_sources.map((row: any) => row.id)).toContain('parent_prd')
     expect(protocol.pack).not.toHaveProperty('country')
     expect(protocol.pack).not.toHaveProperty('currency')
     expect(protocol.input_fields.map((field: any) => field.name)).toContain('problem_statement')
@@ -81,8 +84,8 @@ describe('SME business plan contract', () => {
 
   it('compares two or three scenarios in entry order and refuses a mixed currency', async () => {
     const plan_sets = [
-      { pack_id: packId, pack_version: '2.0.0', inputs: { ...baseInputs, venture_name: 'A' } },
-      { pack_id: packId, pack_version: '2.0.0', inputs: { ...baseInputs, venture_name: 'B' } },
+      { pack_id: packId, pack_version: '2.1.0', inputs: { ...baseInputs, venture_name: 'A' } },
+      { pack_id: packId, pack_version: '2.1.0', inputs: { ...baseInputs, venture_name: 'B' } },
     ]
     const compared: any = await invokeSmePackTool('business.plan.compare', { plan_sets })
     expect(compared).toMatchObject({ schema: 'sme-business-plan/comparison/v1', currency_code: 'USD',

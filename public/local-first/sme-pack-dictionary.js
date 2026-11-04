@@ -5,12 +5,12 @@ const columns = [
   { id: 'review', name: 'Evidence / status' }, { id: 'source', name: 'Formula / source' }, { id: 'owner', name: 'Canonical owner' },
 ]
 const ownerRows = [
-  ['Shared token', '/', 'Invocation grammar and command metadata', 'agentic-os/docs/INVOCATION.md · catalog/dictionaries/DICTIONARY-COMMAND.md'],
-  ['Shared token', '#', 'Shared semantic dictionary; page fragments remain local routes', 'agentic-os/catalog/dictionaries/DICTIONARY-SEMANTIC.md'],
-  ['Shared token', '@', 'Binding reference; no credentials or authority implied', 'agentic-os/catalog/dictionaries/DICTIONARY-BINDING.md'],
-  ['Skill metadata', 'agent.sme-care', 'Provider-neutral source-grounded assistance metadata; not a plan executor', 'agentic-canvas-os/docs/SKILLS.md'],
-  ['Tool discovery', 'MCP · WebMCP', 'Shared gateway contract; pack adapters expose the canonical tool schema', 'agentic-canvas-os/docs/MCP-GATEWAY.md · Commerce adapters'],
-  ['Context schema', 'AgenticRAG', 'Shared JSON-LD context and invocation metadata terms', 'huijoohwee.github.io/schema/AgenticRAG/v1/context.jsonld'],
+  ['Shared token', '/', 'Reference implementation owner for invocation grammar and command metadata', 'agentic-os/docs/INVOCATION.md · catalog/dictionaries/DICTIONARY-COMMAND.md'],
+  ['Shared token', '#', 'Reference implementation owner for shared semantic terms; page fragments remain local routes', 'agentic-os/catalog/dictionaries/DICTIONARY-SEMANTIC.md'],
+  ['Shared token', '@', 'Reference implementation owner for binding references; no credentials or authority implied', 'agentic-os/catalog/dictionaries/DICTIONARY-BINDING.md'],
+  ['Skill metadata', 'agent.sme-care', 'Reference implementation for provider-neutral source-grounded assistance metadata; not a plan executor', 'agentic-canvas-os/docs/SKILLS.md'],
+  ['Tool discovery', 'MCP · WebMCP', 'Reference implementation for the shared gateway; pack adapters expose the canonical tool schema', 'agentic-canvas-os/docs/MCP-GATEWAY.md · Commerce adapters'],
+  ['Context schema', 'AgenticRAG', 'Reference implementation for shared JSON-LD context and invocation metadata terms', 'huijoohwee.github.io/schema/AgenticRAG/v1/context.jsonld'],
 ]
 const display = value => {
   if (value === undefined || value === null || value === '') return 'Not declared.'
@@ -20,12 +20,17 @@ const display = value => {
 }
 
 export function createSmePackDictionaryView(protocol, orientation = 'rows', onOrientationChange, toolSchemas = []) {
-  if (!protocol?.pack || !Array.isArray(protocol.input_fields) || !Array.isArray(protocol.model_outputs)) throw Error('sme_dictionary_protocol_invalid')
+  if (!protocol?.pack || protocol.schema !== 'sme-business-plan/protocol/v2' || !Array.isArray(protocol.input_fields)
+    || !Array.isArray(protocol.model_outputs) || !Array.isArray(protocol.guideline_sources)
+    || protocol.guideline_alignment?.schema !== 'sme-business-plan/guideline-alignment/v1'
+    || !Array.isArray(protocol.guideline_alignment.shared_requirements)
+    || !Array.isArray(protocol.guideline_alignment.projections)) throw Error('sme_dictionary_protocol_invalid')
   const rows = []
   const add = (record, key, label, section, definition, type, required, unit, constraints, review, source, owner) => rows.push({
     id: `${record.toLowerCase().replaceAll(' ', '-')}-${rows.length + 1}`,
     cells: [record, key, label, section, definition, type, required, unit, constraints, review, source, owner].map(display),
   })
+  const guidelineById = Object.fromEntries(protocol.guideline_sources.map(source => [source.id, source]))
   add('Plan contract', protocol.pack.id, protocol.pack.label, 'Identity',
     'Versioned, user-defined planning schema. No location, sector, benchmark, default, or currency is implied.', 'object', 'Yes', '',
     { version: protocol.pack.version, as_of: protocol.pack.as_of }, protocol.pack.review_status, protocol.schema, 'Active plan registry and protocol')
@@ -41,6 +46,33 @@ export function createSmePackDictionaryView(protocol, orientation = 'rows', onOr
   for (const artifact of protocol.artifacts ?? []) add('Plan artifact', artifact.id, artifact.label, 'Pitch',
     'Structured draft assembled only from declared inputs and deterministic model displays; missing narrative remains explicit.',
     artifact.format, 'No', 'slides', artifact.inputs, 'Draft · user review required', artifact.output, 'Active plan evaluator')
+  for (const source of protocol.guideline_sources) add('Guideline source', source.id, source.title, 'Canonical owner',
+    'Read-only owner reference. This schema records the source revision and anchor without copying its taxonomy or rules.',
+    'reference', 'Yes', '', { version: source.version, anchors: source.anchors }, 'Canonical · referenced, not redefined', source.path, source.path)
+  for (const requirement of protocol.guideline_alignment.shared_requirements) {
+    const owner = guidelineById[requirement.source_id]
+    if (!owner) throw Error('sme_dictionary_guideline_owner_missing')
+    add('Shared requirement', requirement.key, requirement.label, 'Parent alignment',
+      'Canonical parent requirement; this record reports product support without redefining the owner’s rule.', 'guideline reference',
+      'For full contract', '', requirement.input_fields, `MVP status: ${requirement.status}`,
+      `${owner.path}@${owner.version}#${requirement.anchor}`, owner.path)
+  }
+  for (const projection of protocol.guideline_alignment.projections) {
+    const owner = guidelineById[projection.source_id]
+    if (!owner) throw Error('sme_dictionary_guideline_owner_missing')
+    add('Projection contract', projection.id, projection.label, 'Audience projection',
+      `Consumes the joined artifact; current product scope is ${projection.support_status}.`, 'projection reference',
+      'For full contract', '', { artifact_id: projection.artifact_id, join_rule: protocol.guideline_alignment.join_rule },
+      `MVP scope: ${projection.support_status}`, `${owner.path}@${owner.version}`, owner.path)
+    for (const requirement of projection.requirements ?? []) {
+      const requirementOwner = guidelineById[requirement.source_id ?? projection.source_id]
+      if (!requirementOwner) throw Error('sme_dictionary_guideline_owner_missing')
+      add('Projection requirement', `${projection.id}.${requirement.key}`, requirement.label, projection.label,
+        'Canonical requirement owned by the referenced guideline. The product exposes mapped input keys and reports support status; it does not create a parallel owner contract.',
+        'guideline reference', 'For full contract', '', requirement.input_fields,
+        `MVP status: ${requirement.status}`, `${requirementOwner.path}@${requirementOwner.version}#${requirement.anchor}`, requirementOwner.path)
+    }
+  }
   const collections = [
     ['Calculation parameter', 'parameters', item => [item.id ?? item.name, item.label ?? item.name, 'Financial model', 'Pack-declared calculation metadata, separate from user input.', item.type, 'No', item.unit, item.values ?? item.value, item.review_status ?? item.reviewed, item.formula ?? item.source, 'Active plan contract']],
     ['Evidence guidance', 'protocols', item => [item.field_key, item.field_key, 'Evidence', item.task, 'guidance', 'No', '', 'User-recorded context', 'Not authenticated', '', 'Active plan contract']],

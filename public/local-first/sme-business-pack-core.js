@@ -1,7 +1,7 @@
 export const PACK_PATH = '/agentic-commerce-os/services/sme-business-pack'
 const PACK_REGISTRY = Object.freeze([
   Object.freeze({ metadata: Object.freeze({ id: 'sme.business-plan', label: 'General business plan',
-    version: '2.0.0', as_of: '2026-11-04', review_status: 'provisional' }),
+    version: '2.1.0', as_of: '2026-11-04', review_status: 'provisional' }),
   load: () => import('./sme-pack-business-plan.js') }),
 ])
 export const PACK_INDEX = Object.freeze(PACK_REGISTRY.map(entry => entry.metadata))
@@ -71,9 +71,10 @@ export async function invokeSmePackTool(name, args = {}, now = Date.now()) {
   if (name === 'pack.protocol') {
     assertExactKeys(args, ['pack_id'])
     const pack = await loadPack(args.pack_id)
-    return { schema: 'sme-business-plan/protocol/v1', pack: clone(summary(pack)), input_fields: clone(pack.input_fields),
+    return { schema: 'sme-business-plan/protocol/v2', pack: clone(summary(pack)), input_fields: clone(pack.input_fields),
       model_outputs: clone(pack.model_outputs), artifacts: clone(pack.artifacts ?? []), parameters: clone(pack.parameters), ratios: clone(pack.ratios),
-      protocols: clone(pack.protocols), tolerances: clone(pack.tolerances), review_note: pack.review_note, inference_tokens: 0 }
+      protocols: clone(pack.protocols), tolerances: clone(pack.tolerances), guideline_sources: clone(pack.guideline_sources),
+      guideline_alignment: clone(pack.guideline_alignment), review_note: pack.review_note, inference_tokens: 0 }
   }
   if (name === 'business.plan.build') return buildPlan(args, now)
   return comparePlans(args, now)

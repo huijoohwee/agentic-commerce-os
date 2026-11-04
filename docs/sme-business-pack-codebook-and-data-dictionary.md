@@ -1,15 +1,43 @@
 # Business plan codebook and data dictionary
 
-Version: `sme.business-plan@2.0.0`
+Version: `sme.business-plan@2.1.0`
 Status: provisional, user-defined planning contract
 Runtime owner: `public/local-first/sme-pack-business-plan.js`
 Schema and evaluator owner: `public/local-first/sme-business-pack-core.js`
 
 ## Contract
 
-The active plan is a general, local-first startup and small-business planning worksheet. It has no location, sector, benchmark, market data, default assumptions, inferred values, currency conversion, or external service dependency. The author chooses a three-letter currency code for each scenario. Text is limited to concise planning notes; unknown values remain unknown. User-recorded evidence is context and is not authenticated.
+The active plan is a general, local-first venture and organization planning worksheet. It has no location, sector, benchmark, market data, default assumptions, inferred values, currency conversion, or external service dependency. The author chooses a three-letter currency code for each scenario. Text is limited to concise planning notes; unknown values remain unknown. User-recorded evidence is context and is not authenticated.
 
-The versioned protocol is returned by `pack.protocol` as `sme-business-plan/protocol/v1`. Its source collections are `input_fields`, `model_outputs`, `artifacts`, `parameters`, `ratios`, `protocols`, and `tolerances`. The current contract declares input fields, model outputs, one pitch deck outline artifact, and evidence guidance; calculation parameters, ratios, and tolerances are explicitly empty. The tools and JSON Schemas are declared once in `sme-business-pack-core.js` and reused by local, worker, MCP, and optional WebMCP adapters.
+The versioned protocol is returned by `pack.protocol` as `sme-business-plan/protocol/v2`. Its source collections are `input_fields`, `model_outputs`, `artifacts`, `parameters`, `ratios`, `protocols`, `tolerances`, `guideline_sources`, and `guideline_alignment`. The current contract declares input fields, model outputs, one pitch deck outline artifact, evidence guidance, and a versioned map to canonical projection requirements. Calculation parameters, ratios, and tolerances are explicitly empty. The tools and JSON Schemas are declared once in `sme-business-pack-core.js` and reused by local, worker, MCP, and optional WebMCP adapters.
+
+## Canonical guideline alignment
+
+The PRD/TAD/ADR guidelines are the shared parent contract. The Pitch Deck, Business Plan, and Financial Model guidelines own their projection rules; the Venture Record module owns the source registers and required content. The protocol records these exact owner revisions and anchor references. It does not copy their rule text, finding vocabulary, taxonomy, or template schemas into a second registry.
+
+| Owner | Version | Projection responsibility |
+|---|---:|---|
+| `prd-tad-adr-mvp-gtm-guidelines.md` | 3.4.0 | Scope and neutrality, the shared `continuity_id@revision` join, and C01–C16 |
+| `pitch-deck-guidelines.md` | 1.2.0 | Variant, narrative, timing, ask, claim manifest, numbers, Reveal, notes, and delivery |
+| `business-plan-guidelines.md` | 1.1.0 | Plan variants and depth, section claims, risks, cross-projection reconciliation, review, and operating use |
+| `financial-model-guidelines.md` | 1.1.0 | Model layers, input provenance, headline register, scenarios, actuals, variance, and review |
+| `prd-tad-adr-mvp-gtm-venture.md` | 2.1.3 | Slide Register, business-plan Section Contract, Assumption Register, statements, use of funds, capitalization, and scenarios |
+
+Support labels describe this MVP's current surface; they do not weaken the owner contract:
+
+- Aggregate projection states: `outline_only`, `starter_prompts`, and `single_period_arithmetic`.
+- Requirement states: `applied`, `partial`, `workspace_only`, and `not_in_mvp`.
+- `workspace_only` means views share one active pack revision in this table, but the runtime has not bound them to a parent PRD's actual `continuity_id@revision` record.
+
+| Projection | Current support | Mapped stable keys | Required owner records not represented by the MVP |
+|---|---|---|---|
+| Pitch deck | `outline_only` | `problem_statement`, `target_customer`, `solution_offer`, `market_definition`, `market_basis`, `business_model`, `go_to_market`, `progress_evidence`, `team_capabilities`, `milestones`, `funding_requested`, `use_of_funds`, and selected financial inputs | Variant Register; audience decision and time budget; complete Slide Register evidence/bounds; Claim Manifest; VCC-bound Reveal/runbook; rehearsal; notes, objections, authorization, delivery and outcome log |
+| Business plan | `starter_prompts` | Problem, customer, offer, market notes, business model, acquisition notes, team, risks, milestones, and selected funding inputs | Full Section Contract and dispositions; plan variants/depth; two-method market sizing; Section Claim Record; structured risk register; legal/domain reviews; cross-projection reconciliation; operating and outcome records |
+| Financial model | `single_period_arithmetic` | User currency, price, volume, variable/fixed cost, payroll, setup cost, available cash, runway target, funding considered, and use of funds | Dated low/base/high Assumption Register; measurement basis and monthly horizon; driver schedules; unit economics; linked income, cash-flow and balance-sheet statements; Headline Register; Base/Downside/Upside and sensitivity; cash-floor contingencies; actuals/variance/reforecast; ADLC Cost Ledger; independent review |
+
+`guideline_alignment` is metadata for one dictionary projection, not new user inputs or a second workflow. `partial` and `not_in_mvp` rows remain visible so missing owner records are not implied to exist. The current A/B/C comparison is an ordered comparison of user-entered scenarios; it is not the guidelines' Base/Downside/Upside Scenario Set. The current monthly arithmetic is not a forecast or a linked statement model. The pitch output is an outline, not a rendered or deliverable deck. No projection claims readiness, demand, viability, or guideline conformance on its own.
+
+The owner contract requires all three projections to belong to one source revision and one `continuity_id@revision`. This workspace currently shares its active pack revision across the displayed projections but does not bind to an actual parent PRD identity; the dictionary reports that as `workspace_only`. Every number or claim still needs its owner's source, evidence label, and revision. An absent value stays unknown; no currency, benchmark, market figure, conversion, forecast, reviewer, or evidence status is inferred.
 
 ## Input field codebook
 
@@ -63,15 +91,17 @@ Every output is a deterministic arithmetic result from explicit inputs. Missing 
 
 Evidence rows use `{ field_key, value, provenance, observer_role, date }`. Provenance is one of `assumption`, `self_reported`, `directly_observed`, `counted`, `document_reviewed`, or `independently_reported`. Observer role is `author`, `observer`, or `reviewer`. These labels describe how a person recorded context; they do not authenticate it or prove the underlying value. The protocol supplies field-specific prompts. The local table shows evidence counts beside each input and evidence details in a workflow column.
 
-The E2E table also projects required-input completeness, invalid entries, output coverage, each model output, one twelve-section pitch deck draft outline, and ordered next checks. Slide content is traced to declared input keys and calculated output keys; it does not fill gaps with generated facts. Markdown export contains the outline, financial model, and plan data. Next checks name missing model inputs or optional narrative context; they do not prescribe financing or claim a venture is viable. The selected scenario editor edits the same row's fields and evidence. There is no separate checklist or results model.
+The E2E table also projects required-input completeness, invalid entries, output coverage, each model output, one 12-role pitch deck outline, and ordered next checks. Roles are coverage obligations and may be combined in a final deck; the outline is not a fixed slide count. Outline content is traced to declared input keys and calculated output keys; it does not fill gaps with generated facts. Markdown export contains the outline, financial model, and plan data. Next checks name missing model inputs or optional narrative context; they do not prescribe financing or claim a venture is viable. The selected scenario editor edits the same row's fields and evidence. There is no separate checklist or results model.
 
 ## Table contract
 
-The E2E workspace renders one `agentic-base` `multiDimensional` table. Rows are scenarios A, B, and C in entry order. Columns are the scenario key, every `input_fields` field, plan status and validation, evidence, every `model_outputs` field, the `pitch_deck_outline` artifact, and next checks. One scenario builds a draft; two or three compare entered scenarios. Comparison requires a shared contract version and currency code. It preserves order and does not rank, sort, score, choose a winner, or convert currency. Pivoting changes only the orientation of that same table.
+The E2E workspace renders one shared `multiDimensional` table. Rows are scenarios A, B, and C in entry order. Columns are the scenario key, every `input_fields` field, plan status and validation, evidence, every `model_outputs` field, the `pitch_deck_outline` artifact, and next checks. One scenario builds a draft; two or three compare entered scenarios. Comparison requires a shared contract version and currency code. It preserves order and does not rank, sort, score, choose a winner, or convert currency. A/B/C are not Base/Downside/Upside scenarios. Pivoting changes only the orientation of that same table.
 
-The Data dictionary route renders a second read-only `multiDimensional` table generated from the live protocol. It documents each input, output, artifact, evidence rule, tool schema, empty optional collection, and shared vocabulary owner. It is a different concern from the workflow table, not an alternate workflow or calculation surface. Both use the existing Base adapter; Commerce theme tokens continue to come from `agentic-design-system`.
+The Data dictionary route renders a second read-only `multiDimensional` table generated from the live protocol. It documents each input, output, artifact, evidence rule, guideline owner and projection-support status, tool schema, empty optional collection, and shared vocabulary owner. It is a different concern from the workflow table, not an alternate workflow or calculation surface.
 
-## Tool and shared vocabulary dictionary
+## Reference implementation — shared tools and vocabulary owners
+
+The following names and paths identify existing reference implementations only. The product contract remains provider-, tool-, and location-neutral; shared meanings stay with their canonical owners.
 
 | Tool | Input | Result |
 |---|---|---|
@@ -80,7 +110,7 @@ The Data dictionary route renders a second read-only `multiDimensional` table ge
 | `business.plan.build` | `pack_id`, `inputs`, optional evidence | `sme-business-plan/report/v1` with completeness, model, pitch deck draft outline, next checks, and worksheet exports |
 | `business.plan.compare` | Two or three ordered `plan_sets` | `sme-business-plan/comparison/v1`; same currency and contract required, no ranking |
 
-The pack defines no `/` command, `#` semantic tag, `@` binding, skill alias, MCP resource, or MCP prompt. Invocation grammar and shared tokens stay owned by `agentic-os/catalog/dictionaries`; skill discovery and MCP gateway behavior stay owned by `agentic-canvas-os/docs`; shared JSON-LD invocation metadata stays owned by `huijoohwee.github.io/schema/AgenticRAG`. The dictionary view links to those owners without copying their taxonomies or granting execution authority. The transport exposes the canonical tools through MCP and optionally WebMCP; explicit calls evaluate only their supplied arguments and do not read form memory.
+The pack defines no `/` command, `#` semantic tag, `@` binding, skill alias, MCP resource, or MCP prompt. Invocation grammar and shared tokens stay owned by `agentic-os/catalog/dictionaries`; skill discovery and MCP gateway behavior stay owned by `agentic-canvas-os/docs`; shared JSON-LD invocation metadata stays owned by `huijoohwee.github.io/schema/AgenticRAG`. The dictionary view links to those reference owners without copying their taxonomies or granting execution authority. The transport exposes canonical tools through MCP and optionally WebMCP; explicit calls evaluate only their supplied arguments and do not read form memory.
 
 ## Data handling
 
