@@ -225,9 +225,10 @@ async function assertPurposeTables(page) {
     resultsTables: root.querySelector('[data-sme-results-table-host]')?.shadowRoot?.querySelectorAll('table').length ?? 0,
     legacyVariants: root.querySelectorAll('#result, #result-summary, .comparison-card, .report-section, .comparison-input-slots, .comparison-evidence').length,
     forms: root.querySelectorAll('#sme-check-form').length,
-    workflowNavigationLinks: root.ownerDocument.querySelectorAll('#sme-navigation .service-nav a').length,
+    workflowNavigationLinks: root.ownerDocument.querySelectorAll('#sme-navigation .service-nav a[href="#sme-workflow"]').length,
+    dictionaryNavigationLinks: root.ownerDocument.querySelectorAll('#sme-navigation .service-nav a[href="#sme-dictionary"]').length,
   }))
-  assert.deepEqual(shape, { workflowHosts: 1, resultsHosts: 0, workflowTables: 1, resultsTables: 0, legacyVariants: 0, forms: 1, workflowNavigationLinks: 1 })
+  assert.deepEqual(shape, { workflowHosts: 1, resultsHosts: 0, workflowTables: 1, resultsTables: 0, legacyVariants: 0, forms: 1, workflowNavigationLinks: 1, dictionaryNavigationLinks: 1 })
 }
 
 async function holdNextComparison(page) {
