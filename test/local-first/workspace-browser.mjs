@@ -134,7 +134,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await context.setOffline(true);
   await page.locator('#sample').click();
   await page.locator('#sme-compare-run').click();
-  await expect(page.locator('#workflow-status')).toContainText('On-device calculation');
+  await expect(page.locator('#workflow-status')).toContainText('Local plan built');
   let tableText = await page.locator('#sme-workflow-table-host').evaluate(host => host.shadowRoot.textContent);
   assert.match(tableText, /Outcome · unchecked cash share/);
   assert.match(tableText, /100%/);
@@ -147,7 +147,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await page.locator(`#compare-evidence-${evidenceField}-low`).fill('150000');
   await page.locator('#sme-evidence-add').click();
   await page.locator('#sme-compare-run').click();
-  await expect(page.locator('#workflow-status')).toContainText('On-device calculation');
+  await expect(page.locator('#workflow-status')).toContainText('Local plan built');
   tableText = await page.locator('#sme-workflow-table-host').evaluate(host => host.shadowRoot.textContent);
   assert.match(tableText, /Outcome · cash to close/);
   assert.match(tableText, /150,000/);
@@ -173,7 +173,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
     });
     await expect(page.locator('#workflow-status')).toContainText('Worksheet imported in this tab');
     await page.locator('#sme-compare-run').click();
-    await expect(page.locator('#workflow-status')).toContainText('On-device calculation');
+    await expect(page.locator('#workflow-status')).toContainText('Local plan built');
     const roundTripText = await page.locator('#sme-workflow-table-host').evaluate(host => host.shadowRoot.textContent);
     assert.match(roundTripText, /Outcome · cash to close/);
     assert.match(roundTripText, /150,000/);
