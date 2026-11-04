@@ -1,9 +1,10 @@
 import { invokeSmePackTool, PACK_INDEX, TOOL_SCHEMAS } from './sme-business-pack-core.js'
 import { getOrCreateSingleton } from './workspace-singleton.js'
+import { createSmeWorkflowEditor } from './sme-workflow-editor.js'
 
 const style = document.createElement('link')
 style.rel = 'stylesheet'
-style.href = new URL('./sme-business-pack.css?v=sme-cash-to-close-multidim-3', import.meta.url).href
+style.href = new URL('./sme-business-pack.css?v=business-plan-table-v1', import.meta.url).href
 let stylePromise
 const attachStyles = () => {
   if (!stylePromise) stylePromise = new Promise((resolve, reject) => {
@@ -23,87 +24,35 @@ async function createSmeBusinessPack() {
   const root = document.querySelector('#sme .workspace-content')
   if (!(root instanceof HTMLElement)) throw Error('sme_business_pack_mount_missing')
   const $ = selector => root.querySelector(selector)
-  const form = $('#sme-check-form'), packSelect = $('#pack-id'), fieldsElement = $('#fields')
-  const resultElement = $('#result'), resultStatus = $('#result-status'), serviceStatus = $('#service-status')
-  const resultSummary = $('#result-summary'), rawReport = $('#report-raw')
+  const form = $('#sme-check-form'), packSelect = $('#pack-id'), comparisonCount = $('#sme-compare-count')
+  const workflowTableHost = $('#sme-workflow-table-host'), workflowTableRegion = $('#sme-workflow-table-region')
+  const dictionaryHost = $('#sme-dictionary-table-host'), dictionaryRegion = $('#sme-dictionary-table-region')
+  const dictionaryStatus = $('#sme-dictionary-status'), overview = $('#sme-overview'), dictionary = $('#sme-dictionary')
+  const workflowEditor = $('#sme-workflow-editor'), inputFields = $('#sme-workflow-inputs')
+  const evidenceEditor = $('#sme-workflow-evidence-editor')
+  const workflowStatus = $('#workflow-status'), serviceStatus = $('#service-status')
   const runtimeMode = $('#runtime-mode'), runtimeStatus = $('#runtime-status')
-  let currentFields = [], evidenceRows = [], registration, active = false, previousScrollRestoration = null,
-    comparisonGeneration = 0, comparisonPending = false, comparisonTableHandle = null, comparisonTableAdapter = null, comparisonTableStatus = null, lastResultKind = null
+  let currentFields = [], currentProtocol, registration, active = false, previousScrollRestoration = null,
+    comparisonGeneration = 0, packGeneration = 0, comparisonPending = false, tableOrientation = 'rows',
+    comparisonValue = null, selectedWorkflowSet = null, selectedEvidenceField = null,
+    tableAdapter = null, dictionaryModule = null, dictionaryOrientation = 'rows'
+  const comparisonSlotElements = ['A', 'B', 'C'].map(slot => ({ slot, inputs: {}, evidence: [] }))
+  const workflowTableMount = { handle: null, ready: null, generation: 0 }
+  const dictionaryTableMount = { handle: null, ready: null, generation: 0 }
   const node = (tag, text, className) => { const element = document.createElement(tag); if (text !== undefined) element.textContent = text; if (className) element.className = className; return element }
   const option = (select, value, label) => { const item = node('option', label); item.value = value; select.append(item) }
-  const inputControl = (field, prefix) => {
-    const wrap = node('section', undefined, 'field')
-    const label = node('label', field.label + (field.unit ? ' · ' + field.unit : ''))
-    const id = prefix + '-' + field.name
-    if (field.type === 'enum' || field.type === 'boolean') {
-      const control = node('select'); control.id = id; control.dataset.claim = field.name; control.autocomplete = 'off'
-      option(control, '', 'Choose…')
-      const values = field.type === 'boolean' ? [['true', 'Yes'], ['false', 'No']] : field.values.map(value => [value, value.replaceAll('_', ' ')])
-      for (const value of values) option(control, value[0], value[1])
-      label.htmlFor = id; wrap.append(label, control); return wrap
-    }
-    if (field.type === 'money') {
-      const range = node('div', undefined, 'cash-range-input')
-      for (const bound of ['low', 'high']) {
-        const control = node('input'); control.type = 'number'; control.min = '0'; control.max = '100000000'; control.step = '1'
-        control.inputMode = 'numeric'; control.autocomplete = 'off'
-        control.id = id + '-' + bound; control.dataset.claim = field.name; control.dataset.bound = bound
-        control.setAttribute('aria-label', field.label + ' ' + bound)
-        control.placeholder = bound === 'low' ? 'SGD · minimum' : 'SGD · maximum (optional)'
-        range.append(control)
-      }
-      wrap.append(label, range); return wrap
-    }
-    const control = node('input'); control.type = 'number'; control.step = '1'; control.inputMode = 'numeric'
-    control.min = String(field.min ?? 0); control.max = String(field.max ?? 100000000)
-    control.id = id; control.dataset.claim = field.name; control.autocomplete = 'off'
-    label.htmlFor = id; wrap.append(label, control); return wrap
+  const enumLabel = value => value.replaceAll('_', ' ').replace(/^\w/, letter => letter.toUpperCase())
+  const readInputs = item => ({ ...item.inputs })
+  const formatMoney = (value, currency) => {
+    const amount = new Intl.NumberFormat(document.documentElement.lang || 'en', { maximumFractionDigits: 4 }).format(value)
+    return /^[A-Z]{3}$/u.test(currency ?? '') ? `${currency} ${amount}` : amount
   }
-  const readValue = (field, prefix) => {
-    const id = prefix + '-' + field.name, raw = (field.type === 'money' ? $('#' + id + '-low') : $('#' + id))?.value
-    if (field.type === 'enum' || field.type === 'boolean') return raw === '' || raw === undefined ? undefined : field.type === 'boolean' ? raw === 'true' : raw
-    if (field.type === 'money') { const highText = $('#' + id + '-high')?.value; if (raw === '' || raw === undefined) return undefined; const low = Number(raw), high = highText === '' ? low : Number(highText); return highText === '' ? low : { low, high } }
-    return raw === '' || raw === undefined ? undefined : Number(raw)
-  }
-  const readClaims = () => Object.fromEntries(currentFields.map(field => [field.name, readValue(field, 'claim')]).filter(([, value]) => value !== undefined))
-  const formatMoney = value => new Intl.NumberFormat(document.documentElement.lang || 'en', { style: 'currency', currency: 'SGD', maximumFractionDigits: 0 }).format(value)
   const lineLabel = id => currentFields.find(field => field.name === id)?.label || id.replaceAll('_', ' ')
   function download(name, mime, content) { const url = URL.createObjectURL(new Blob([content], { type: mime })); const anchor = node('a'); anchor.href = url; anchor.download = name; anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 1000) }
-  const evidenceSection = node('section', undefined, 'sme-evidence')
-  evidenceSection.append(node('h3', 'Evidence gathered offline'), node('p',
-    'Enter closed-field observations or document sightings. Entries stay in this tab and are not authenticated.', 'muted'))
-  const evidenceFields = node('div', undefined, 'evidence-fields')
-  const evidenceKind = node('select'); evidenceKind.id = 'sme-evidence-kind'
-  const evidenceProvenance = node('select'); evidenceProvenance.id = 'sme-evidence-provenance'
-  const evidenceRole = node('select'); evidenceRole.id = 'sme-evidence-role'
-  const evidenceDate = node('input'); evidenceDate.id = 'sme-evidence-date'; evidenceDate.type = 'date'
-  const evidenceValue = node('div'); evidenceValue.id = 'sme-evidence-value'
-  const provenanceValues = [
-    ['seller_stated', 'Seller stated · T0'], ['buyer_assumed', 'Buyer assumed · T0'],
-    ['observed_on_site', 'Observed on site · T1'], ['measured_on_foot', 'Measured on foot · T1'],
-    ['counted_on_site', 'Counted on site · T1'], ['document_sighted', 'Document sighted · T2'],
-    ['third_party_confirmed', 'Third party confirmed · T3'],
-  ]
-  option(evidenceProvenance, '', 'Evidence source…')
-  for (const row of provenanceValues) option(evidenceProvenance, row[0], row[1])
-  option(evidenceRole, '', 'Observer role…')
-  for (const role of ['buyer', 'adviser', 'field_checker']) option(evidenceRole, role, role.replaceAll('_', ' '))
-  const evidenceLabels = [node('label', 'Claim kind'), node('label', 'Provenance'), node('label', 'Observer'), node('label', 'Date')]
-  evidenceLabels[0].htmlFor = evidenceKind.id; evidenceLabels[1].htmlFor = evidenceProvenance.id
-  evidenceLabels[2].htmlFor = evidenceRole.id; evidenceLabels[3].htmlFor = evidenceDate.id
-  const evidenceControls = [evidenceKind, evidenceProvenance, evidenceRole, evidenceDate]
-  for (let index = 0; index < evidenceControls.length; index++) {
-    const field = node('section', undefined, 'field'); field.append(evidenceLabels[index], evidenceControls[index]); evidenceFields.append(field)
-  }
-  evidenceSection.append(evidenceFields, evidenceValue)
-  const addEvidence = node('button', 'Add evidence entry'); addEvidence.type = 'button'; addEvidence.id = 'sme-add-evidence'
-  evidenceSection.append(addEvidence)
-  const evidenceList = node('ul', undefined, 'sme-evidence-list'); evidenceList.id = 'sme-evidence-list'
-  evidenceSection.append(evidenceList)
   const worksheetSection = node('section', undefined, 'worksheet-controls')
   worksheetSection.append(node('h3', 'Offline worksheet'))
   const worksheetActions = node('div', undefined, 'actions')
-  const printButton = node('button', 'Print worksheet', 'secondary'); printButton.type = 'button'
+  const printButton = node('button', 'Print worksheet', 'secondary'); printButton.type = 'button'; printButton.id = 'sme-print'
   worksheetActions.append(printButton)
   for (const [format, title] of [['json', 'Download JSON'], ['csv', 'Download CSV'], ['markdown', 'Download Markdown']]) {
     const button = node('button', title, 'secondary'); button.type = 'button'; button.dataset.export = format; worksheetActions.append(button)
@@ -112,118 +61,116 @@ async function createSmeBusinessPack() {
   const importInput = node('input'); importInput.type = 'file'; importInput.id = 'sme-worksheet-import'
   importInput.accept = '.json,.csv,.md,.markdown,application/json,text/csv,text/markdown'; importInput.className = 'file-input'
   worksheetActions.append(importLabel, importInput); worksheetSection.append(worksheetActions)
-  const comparisonSection = node('section', undefined, 'sme-comparison')
-  comparisonSection.id = 'sme-compare'
-  comparisonSection.append(node('h3', 'Anonymous claim comparison'), node('p',
-    'Enter two or three closed Singapore claim sets. Slots stay in entry order; no winner or ranking is produced.', 'muted'))
-  const comparisonCountLabel = node('label', 'Number of claim sets'); comparisonCountLabel.htmlFor = 'sme-compare-count'
-  const comparisonCount = node('select'); comparisonCount.id = 'sme-compare-count'
-  option(comparisonCount, '2', '2 claim sets'); option(comparisonCount, '3', '3 claim sets')
-  const comparisonSlots = node('div', undefined, 'comparison-input-slots'), comparisonSlotElements = []
-  for (const slot of ['A', 'B', 'C']) {
-    const fieldset = node('fieldset', undefined, 'comparison-input-slot'), fields = node('div', undefined, 'fields')
-    fieldset.append(node('legend', 'Set ' + slot), fields); comparisonSlots.append(fieldset)
-    comparisonSlotElements.push({ slot, fieldset, fields, evidence: [] })
+  $('#sme-worksheet-actions').replaceChildren(worksheetSection)
+  const compareButton = $('#sme-compare-run')
+  function formatFieldValue(field, value, currency) {
+    if (value === undefined) return 'Unknown · not entered'
+    if (typeof value === 'boolean') return value ? 'Yes' : 'No'
+    if (typeof value === 'number') return field.type === 'money' ? formatMoney(value, currency) : `${new Intl.NumberFormat().format(value)}${field.unit ? ' ' + field.unit : ''}`
+    if (typeof value === 'object' && value !== null && Number.isFinite(value.low) && Number.isFinite(value.high))
+      return formatMoney(value.low, currency) + (value.high === value.low ? '' : '–' + formatMoney(value.high, currency))
+    return field.type === 'enum' ? enumLabel(value) : String(value)
   }
-  const compareButton = node('button', 'Compare claim sets'); compareButton.type = 'button'; compareButton.id = 'sme-compare-run'
-  const comparisonActions = node('div', undefined, 'actions'); comparisonActions.append(compareButton)
-  comparisonSection.append(comparisonCountLabel, comparisonCount, comparisonSlots, comparisonActions)
-  const actions = $('.actions')
-  form.insertBefore(evidenceSection, actions); form.insertBefore(worksheetSection, actions); form.insertBefore(comparisonSection, actions)
-  function renderEvidenceValue() {
-    evidenceValue.replaceChildren()
-    const field = currentFields.find(item => item.name === evidenceKind.value)
-    if (!field) return
-    evidenceValue.append(inputControl(field, 'evidence'))
-  }
-  function renderEvidenceRows() {
-    evidenceList.replaceChildren()
-    evidenceRows.forEach((row, index) => {
-      const item = node('li', lineLabel(row.claim_kind) + ' · ' + row.provenance.replaceAll('_', ' ')
-        + ' · ' + row.date + ' · ' + JSON.stringify(row.value))
-      const remove = node('button', 'Remove'); remove.type = 'button'; remove.setAttribute('aria-label', 'Remove evidence entry ' + (index + 1))
-      remove.addEventListener('click', () => { evidenceRows.splice(index, 1); renderEvidenceRows() })
-      item.append(remove); evidenceList.append(item)
+  const workflowEditorView = createSmeWorkflowEditor({
+    workflowEditor, inputFields, evidenceEditor, heading: $('#sme-workflow-editor-heading'), note: $('#sme-workflow-editor-note'),
+    evidenceHeading: $('#sme-workflow-evidence-heading'), parameterDetails: $('#sme-workflow-parameter-details'), workflowStatus,
+    getFields: () => currentFields, getProtocol: () => currentProtocol,
+    getSlots: () => comparisonSlotElements.slice(0, Number(comparisonCount.value)), getSelectedSlot: () => selectedWorkflowSet,
+    getEvidenceField: () => selectedEvidenceField, setEvidenceField: value => { selectedEvidenceField = value },
+    node, option, enumLabel, formatFieldValue, formatMoney, invalidate: invalidateComparison,
+  })
+  function renderWorkflowEditor() { workflowEditorView.render() }
+  function tableSlots(value) {
+    const supplied = new Map((value?.slots ?? []).map(slot => [slot.slot, slot]))
+    return comparisonSlotElements.map((item, index) => {
+      const slot = supplied.get(item.slot), visible = index < Number(comparisonCount.value)
+      return { ...slot, slot: item.slot, status: slot?.status ?? (visible ? 'ready' : 'not_supplied'), report: slot?.report ?? null, evidence: item.evidence }
     })
   }
-  function renderResult(value) {
-    comparisonGeneration++; comparisonPending = false; compareButton.disabled = false
-    comparisonTableHandle?.destroy(); comparisonTableHandle = null; comparisonTableStatus = null
-    resultSummary.replaceChildren()
-    const check = value?.check, budget = value?.budget
-    if (!check || !budget) {
-      const notice = node('section', undefined, 'report-issues')
-      notice.append(node('h3', value?.withheld ? 'Transfer checklist not available' : 'Response ready'),
-        node('p', value?.withheld ? 'A qualified reviewer must approve the provisional pack before checklist content is available.' : 'Open the raw report data for the complete tool response.'))
-      resultSummary.append(notice); return
-    }
-    const context = node('div', undefined, 'report-context')
-    context.append(node('span', 'Singapore · SGD', 'report-pill'), node('span', 'Pack v' + check.pack.version, 'report-pill'),
-      node('span', 'Inputs not saved', 'report-pill'))
-    resultSummary.append(context)
-    const totals = node('section', undefined, 'report-section')
-    totals.append(node('h3', 'Cash to close'))
-    const cash = budget.budget.cash_to_close
-    totals.append(node('p', cash.high === null
-      ? cash.low === null ? 'No cash amounts entered. Total incomplete; missing lines are unknown, not zero.'
-        : 'Known entered subtotal: at least ' + formatMoney(cash.low) + '. Total incomplete; missing lines are unknown, not zero.'
-      : formatMoney(cash.low) + (cash.high === cash.low ? '' : '–' + formatMoney(cash.high))))
-    const gap = budget.budget.gap_above_asking_price
-    totals.append(node('p', gap ? 'Gap above asking price: ' + formatMoney(gap.low) + (gap.high === gap.low ? '' : '–' + formatMoney(gap.high)) : 'Gap above asking price: unavailable until price and all cash lines are entered.'))
-    const lease = budget.budget.lease_exposure
-    totals.append(node('p', 'Lease exposure: ' + (lease ? formatMoney(lease.low) + (lease.high === lease.low ? '' : '–' + formatMoney(lease.high)) : 'incomplete')))
-    const share = budget.budget.unchecked_share
-    totals.append(node('p', 'Cash on lines below their provisional evidence tier: ' + (share === null ? 'unavailable until the budget is complete' : Math.round(share * 100) + '%')))
-    if (budget.budget.break_even_monthly_sales) totals.append(node('p', 'Break-even monthly sales arithmetic: '
-      + formatMoney(budget.budget.break_even_monthly_sales.low) + '–' + formatMoney(budget.budget.break_even_monthly_sales.high)))
-    if (budget.budget.opening_runway) totals.append(node('p', 'Opening runway: '
-      + (budget.budget.opening_runway.months ? budget.budget.opening_runway.months.low + '–' + budget.budget.opening_runway.months.high + ' months' : budget.budget.opening_runway.status.replaceAll('_', ' '))))
-    resultSummary.append(totals)
-    const lineSection = node('section', undefined, 'report-section'); lineSection.append(node('h3', 'Cash lines'))
-    const lineList = node('ol', undefined, 'cash-line-list')
-    for (const line of budget.budget.lines) {
-      const valueText = line.complete ? formatMoney(line.low) + (line.high === line.low ? '' : '–' + formatMoney(line.high)) : 'Incomplete · unknown'
-      lineList.append(node('li', line.id + ' · ' + line.label + ' · ' + valueText
-        + ' · ' + (line.checked ? 'tier reached' : 'evidence needed')))
-    }
-    lineSection.append(lineList); resultSummary.append(lineSection)
-    const arithmetic = node('section', undefined, 'report-section'); arithmetic.append(node('h3', 'Arithmetic observations'))
-    arithmetic.append(node('p', arithmeticText(budget.budget.arithmetic_flags), 'report-note')); resultSummary.append(arithmetic)
-    const evidence = node('section', undefined, 'report-section'); evidence.append(node('h3', 'Evidence comparison'))
-    evidence.append(node('p', 'All claim statuses remain unsupported while the pack is provisional. Numeric differences are shown without an unreviewed tolerance.'))
-    for (const row of check.raw_differences) evidence.append(node('p',
-      row.claim_kind + ' · claimed ' + JSON.stringify(row.claimed) + ' · sighted ' + JSON.stringify(row.observed), 'report-note'))
-    resultSummary.append(evidence)
-    const plan = value.tasks || []
-    const taskSection = node('section', undefined, 'report-section'); taskSection.append(node('h3', 'Next checks by cash amount'))
-    if (!plan.length) taskSection.append(node('p', budget.budget.incomplete
-      ? 'Complete the known cash lines to rank the remaining offline checks.'
-      : 'No cash line is waiting for a higher provisional evidence tier.'))
-    const taskList = node('ol', undefined, 'cash-line-list')
-    for (const task of plan) taskList.append(node('li', 'Step ' + task.order + ' · ' + task.label + ' · ' + formatMoney(task.cash_retired_midpoint)
-      + ' · ' + task.tasks.map(item => item.task).join(' ')))
-    taskSection.append(taskList); resultSummary.append(taskSection)
-    resultSummary.append(node('p', check.disclaimer, 'report-disclaimer'))
+  function tableDimensions() {
+    const reportValue = (slot, read) => slot.status === 'not_supplied' ? 'Not in this comparison.' : slot.report ? read(slot.report) : 'Not built · build local plan'
+    const evidenceRecords = slot => slot.evidence.length
+      ? slot.evidence.map((row, index) => {
+        const field = currentFields.find(item => item.name === row.field_key)
+        const inputs = comparisonSlotElements.find(item => item.slot === slot.slot)?.inputs
+        const value = field ? formatFieldValue(field, row.value, inputs?.currency_code) : JSON.stringify(row.value)
+        return `${index + 1}. ${lineLabel(row.field_key)} · ${value} · ${enumLabel(row.provenance)} · ${enumLabel(row.observer_role)} · ${row.date}`
+      }).join(' · ')
+      : 'No evidence entries recorded.'
+    const modelOutputs = currentProtocol?.model_outputs ?? []
+    const dimensions = [
+      { id: 'plan-contract', name: 'Plan · contract', read: () => currentProtocol?.pack ? `${currentProtocol.pack.label} · v${currentProtocol.pack.version} · ${currentProtocol.pack.review_status}` : 'Loading plan…' },
+      { id: 'plan-completeness', name: 'Plan · required inputs', read: slot => reportValue(slot, report => {
+        const status = report.check.completeness, missing = status.required - status.supplied
+        return missing ? `Incomplete · ${status.supplied}/${status.required} supplied · ${missing} unknown` : `Entered · ${status.supplied}/${status.required} required fields`
+      }) },
+      { id: 'data-validation', name: 'Plan · invalid entries', read: slot => reportValue(slot, report =>
+        report.check.completeness.invalid_fields.length
+          ? report.check.completeness.invalid_fields.map(lineLabel).join(' · ')
+          : 'No invalid entries reported.') },
+      { id: 'evidence-records', name: 'Plan · recorded evidence', read: slot => slot.status === 'not_supplied' ? 'Not in this comparison.' : evidenceRecords(slot) },
+      { id: 'model-coverage', name: 'Model · calculated outputs', read: slot => reportValue(slot, report => {
+        const rows = Object.values(report.model.missing_inputs), complete = rows.filter(values => values.length === 0).length
+        return `${complete}/${rows.length} outputs have their required inputs`
+      }) },
+      ...modelOutputs.map(output => ({ id: `model-${output.id}`, name: `Model · ${output.label}`, read: slot =>
+        reportValue(slot, report => report.model_display[output.id]) })),
+      { id: 'pitch-deck-outline', name: 'Pitch · deck outline', read: slot => reportValue(slot, report =>
+        report.pitch_deck_outline.map(row => `Slide ${row.slide}. ${row.section}: ${row.content}`).join(' · ')) },
+      { id: 'next-checks', name: 'Plan · next checks', read: slot => reportValue(slot, report => report.next_checks.length
+        ? report.next_checks.map(row => `${row.order}. ${row.action}`).join(' · ') : 'No next checks from the entered fields.') },
+    ]
+    return dimensions
   }
-  function show(value, source) { resultElement.textContent = JSON.stringify(value, null, 2); renderResult(value); rawReport.hidden = false; resultStatus.textContent = source; lastResultKind = 'check' }
-  async function runPlan() { return invokeSmePackTool('takeover.plan', { pack_id: packSelect.value, claims: readClaims(), evidence: evidenceRows }) }
+  function workflowTableView() {
+    const slots = comparisonSlotElements.slice(0, Number(comparisonCount.value))
+    const resultSlots = tableSlots(comparisonValue)
+    const dimensions = tableDimensions()
+    const columns = [{ id: 'scenario', name: 'Plan scenario' }, ...currentFields.map(field => ({ id: field.name, name: 'Input · ' + field.label + (field.unit ? ' · ' + field.unit : '') })),
+      ...dimensions.map(({ id, name }) => ({ id, name }))]
+    const rows = slots.map(item => ({ id: item.slot, cells: [`Scenario ${item.slot}`,
+      ...currentFields.map(field => {
+        const count = item.evidence.filter(row => row.field_key === field.name).length
+        return formatFieldValue(field, item.inputs[field.name], item.inputs.currency_code) + (count ? ` · ${count} evidence ${count === 1 ? 'entry' : 'entries'}` : '')
+      }), ...dimensions.map(dimension => dimension.read(resultSlots.find(slot => slot.slot === item.slot)))] }))
+    return { columns, rows, layout: 'multiDimensional', orientation: tableOrientation,
+      ariaLabel: 'SME business plan; scenarios are rows and every plan field, evidence record, model output and next check is a column.', selectedRowId: selectedWorkflowSet ?? undefined,
+      onActivateRow: slot => {
+        if (!slots.some(item => item.slot === slot)) return
+        selectedWorkflowSet = slot; renderWorkflowEditor()
+        workflowStatus.textContent = `Editing Scenario ${slot}. Values and evidence stay on this device.`
+        void renderWorkflowTable()
+      }, onOrientationChange: orientation => {
+        if (!workflowTableHost.isConnected) return
+        tableOrientation = orientation
+        workflowTableRegion.dataset.orientation = orientation
+        workflowTableRegion.setAttribute('aria-label', orientation === 'rows'
+          ? 'Plan scenarios as rows; all plan fields, evidence, model outputs and next checks as columns.'
+          : 'The same business plan pivoted to fields and outputs as records.')
+        void renderWorkflowTable()
+      } }
+  }
+  async function renderWorkflowTable(expectedGeneration = comparisonGeneration) {
+    const current = () => expectedGeneration === comparisonGeneration
+    const ok = await renderSharedTable(workflowTableHost, workflowTableView(), workflowTableMount, current)
+    if (!ok && current())
+      workflowStatus.textContent = 'Shared workflow table unavailable. Reload this page to retry.'
+    return ok || !current()
+  }
+  async function runPlan(item = comparisonSlotElements[0]) {
+    return invokeSmePackTool('business.plan.build', { pack_id: packSelect.value, inputs: readInputs(item), evidence: item.evidence })
+  }
   async function fillWorksheet(worksheet) {
-    if (worksheet?.schema !== 'sme-business-pack/worksheet/v1' || worksheet.pack_id !== packSelect.value
-      || !worksheet.claims || typeof worksheet.claims !== 'object' || !Array.isArray(worksheet.evidence)) throw Error('worksheet_invalid')
-    const candidate = { pack_id: worksheet.pack_id, claims: worksheet.claims, evidence: worksheet.evidence }
-    await invokeSmePackTool('takeover.check', candidate)
-    for (const field of currentFields) {
-      const value = worksheet.claims[field.name]
-      if (value === undefined) continue
-      if (field.type === 'money') {
-        const range = typeof value === 'number' ? { low: value, high: value } : value
-        $('#' + 'claim-' + field.name + '-low').value = String(range.low)
-        $('#' + 'claim-' + field.name + '-high').value = range.high === range.low ? '' : String(range.high)
-      } else {
-        const control = $('#claim-' + field.name); if (control) control.value = String(value)
-      }
-    }
-    evidenceRows = worksheet.evidence.map(row => ({ ...row })); renderEvidenceRows()
+    if (worksheet?.schema !== 'sme-business-plan/worksheet/v1' || worksheet.pack_id !== packSelect.value
+      || worksheet.pack_version !== currentProtocol.pack.version
+      || !worksheet.inputs || typeof worksheet.inputs !== 'object' || !Array.isArray(worksheet.evidence)) throw Error('worksheet_invalid')
+    const candidate = { pack_id: worksheet.pack_id, inputs: worksheet.inputs, evidence: worksheet.evidence }
+    await invokeSmePackTool('business.plan.build', candidate)
+    const item = comparisonSlotElements[0]
+    item.inputs = { ...worksheet.inputs }
+    item.evidence.splice(0, item.evidence.length, ...worksheet.evidence.map(row => ({ ...row })))
+    selectedWorkflowSet = 'A'
+    renderWorkflowEditor(); invalidateComparison()
   }
   function parseCsv(text) {
     const rows = []; let row = [], cell = '', quoted = false
@@ -242,10 +189,10 @@ async function createSmeBusinessPack() {
     if (quoted) throw Error('worksheet_csv_invalid')
     if (cell || row.length) { row.push(cell); rows.push(row) }
     if (rows[0]?.join(',') !== 'kind,key,value,provenance,observer_role,date') throw Error('worksheet_csv_invalid')
-    const worksheet = { schema: 'sme-business-pack/worksheet/v1', pack_id: packSelect.value, claims: {}, evidence: [] }
+    const worksheet = { schema: 'sme-business-plan/worksheet/v1', pack_id: packSelect.value, pack_version: currentProtocol.pack.version, inputs: {}, evidence: [] }
     for (const [kind, key, value, provenance, observer_role, date] of rows.slice(1)) {
-      if (kind === 'claim') worksheet.claims[key] = JSON.parse(value)
-      else if (kind === 'evidence') worksheet.evidence.push({ claim_kind: key, value: JSON.parse(value), provenance, observer_role, date })
+      if (kind === 'input') worksheet.inputs[key] = JSON.parse(value)
+      else if (kind === 'evidence') worksheet.evidence.push({ field_key: key, value: JSON.parse(value), provenance, observer_role, date })
       else throw Error('worksheet_csv_invalid')
     }
     return worksheet
@@ -261,238 +208,163 @@ async function createSmeBusinessPack() {
     } else if (suffix === 'csv') worksheet = parseCsv(text)
     else worksheet = JSON.parse(text)
     await fillWorksheet(worksheet)
-    resultStatus.textContent = 'Worksheet imported in this tab. Run a new check to recompute.'
+    workflowStatus.textContent = 'Worksheet imported in this tab. Build the plan to refresh model and readiness columns.'
   }
-  async function refreshFields() {
-    const protocol = await invokeSmePackTool('pack.protocol', { pack_id: packSelect.value })
-    currentFields = protocol.claim_kinds
-    fieldsElement.replaceChildren(...currentFields.map(field => inputControl(field, 'claim')))
-    evidenceKind.replaceChildren(); option(evidenceKind, '', 'Choose claim kind…')
-    for (const field of currentFields.filter(item => item.retiring_tier)) option(evidenceKind, field.name, field.label)
-    serviceStatus.textContent = 'Singapore · SGD · v' + protocol.pack.version + ' · provisional'
-    renderEvidenceValue()
+  async function refreshFields(packId = packSelect.value) {
+    const protocol = await invokeSmePackTool('pack.protocol', { pack_id: packId })
+    if (packId !== packSelect.value) return false
+    currentProtocol = protocol
+    currentFields = currentProtocol.input_fields
+    serviceStatus.textContent = `${currentProtocol.pack.label} · v${currentProtocol.pack.version} · ${currentProtocol.pack.review_status} · local protocol`
+    if (location.hash.slice(1).split('?')[0] === 'sme-dictionary') void renderDictionaryTable()
+    return true
   }
   function updateComparisonSlotVisibility() {
     const count = Number(comparisonCount.value)
     for (const [index, item] of comparisonSlotElements.entries()) {
-      item.fieldset.hidden = index >= count
-      for (const control of item.fieldset.querySelectorAll('input, select')) {
-        control.disabled = index >= count
-        if (index >= count) control.value = ''
-      }
-      if (index >= count) { item.evidence.length = 0; item.evidenceList?.replaceChildren() }
+      if (index >= count) { item.inputs = {}; item.evidence.length = 0 }
     }
-  }
-  function clearDisplayedResult(message) {
-    comparisonTableHandle?.destroy(); comparisonTableHandle = null; comparisonTableStatus = null
-    resultElement.textContent = ''; rawReport.hidden = true; resultStatus.textContent = ''
-    resultSummary.replaceChildren(node('p', message, 'muted')); lastResultKind = null
+    if (selectedWorkflowSet && !comparisonSlotElements.slice(0, count).some(item => item.slot === selectedWorkflowSet)) selectedWorkflowSet = 'A'
+    renderWorkflowEditor()
+    compareButton.textContent = count === 1 ? 'Build local plan' : `Compare ${count} scenarios locally`
   }
   function invalidateComparison() {
-    comparisonGeneration++
-    const clearResult = lastResultKind === 'comparison' || comparisonPending
+    ++comparisonGeneration
     comparisonPending = false; compareButton.disabled = false
-    if (!clearResult) return
-    clearDisplayedResult('Run a local check or comparison to see a report.')
+    comparisonValue = null
+    workflowStatus.textContent = 'Inputs changed. Build the local plan to refresh model and readiness columns.'
+    void renderWorkflowTable()
   }
   function clearComparison() {
-    invalidateComparison(); comparisonCount.value = '2'; updateComparisonSlotVisibility()
+    comparisonCount.value = '1'
     for (const item of comparisonSlotElements) {
-      item.evidence.length = 0; item.evidenceList?.replaceChildren()
-      for (const control of item.fieldset.querySelectorAll('input, select')) control.value = ''
+      item.inputs = {}; item.evidence.length = 0
     }
+    selectedWorkflowSet = null; renderWorkflowEditor()
+    updateComparisonSlotVisibility(); invalidateComparison()
   }
-  function formatComparisonRange(range) {
-    if (!range || range.low === null || range.high === null) {
-      return range?.low === null || !range ? 'Unknown · incomplete' : 'Known subtotal ≥ ' + formatMoney(range.low) + ' · total unknown'
-    }
-    return formatMoney(range.low) + (range.high === range.low ? '' : '–' + formatMoney(range.high))
-  }
-  function arithmeticText(flags = []) {
-    if (!flags.length) return 'None from pack-defined arithmetic checks.'
-    return flags.map(flag => flag.code === 'rent_to_sales_arithmetic_bound'
-      ? flag.observation === 'above' ? 'Rent-to-sales ratio exceeds the pack arithmetic-only bound.'
-        : 'Rent-to-sales range crosses the pack arithmetic-only bound.'
-      : 'Break-even arithmetic exceeds the claimed sales range.').join(' ')
-  }
-  function addComparisonEvidenceEditor(item) {
-    const prefix = 'compare-evidence-' + item.slot.toLowerCase(), details = node('details', undefined, 'comparison-evidence')
-    details.id = prefix + '-details'; details.append(node('summary', 'Evidence for set ' + item.slot))
-    const controls = node('div', undefined, 'evidence-fields'), kind = node('select'), provenance = node('select')
-    const role = node('select'), date = node('input'), value = node('div'), list = node('ul')
-    kind.id = prefix + '-kind'; provenance.id = prefix + '-provenance'; role.id = prefix + '-role'
-    date.id = prefix + '-date'; date.type = 'date'; value.id = prefix + '-value'; list.id = prefix + '-list'
-    option(kind, '', 'Claim kind…'); for (const field of currentFields.filter(row => row.retiring_tier)) option(kind, field.name, field.label)
-    option(provenance, '', 'Evidence source…'); for (const row of provenanceValues) option(provenance, row[0], row[1])
-    option(role, '', 'Observer role…'); for (const name of ['buyer', 'adviser', 'field_checker']) option(role, name, name.replaceAll('_', ' '))
-    for (const [control, label] of [[kind, 'Claim kind'], [provenance, 'Provenance'], [role, 'Observer'], [date, 'Date']]) {
-      const field = node('section', undefined, 'field'), caption = node('label', label)
-      caption.htmlFor = control.id; field.append(caption, control); controls.append(field)
-    }
-    const renderValue = () => {
-      value.replaceChildren()
-      const field = currentFields.find(row => row.name === kind.value)
-      if (field) {
-        value.append(inputControl(field, prefix))
-        for (const control of value.querySelectorAll('input, select')) control.addEventListener('input', invalidateComparison)
+  async function renderSharedTable(host, view, mount, isCurrent = () => true) {
+    const generation = ++mount.generation
+    try {
+      const adapter = await (tableAdapter ??= import('./agentic-base-data-view.js?v=base-0cd7602-sme-workflow-table-v2')
+        .catch(error => { tableAdapter = null; throw error }))
+      if (generation !== mount.generation || !isCurrent() || !host.isConnected) return false
+      let target = host.shadowRoot?.querySelector('[data-sme-table-target]')
+      if (!target) {
+        const shadow = host.shadowRoot ?? host.attachShadow({ mode: 'open' }), stylesheet = document.createElement('link')
+        target = node('div'); target.dataset.smeTableTarget = 'true'; target.style.cssText = 'width:100%;height:100%'
+        stylesheet.rel = 'stylesheet'; stylesheet.href = new URL('./agentic-base-data-view.css?v=base-0cd7602-sme-workflow-table-v2', import.meta.url).href
+        for (const [name, token] of Object.entries({ '--agentic-base-text': '--commerce-ink', '--agentic-base-surface': '--commerce-surface', '--agentic-base-border': '--commerce-border', '--agentic-base-muted': '--commerce-text-muted', '--agentic-base-header': '--commerce-surface-subtle', '--agentic-base-selected': '--commerce-accent-soft', '--agentic-base-hover': '--commerce-accent-soft', '--agentic-base-focus': '--commerce-focus' })) host.style.setProperty(name, `var(${token})`)
+        mount.ready = new Promise((resolve, reject) => {
+          const timer = setTimeout(() => reject(Error('shared_table_styles_unavailable')), 8000)
+          stylesheet.onload = () => { clearTimeout(timer); resolve() }
+          stylesheet.onerror = () => { clearTimeout(timer); reject(Error('shared_table_styles_unavailable')) }
+        })
+        shadow.append(stylesheet, target)
       }
+      await mount.ready
+      if (generation !== mount.generation || !isCurrent() || !host.isConnected) return false
+      mount.handle ? mount.handle.update(view) : mount.handle = adapter.mountDataView(target, view)
+      return true
+    } catch {
+      if (!mount.handle) host.shadowRoot?.replaceChildren()
+      mount.ready = null
+      return false
     }
-    const renderRows = () => {
-      list.replaceChildren()
-      item.evidence.forEach((row, index) => {
-        const entry = node('li', lineLabel(row.claim_kind) + ' · ' + JSON.stringify(row.value) + ' · ' + row.provenance.replaceAll('_', ' ') + ' · ' + row.date)
-        const remove = node('button', 'Remove'); remove.type = 'button'
-        remove.addEventListener('click', () => { item.evidence.splice(index, 1); renderRows(); invalidateComparison() })
-        entry.append(remove); list.append(entry)
-      })
-    }
-    const add = node('button', 'Add evidence'); add.type = 'button'; add.id = prefix + '-add'
-    add.addEventListener('click', () => {
-      const field = currentFields.find(row => row.name === kind.value), observed = field && readValue(field, prefix)
-      if (!field || observed === undefined || !provenance.value || !role.value || !date.value || item.evidence.length >= 40) {
-        resultStatus.textContent = item.evidence.length >= 40 ? 'A set can include at most 40 evidence entries.'
-          : 'Choose a claim, value, provenance, observer and date.'; return
-      }
-      item.evidence.push({ claim_kind: field.name, value: observed, provenance: provenance.value, observer_role: role.value, date: date.value })
-      renderRows(); invalidateComparison(); value.replaceChildren(); kind.value = ''; provenance.value = ''; role.value = ''; date.value = ''
-    })
-    kind.addEventListener('change', renderValue)
-    for (const control of [kind, provenance, role, date]) control.addEventListener('input', invalidateComparison)
-    item.evidenceList = list
-    details.append(controls, value, add, list); item.fieldset.append(details)
   }
-  async function renderComparison(value, generation) {
-    const first = value.slots.find(slot => slot.report)?.report
-    if (!first) throw Error('comparison_report_missing')
-    const dimensions = [
-      { id: 'option', name: 'Option', read: slot => 'Slot ' + slot.slot },
-      { id: 'cash-to-close', name: 'Cash to close', read: slot => slot.report ? formatComparisonRange(slot.report.budget.budget.cash_to_close) : 'Not supplied.' },
-      { id: 'gap-above-asking', name: 'Gap above asking price', read: slot => slot.report ? formatComparisonRange(slot.report.budget.budget.gap_above_asking_price) : 'Not supplied.' },
-      { id: 'opening-runway', name: 'Opening runway', read: slot => { const runway = slot.report?.budget.budget.opening_runway; return !slot.report ? 'Not supplied.' : runway?.months ? runway.months.low + '–' + runway.months.high + ' months' : runway?.status === 'no_monthly_shortfall' ? 'No monthly shortfall indicated' : runway?.status ? 'Unknown · ' + runway.status.replaceAll('_', ' ') : 'Unknown · incomplete' } },
-      { id: 'lease-exposure', name: 'Lease exposure', read: slot => slot.report ? formatComparisonRange(slot.report.budget.budget.lease_exposure) : 'Not supplied.' },
-      { id: 'unchecked-share', name: 'Unchecked share', read: slot => !slot.report ? 'Not supplied.' : slot.report.budget.budget.unchecked_share === null ? 'Unknown · incomplete' : Math.round(slot.report.budget.budget.unchecked_share * 100) + '%' },
-      { id: 'missing-claims', name: 'Missing claims', read: slot => !slot.report ? 'Not supplied.' : slot.report.check.completeness.missing_claims.join(', ') || 'None' },
-      { id: 'arithmetic', name: 'Arithmetic observations', read: slot => slot.report ? arithmeticText(slot.report.budget.budget.arithmetic_flags) : 'Not supplied.' },
-      ...first.budget.budget.lines.map(line => ({ id: 'line-' + line.id, name: line.label, read: slot => { const item = slot.report?.budget.budget.lines.find(row => row.id === line.id); return !slot.report ? 'Not supplied.' : item?.complete ? formatComparisonRange(item) : 'Unknown · incomplete' } })),
-      { id: 'claim-tiers', name: 'Claims by tier', read: slot => slot.report ? Object.entries(slot.report.check.claim_counts_by_tier).map(([tier, count]) => tier + ' ' + count).join(' · ') : 'Not supplied.' },
-      { id: 'review-note', name: 'Review note', read: slot => slot.report ? slot.report.check.disclaimer : 'Not supplied.' },
-    ]
-    resultSummary.replaceChildren(); const context = node('div', undefined, 'report-context')
-    context.append(node('span', 'Singapore · ' + value.pack.currency, 'report-pill'), node('span', 'Pack v' + value.pack.version, 'report-pill'), node('span', 'As of ' + value.pack.as_of, 'report-pill'), node('span', 'No winner reported', 'report-pill quiet'))
-    const region = node('div', undefined, 'comparison-table-scroll'); region.tabIndex = 0
-    region.setAttribute('role', 'region'); region.setAttribute('aria-label', 'SME comparison; options are columns and fixed cash, lease and evidence rows')
-    const host = node('div', undefined, 'comparison-table-host'); host.dataset.smeComparisonTableHost = 'true'
-    const status = node('p', 'Loading the shared comparison table…', 'comparison-table-status'); status.setAttribute('role', 'status'); comparisonTableStatus = status
-    region.append(host); resultSummary.append(context, region, status); resultElement.textContent = JSON.stringify(value, null, 2); rawReport.hidden = false; lastResultKind = 'comparison'
-    const adapter = await (comparisonTableAdapter ??= import('./agentic-base-data-view.js?v=base-0cd7602-multi-dimensional-table-v1')
-      .catch(error => { comparisonTableAdapter = null; throw error }))
-    if (generation !== comparisonGeneration || !host.isConnected) return
-    const shadow = host.attachShadow({ mode: 'open' }), stylesheet = document.createElement('link'), target = document.createElement('div')
-    stylesheet.rel = 'stylesheet'; stylesheet.href = new URL('./agentic-base-data-view.css?v=base-0cd7602-multi-dimensional-table-v1', import.meta.url).href
-    target.style.cssText = 'width:100%;height:100%'
-    for (const [name, token] of Object.entries({ '--agentic-base-text': '--commerce-ink', '--agentic-base-surface': '--commerce-surface', '--agentic-base-border': '--commerce-border', '--agentic-base-muted': '--commerce-text-muted', '--agentic-base-header': '--commerce-surface-subtle', '--agentic-base-selected': '--commerce-accent-soft', '--agentic-base-hover': '--commerce-accent-soft', '--agentic-base-focus': '--commerce-focus' })) host.style.setProperty(name, `var(${token})`)
-    const ready = new Promise((resolve, reject) => { const timer = setTimeout(() => reject(Error('shared_table_styles_unavailable')), 8000); stylesheet.onload = () => { clearTimeout(timer); resolve() }; stylesheet.onerror = () => { clearTimeout(timer); reject(Error('shared_table_styles_unavailable')) } })
-    shadow.append(stylesheet, target); await ready; if (generation !== comparisonGeneration || !host.isConnected) return
-    const view = { columns: dimensions.map(({ id, name }) => ({ id, name })), rows: value.slots.map(slot => ({ id: slot.slot, cells: dimensions.map(dimension => dimension.read(slot)) })),
-      layout: 'multiDimensional', orientation: 'columns', ariaLabel: 'SME buyer-entered cash-to-close comparison',
-      onOrientationChange: orientation => { if (generation !== comparisonGeneration || !host.isConnected || !comparisonTableHandle) return; view.orientation = orientation; region.dataset.orientation = orientation; region.setAttribute('aria-label', `SME comparison; options are ${orientation} and fixed cash, lease and evidence rows`); comparisonTableHandle.update(view) } }
-    comparisonTableHandle = adapter.mountDataView(target, view); status.textContent = 'Local comparison · inputs and reports are not saved or sent'; resultStatus.textContent = 'Local comparison · inputs and reports are not saved or sent'
+  async function renderDictionaryTable() {
+    if (!currentProtocol || !dictionaryHost?.isConnected) return
+    try {
+      dictionaryModule ??= await import('./sme-pack-dictionary.js?v=business-plan-dictionary-v1')
+      const view = dictionaryModule.createSmePackDictionaryView(currentProtocol, dictionaryOrientation, orientation => {
+        if (!dictionaryHost.isConnected) return
+        dictionaryOrientation = orientation
+        dictionaryRegion.dataset.orientation = orientation
+        dictionaryRegion.setAttribute('aria-label', orientation === 'rows'
+          ? 'Protocol records as rows; definitions and canonical owners as columns.'
+          : 'The same dictionary pivoted to definitions as records.')
+        void renderDictionaryTable()
+      }, TOOL_SCHEMAS)
+      if (await renderSharedTable(dictionaryHost, view, dictionaryTableMount,
+        () => location.hash.slice(1).split('?')[0] === 'sme-dictionary')) {
+        dictionaryStatus.textContent = `${currentProtocol.pack.label} · v${currentProtocol.pack.version} · ${view.rows.length} read-only schema and owner records`
+      }
+    } catch {
+      dictionaryStatus.textContent = 'Dictionary unavailable. The active pack protocol could not be rendered.'
+    }
   }
   async function runComparison() {
     const count = Number(comparisonCount.value), identity = PACK_INDEX.find(pack => pack.id === packSelect.value)
-    if (!identity) { resultStatus.textContent = 'Comparison refused. The selected pack is unavailable.'; return }
-    const claimSets = comparisonSlotElements.slice(0, count).map(item => {
-      const claims = {}
-      for (const field of currentFields) {
-        const value = readValue(field, 'compare-' + item.slot.toLowerCase())
-        if (value !== undefined) claims[field.name] = value
-      }
-      return { pack_id: identity.id, pack_version: identity.version, currency: identity.currency, claims,
-        ...(item.evidence.length ? { evidence: item.evidence } : {}) }
-    })
+    if (!identity) { workflowStatus.textContent = 'Check refused. The selected pack is unavailable.'; return }
+    const planSets = comparisonSlotElements.slice(0, count).map(item => ({ pack_id: identity.id, pack_version: identity.version,
+      inputs: readInputs(item), ...(item.evidence.length ? { evidence: item.evidence } : {}) }))
     const generation = ++comparisonGeneration
-    comparisonPending = true; compareButton.disabled = true
-    clearDisplayedResult('Comparison is running locally. No prior report is shown.')
-    resultStatus.textContent = 'Comparing locally…'
-    let deadline, timedOut = false, rendering = false
+    comparisonPending = true; compareButton.disabled = true; comparisonValue = null
+    workflowStatus.textContent = count === 1 ? 'Building plan locally…' : 'Comparing scenarios locally…'
+    void renderWorkflowTable()
+    let deadline, timedOut = false
     try {
-      const value = await Promise.race([
-        invokeSmePackTool('takeover.compare_claim_sets', { claim_sets: claimSets }),
-        new Promise((_, reject) => { deadline = setTimeout(() => { timedOut = true; reject(Error('sme_pack_comparison_deadline')) }, 2000) }),
-      ])
+      const pending = count === 1 ? runPlan(comparisonSlotElements[0])
+        .then(report => ({ schema: 'sme-business-plan/comparison/v1', pack: currentProtocol.pack,
+          slots: [{ slot: 'A', status: 'included', report }], persisted: false, inference_tokens: 0 }))
+        : invokeSmePackTool('business.plan.compare', { plan_sets: planSets })
+      const value = await Promise.race([pending, new Promise((_, reject) => { deadline = setTimeout(() => { timedOut = true; reject(Error('sme_pack_comparison_deadline')) }, 2000) })])
       if (generation !== comparisonGeneration || document.body.dataset.workspaceRole !== 'sme') return
-      rendering = true
-      await renderComparison(value, generation)
+      comparisonValue = value
+      if (!await renderWorkflowTable()) throw Error('shared_table_unavailable')
+      workflowStatus.textContent = count === 1 ? 'Local plan built · inputs and report stay in this tab' : 'Local scenario comparison · inputs and reports stay in this tab'
     } catch {
       if (generation === comparisonGeneration && document.body.dataset.workspaceRole === 'sme') {
-        if (rendering && comparisonTableStatus) comparisonTableStatus.textContent = 'Shared comparison table unavailable; open raw report data below.'
-        resultStatus.textContent = timedOut ? 'Comparison exceeded 2 seconds; no report was kept.' : rendering ? 'The local report is available as data, but the shared comparison table could not load.' : 'Comparison refused. Review closed values and the shared pack identity.'
+        comparisonValue = null; void renderWorkflowTable()
+        workflowStatus.textContent = timedOut ? 'Plan exceeded 2 seconds; no report was kept.' : 'Plan refused. Review entered values and the shared protocol.'
       }
     } finally {
       clearTimeout(deadline)
       if (generation === comparisonGeneration) { comparisonPending = false; compareButton.disabled = false }
     }
   }
-  for (const pack of PACK_INDEX) option(packSelect, pack.id, pack.country + ' · ' + pack.asset_type.toUpperCase() + ' · ' + pack.currency + ' · ' + pack.review_status)
+  for (const pack of PACK_INDEX) option(packSelect, pack.id, `${pack.label} · v${pack.version} · ${pack.review_status}`)
   packSelect.value = PACK_INDEX[0].id
-  $('#sme-heading').textContent = 'Check an F&B business takeover'
-  root.querySelector('#sme-overview .lede').textContent = 'Estimate cash to take over and open, show the lease exposure, then plan which buyer-held claims to check first.'
-  root.querySelector('#sme-overview .notice > p').textContent = 'The Singapore pack is provisional. All amounts are your inputs, not market estimates. Evidence is sighted, not authenticated; this is not valuation, legal, tax or transaction advice.'
-  root.querySelector('#sme-check-form .facts-heading strong').textContent = 'Buyer claims and cash inputs'
-  root.querySelector('#sme-check-form .facts-heading span').textContent = 'Whole SGD amounts or ranges · blanks stay unknown'
-  root.querySelector('#sme-check-form button[type="submit"]').textContent = 'Run cash-to-close check'
   $('#sample').textContent = 'Load illustrative inputs'
-  runtimeMode.textContent = 'SME BUSINESS PACK · CASH TO CLOSE'
+  runtimeMode.textContent = 'BUSINESS PLAN · LOCAL WORKSPACE'
   runtimeStatus.textContent = 'Local computation ready. No service request is needed.'
   $('#mcp-url').textContent = new URL('services/sme-business-pack/mcp', document.baseURI).href
   $('#webmcp-status').textContent = 'Browser tools are optional; local checks work without a network.'
   await refreshFields()
-  for (const item of comparisonSlotElements) {
-    item.fields.replaceChildren(...currentFields.map(field => inputControl(field, 'compare-' + item.slot.toLowerCase())))
-    for (const control of item.fields.querySelectorAll('input, select')) control.addEventListener('input', invalidateComparison)
-    addComparisonEvidenceEditor(item)
-  }
-  comparisonCount.value = '2'; updateComparisonSlotVisibility()
-  comparisonCount.addEventListener('change', () => { invalidateComparison(); updateComparisonSlotVisibility() })
-  compareButton.addEventListener('click', () => void runComparison())
-  evidenceKind.addEventListener('change', renderEvidenceValue)
-  addEvidence.addEventListener('click', () => {
-    const field = currentFields.find(item => item.name === evidenceKind.value)
-    const value = field && readValue(field, 'evidence')
-    if (!field || value === undefined || !evidenceProvenance.value || !evidenceRole.value || !evidenceDate.value) {
-      resultStatus.textContent = 'Choose a claim, value, provenance, observer and date before adding evidence.'; return
+  comparisonCount.value = '1'; updateComparisonSlotVisibility()
+  workflowTableRegion.setAttribute('aria-label', 'Plan scenarios as rows; all pitch, financial, evidence, model and readiness fields as columns.')
+  void renderWorkflowTable()
+  comparisonCount.addEventListener('change', () => { updateComparisonSlotVisibility(); invalidateComparison() })
+  packSelect.addEventListener('change', async () => {
+    const generation = ++packGeneration
+    clearComparison()
+    if (await refreshFields(packSelect.value) && generation === packGeneration) {
+      renderWorkflowEditor(); void renderWorkflowTable()
+      if (location.hash.slice(1).split('?')[0] === 'sme-dictionary') void renderDictionaryTable()
     }
-    evidenceRows.push({ claim_kind: field.name, value, provenance: evidenceProvenance.value,
-      observer_role: evidenceRole.value, date: evidenceDate.value })
-    renderEvidenceRows(); resultStatus.textContent = 'Evidence entry held in this tab only.'
   })
-  form.addEventListener('submit', async event => {
-    event.preventDefault()
-    const button = form.querySelector('button[type="submit"]'); button.disabled = true
-    resultStatus.textContent = 'Computing locally…'
-    try { show(await runPlan(), 'On-device calculation · no inputs saved or sent') }
-    catch { resultStatus.textContent = 'Check refused. Review closed values and evidence fields.' }
-    finally { button.disabled = false }
-  })
-  $('#checklist').addEventListener('click', async () => {
-    try { show(await invokeSmePackTool('takeover.transfer_checklist', { pack_id: packSelect.value }), 'Local pack response') }
-    catch { resultStatus.textContent = 'Checklist request refused.' }
-  })
+  form.addEventListener('submit', event => { event.preventDefault(); void runComparison() })
   $('#sample').addEventListener('click', () => {
     const sample = {
-      listing_source: 'classifieds', subtype: 'cafe', price: 150000, equipment_included: true,
-      equipment_cost: 0, rent_monthly: 6000, lease_remaining_months: 24, deposit_months: 3,
-      utilities_deposits: 2500, transfer_cost: 8000, repairs_provision: 12000, monthly_sales: 45000,
-      staff_count: 5, payroll_monthly: 14000, utilities_monthly: 900, runway_months: 3,
-      variable_cost_bps: 3500, licence_status: 'unknown',
+      venture_name: 'Illustrative project', venture_stage: 'validation', currency_code: 'USD',
+      problem_statement: 'A defined user group has a recurring task that takes time to complete.',
+      target_customer: 'A specific group the team can reach for interviews and trials.',
+      solution_offer: 'A simple service that helps users complete the task.',
+      business_model: 'A user-selected price per completed service.', go_to_market: 'Direct interviews and a small opt-in trial.',
+      key_risks: 'Demand, delivery effort, and repeat use are unverified.', milestones: 'Interview users, run a trial, review costs.',
+      price_per_unit: 20, units_per_month: 300, variable_cost_per_unit: 4, fixed_costs_per_month: 1800,
+      payroll_per_month: 2500, setup_costs: 1200, cash_available: 5000, runway_target_months: 4, funding_requested: 4000,
     }
+    comparisonCount.value = '1'; updateComparisonSlotVisibility()
+    const item = comparisonSlotElements[0]; item.inputs = {}
     for (const field of currentFields) {
       const value = sample[field.name]
       if (value === undefined) continue
-      if (field.type === 'money') $('#' + 'claim-' + field.name + '-low').value = String(value)
-      else $('#claim-' + field.name).value = String(value)
+      item.inputs[field.name] = value
     }
-    evidenceRows = []; renderEvidenceRows(); resultStatus.textContent = 'Sample values are illustrative buyer inputs and remain in this tab.'
+    item.evidence.length = 0; selectedWorkflowSet = 'A'; selectedEvidenceField = currentProtocol.protocols[0]?.field_key ?? currentFields[0]?.name ?? null
+    renderWorkflowEditor(); invalidateComparison()
+    workflowStatus.textContent = 'Illustrative values only; they are not market data and remain in this tab.'
   })
   for (const button of worksheetActions.querySelectorAll('[data-export]')) button.addEventListener('click', async () => {
     try {
@@ -500,44 +372,45 @@ async function createSmeBusinessPack() {
       const suffix = format === 'markdown' ? 'md' : format
       const content = plan.worksheet[format]
       if (typeof content !== 'string') throw Error('worksheet_format_missing')
-      download('sme-takeover-worksheet.' + suffix, format === 'json' ? 'application/json'
+      download('business-plan-worksheet.' + suffix, format === 'json' ? 'application/json'
         : format === 'csv' ? 'text/csv' : 'text/markdown', content)
-      resultStatus.textContent = 'Worksheet downloaded locally. No report was uploaded.'
-    } catch { resultStatus.textContent = 'Worksheet export refused. Review the entered values.' }
+      workflowStatus.textContent = 'Worksheet downloaded locally. No report was uploaded.'
+    } catch { workflowStatus.textContent = 'Worksheet export refused. Review the entered values.' }
   })
   printButton.addEventListener('click', async () => {
     let sheet
     try {
       const plan = await runPlan(), worksheet = JSON.parse(plan.worksheet.json)
-      if (worksheet.schema !== 'sme-business-pack/worksheet/v1' || worksheet.evidence.length > 40) throw Error('worksheet_evidence_limit')
+      if (worksheet.schema !== 'sme-business-plan/worksheet/v1' || worksheet.evidence.length > 40) throw Error('worksheet_evidence_limit')
       sheet = node('article', undefined, 'sme-print-sheet')
-      sheet.append(node('h1', 'SME takeover worksheet'), node('p', 'Singapore · SGD · pack v' + plan.pack.version + ' · as of ' + plan.pack.as_of + ' · provisional'))
+      sheet.append(node('h1', worksheet.inputs.venture_name || 'Business plan draft'), node('p', 'Plan contract v' + plan.pack.version + ' · ' + plan.pack.review_status + ' · ' + worksheet.currency_code + ' · ' + plan.as_of))
       const table = node('table'), head = node('thead'), header = node('tr'), body = node('tbody'), addRow = (kind, field, value) => {
         const row = node('tr'); row.append(node('th', kind), node('td', field), node('td', value)); body.append(row)
       }
-      for (const label of ['Kind', 'Field', 'Buyer entry / evidence']) header.append(node('th', label))
+      for (const label of ['Kind', 'Field', 'User entry / evidence']) header.append(node('th', label))
       head.append(header); table.append(head, body)
-      addRow('Budget', 'Cash to close · low–high', JSON.stringify(plan.budget.budget.cash_to_close))
-      for (const [key, value] of Object.entries(worksheet.claims)) addRow('Buyer claim', lineLabel(key), JSON.stringify(value))
-      for (const row of worksheet.evidence) addRow('Evidence', lineLabel(row.claim_kind), JSON.stringify(row.value) + ' · ' + row.provenance + ' · ' + row.observer_role + ' · ' + row.date)
-      sheet.append(table, node('h2', 'Next checks by cash amount'))
+      for (const row of plan.pitch_deck_outline) addRow(`Pitch · slide ${row.slide}`, row.section, row.content)
+      for (const [key, value] of Object.entries(plan.model_display)) addRow('Model', key.replaceAll('_', ' '), value)
+      for (const [key, value] of Object.entries(worksheet.inputs)) addRow('Input', lineLabel(key), JSON.stringify(value))
+      for (const row of worksheet.evidence) addRow('Evidence', lineLabel(row.field_key), JSON.stringify(row.value) + ' · ' + row.provenance + ' · ' + row.observer_role + ' · ' + row.date)
+      sheet.append(table, node('h2', 'Next checks'))
       const tasks = node('ol')
-      for (const task of plan.tasks) tasks.append(node('li', 'Step ' + task.order + ' · ' + task.label + ' · ' + formatMoney(task.cash_retired_midpoint) + ' · ' + task.tasks.map(item => item.task).join(' ')))
+      for (const task of plan.next_checks) tasks.append(node('li', task.action))
       sheet.append(tasks, node('p', plan.check.disclaimer))
       const cleanup = () => { sheet.remove(); document.body.classList.remove('sme-printing') }
       document.body.append(sheet); document.body.classList.add('sme-printing')
       window.addEventListener('afterprint', cleanup, { once: true }); window.print()
-      resultStatus.textContent = 'Print view opened. Use the browser dialog to print or save locally.'
+      workflowStatus.textContent = 'Print view opened. Use the browser dialog to print or save locally.'
     } catch (error) {
       sheet?.remove(); document.body.classList.remove('sme-printing')
-      resultStatus.dataset.printError = error instanceof Error ? error.message : 'unknown'
-      resultStatus.textContent = 'Print worksheet refused. Review the entered values.'
+      workflowStatus.dataset.printError = error instanceof Error ? error.message : 'unknown'
+      workflowStatus.textContent = 'Print worksheet refused. Review the entered values.'
     }
   })
   importInput.addEventListener('change', async () => {
     const file = importInput.files?.[0]; if (!file) return
     try { await importWorksheet(file) }
-    catch { resultStatus.textContent = 'Worksheet import refused. Use an unmodified JSON, CSV or Markdown worksheet.' }
+    catch { workflowStatus.textContent = 'Worksheet import refused. Use an unmodified JSON, CSV or Markdown worksheet.' }
     finally { importInput.value = '' }
   })
   const modelContext = document.modelContext?.registerTool ? document.modelContext : navigator.modelContext
@@ -552,7 +425,7 @@ async function createSmeBusinessPack() {
     const controller = new AbortController(); registration = controller; let deadline
     try {
       await Promise.race([Promise.all(TOOL_SCHEMAS.map(tool => modelContext.registerTool({
-        name: tool.name, description: tool.name.replaceAll('.', ' ') + ' · Singapore only · provisional · no user facts persist',
+        name: tool.name, description: tool.name.replaceAll('.', ' ') + ' · pack-scoped · no user facts persist',
         inputSchema: tool.inputSchema, annotations: { readOnlyHint: true, untrustedContentHint: true, consequentialHint: false },
         execute: async (input, options) => {
           const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(2500), ...(options?.signal ? [options.signal] : [])])
@@ -562,7 +435,7 @@ async function createSmeBusinessPack() {
           return { content: [{ type: 'text', text: JSON.stringify(value) }] }
         },
       }, { signal: controller.signal }))), new Promise((_, reject) => { deadline = setTimeout(() => reject(Error('timeout')), 2000) })])
-      if (active && !controller.signal.aborted) $('#webmcp-status').textContent = 'Seven optional Singapore browser tools registered.'
+      if (active && !controller.signal.aborted) $('#webmcp-status').textContent = `${TOOL_SCHEMAS.length} optional pack tools registered.`
     } catch {
       controller.abort(); if (registration === controller) registration = null
       if (active) $('#webmcp-status').textContent = 'Browser tool registration unavailable. Local checks still work offline.'
@@ -580,13 +453,19 @@ async function createSmeBusinessPack() {
   }
   function updateSectionNavigation() {
     const section = location.hash.slice(1).split('?')[0] || 'sme'
+    const isSmeSection = section === 'sme' || section.startsWith('sme-')
+    const isDictionary = section === 'sme-dictionary'
+    const targetId = ['sme-compare', 'sme-check-form', 'sme-report'].includes(section) ? 'sme-workflow' : section
+    overview.hidden = isDictionary
+    dictionary.hidden = !isDictionary
     for (const link of document.querySelectorAll('#sme-navigation .service-nav a')) {
-      if (link.hash === '#' + section) link.setAttribute('aria-current', 'location')
+      if (link.hash === '#sme-dictionary' && isDictionary || link.hash === '#sme-workflow' && isSmeSection && !isDictionary) link.setAttribute('aria-current', 'location')
       else link.removeAttribute('aria-current')
     }
-    if (section === 'sme' || section.startsWith('sme-')) requestAnimationFrame(() => requestAnimationFrame(() => {
+    if (isDictionary) void renderDictionaryTable()
+    if (isSmeSection) requestAnimationFrame(() => requestAnimationFrame(() => {
       if (location.hash.slice(1).split('?')[0] !== section) return
-      const target = section === 'sme' ? root : document.getElementById(section)
+      const target = section === 'sme' ? root : document.getElementById(targetId)
       target?.scrollIntoView({ block: 'start' })
     }))
   }
