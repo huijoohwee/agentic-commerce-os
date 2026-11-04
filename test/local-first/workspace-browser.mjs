@@ -149,7 +149,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await page.locator('#sme-compare-run').click();
   await expect(page.locator('#workflow-status')).toContainText('On-device calculation');
   tableText = await page.locator('#sme-workflow-table-host').evaluate(host => host.shadowRoot.textContent);
-  assert.match(tableText, /Cash to close/);
+  assert.match(tableText, /Outcome · cash to close/);
   assert.match(tableText, /150,000/);
   const workflowText = await page.locator('#sme-workflow-table-host').evaluate(host => host.shadowRoot.textContent);
   assert.match(workflowText, /1 evidence entry/);
@@ -175,7 +175,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
     await page.locator('#sme-compare-run').click();
     await expect(page.locator('#workflow-status')).toContainText('On-device calculation');
     const roundTripText = await page.locator('#sme-workflow-table-host').evaluate(host => host.shadowRoot.textContent);
-    assert.match(roundTripText, /Cash to close/);
+    assert.match(roundTripText, /Outcome · cash to close/);
     assert.match(roundTripText, /150,000/);
     assert.deepEqual(await page.locator('#sme').evaluate(root => [
       root.querySelectorAll('[data-sme-workflow-table-host]').length,
