@@ -94,11 +94,13 @@ These terms align the pack with shared Agentic OS and AgenticRAG metadata. They 
 
 The pack protocol does not define MCP resources or prompts, slash-command aliases for individual tools, `@` bindings, `#` tags, or skill records. For those catalogs, use their existing owners: Agentic OS dictionaries, Canvas `FACTS.md`, `DICTIONARY-*.md`, `MCP-GATEWAY.md` and `SKILLS.md`, and the AgenticRAG context. The Canvas gateway governs federated discovery and route ownership; it does not replace the pack's tool implementation.
 
-## Single workflow table
+## Unified E2E workflow table
 
-The E2E input workflow is one Base `multiDimensional` table. Its ordered columns are `Claim set` followed by every `claim_kinds` field, using its declared label and unit. Rows are the active A/B/C sets in entry order. Unknown values remain visible. Evidence counts are appended to the corresponding field value; selecting a set opens its one editor and protocol guidance. There is no step-by-step input table, second field matrix, or duplicate claim editor.
+The workflow is one Base `multiDimensional` table. Each active A/B/C claim set is one row. The leading columns are `Claim set` and every runtime `claim_kinds` field, with the pack's label and unit. The same row then carries required-input coverage, each evidence entry's claim/value/source/observer/date, evidence-tier counts, calculation state, cash-to-close and other outcome summaries, one `Cash line` column per runtime `budget_lines` entry, arithmetic observations, numeric evidence differences, ordered next checks, and the optional transfer checklist. This keeps the path from unknown input through a local check visible in one record without manufacturing zero values or treating evidence as authenticated.
 
-The calculated report is a separate Base table because it has a different record shape: report dimensions are rows and claim sets are columns. Base owns that table's native pivot. Both tables use the pinned offline `agentic-base` browser adapter and the generated `agentic-design-system` Commerce tokens; Commerce owns pack data, editing, validation, and route lifecycle. The input table keeps every field in columns by default. No alternative input renderer is registered.
+Selecting a set row opens its single editor for declared inputs and evidence metadata. The editor is not a second table or an alternate calculation surface. Results are invalidated when inputs change and refresh in place after a local check. With one active set, the same table shows the check; with two or three, it shows the comparison rows. The shared Base pivot can transpose the same table, while the default remains claim sets as rows and every input and workflow field as columns.
+
+The table reuses the pinned offline `agentic-base` browser adapter and generated `agentic-design-system` Commerce tokens. Commerce owns pack data, editing, validation, derived columns, and route lifecycle. There is one SME table host, one table projection, and one status channel; no separate Results table or duplicated result registry is maintained.
 
 ## Tool envelope and limits
 

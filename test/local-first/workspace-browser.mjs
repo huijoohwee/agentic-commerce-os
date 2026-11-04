@@ -134,9 +134,9 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await context.setOffline(true);
   await page.locator('#sample').click();
   await page.locator('#sme-compare-run').click();
-  await expect(page.locator('#result-status')).toContainText('On-device calculation');
-  let tableText = await page.locator('#sme-table-host').evaluate(host => host.shadowRoot.textContent);
-  assert.match(tableText, /Unchecked share/);
+  await expect(page.locator('#workflow-status')).toContainText('On-device calculation');
+  let tableText = await page.locator('#sme-workflow-table-host').evaluate(host => host.shadowRoot.textContent);
+  assert.match(tableText, /Outcome · unchecked cash share/);
   assert.match(tableText, /100%/);
   await page.locator('#sme-workflow-table-host tr').filter({ hasText: 'Set A' }).click();
   await expect(page.locator('#sme-workflow-editor')).toContainText('Edit · Set A');
@@ -147,8 +147,8 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await page.locator(`#compare-evidence-${evidenceField}-low`).fill('150000');
   await page.locator('#sme-evidence-add').click();
   await page.locator('#sme-compare-run').click();
-  await expect(page.locator('#result-status')).toContainText('On-device calculation');
-  tableText = await page.locator('#sme-table-host').evaluate(host => host.shadowRoot.textContent);
+  await expect(page.locator('#workflow-status')).toContainText('On-device calculation');
+  tableText = await page.locator('#sme-workflow-table-host').evaluate(host => host.shadowRoot.textContent);
   assert.match(tableText, /Cash to close/);
   assert.match(tableText, /150,000/);
   const workflowText = await page.locator('#sme-workflow-table-host').evaluate(host => host.shadowRoot.textContent);
@@ -160,7 +160,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
     resultsTables: root.querySelector('[data-sme-results-table-host]')?.shadowRoot?.querySelectorAll('table').length ?? 0,
     legacy: root.querySelectorAll('#result, #result-summary, .comparison-card').length,
   }));
-  assert.deepEqual(smeShape, { workflowHosts: 1, resultsHosts: 1, workflowTables: 1, resultsTables: 1, legacy: 0 });
+  assert.deepEqual(smeShape, { workflowHosts: 1, resultsHosts: 0, workflowTables: 1, resultsTables: 0, legacy: 0 });
   assert.equal(smeServiceRequests.length, 0);
   await checkSmeComparisonBrowser({ browser, page, url, output, smeServiceRequests, record });
   for (const [format, selector] of [['json', '[data-export="json"]'], ['csv', '[data-export="csv"]'], ['markdown', '[data-export="markdown"]']]) {
@@ -171,16 +171,16 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
       name: download.suggestedFilename(), mimeType: format === 'json' ? 'application/json'
         : format === 'csv' ? 'text/csv' : 'text/markdown', buffer: Buffer.from(content),
     });
-    await expect(page.locator('#result-status')).toContainText('Worksheet imported in this tab');
+    await expect(page.locator('#workflow-status')).toContainText('Worksheet imported in this tab');
     await page.locator('#sme-compare-run').click();
-    await expect(page.locator('#result-status')).toContainText('On-device calculation');
-    const roundTripText = await page.locator('#sme-table-host').evaluate(host => host.shadowRoot.textContent);
+    await expect(page.locator('#workflow-status')).toContainText('On-device calculation');
+    const roundTripText = await page.locator('#sme-workflow-table-host').evaluate(host => host.shadowRoot.textContent);
     assert.match(roundTripText, /Cash to close/);
     assert.match(roundTripText, /150,000/);
     assert.deepEqual(await page.locator('#sme').evaluate(root => [
       root.querySelectorAll('[data-sme-workflow-table-host]').length,
       root.querySelectorAll('[data-sme-results-table-host]').length,
-    ]), [1, 1]);
+    ]), [1, 0]);
   }
   assert.equal(await page.evaluate(() => document.querySelector('#workspace-shell') === window.__smeShellAtEntry), true);
   await context.setOffline(false);

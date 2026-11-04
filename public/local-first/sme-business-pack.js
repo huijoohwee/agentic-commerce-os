@@ -4,7 +4,7 @@ import { createSmeWorkflowEditor } from './sme-workflow-editor.js'
 
 const style = document.createElement('link')
 style.rel = 'stylesheet'
-style.href = new URL('./sme-business-pack.css?v=sme-e2e-workflow-multidim-6', import.meta.url).href
+style.href = new URL('./sme-business-pack.css?v=sme-e2e-workflow-multidim-7', import.meta.url).href
 let stylePromise
 const attachStyles = () => {
   if (!stylePromise) stylePromise = new Promise((resolve, reject) => {
@@ -25,17 +25,15 @@ async function createSmeBusinessPack() {
   if (!(root instanceof HTMLElement)) throw Error('sme_business_pack_mount_missing')
   const $ = selector => root.querySelector(selector)
   const form = $('#sme-check-form'), packSelect = $('#pack-id'), comparisonCount = $('#sme-compare-count')
-  const tableHost = $('#sme-table-host'), tableRegion = $('#sme-results-table-region')
   const workflowTableHost = $('#sme-workflow-table-host'), workflowTableRegion = $('#sme-workflow-table-region')
   const workflowEditor = $('#sme-workflow-editor'), claimInputs = $('#sme-workflow-claim-inputs')
-  const evidenceEditor = $('#sme-workflow-evidence-editor'), resultStatus = $('#result-status')
+  const evidenceEditor = $('#sme-workflow-evidence-editor')
   const workflowStatus = $('#workflow-status'), serviceStatus = $('#service-status')
   const runtimeMode = $('#runtime-mode'), runtimeStatus = $('#runtime-status')
   let currentFields = [], currentProtocol, registration, active = false, previousScrollRestoration = null,
-    comparisonGeneration = 0, packGeneration = 0, comparisonPending = false, tableOrientation = 'columns',
-    tableMessage = null, selectedWorkflowSet = null, selectedEvidenceField = null, tableAdapter = null
+    comparisonGeneration = 0, packGeneration = 0, comparisonPending = false, tableOrientation = 'rows',
+    comparisonValue = null, tableMessage = null, selectedWorkflowSet = null, selectedEvidenceField = null, tableAdapter = null
   const comparisonSlotElements = ['A', 'B', 'C'].map(slot => ({ slot, claims: {}, evidence: [] }))
-  const resultTableMount = { handle: null, ready: null, generation: 0 }
   const workflowTableMount = { handle: null, ready: null, generation: 0 }
   const node = (tag, text, className) => { const element = document.createElement(tag); if (text !== undefined) element.textContent = text; if (className) element.className = className; return element }
   const option = (select, value, label) => { const item = node('option', label); item.value = value; select.append(item) }
@@ -82,73 +80,87 @@ async function createSmeBusinessPack() {
     const supplied = new Map((value?.slots ?? []).map(slot => [slot.slot, slot]))
     return comparisonSlotElements.map((item, index) => {
       const slot = supplied.get(item.slot), visible = index < Number(comparisonCount.value)
-      return { ...slot, slot: item.slot, status: slot?.status ?? (visible ? 'ready' : 'not_supplied'), report: slot?.report ?? null }
+      return { ...slot, slot: item.slot, status: slot?.status ?? (visible ? 'ready' : 'not_supplied'), report: slot?.report ?? null, evidence: item.evidence }
     })
   }
-  function tableDimensions(value, slots) {
-    const first = slots.find(slot => slot.report)?.report
-    const lines = first?.budget.budget.lines ?? currentProtocol?.budget_lines ?? []
-    const reportValue = (slot, read) => slot.status === 'not_supplied' ? 'Not supplied.' : slot.report ? read(slot.report) : 'Unknown · run local check'
-    const missing = report => report.check.completeness.missing_claims.join(', ') || 'None reported'
-    const tiers = report => Object.entries(report.check.claim_counts_by_tier).map(([tier, count]) => tier + ' ' + count).join(' · ')
+  function tableDimensions() {
+    const lines = currentProtocol?.budget_lines ?? []
+    const reportValue = (slot, read) => slot.status === 'not_supplied' ? 'Not in this comparison.' : slot.report ? read(slot.report) : 'Not run · run local check'
+    const completeness = report => report.check.completeness
+    const tierSummary = report => Object.entries(report.check.claim_counts_by_tier).map(([tier, count]) => `${tier} ${count}`).join(' · ')
     const evidenceDifferences = report => report.check.raw_differences.length
-      ? report.check.raw_differences.map(row => `${lineLabel(row.claim_kind)} · claim ${JSON.stringify(row.claimed)} · sighted ${JSON.stringify(row.observed)}`).join(' · ')
+      ? report.check.raw_differences.map(row => `${lineLabel(row.claim_kind)} · entered ${JSON.stringify(row.claimed)} · sighted ${JSON.stringify(row.observed)}`).join(' · ')
       : 'No numeric difference recorded.'
-    const tasks = report => report.tasks?.length ? report.tasks.map(task => `${task.order}. ${task.label} · ${formatMoney(task.cash_retired_midpoint)} · ${task.tasks.map(item => item.task).join(' ')}`).join(' · ') : 'No next check reported.'
+    const evidenceRecords = slot => slot.evidence.length
+      ? slot.evidence.map((row, index) => {
+        const field = currentFields.find(item => item.name === row.claim_kind)
+        const value = field ? formatClaim(field, row.value) : JSON.stringify(row.value)
+        return `${index + 1}. ${lineLabel(row.claim_kind)} · ${value} · ${enumLabel(row.provenance)} · ${enumLabel(row.observer_role)} · ${row.date}`
+      }).join(' · ')
+      : 'No evidence entries recorded.'
+    const tasks = report => report.tasks?.length
+      ? report.tasks.map(task => `${task.order}. ${task.label} · ${formatMoney(task.cash_retired_midpoint)} · ${task.tasks.map(item => item.task).join(' ')}`).join(' · ')
+      : 'No ordered evidence-led check from current amounts.'
     const dimensions = [
-      { id: 'option', name: 'Option', read: slot => slot.status === 'not_supplied' ? 'Not supplied.' : slot.slot },
-      { id: 'cash-to-close', name: 'Cash to close', read: slot => reportValue(slot, report => formatComparisonRange(report.budget.budget.cash_to_close)) },
-      { id: 'gap-above-asking', name: 'Gap above asking price', read: slot => reportValue(slot, report => formatComparisonRange(report.budget.budget.gap_above_asking_price)) },
-      { id: 'opening-runway', name: 'Opening runway', read: slot => reportValue(slot, report => { const runway = report.budget.budget.opening_runway; return runway?.months ? runway.months.low + '–' + runway.months.high + ' months' : runway?.status === 'no_monthly_shortfall' ? 'No monthly shortfall indicated' : runway?.status ? 'Unknown · ' + runway.status.replaceAll('_', ' ') : 'Unknown · incomplete' }) },
-      { id: 'lease-exposure', name: 'Lease exposure', read: slot => reportValue(slot, report => formatComparisonRange(report.budget.budget.lease_exposure)) },
-      { id: 'unchecked-share', name: 'Unchecked share', read: slot => reportValue(slot, report => report.budget.budget.unchecked_share === null ? 'Unknown · incomplete' : Math.round(report.budget.budget.unchecked_share * 100) + '%') },
-      { id: 'missing-claims', name: 'Missing claims', read: slot => reportValue(slot, missing) },
-      { id: 'arithmetic', name: 'Arithmetic observations', read: slot => reportValue(slot, report => arithmeticText(report.budget.budget.arithmetic_flags)) },
-      ...lines.map(line => ({ id: 'line-' + line.id, name: 'Budget · ' + line.label, read: slot => reportValue(slot, report => { const item = report.budget.budget.lines.find(row => row.id === line.id); return item?.complete ? formatComparisonRange(item) + (item.checked ? ' · tier reached' : ' · evidence needed') : 'Unknown · incomplete' }) })),
-      { id: 'claim-tiers', name: 'Claims by tier', read: slot => reportValue(slot, tiers) },
-      { id: 'evidence-differences', name: 'Evidence differences', read: slot => reportValue(slot, evidenceDifferences) },
-      { id: 'next-checks', name: 'Next checks', read: slot => reportValue(slot, tasks) },
-      { id: 'disclaimer', name: 'Review note', read: slot => reportValue(slot, report => report.check.disclaimer) },
-      { id: 'pack', name: 'Pack', read: () => { const pack = value?.pack ?? currentProtocol?.pack; return pack ? `${pack.country} · ${pack.currency} · v${pack.version} · ${pack.as_of} · ${pack.review_status}` : 'Loading pack…' } },
+      { id: 'pack-context', name: 'Workflow · pack context', read: () => currentProtocol?.pack ? `${currentProtocol.pack.country} · ${currentProtocol.pack.currency} · v${currentProtocol.pack.version} · ${currentProtocol.pack.review_status}` : 'Loading pack…' },
+      { id: 'workflow-completeness', name: 'Workflow · required inputs', read: slot => reportValue(slot, report => {
+        const status = completeness(report), missing = status.required - status.supplied
+        return missing ? `Incomplete · ${status.supplied}/${status.required} required fields · ${missing} unknown` : `Entered · ${status.supplied}/${status.required} required fields`
+      }) },
+      { id: 'workflow-evidence-records', name: 'Workflow · evidence records', read: slot => slot.status === 'not_supplied' ? 'Not in this comparison.' : evidenceRecords(slot) },
+      { id: 'workflow-evidence', name: 'Workflow · evidence tiers', read: slot => reportValue(slot, tierSummary) },
+      { id: 'workflow-calculation', name: 'Workflow · calculation state', read: slot => reportValue(slot, report => report.budget.budget.incomplete ? 'Incomplete · one or more cash lines unknown' : 'Calculated · provisional inputs and evidence') },
+      { id: 'cash-to-close', name: 'Outcome · cash to close', read: slot => reportValue(slot, report => formatComparisonRange(report.budget.budget.cash_to_close)) },
+      { id: 'gap-above-asking', name: 'Outcome · gap above asking price', read: slot => reportValue(slot, report => formatComparisonRange(report.budget.budget.gap_above_asking_price)) },
+      { id: 'opening-runway', name: 'Outcome · opening runway', read: slot => reportValue(slot, report => { const runway = report.budget.budget.opening_runway; return runway?.months ? runway.months.low + '–' + runway.months.high + ' months' : runway?.status === 'no_monthly_shortfall' ? 'No monthly shortfall indicated' : runway?.status ? 'Unknown · ' + runway.status.replaceAll('_', ' ') : 'Unknown · incomplete' }) },
+      { id: 'lease-exposure', name: 'Outcome · lease exposure', read: slot => reportValue(slot, report => formatComparisonRange(report.budget.budget.lease_exposure)) },
+      { id: 'unchecked-share', name: 'Outcome · unchecked cash share', read: slot => reportValue(slot, report => report.budget.budget.unchecked_share === null ? 'Unknown · incomplete' : Math.round(report.budget.budget.unchecked_share * 100) + '%') },
+      ...lines.map(line => ({ id: 'line-' + line.id, name: `Cash line · ${line.id.toUpperCase()} · ${line.label}`, read: slot => reportValue(slot, report => {
+        const item = report.budget.budget.lines.find(row => row.id === line.id)
+        if (!item?.complete) return 'Unknown · incomplete' + (item?.missing_claims?.length ? ' · ' + item.missing_claims.map(lineLabel).join(', ') : '')
+        return formatComparisonRange(item) + (item.checked ? ' · evidence tier reached' : ' · evidence needed')
+      }) })),
+      { id: 'arithmetic', name: 'Workflow · arithmetic observations', read: slot => reportValue(slot, report => arithmeticText(report.budget.budget.arithmetic_flags)) },
+      { id: 'evidence-differences', name: 'Workflow · evidence differences', read: slot => reportValue(slot, evidenceDifferences) },
+      { id: 'next-checks', name: 'Workflow · next checks', read: slot => reportValue(slot, tasks) },
+      { id: 'transfer-checklist', name: 'Workflow · transfer checklist', read: slot => tableMessage ? slot.slot === 'A' ? tableMessage : 'Pack-level checklist · see Set A.' : 'Not requested.' },
     ]
-    if (tableMessage) dimensions.splice(1, 0, { id: 'table-message', name: 'Local tool response', read: slot => slot.slot === 'A' ? tableMessage : 'Not applicable.' })
     return dimensions
-  }
-  function tableView(value) {
-    const slots = tableSlots(value), dimensions = tableDimensions(value, slots)
-    return { columns: dimensions.map(({ id, name }) => ({ id, name })), rows: slots.map(slot => ({ id: slot.slot, cells: dimensions.map(dimension => dimension.read(slot)) })),
-      layout: 'multiDimensional', orientation: tableOrientation, ariaLabel: 'SME calculated results, evidence checks and next steps Multi-dimensional Table',
-      onOrientationChange: orientation => {
-        if (!tableHost.isConnected) return
-        tableOrientation = orientation
-        const region = tableHost.closest('.comparison-table-scroll')
-        region.dataset.orientation = orientation
-        region.setAttribute('aria-label', orientation === 'columns'
-          ? 'SME calculated results; options and cash, lease, evidence and next-check dimensions.'
-          : 'SME calculated results pivoted to dimensions as records.')
-        void renderSharedTable(tableHost, tableView(value), resultTableMount)
-      } }
   }
   function workflowTableView() {
     const slots = comparisonSlotElements.slice(0, Number(comparisonCount.value))
-    const columns = [{ id: 'claim-set', name: 'Claim set' }, ...currentFields.map(field => ({ id: field.name, name: field.label + (field.unit ? ' · ' + field.unit : '') }))]
+    const resultSlots = tableSlots(comparisonValue)
+    const dimensions = tableDimensions()
+    const columns = [{ id: 'claim-set', name: 'Claim set' }, ...currentFields.map(field => ({ id: field.name, name: 'Input · ' + field.label + (field.unit ? ' · ' + field.unit : '') })),
+      ...dimensions.map(({ id, name }) => ({ id, name }))]
     const rows = slots.map(item => ({ id: item.slot, cells: [`Set ${item.slot}`,
       ...currentFields.map(field => {
         const count = item.evidence.filter(row => row.claim_kind === field.name).length
         return formatClaim(field, item.claims[field.name]) + (count ? ` · ${count} evidence ${count === 1 ? 'entry' : 'entries'}` : '')
-      })] }))
-    return { columns, rows, layout: 'multiDimensional', orientation: 'rows',
-      ariaLabel: 'SME E2E workflow; claim sets are rows and every pack field is a column.', selectedRowId: selectedWorkflowSet ?? undefined,
+      }), ...dimensions.map(dimension => dimension.read(resultSlots.find(slot => slot.slot === item.slot)))] }))
+    return { columns, rows, layout: 'multiDimensional', orientation: tableOrientation,
+      ariaLabel: 'SME E2E workflow; claim sets are rows and every pack field, evidence check and outcome is a column.', selectedRowId: selectedWorkflowSet ?? undefined,
       onActivateRow: slot => {
         if (!slots.some(item => item.slot === slot)) return
         selectedWorkflowSet = slot; renderWorkflowEditor()
         workflowStatus.textContent = `Editing Set ${slot}. Values and evidence stay on this device.`
         void renderWorkflowTable()
+      }, onOrientationChange: orientation => {
+        if (!workflowTableHost.isConnected) return
+        tableOrientation = orientation
+        workflowTableRegion.dataset.orientation = orientation
+        workflowTableRegion.setAttribute('aria-label', orientation === 'rows'
+          ? 'Claim sets as rows; all input fields, workflow checks and outcomes as columns.'
+          : 'The same E2E workflow pivoted to fields and outcomes as records.')
+        void renderWorkflowTable()
       } }
   }
-  async function renderWorkflowTable() {
-    if (!await renderSharedTable(workflowTableHost, workflowTableView(), workflowTableMount))
+  async function renderWorkflowTable(expectedGeneration = comparisonGeneration) {
+    const current = () => expectedGeneration === comparisonGeneration
+    const ok = await renderSharedTable(workflowTableHost, workflowTableView(), workflowTableMount, current)
+    if (!ok && current())
       workflowStatus.textContent = 'Shared workflow table unavailable. Reload this page to retry.'
+    return ok || !current()
   }
   async function runPlan(item = comparisonSlotElements[0]) {
     return invokeSmePackTool('takeover.plan', { pack_id: packSelect.value, claims: readClaims(item), evidence: item.evidence })
@@ -200,7 +212,7 @@ async function createSmeBusinessPack() {
     } else if (suffix === 'csv') worksheet = parseCsv(text)
     else worksheet = JSON.parse(text)
     await fillWorksheet(worksheet)
-    resultStatus.textContent = 'Worksheet imported in this tab. Run a new check to recompute.'
+    workflowStatus.textContent = 'Worksheet imported in this tab. Run a local check to calculate its workflow columns.'
   }
   async function refreshFields(packId = packSelect.value) {
     const protocol = await invokeSmePackTool('pack.protocol', { pack_id: packId })
@@ -220,13 +232,11 @@ async function createSmeBusinessPack() {
     compareButton.textContent = count === 1 ? 'Run local check' : `Compare ${count} sets locally`
   }
   function invalidateComparison() {
-    const generation = ++comparisonGeneration
+    ++comparisonGeneration
     comparisonPending = false; compareButton.disabled = false
-    tableMessage = null
-    resultStatus.textContent = 'Inputs changed. Run a local check to refresh the results table.'
-    workflowStatus.textContent = 'Input values are shown in the workflow table. They remain on this device.'
+    comparisonValue = null; tableMessage = null
+    workflowStatus.textContent = 'Inputs changed. Run a local check to refresh workflow and outcome columns.'
     void renderWorkflowTable()
-    void renderComparison(null, generation)
   }
   function clearComparison() {
     tableMessage = null; comparisonCount.value = '1'
@@ -278,19 +288,15 @@ async function createSmeBusinessPack() {
       return false
     }
   }
-  async function renderComparison(value, generation) {
-    const ok = await renderSharedTable(tableHost, tableView(value), resultTableMount, () => generation === comparisonGeneration)
-    if (!ok && generation === comparisonGeneration) resultStatus.textContent = 'Shared results table unavailable. Reload this page to retry.'
-    return ok
-  }
   async function runComparison() {
     const count = Number(comparisonCount.value), identity = PACK_INDEX.find(pack => pack.id === packSelect.value)
-    if (!identity) { resultStatus.textContent = 'Check refused. The selected pack is unavailable.'; return }
+    if (!identity) { workflowStatus.textContent = 'Check refused. The selected pack is unavailable.'; return }
     const claimSets = comparisonSlotElements.slice(0, count).map(item => ({ pack_id: identity.id, pack_version: identity.version,
       currency: identity.currency, claims: readClaims(item), ...(item.evidence.length ? { evidence: item.evidence } : {}) }))
     const generation = ++comparisonGeneration
-    comparisonPending = true; compareButton.disabled = true; tableMessage = null
-    resultStatus.textContent = count === 1 ? 'Checking locally…' : 'Comparing locally…'
+    comparisonPending = true; compareButton.disabled = true; tableMessage = null; comparisonValue = null
+    workflowStatus.textContent = count === 1 ? 'Checking locally…' : 'Comparing locally…'
+    void renderWorkflowTable()
     let deadline, timedOut = false
     try {
       const pending = count === 1 ? runPlan(comparisonSlotElements[0])
@@ -299,11 +305,13 @@ async function createSmeBusinessPack() {
         : invokeSmePackTool('takeover.compare_claim_sets', { claim_sets: claimSets })
       const value = await Promise.race([pending, new Promise((_, reject) => { deadline = setTimeout(() => { timedOut = true; reject(Error('sme_pack_comparison_deadline')) }, 2000) })])
       if (generation !== comparisonGeneration || document.body.dataset.workspaceRole !== 'sme') return
-      if (!await renderComparison(value, generation)) throw Error('shared_table_unavailable')
-      resultStatus.textContent = count === 1 ? 'On-device calculation · inputs and reports are not saved or sent' : 'Local comparison · inputs and reports are not saved or sent'
+      comparisonValue = value
+      if (!await renderWorkflowTable()) throw Error('shared_table_unavailable')
+      workflowStatus.textContent = count === 1 ? 'On-device calculation · inputs and reports are not saved or sent' : 'Local comparison · inputs and reports are not saved or sent'
     } catch {
       if (generation === comparisonGeneration && document.body.dataset.workspaceRole === 'sme') {
-        resultStatus.textContent = timedOut ? 'Check exceeded 2 seconds; no report was kept.' : 'Check refused. Review closed inputs and the shared pack identity.'
+        comparisonValue = null; void renderWorkflowTable()
+        workflowStatus.textContent = timedOut ? 'Check exceeded 2 seconds; no report was kept.' : 'Check refused. Review closed inputs and the shared pack identity.'
       }
     } finally {
       clearTimeout(deadline)
@@ -319,22 +327,14 @@ async function createSmeBusinessPack() {
   $('#webmcp-status').textContent = 'Browser tools are optional; local checks work without a network.'
   await refreshFields()
   comparisonCount.value = '1'; updateComparisonSlotVisibility()
-  const syncOrientation = () => {
-    tableRegion.dataset.orientation = tableOrientation
-    tableRegion.setAttribute('aria-label', tableOrientation === 'columns'
-      ? 'SME calculated results; options and cash, lease, evidence and next-check dimensions.'
-      : 'SME calculated results pivoted to dimensions as records.')
-  }
-  syncOrientation()
-  workflowTableRegion.setAttribute('aria-label', 'Pack workflow table; claim sets are rows and every declared claim field is a column.')
+  workflowTableRegion.setAttribute('aria-label', 'Claim sets as rows; all input fields, workflow checks and outcomes as columns.')
   void renderWorkflowTable()
-  void renderComparison(null, comparisonGeneration)
   comparisonCount.addEventListener('change', () => { updateComparisonSlotVisibility(); invalidateComparison() })
   packSelect.addEventListener('change', async () => {
     const generation = ++packGeneration
     clearComparison()
     if (await refreshFields(packSelect.value) && generation === packGeneration) {
-      renderWorkflowEditor(); void renderWorkflowTable(); void renderComparison(null, comparisonGeneration)
+      renderWorkflowEditor(); void renderWorkflowTable()
     }
   })
   form.addEventListener('submit', event => { event.preventDefault(); void runComparison() })
@@ -346,10 +346,10 @@ async function createSmeBusinessPack() {
       if (generation !== comparisonGeneration || packId !== packSelect.value) return
       tableMessage = value.available ? value.checklist.map((item, index) => `${index + 1}. ${item}`).join(' · ')
         : `Withheld · ${String(value.reason || 'review required').replaceAll('_', ' ')}`
-      if (!await renderComparison(null, generation)) return
-      resultStatus.textContent = value.available ? 'Checklist is shown in the same table.' : `Checklist unavailable: ${tableMessage}`
+      if (!await renderWorkflowTable()) return
+      workflowStatus.textContent = value.available ? 'Checklist is shown in the E2E workflow table.' : `Checklist unavailable: ${tableMessage}`
     }
-    catch { if (generation === comparisonGeneration) resultStatus.textContent = 'Checklist request refused.' }
+    catch { if (generation === comparisonGeneration) workflowStatus.textContent = 'Checklist request refused.' }
   })
   $('#sample').addEventListener('click', () => {
     const sample = {
@@ -368,7 +368,7 @@ async function createSmeBusinessPack() {
     }
     item.evidence.length = 0; selectedWorkflowSet = 'A'; selectedEvidenceField = currentFields.find(field => field.retiring_tier)?.name ?? currentFields[0]?.name ?? null
     renderWorkflowEditor(); invalidateComparison()
-    resultStatus.textContent = 'Sample values are illustrative buyer inputs and remain in this tab.'
+    workflowStatus.textContent = 'Sample values are illustrative buyer inputs and remain in this tab.'
   })
   for (const button of worksheetActions.querySelectorAll('[data-export]')) button.addEventListener('click', async () => {
     try {
@@ -378,8 +378,8 @@ async function createSmeBusinessPack() {
       if (typeof content !== 'string') throw Error('worksheet_format_missing')
       download('sme-takeover-worksheet.' + suffix, format === 'json' ? 'application/json'
         : format === 'csv' ? 'text/csv' : 'text/markdown', content)
-      resultStatus.textContent = 'Worksheet downloaded locally. No report was uploaded.'
-    } catch { resultStatus.textContent = 'Worksheet export refused. Review the entered values.' }
+      workflowStatus.textContent = 'Worksheet downloaded locally. No report was uploaded.'
+    } catch { workflowStatus.textContent = 'Worksheet export refused. Review the entered values.' }
   })
   printButton.addEventListener('click', async () => {
     let sheet
@@ -403,17 +403,17 @@ async function createSmeBusinessPack() {
       const cleanup = () => { sheet.remove(); document.body.classList.remove('sme-printing') }
       document.body.append(sheet); document.body.classList.add('sme-printing')
       window.addEventListener('afterprint', cleanup, { once: true }); window.print()
-      resultStatus.textContent = 'Print view opened. Use the browser dialog to print or save locally.'
+      workflowStatus.textContent = 'Print view opened. Use the browser dialog to print or save locally.'
     } catch (error) {
       sheet?.remove(); document.body.classList.remove('sme-printing')
-      resultStatus.dataset.printError = error instanceof Error ? error.message : 'unknown'
-      resultStatus.textContent = 'Print worksheet refused. Review the entered values.'
+      workflowStatus.dataset.printError = error instanceof Error ? error.message : 'unknown'
+      workflowStatus.textContent = 'Print worksheet refused. Review the entered values.'
     }
   })
   importInput.addEventListener('change', async () => {
     const file = importInput.files?.[0]; if (!file) return
     try { await importWorksheet(file) }
-    catch { resultStatus.textContent = 'Worksheet import refused. Use an unmodified JSON, CSV or Markdown worksheet.' }
+    catch { workflowStatus.textContent = 'Worksheet import refused. Use an unmodified JSON, CSV or Markdown worksheet.' }
     finally { importInput.value = '' }
   })
   const modelContext = document.modelContext?.registerTool ? document.modelContext : navigator.modelContext
@@ -457,8 +457,8 @@ async function createSmeBusinessPack() {
   function updateSectionNavigation() {
     const section = location.hash.slice(1).split('?')[0] || 'sme'
     const isSmeSection = section === 'sme' || section.startsWith('sme-')
-    const targetId = section === 'sme-compare' ? 'sme-workflow' : section
-    const activeHash = targetId === 'sme-report' ? '#sme-report' : '#sme-workflow'
+    const targetId = ['sme-compare', 'sme-check-form', 'sme-report'].includes(section) ? 'sme-workflow' : section
+    const activeHash = '#sme-workflow'
     for (const link of document.querySelectorAll('#sme-navigation .service-nav a')) {
       if (link.hash === activeHash && isSmeSection) link.setAttribute('aria-current', 'location')
       else link.removeAttribute('aria-current')

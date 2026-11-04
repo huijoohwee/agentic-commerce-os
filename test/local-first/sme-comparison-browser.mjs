@@ -17,7 +17,7 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   await expect.poll(() => tableText(firstPage)).toContain('Cash to close')
   await firstPage.locator('#sample').click()
   await firstPage.locator('#sme-compare-run').click()
-  await expect(firstPage.locator('#result-status')).toContainText('On-device calculation')
+  await expect(firstPage.locator('#workflow-status')).toContainText('On-device calculation')
   const elapsedMs = Math.round(performance.now() - started)
   assert(elapsedMs < 300000)
   assert.equal(serviceCalls.length, 0)
@@ -49,10 +49,12 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   const evidenceInput = page.locator(`#compare-evidence-${evidenceField.name}-low`)
   await page.locator('#sme-compare-count').selectOption('2')
   const workflowColumns = await workflowHeaders(page)
-  assert.deepEqual(workflowColumns, ['Claim set', ...pack.protocol.claim_kinds.map(field => field.label + (field.unit ? ' · ' + field.unit : ''))],
-    'the workflow table must use one protocol-derived column for every pack field')
-  assert.equal(await page.locator('#sme-workflow-table-host').evaluate(host => host.shadowRoot.querySelectorAll('.base-multi-dimensional-table-pivot').length), 0,
-    'the canonical workflow keeps every pack field in columns')
+  assert.deepEqual(workflowColumns.slice(0, pack.protocol.claim_kinds.length + 1), ['Claim set', ...pack.protocol.claim_kinds.map(field => 'Input · ' + field.label + (field.unit ? ' · ' + field.unit : ''))],
+    'the unified workflow table must use one protocol-derived input column for every pack field')
+  assert(workflowColumns.includes('Outcome · cash to close') && workflowColumns.some(label => label.startsWith('Cash line · '))
+    && workflowColumns.includes('Workflow · next checks'), 'the same table must expose calculated outcomes, cash lines and next checks')
+  assert.equal(await page.locator('#sme-workflow-table-host').evaluate(host => host.shadowRoot.querySelectorAll('.base-multi-dimensional-table-pivot').length), 1,
+    'the shared table owns one native pivot and starts with every pack field in columns')
   await page.locator('#sme-workflow-table-host tr[aria-label*="Set A"]').click()
   const parameters = page.locator('#sme-workflow-parameter-details')
   await expect(parameters).toContainText('Required for a complete local check')
@@ -75,9 +77,8 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   await evidenceInput.fill('150000')
   await page.locator('#sme-evidence-add').click()
   await page.locator('#sme-compare-run').click()
-  await expect(page.locator('#result-status')).toContainText('Local comparison')
-  await expect.poll(() => optionLabels(page)).toEqual(['A', 'B', 'Not supplied.'])
-  await expect.poll(() => tableText(page)).toContain('Not supplied.')
+  await expect(page.locator('#workflow-status')).toContainText('Local comparison')
+  await expect.poll(() => optionLabels(page)).toEqual(['Set A', 'Set B'])
   await expect.poll(() => tableText(page)).toContain(`${pack.country} · ${pack.currency} · v${pack.version}`)
   await expect.poll(() => tableText(page)).toContain('Cash to close')
   await assertPurposeTables(page)
@@ -99,31 +100,26 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
 
   const firstOrientationText = await tableText(page)
   let previousRowIndex = -1
-  for (const label of ['Cash to close', 'Gap above asking price', 'Opening runway', 'Lease exposure', 'Unchecked share', 'Missing claims']) {
+  for (const label of ['Outcome · cash to close', 'Outcome · gap above asking price', 'Outcome · opening runway', 'Outcome · lease exposure', 'Outcome · unchecked cash share', 'Cash line ·']) {
     const rowIndex = firstOrientationText.indexOf(label)
     assert(rowIndex > previousRowIndex, `Expected fixed dimension ${label} in order`)
     previousRowIndex = rowIndex
   }
-  const mobileScroll = await page.locator('#sme-table-host').evaluate(host => {
-    const view = host.shadowRoot.querySelector('.agentic-base-data-view')
-    return { clientWidth: view.clientWidth, scrollWidth: view.scrollWidth }
-  })
-  assert(mobileScroll.scrollWidth > mobileScroll.clientWidth, 'mobile table should remain horizontally scrollable inside Base')
   const workflowScroll = await page.locator('#sme-workflow-table-host').evaluate(host => {
     const view = host.shadowRoot.querySelector('.agentic-base-data-view')
     return { clientWidth: view.clientWidth, scrollWidth: view.scrollWidth }
   })
-  assert(workflowScroll.scrollWidth > workflowScroll.clientWidth, 'pack field columns should scroll inside the shared table on mobile')
-  const region = page.locator('#sme-results-table-region')
+  assert(workflowScroll.scrollWidth > workflowScroll.clientWidth, 'input and outcome columns should scroll inside the shared table on mobile')
+  const region = page.locator('#sme-workflow-table-region')
   await region.focus()
   assert.equal(await region.evaluate(element => document.activeElement === element), true, 'table region should be keyboard focusable')
-  const pivot = page.locator('#sme-table-host .base-multi-dimensional-table-pivot')
-  await expect(pivot).toHaveAttribute('aria-label', 'Current table orientation: columns as records')
-  await pivot.focus(); await pivot.press('Space')
+  const pivot = page.locator('#sme-workflow-table-host .base-multi-dimensional-table-pivot')
   await expect(pivot).toHaveAttribute('aria-label', 'Current table orientation: rows as records')
+  await pivot.focus(); await pivot.press('Space')
+  await expect(pivot).toHaveAttribute('aria-label', 'Current table orientation: columns as records')
   const rowOrientationText = await tableText(page)
-  assert(rowOrientationText.includes('Cash to close'), 'Pivot lost the cash-to-close dimension')
-  assert.deepEqual(await optionLabels(page), ['A', 'B', 'Not supplied.'])
+  assert(rowOrientationText.includes('Outcome · cash to close'), 'Pivot lost the cash-to-close dimension')
+  assert.deepEqual(await optionLabels(page), ['Set A', 'Set B'])
   await pivot.press('Space')
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'mobile page should not scroll horizontally')
   await page.setViewportSize({ width: 1280, height: 900 })
@@ -147,7 +143,7 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
 
   await page.evaluate(() => { window.__smePrintOpened = false; window.print = () => { window.__smePrintOpened = true } })
   await page.getByRole('button', { name: 'Print worksheet', exact: true }).click()
-  await expect(page.locator('#result-status')).toContainText('Print view opened')
+  await expect(page.locator('#workflow-status')).toContainText('Print view opened')
   assert.equal(await page.evaluate(() => window.__smePrintOpened), true)
   const printPdf = await page.pdf({ printBackground: true, preferCSSPageSize: true })
   const printPages = Buffer.from(printPdf).toString('latin1').match(/\/Type\s*\/Page\b/g)?.length ?? 0
@@ -165,26 +161,26 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   await page.locator('#sme-workflow-table-host tr[aria-label*="Set C"]').click()
   await amountInput('C').fill('210000')
   await page.locator('#sme-compare-run').click()
-  await expect(page.locator('#result-status')).toContainText('Local comparison')
-  await expect.poll(() => optionLabels(page)).toEqual(['A', 'B', 'C'])
+  await expect(page.locator('#workflow-status')).toContainText('Local comparison')
+  await expect.poll(() => optionLabels(page)).toEqual(['Set A', 'Set B', 'Set C'])
   await expect.poll(() => tableText(page)).toContain('210,000')
   await assertPurposeTables(page)
   assert.equal(smeServiceRequests.length, 0)
 
   await holdNextComparison(page)
   await page.locator('#sme-compare-run').click()
-  await expect(page.locator('#result-status')).toContainText('Comparing locally')
+  await expect(page.locator('#workflow-status')).toContainText('Comparing locally')
   await page.locator('#sme-workflow-table-host tr[aria-label*="Set A"]').click()
   await amountInput('A').fill('160000')
   await releaseComparison(page)
-  await expect(page.locator('#result-status')).toContainText('Inputs changed')
+  await expect(page.locator('#workflow-status')).toContainText('Inputs changed')
   const clearedTableText = await tableText(page)
-  assert(clearedTableText.includes('Unknown · run local check'), 'input change should clear the old report values from the table')
+  assert(clearedTableText.includes('Not run · run local check'), 'input change should clear the old report values from the table')
   assert((await workflowTableText(page)).includes('160,000'), 'the workflow table should retain the changed buyer input')
 
   await holdNextComparison(page)
   await page.locator('#sme-compare-run').click()
-  await expect(page.locator('#result-status')).toContainText('Comparing locally')
+  await expect(page.locator('#workflow-status')).toContainText('Comparing locally')
   await page.locator('#workspace-role-switcher').selectOption('vendor')
   await expect(page.locator('#vendor')).toBeVisible()
   await releaseComparison(page)
@@ -196,12 +192,12 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   assert.equal(smeServiceRequests.length, 0)
   await page.locator('#sample').click()
   await page.locator('#sme-compare-run').click()
-  await expect(page.locator('#result-status')).toContainText('On-device calculation')
+  await expect(page.locator('#workflow-status')).toContainText('On-device calculation')
   if (BROWSER_CHECKS.smeComparison) record(BROWSER_CHECKS.smeComparison)
 }
 
 async function tableText(page) {
-  return page.locator('#sme-table-host').evaluate(host => host.shadowRoot?.textContent ?? '')
+  return page.locator('#sme-workflow-table-host').evaluate(host => host.shadowRoot?.textContent ?? '')
 }
 
 async function workflowTableText(page) {
@@ -213,11 +209,11 @@ async function workflowHeaders(page) {
 }
 
 async function optionLabels(page) {
-  return page.locator('#sme-table-host').evaluate(host => {
-    const table = host.shadowRoot.querySelector('table'), headers = [...table.querySelectorAll('thead th')]
-    if (document.querySelector('#sme-results-table-region').dataset.orientation === 'columns') return headers.slice(1).map(cell => cell.innerText.trim())
-    const index = headers.findIndex(cell => cell.innerText.includes('Option'))
-    return [...table.querySelectorAll('tbody tr')].map(row => row.cells[index]?.innerText.trim())
+  return page.locator('#sme-workflow-table-host').evaluate(host => {
+    const table = host.shadowRoot.querySelector('table')
+    if (document.querySelector('#sme-workflow-table-region').dataset.orientation === 'columns')
+      return [...table.querySelectorAll('thead th')].slice(1).map(cell => cell.innerText.trim())
+    return [...table.querySelectorAll('tbody tr')].map(row => row.cells[0]?.innerText.trim())
   })
 }
 
@@ -229,8 +225,9 @@ async function assertPurposeTables(page) {
     resultsTables: root.querySelector('[data-sme-results-table-host]')?.shadowRoot?.querySelectorAll('table').length ?? 0,
     legacyVariants: root.querySelectorAll('#result, #result-summary, .comparison-card, .report-section, .comparison-input-slots, .comparison-evidence').length,
     forms: root.querySelectorAll('#sme-check-form').length,
+    workflowNavigationLinks: root.ownerDocument.querySelectorAll('#sme-navigation .service-nav a').length,
   }))
-  assert.deepEqual(shape, { workflowHosts: 1, resultsHosts: 1, workflowTables: 1, resultsTables: 1, legacyVariants: 0, forms: 1 })
+  assert.deepEqual(shape, { workflowHosts: 1, resultsHosts: 0, workflowTables: 1, resultsTables: 0, legacyVariants: 0, forms: 1, workflowNavigationLinks: 1 })
 }
 
 async function holdNextComparison(page) {

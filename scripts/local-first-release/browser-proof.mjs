@@ -11,7 +11,7 @@ export const BROWSER_CHECKS = Object.freeze({
   review: 'unsaved and concurrently changed offers require fresh merchant review',
   economics: 'launch terms survive offline reload and loss-making estimates fail review',
   roles: 'shopper, vendor and admin views use durable drafts, private projections, human review and offline mobile navigation',
-  smeComparison: 'offline mobile SME comparison and printable worksheet, WebMCP parity, fixed slots/rows, ≤4-page print output, afterprint cleanup, back-forward, stale-report clearing, stale-result suppression, route-exit clearing and no service writes',
+  smeComparison: 'offline mobile SME E2E workflow in one Base table: all pack fields, evidence, outcomes, cash lines and next checks; native pivot, no duplicate results surface, printable worksheet, WebMCP parity, ≤4-page output, afterprint cleanup, back-forward, stale-result suppression, route-exit clearing and no service writes',
   checkout: 'Stripe test checkout review, provider identity, pending delivery refusal, cancellation, reload and offline safety',
   privacy: 'imported text cannot inject markup; no private draft network writes',
   housing: 'one Housing workflow using the shared Base Multi-dimensional Table, listing facts, local plans, privacy and final mobile/offline journeys',
