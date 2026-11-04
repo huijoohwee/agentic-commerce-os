@@ -42,13 +42,13 @@ async function createSmeBusinessPack() {
   const inputControl = (field, prefix) => {
     const wrap = node('section', undefined, 'field')
     const label = node('label', field.label + (field.unit ? ' · ' + field.unit : ''))
-    const id = prefix + '-' + field.name
+    const id = prefix + '-' + field.name, scope = prefix === 'compare-evidence' ? 'Evidence value' : `Set ${prefix.at(-1).toUpperCase()}`
     if (field.type === 'enum' || field.type === 'boolean') {
       const control = node('select'); control.id = id; control.dataset.claim = field.name; control.autocomplete = 'off'
       option(control, '', 'Choose…')
       const values = field.type === 'boolean' ? [['true', 'Yes'], ['false', 'No']] : field.values.map(value => [value, enumLabel(value)])
       for (const value of values) option(control, value[0], value[1])
-      label.htmlFor = id; control.setAttribute('aria-required', String(Boolean(field.required))); wrap.append(label, control); return wrap
+      label.htmlFor = id; control.setAttribute('aria-label', `${scope} ${field.label}`); control.setAttribute('aria-required', String(Boolean(field.required))); wrap.append(label, control); return wrap
     }
     if (field.type === 'money') {
       const currency = currentProtocol?.pack.currency || 'SGD', range = node('div', undefined, 'cash-range-input')
@@ -58,7 +58,7 @@ async function createSmeBusinessPack() {
         const control = node('input'); control.type = 'number'; control.min = '0'; control.max = '100000000'; control.step = '1'
         control.inputMode = 'numeric'; control.autocomplete = 'off'
         control.id = id + '-' + bound; control.dataset.claim = field.name; control.dataset.bound = bound
-        control.setAttribute('aria-label', `${field.label} ${bound === 'low' ? 'minimum' : 'maximum'} amount in ${currency}${bound === 'high' ? ' (optional)' : ''}`)
+        control.setAttribute('aria-label', `${scope} ${field.label} ${bound === 'low' ? 'minimum' : 'maximum'} amount in ${currency}${bound === 'high' ? ' (optional)' : ''}`)
         control.setAttribute('aria-required', String(Boolean(field.required) && bound === 'low'))
         control.placeholder = bound === 'low' ? 'Amount' : 'Optional'
         const boundLabel = node('label', `${bound === 'low' ? 'Minimum' : 'Maximum'} · ${currency}`, 'cash-bound')
@@ -72,7 +72,7 @@ async function createSmeBusinessPack() {
     const control = node('input'); control.type = 'number'; control.step = '1'; control.inputMode = 'numeric'
     control.min = String(field.min ?? 0); control.max = String(field.max ?? 100000000)
     control.id = id; control.dataset.claim = field.name; control.autocomplete = 'off'
-    label.htmlFor = id; control.setAttribute('aria-required', String(Boolean(field.required))); wrap.append(label, control); return wrap
+    label.htmlFor = id; control.setAttribute('aria-label', `${scope} ${label.textContent}`); control.setAttribute('aria-required', String(Boolean(field.required))); wrap.append(label, control); return wrap
   }
   const readValue = (field, prefix) => {
     const id = prefix + '-' + field.name, raw = (field.type === 'money' ? $('#' + id + '-low') : $('#' + id))?.value
