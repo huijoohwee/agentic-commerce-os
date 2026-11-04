@@ -1,7 +1,9 @@
 export const PACK_PATH = '/agentic-commerce-os/services/sme-business-pack'
-export const PACK_INDEX = Object.freeze([
-  Object.freeze({ id: 'sg.fnb.takeover', country: 'SG', asset_type: 'fnb', currency: 'SGD', version: '1.0.0', as_of: '2026-10-22', review_status: 'provisional' }),
+const PACK_REGISTRY = Object.freeze([
+  Object.freeze({ metadata: Object.freeze({ id: 'sg.fnb.takeover', country: 'SG', asset_type: 'fnb', currency: 'SGD',
+    version: '1.0.0', as_of: '2026-10-22', review_status: 'provisional' }), load: () => import('./sme-pack-sg.js') }),
 ])
+export const PACK_INDEX = Object.freeze(PACK_REGISTRY.map(entry => entry.metadata))
 export const TOOL_NAMES = Object.freeze(['pack.list', 'pack.protocol', 'takeover.check', 'takeover.budget', 'takeover.plan', 'takeover.compare_claim_sets', 'takeover.transfer_checklist'])
 export const LEGACY_TOOL_NAMES = Object.freeze(['pack.required_fields', 'takeover.check_listing'])
 const provenanceTiers = Object.freeze({ seller_stated: 0, buyer_assumed: 0, observed_on_site: 1, measured_on_foot: 1,
@@ -40,7 +42,7 @@ function fieldRows(pack) {
   })
 }
 export async function loadPack(packId) {
-  const module = packId === 'sg.fnb.takeover' ? await import('./sme-pack-sg.js') : null
+  const entry = PACK_REGISTRY.find(row => row.metadata.id === packId), module = entry ? await entry.load() : null
   if (!module?.PACK) fail('sme_pack_not_found')
   const pack = module.PACK, indexed = PACK_INDEX.find(item => item.id === packId)
   if (!indexed || ['country', 'asset_type', 'currency', 'version', 'as_of', 'review_status'].some(key => pack[key] !== indexed[key])) {
@@ -84,9 +86,6 @@ export async function invokeSmePackTool(name, args = {}, now = Date.now()) {
   return checkListing(pack, args.facts, now)
 }
 
-const cashClaimKinds = ['listing_source', 'subtype', 'price', 'equipment_included', 'equipment_cost', 'rent_monthly',
-  'lease_remaining_months', 'deposit_months', 'utilities_deposits', 'transfer_cost', 'repairs_provision',
-  'monthly_sales', 'staff_count', 'payroll_monthly', 'utilities_monthly', 'runway_months', 'variable_cost_bps', 'licence_status']
 const moneyValueSchema = { oneOf: [
   { type: 'integer', minimum: 0, maximum: 100000000 },
   { type: 'object', required: ['low', 'high'], properties: {
@@ -94,41 +93,34 @@ const moneyValueSchema = { oneOf: [
     high: { type: 'integer', minimum: 0, maximum: 100000000 },
   }, additionalProperties: false },
 ] }
-const claimProperties = {
-  listing_source: { type: 'string', enum: ['portal', 'classifieds', 'broker_brochure', 'social_post', 'word_of_mouth', 'direct', 'other'] },
-  subtype: { type: 'string', enum: ['cafe', 'restaurant', 'coffee_shop', 'hawker_stall', 'other'] },
-  price: moneyValueSchema, equipment_included: { type: 'boolean' }, equipment_cost: moneyValueSchema,
-  rent_monthly: moneyValueSchema, lease_remaining_months: { type: 'integer', minimum: 0, maximum: 600 },
-  deposit_months: { type: 'integer', minimum: 0, maximum: 12 }, utilities_deposits: moneyValueSchema,
-  transfer_cost: moneyValueSchema, repairs_provision: moneyValueSchema, monthly_sales: moneyValueSchema,
-  staff_count: { type: 'integer', minimum: 0, maximum: 300 }, payroll_monthly: moneyValueSchema,
-  utilities_monthly: moneyValueSchema, runway_months: { type: 'integer', minimum: 1, maximum: 24 },
-  variable_cost_bps: { type: 'integer', minimum: 0, maximum: 9999 },
-  licence_status: { type: 'string', enum: ['held', 'not_held', 'unknown'] },
-}
+const PACK_ID_PATTERN = '^[a-z0-9][a-z0-9._-]{0,63}$', FIELD_ID_PATTERN = '^[a-z][a-z0-9_]{0,63}$'
+const fieldValueSchema = { oneOf: [moneyValueSchema, { type: 'boolean' }, { type: 'string', maxLength: 80 }] }
+const claimsSchema = { type: 'object', maxProperties: 32,
+  patternProperties: { [FIELD_ID_PATTERN]: fieldValueSchema }, additionalProperties: false }
+const packIdSchema = { type: 'string', minLength: 1, maxLength: 64, pattern: PACK_ID_PATTERN }
+const packInput = { type: 'object', required: ['pack_id'], properties: { pack_id: packIdSchema }, additionalProperties: false }
 const cashInput = { type: 'object', required: ['pack_id', 'claims'], properties: {
-  pack_id: { type: 'string', enum: ['sg.fnb.takeover'] },
-  claims: { type: 'object', maxProperties: 32, properties: claimProperties, additionalProperties: false },
+  pack_id: packIdSchema, claims: claimsSchema,
   evidence: { type: 'array', maxItems: 40, items: { type: 'object',
     required: ['claim_kind', 'provenance', 'observer_role', 'date', 'value'], properties: {
-      claim_kind: { type: 'string', enum: cashClaimKinds }, provenance: { type: 'string', enum: Object.keys(provenanceTiers) },
+      claim_kind: { type: 'string', maxLength: 64, pattern: FIELD_ID_PATTERN }, provenance: { type: 'string', enum: Object.keys(provenanceTiers) },
       observer_role: { type: 'string', enum: roles }, date: { type: 'string', format: 'date' },
-      value: { oneOf: [{ type: 'integer' }, { type: 'boolean' }, { type: 'string' }, moneyValueSchema] },
+      value: fieldValueSchema,
     }, additionalProperties: false } },
 }, additionalProperties: false }
 const comparisonSet = { type: 'object', required: ['pack_id', 'pack_version', 'currency', 'claims'], properties: {
-  pack_id: { type: 'string', enum: ['sg.fnb.takeover'] }, pack_version: { type: 'string', enum: ['1.0.0'] },
-  currency: { type: 'string', enum: ['SGD'] }, claims: cashInput.properties.claims,
+  pack_id: packIdSchema, pack_version: { type: 'string', minLength: 1, maxLength: 32 },
+  currency: { type: 'string', pattern: '^[A-Z]{3}$' }, claims: claimsSchema,
   evidence: cashInput.properties.evidence,
 }, additionalProperties: false }
 const newToolInputs = Object.freeze({
   'pack.list': { type: 'object', properties: {}, additionalProperties: false },
-  'pack.protocol': { type: 'object', required: ['pack_id'], properties: { pack_id: { type: 'string', enum: ['sg.fnb.takeover'] } }, additionalProperties: false },
+  'pack.protocol': packInput,
   'takeover.check': cashInput, 'takeover.budget': cashInput, 'takeover.plan': cashInput,
   'takeover.compare_claim_sets': { type: 'object', required: ['claim_sets'], properties: {
     claim_sets: { type: 'array', minItems: 2, maxItems: 3, items: comparisonSet },
   }, additionalProperties: false },
-  'takeover.transfer_checklist': { type: 'object', required: ['pack_id'], properties: { pack_id: { type: 'string', enum: ['sg.fnb.takeover'] } }, additionalProperties: false },
+  'takeover.transfer_checklist': packInput,
 })
 export const TOOL_SCHEMAS = Object.freeze(TOOL_NAMES.map(name => Object.freeze({
   name, inputSchema: newToolInputs[name],
@@ -171,8 +163,9 @@ async function compareClaimSets(args, now) {
 
 function protocol(pack) {
   return { schema: 'sme-business-pack/protocol/v1', pack: clone(summary(pack)),
-    fields: fieldRows(pack), claim_kinds: clone(pack.claim_kinds), budget_lines: clone(pack.budget_lines),
-    parameters: [], protocols: clone(pack.protocols), tolerances: [],
+    claim_kinds: clone(pack.claim_kinds), budget_lines: clone(pack.budget_lines),
+    parameters: clone(pack.parameters ?? []), ratios: clone(pack.ratios ?? []),
+    protocols: clone(pack.protocols), tolerances: clone(pack.tolerances ?? []),
     review_note: 'Pack content and task guidance are provisional; no market parameter or comparison tolerance is supplied.',
     inference_tokens: 0 }
 }
@@ -212,7 +205,7 @@ async function validatedCashInput(args) {
   if (!record(args)) fail('sme_pack_arguments_invalid')
   const expected = Object.hasOwn(args, 'evidence') ? ['pack_id', 'claims', 'evidence'] : ['pack_id', 'claims']
   assertExactKeys(args, expected)
-  if (typeof args.pack_id !== 'string' || args.pack_id !== 'sg.fnb.takeover' || !record(args.claims)
+  if (typeof args.pack_id !== 'string' || !PACK_INDEX.some(pack => pack.id === args.pack_id) || !record(args.claims)
     || Object.keys(args.claims).length > 32 || new TextEncoder().encode(JSON.stringify(args)).byteLength > 32768) {
     fail('sme_pack_arguments_invalid')
   }

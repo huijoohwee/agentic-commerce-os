@@ -51,7 +51,7 @@ function oracleBudget(claims: Record<string, any>) {
 }
 
 describe('SME takeover pack contracts', () => {
-  it('lists only the provisional Singapore pack and exposes the closed protocol', async () => {
+  it('lists the current provisional pack and keeps the tool envelope pack-neutral', async () => {
     expect((PACK_INDEX as Array<{ id: string }>).map(pack => pack.id)).toEqual(['sg.fnb.takeover'])
     expect(await invokeSmePackTool('pack.list')).toMatchObject({ inference_tokens: 0, packs: [
       { id: 'sg.fnb.takeover', review_status: 'provisional', as_of: '2026-10-22' },
@@ -59,8 +59,14 @@ describe('SME takeover pack contracts', () => {
     expect(TOOL_NAMES).toEqual(['pack.list', 'pack.protocol', 'takeover.check', 'takeover.budget', 'takeover.plan', 'takeover.compare_claim_sets', 'takeover.transfer_checklist'])
     expect(TOOL_SCHEMAS).toHaveLength(7)
     expect(JSON.stringify(TOOL_SCHEMAS)).not.toContain('my.fnb.takeover')
+    expect(JSON.stringify(TOOL_SCHEMAS)).not.toContain('sg.fnb.takeover')
+    expect(JSON.stringify(TOOL_SCHEMAS)).not.toContain('SGD')
+    expect(TOOL_SCHEMAS.find((tool: any) => tool.name === 'pack.protocol')?.inputSchema.properties.pack_id.pattern)
+      .toBe('^[a-z0-9][a-z0-9._-]{0,63}$')
     const protocol = await invokeSmePackTool('pack.protocol', { pack_id: 'sg.fnb.takeover' })
-    expect(protocol).toMatchObject({ schema: 'sme-business-pack/protocol/v1', parameters: [], tolerances: [], inference_tokens: 0 })
+    expect(protocol).toMatchObject({ schema: 'sme-business-pack/protocol/v1', parameters: [],
+      ratios: [{ id: 'rent_to_sales', basis: 'arithmetic-sanity-only', reviewed: false }], tolerances: [], inference_tokens: 0 })
+    expect(protocol).not.toHaveProperty('fields')
     expect(protocol.claim_kinds.map((field: any) => field.name)).toContain('price')
     expect(protocol.budget_lines).toHaveLength(7)
     await expect(invokeSmePackTool('pack.protocol', { pack_id: 'my.fnb.takeover' })).rejects.toThrow('sme_pack_not_found')
