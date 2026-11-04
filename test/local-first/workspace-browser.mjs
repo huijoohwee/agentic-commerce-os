@@ -130,36 +130,38 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await page.evaluate(() => { window.__smeShellAtEntry = document.querySelector('#workspace-shell'); });
   await page.locator('#workspace-role-switcher').selectOption('sme');
   await expect(page.locator('#sme')).toBeVisible();
-  await expect(page.locator('#webmcp-status')).toContainText('Seven optional Singapore browser tools registered');
+  await expect(page.locator('#webmcp-status')).toContainText('optional pack tools registered');
   await context.setOffline(true);
   await page.locator('#sample').click();
-  await page.locator('#sme-check-form button[type="submit"]').click();
-  await expect(page.locator('#result-status')).toContainText('On-device calculation');
-  const noEvidenceReport = JSON.parse(await page.locator('#result').textContent());
-  assert.equal(noEvidenceReport.budget.budget.unchecked_share, 1);
-  await page.locator('#sme-evidence-kind').selectOption('price');
+  await page.locator('#sme-compare-run').click();
+  await expect(page.locator('#workflow-status')).toContainText('On-device calculation');
+  let tableText = await page.locator('#sme-workflow-table-host').evaluate(host => host.shadowRoot.textContent);
+  assert.match(tableText, /Outcome · unchecked cash share/);
+  assert.match(tableText, /100%/);
+  await page.locator('#sme-workflow-table-host tr').filter({ hasText: 'Set A' }).click();
+  await expect(page.locator('#sme-workflow-editor')).toContainText('Edit · Set A');
   await page.locator('#sme-evidence-provenance').selectOption('document_sighted');
   await page.locator('#sme-evidence-role').selectOption('buyer');
   await page.locator('#sme-evidence-date').fill('2026-10-31');
-  await page.locator('#evidence-price-low').fill('150000');
-  await page.locator('#sme-add-evidence').click();
-  await page.locator('#sme-check-form button[type="submit"]').click();
-  await expect(page.locator('#result-status')).toContainText('On-device calculation');
-  await expect(page.locator('#result-summary')).toContainText('Cash to close');
-  const smeReport = JSON.parse(await page.locator('#result').textContent());
-  assert.equal(smeReport.budget.budget.cash_to_close.incomplete, false);
-  assert.equal(smeReport.check.persisted, false);
-  assert.ok(smeReport.budget.budget.unchecked_share < 1);
+  const evidenceField = await page.locator('#sme-evidence-claim').inputValue();
+  await page.locator(`#compare-evidence-${evidenceField}-low`).fill('150000');
+  await page.locator('#sme-evidence-add').click();
+  await page.locator('#sme-compare-run').click();
+  await expect(page.locator('#workflow-status')).toContainText('On-device calculation');
+  tableText = await page.locator('#sme-workflow-table-host').evaluate(host => host.shadowRoot.textContent);
+  assert.match(tableText, /Outcome · cash to close/);
+  assert.match(tableText, /150,000/);
+  const workflowText = await page.locator('#sme-workflow-table-host').evaluate(host => host.shadowRoot.textContent);
+  assert.match(workflowText, /1 evidence entry/);
+  const smeShape = await page.locator('#sme').evaluate(root => ({
+    workflowHosts: root.querySelectorAll('[data-sme-workflow-table-host]').length,
+    resultsHosts: root.querySelectorAll('[data-sme-results-table-host]').length,
+    workflowTables: root.querySelector('[data-sme-workflow-table-host]')?.shadowRoot?.querySelectorAll('table').length ?? 0,
+    resultsTables: root.querySelector('[data-sme-results-table-host]')?.shadowRoot?.querySelectorAll('table').length ?? 0,
+    legacy: root.querySelectorAll('#result, #result-summary, .comparison-card').length,
+  }));
+  assert.deepEqual(smeShape, { workflowHosts: 1, resultsHosts: 0, workflowTables: 1, resultsTables: 0, legacy: 0 });
   assert.equal(smeServiceRequests.length, 0);
-  const inPageBudget = await page.evaluate(async () => {
-    const plan = JSON.parse(document.querySelector('#result').textContent);
-    const worksheet = JSON.parse(plan.worksheet.json);
-    const result = await document.modelContext.executeTool({ name: 'takeover.budget' }, {
-      pack_id: worksheet.pack_id, claims: worksheet.claims, evidence: worksheet.evidence,
-    });
-    return JSON.parse(result.content[0].text);
-  });
-  assert.deepEqual(inPageBudget, smeReport.budget);
   await checkSmeComparisonBrowser({ browser, page, url, output, smeServiceRequests, record });
   for (const [format, selector] of [['json', '[data-export="json"]'], ['csv', '[data-export="csv"]'], ['markdown', '[data-export="markdown"]']]) {
     const downloadEvent = page.waitForEvent('download');
@@ -169,11 +171,16 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
       name: download.suggestedFilename(), mimeType: format === 'json' ? 'application/json'
         : format === 'csv' ? 'text/csv' : 'text/markdown', buffer: Buffer.from(content),
     });
-    await expect(page.locator('#result-status')).toContainText('Worksheet imported in this tab');
-    await page.locator('#sme-check-form button[type="submit"]').click();
-    await expect(page.locator('#result-status')).toContainText('On-device calculation');
-    const roundTrip = JSON.parse(await page.locator('#result').textContent());
-    assert.deepEqual(JSON.parse(roundTrip.worksheet.json), JSON.parse(smeReport.worksheet.json), format);
+    await expect(page.locator('#workflow-status')).toContainText('Worksheet imported in this tab');
+    await page.locator('#sme-compare-run').click();
+    await expect(page.locator('#workflow-status')).toContainText('On-device calculation');
+    const roundTripText = await page.locator('#sme-workflow-table-host').evaluate(host => host.shadowRoot.textContent);
+    assert.match(roundTripText, /Outcome · cash to close/);
+    assert.match(roundTripText, /150,000/);
+    assert.deepEqual(await page.locator('#sme').evaluate(root => [
+      root.querySelectorAll('[data-sme-workflow-table-host]').length,
+      root.querySelectorAll('[data-sme-results-table-host]').length,
+    ]), [1, 0]);
   }
   assert.equal(await page.evaluate(() => document.querySelector('#workspace-shell') === window.__smeShellAtEntry), true);
   await context.setOffline(false);
