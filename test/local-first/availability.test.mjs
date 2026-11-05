@@ -9,6 +9,9 @@ test('Housing modules are covered by source asset convergence and loaded lazily'
   const names = ['housing-comparison.js', 'housing-engine.js', 'housing-sample.js', 'housing-comparison.css'];
   const inventory = authoredAssets(revision).map(asset => asset.path);
   for (const name of names) assert(inventory.includes(name));
+  assert(inventory.includes('sme-pack-business-plan.js'));
+  assert(inventory.includes('sme-pack-dictionary.js'));
+  assert(!inventory.includes('sme-pack-sg.js'));
   const worker = fs.readFileSync('public/local-first/sw.js', 'utf8');
   const precache = worker.match(/const FILES = \[([^\]]+)\]/u)?.[1] ?? '';
   const lazy = worker.match(/const LAZY_FILES = \[([^\]]+)\]/u)?.[1] ?? '';
