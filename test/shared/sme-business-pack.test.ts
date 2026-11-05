@@ -243,7 +243,9 @@ describe('SME business plan contract', () => {
     const reviewed: any = await invokeSmePackTool('business.plan.build', { ...args, inputs: { ...args.inputs, accounts_access: 'reviewed_by_user' } })
     expect(reviewed.next_checks.some((check: any) => check.field === 'accounts_access')).toBe(false)
     expect(reviewed.check.evidence_status).toBe('user-recorded; not authenticated')
-    for (const value of ['https://example.test', 'person@example.test', '+65 8123 4567']) {
+    const unavailable: any = await invokeSmePackTool('business.plan.build', { ...args, inputs: { ...args.inputs, location_assignment_status: 'reported_not_available' } })
+    expect(unavailable.next_checks.some((check: any) => check.field === 'location_assignment_status')).toBe(true)
+    for (const value of ['https://example.test', 'person@example.test', '+65 8123 4567', 'Hidden\u0000text']) {
       const invalid: any = await invokeSmePackTool('business.plan.build', { ...args, inputs: { ...args.inputs, next_action: value } })
       expect(invalid.check.completeness.invalid_fields).toContain('next_action')
     }

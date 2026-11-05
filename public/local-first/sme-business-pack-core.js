@@ -103,7 +103,7 @@ function validFieldValue(field, value) {
   if (field.type === 'integer') return Number.isSafeInteger(value) && value >= field.min && value <= field.max
   if (field.type === 'currency') return typeof value === 'string' && /^[A-Z]{3}$/u.test(value)
   if (field.type === 'enum') return typeof value === 'string' && field.values.includes(value)
-  if (field.type === 'text') return typeof value === 'string' && value.length <= Math.min(field.max_length ?? MAX_TEXT, MAX_TEXT) && !TEXT_PATTERN.test(value)
+  if (field.type === 'text') return typeof value === 'string' && value.length <= Math.min(field.max_length ?? MAX_TEXT, MAX_TEXT) && !value.includes('\u0000') && !TEXT_PATTERN.test(value)
   return false
 }
 function modeFor(pack, id) {
@@ -349,7 +349,7 @@ function nextChecks(pack, inputs, missing, model, operatingComparable) {
       action: `Enter ${missingInputs.map(name => fields[name].label.toLowerCase()).join(' and ')} to calculate ${output.replaceAll('_', ' ')}.` })
   }
   for (const name of pack.next_check_fields ?? []) {
-    const pending = inputs[name] === undefined || ['unknown', 'not_requested', 'requested', 'reported_available', 'reported_unavailable', 'not_checked', 'conditional', 'not_discussed', 'reported_changing', 'reported_new_application'].includes(inputs[name])
+    const pending = inputs[name] === undefined || ['unknown', 'not_requested', 'requested', 'reported_available', 'reported_unavailable', 'reported_not_available', 'not_checked', 'conditional', 'not_discussed', 'reported_changing', 'reported_new_application'].includes(inputs[name])
     if (fields[name] && pending && !checks.some(row => row.field === name)) checks.push({ field: name, label: fields[name].label,
       action: pack.protocols.find(row => row.field_key === name)?.task ?? `Add ${fields[name].label.toLowerCase()} if available; no value is inferred.` })
   }
