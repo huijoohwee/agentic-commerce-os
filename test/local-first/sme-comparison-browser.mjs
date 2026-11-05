@@ -45,9 +45,12 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
     'Coverage › evidence › evidence prompts [evidence]', 'Model › Calculated outputs › Revenue per month [monthly_revenue]',
     'Pitch › Slide 1 › Venture and stage', 'Pitch › Slide 12 › Risks and milestones', 'Plan › Follow-up › next checks [next-checks]'])
     assert(headers.some(header => header.startsWith(label)), `Missing workflow column: ${label}`)
-  const wrappedHeaders = await planPage.locator('#sme-workflow-table-host').evaluate(host => [...host.shadowRoot.querySelectorAll('thead th button > span')]
-    .map(label => ({ text: label.textContent, whiteSpace: getComputedStyle(label).whiteSpace })))
-  assert(wrappedHeaders.some(header => header.text.includes('\n') && header.whiteSpace === 'pre-line'), 'Nested field labels should keep their visible line groups')
+  const wrappedHeaders = await planPage.locator('#sme-workflow-table-host').evaluate(host => ({
+    labels: [...host.shadowRoot.querySelectorAll('thead th button > span')].map(label => label.textContent),
+    style: host.shadowRoot.querySelector('#sme-workflow-header-wrap')?.textContent ?? '',
+  }))
+  assert(wrappedHeaders.labels.some(label => label.split('\n').length >= 3)
+    && /white-space:\s*pre-line\s*!important/u.test(wrappedHeaders.style), 'Nested field labels should preserve their wrapped header line groups')
   let text = await tableText(planPage)
   assert.match(text, /USD 6,000/)
   assert.match(text, /USD 4,800/)
