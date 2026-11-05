@@ -69,8 +69,11 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
 
   await planPage.locator('#sme-workflow-pivot').click()
   await expect.poll(() => planPage.locator('#sme-workflow-table-region').getAttribute('data-orientation')).toBe('columns')
-  const pivotHeaders = await workflowHeaders(planPage)
-  assert.deepEqual(pivotHeaders.slice(0, 14), ['Record type', 'Section', 'Group', 'Parameter', 'Stable key', 'Data type', 'Unit', 'Requirement', 'Allowed values', 'Minimum', 'Maximum', 'Length limit', 'Pattern', 'Definition'])
+  const metadataHeaders = ['Record type', 'Section', 'Group', 'Parameter', 'Stable key', 'Data type', 'Unit', 'Requirement',
+    'Allowed values', 'Minimum', 'Maximum', 'Length limit', 'Pattern', 'Definition']
+  await expect.poll(async () => (await workflowHeaders(planPage)).filter(Boolean).slice(0, metadataHeaders.length)).toEqual(metadataHeaders)
+  const pivotHeaders = (await workflowHeaders(planPage)).filter(Boolean)
+  assert.deepEqual(pivotHeaders.slice(0, 14), metadataHeaders)
   assert.deepEqual(pivotHeaders.slice(-2), ['Scenario A', 'Scenario B'])
   const ventureField = await planPage.locator('#sme-workflow-table-host').evaluate(host => {
     const headers = [...host.shadowRoot.querySelectorAll('thead th')].map(cell => cell.innerText.trim())
