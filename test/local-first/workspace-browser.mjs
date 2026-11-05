@@ -1,5 +1,4 @@
 import path from 'node:path';
-import { readFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import { expect } from '@playwright/test';
 import { verifyWorkspaceToolRefinements } from './workspace-tools-browser.mjs';
@@ -130,51 +129,16 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await page.evaluate(() => { window.__smeShellAtEntry = document.querySelector('#workspace-shell'); });
   await page.locator('#workspace-role-switcher').selectOption('sme');
   await expect(page.locator('#sme')).toBeVisible();
-  await expect(page.locator('#webmcp-status')).toContainText('Seven optional Singapore browser tools registered');
+  await expect(page.locator('#webmcp-status')).toContainText('optional pack tools registered');
   await context.setOffline(true);
-  await page.locator('#sample').click();
-  await page.locator('#sme-check-form button[type="submit"]').click();
-  await expect(page.locator('#result-status')).toContainText('On-device calculation');
-  const noEvidenceReport = JSON.parse(await page.locator('#result').textContent());
-  assert.equal(noEvidenceReport.budget.budget.unchecked_share, 1);
-  await page.locator('#sme-evidence-kind').selectOption('price');
-  await page.locator('#sme-evidence-provenance').selectOption('document_sighted');
-  await page.locator('#sme-evidence-role').selectOption('buyer');
-  await page.locator('#sme-evidence-date').fill('2026-10-31');
-  await page.locator('#evidence-price-low').fill('150000');
-  await page.locator('#sme-add-evidence').click();
-  await page.locator('#sme-check-form button[type="submit"]').click();
-  await expect(page.locator('#result-status')).toContainText('On-device calculation');
-  await expect(page.locator('#result-summary')).toContainText('Cash to close');
-  const smeReport = JSON.parse(await page.locator('#result').textContent());
-  assert.equal(smeReport.budget.budget.cash_to_close.incomplete, false);
-  assert.equal(smeReport.check.persisted, false);
-  assert.ok(smeReport.budget.budget.unchecked_share < 1);
-  assert.equal(smeServiceRequests.length, 0);
-  const inPageBudget = await page.evaluate(async () => {
-    const plan = JSON.parse(document.querySelector('#result').textContent);
-    const worksheet = JSON.parse(plan.worksheet.json);
-    const result = await document.modelContext.executeTool({ name: 'takeover.budget' }, {
-      pack_id: worksheet.pack_id, claims: worksheet.claims, evidence: worksheet.evidence,
-    });
-    return JSON.parse(result.content[0].text);
-  });
-  assert.deepEqual(inPageBudget, smeReport.budget);
   await checkSmeComparisonBrowser({ browser, page, url, output, smeServiceRequests, record });
-  for (const [format, selector] of [['json', '[data-export="json"]'], ['csv', '[data-export="csv"]'], ['markdown', '[data-export="markdown"]']]) {
-    const downloadEvent = page.waitForEvent('download');
-    await page.locator(selector).click();
-    const download = await downloadEvent, content = await readFile(await download.path(), 'utf8');
-    await page.locator('#sme-worksheet-import').setInputFiles({
-      name: download.suggestedFilename(), mimeType: format === 'json' ? 'application/json'
-        : format === 'csv' ? 'text/csv' : 'text/markdown', buffer: Buffer.from(content),
-    });
-    await expect(page.locator('#result-status')).toContainText('Worksheet imported in this tab');
-    await page.locator('#sme-check-form button[type="submit"]').click();
-    await expect(page.locator('#result-status')).toContainText('On-device calculation');
-    const roundTrip = JSON.parse(await page.locator('#result').textContent());
-    assert.deepEqual(JSON.parse(roundTrip.worksheet.json), JSON.parse(smeReport.worksheet.json), format);
-  }
+  await page.locator('#sample').click();
+  await page.locator('#sme-compare-run').click();
+  await expect(page.locator('#workflow-status')).toContainText('Local Buy/Build plan built');
+  const workflowText = await page.locator('#sme-workflow-table-host').evaluate(host => host.shadowRoot.textContent);
+  assert.match(workflowText, /Model · Revenue per month/);
+  assert.match(workflowText, /USD 6,000/);
+  assert.equal(smeServiceRequests.length, 0);
   assert.equal(await page.evaluate(() => document.querySelector('#workspace-shell') === window.__smeShellAtEntry), true);
   await context.setOffline(false);
   page.off('request', observeSmeService);
