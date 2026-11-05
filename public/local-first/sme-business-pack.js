@@ -395,6 +395,7 @@ async function createSmeBusinessPack() {
     clearComparison()
     if (await refreshFields(packSelect.value) && generation === packGeneration) {
       updateModePresentation()
+      void renderWorkflowTable()
       if (location.hash.slice(1).split('?')[0] === 'sme-dictionary') void renderDictionaryTable()
     }
   })
