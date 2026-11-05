@@ -153,9 +153,9 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   }
 
   const contracts = await planPage.locator('#pack-id option').evaluateAll(options => options.map(option => option.textContent.trim()))
-  assert(contracts.some(label => label.startsWith('SME takeover checker · v1.1.0')))
+  assert(contracts.some(label => label.startsWith('SME takeover checker · v1.2.0')))
   await planPage.locator('#pack-id').selectOption('sme.takeover-checker')
-  await expect(planPage.locator('#service-status')).toContainText('SME takeover checker · v1.1.0')
+  await expect(planPage.locator('#service-status')).toContainText('SME takeover checker · v1.2.0')
   await expect(planPage.locator('#sme-plan-mode')).toHaveValue('buy_build')
   await setWorkflowOrientation(planPage, 'rows')
   const takeoverHeaders = await workflowHeaders(planPage)
@@ -178,16 +178,18 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   assert.match(text, /USD 97,000/)
   assert.match(text, /USD 3,700/)
   await assertSingleWorkflow(planPage)
+  await checkTakeoverReview(planPage, output)
 
   if (await navigationToggle.getAttribute('aria-expanded') === 'false') await navigationToggle.click()
   await planPage.locator('#sme-navigation a[href="#sme-dictionary"]').click()
-  await expect(planPage.locator('#sme-dictionary-status')).toContainText('SME takeover checker · v1.1.0')
+  await expect(planPage.locator('#sme-dictionary-status')).toContainText('SME takeover checker · v1.2.0')
   const takeoverDictionary = await tableTextFor(planPage, '#sme-dictionary-table-host')
   assert.match(takeoverDictionary, /sme\.takeover-checker/)
   assert.match(takeoverDictionary, /transaction_structure/)
   assert.match(takeoverDictionary, /financial_basis/)
   assert.match(takeoverDictionary, /location_obligation/)
   assert.match(takeoverDictionary, /takeover-cash\/v1/)
+  for (const key of ['opportunity_label', 'buyer_budget', 'accounts_access', 'review_stage', 'next_action']) assert.match(takeoverDictionary, new RegExp(key))
   if (await navigationToggle.getAttribute('aria-expanded') === 'false') await navigationToggle.click()
   await planPage.locator('#sme-navigation a[href="#sme-workflow"]').click()
   await planPage.locator('#sme-plan-mode').selectOption('scenario')
@@ -210,6 +212,7 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
     sourceRevision: await planPage.locator('meta[name="commerce-source"]').getAttribute('content'),
   }, null, 2) + '\n')
   await context.close()
+  await checkTakeoverOffline(browser, url, output)
 
   await page.setViewportSize({ width: 360, height: 780 })
   await page.goto(url + '#sme-workflow')
@@ -234,9 +237,9 @@ async function workflowHeaders(page) {
 
 async function setWorkflowOrientation(page, orientation) {
   const region = page.locator('#sme-workflow-table-region')
-  if (await region.getAttribute('data-orientation') === orientation) return
-  await page.locator('#sme-workflow-pivot').click()
+  if (await region.getAttribute('data-orientation') !== orientation) await page.locator('#sme-workflow-pivot').click()
   await expect.poll(() => region.getAttribute('data-orientation')).toBe(orientation)
+  await expect.poll(async () => (await workflowHeaders(page)).includes('Record type')).toBe(orientation === 'columns')
 }
 
 async function selectScenario(page, slot) {
@@ -255,4 +258,174 @@ async function assertSingleWorkflow(page) {
     dictionaryNavigation: root.ownerDocument.querySelectorAll('#sme-navigation a[href="#sme-dictionary"]').length,
   }))
   assert.deepEqual(shape, { workflowHosts: 1, dictionaryHosts: 1, legacyResultHosts: 0, workflowNavigation: 1, dictionaryNavigation: 1 })
+}
+
+async function checkTakeoverReview(page, output) {
+  const host = page.locator('#sme-workflow-table-host')
+  const texts = { opportunity_label: 'Option A', business_activity: 'Repairs', operating_area: 'Remote', transfer_reason: 'User-stated transition',
+    support_scope: 'Support agreed by the user', next_action: 'Clarify accounts for option A' }
+  for (const [key, value] of Object.entries(texts)) await page.locator('#compare-a-' + key).fill(value)
+  await page.locator('#compare-a-buyer_budget-low').fill('130000')
+  await page.locator('#compare-a-target_handover_months').fill('2')
+  for (const [key, value] of Object.entries({ operator_experience: 'related_reported', accounts_access: 'requested',
+    permission_transfer_status: 'conditional', team_continuity: 'not_discussed', review_stage: 'handover_planning' }))
+    await page.locator('#compare-a-' + key).selectOption(value)
+  await expect(page.locator('#workflow-status')).toContainText('Inputs changed')
+  await expect(host).not.toContainText('USD 117,000')
+  await page.locator('#sme-compare-run').click()
+  await expect(host).toContainText('USD 117,000')
+  await expect(host).toContainText('Basis: current estimate · Period: 6 months')
+  assert.equal((await workflowHeaders(page)).length, 54)
+  assert.equal(new Set(await workflowHeaders(page)).size, 54)
+  await page.locator('#sme-plan-mode').selectOption('scenario')
+  const download = page.waitForEvent('download'); await page.locator('[data-export="json"]').click()
+  const first = JSON.parse(await readFile(await (await download).path(), 'utf8'))
+  assert.equal(Object.keys(first.inputs).length, 38)
+  const sheets = [first, { ...first, inputs: { ...first.inputs, opportunity_label: 'Option B', next_action: 'Clarify option B', financial_basis: 'historical_records' } }]
+  const upload = async (value, name = 'review.json') => page.locator('#sme-worksheet-import').setInputFiles({ name, mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(value)) })
+  await upload(sheets); await expect(page.locator('#workflow-status')).toContainText('Worksheet imported')
+  await expect(page.locator('#sme-compare-count')).toHaveValue('2')
+  await page.locator('#sme-compare-run').click()
+  await expect(host).toContainText('not comparable on the supplied basis')
+  await expect(host).toContainText('USD 117,000')
+  await setWorkflowOrientation(page, 'columns')
+  const expanded = await host.locator('tbody tr').count()
+  await host.getByRole('button', { name: 'Collapse all nested rows', exact: true }).click()
+  await expect.poll(() => host.locator('tbody tr').count()).toBeLessThan(expanded)
+  await host.getByRole('button', { name: 'Expand all nested rows', exact: true }).click()
+  await expect(host.locator('tbody tr')).toHaveCount(expanded)
+  await host.getByRole('button', { name: 'Collapse nested group: Hierarchy group', exact: true }).first().click()
+  await expect.poll(() => host.locator('tbody tr').count()).toBeLessThan(expanded)
+  await host.getByRole('button', { name: 'Expand nested group: Hierarchy group', exact: true }).first().click()
+  await setWorkflowOrientation(page, 'rows')
+  await host.getByRole('row', { name: 'Data row: Scenario B', exact: true }).press('Enter')
+  await expect(page.locator('#compare-b-next_action')).toHaveValue('Clarify option B')
+  await host.getByRole('row', { name: 'Data row: Scenario A', exact: true }).click()
+  for (const format of ['json', 'csv', 'markdown']) {
+    const ready = page.waitForEvent('download'); await page.locator(`[data-export="${format}"]`).click()
+    const file = await ready, content = await readFile(await file.path(), 'utf8')
+    assert(content.includes('Option A') && content.includes('Option B'))
+    if (format === 'json') assert.equal(JSON.parse(content).length, 2)
+    if (format === 'csv') assert(content.includes('"pack_version","""1.2.0"""'))
+    await page.locator('#compare-a-next_action').fill('New unsaved input')
+    await page.locator('#sme-worksheet-import').setInputFiles({ name: file.suggestedFilename(), mimeType: 'text/plain', buffer: Buffer.from(content) })
+    await expect(page.locator('#workflow-status')).toContainText('Worksheet imported')
+    await expect(page.locator('#compare-a-next_action')).toHaveValue(texts.next_action)
+    await expect(page.locator('#sme-compare-count')).toHaveValue('2')
+  }
+  for (const invalid of [{ ...sheets[1], pack_version: '1.1.0' }, { ...sheets[1], inputs: { ...sheets[1].inputs, next_action: 'person@example.test' } }]) {
+    await upload([first, invalid]); await expect(page.locator('#workflow-status')).toContainText('Current inputs are kept')
+    await expect(page.locator('#compare-a-next_action')).toHaveValue(texts.next_action)
+    await expect(page.locator('#sme-compare-count')).toHaveValue('2')
+  }
+  await page.evaluate(() => { window.print = () => {} })
+  await page.locator('#sme-print').click()
+  await expect(page.locator('.sme-print-sheet')).toContainText('Option A')
+  await expect(page.locator('.sme-print-sheet')).toContainText('Option B')
+  await expect(page.locator('.sme-print-sheet')).toContainText('not comparable on the supplied basis')
+  await page.evaluate(() => window.dispatchEvent(new Event('afterprint')))
+  await expect(page.locator('.sme-print-sheet')).toHaveCount(0)
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  await page.locator('#sme-compare-run').click()
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true)
+  await page.locator('#sme-workflow').scrollIntoViewIfNeeded()
+  await page.screenshot({ path: path.join(output, 'sme-review-desktop.png') })
+  await page.setViewportSize({ width: 360, height: 780 })
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true)
+  await host.scrollIntoViewIfNeeded()
+  await page.screenshot({ path: path.join(output, 'sme-review-mobile.png') })
+  // A delayed file read cannot undo a mode edit or repopulate a route that was left.
+  for (const change of ['mode', 'contract', 'route']) {
+    await page.evaluate(() => {
+      window.originalWorksheetText = File.prototype.text
+      File.prototype.text = function () { const file = this; return new Promise(resolve => { window.resumeWorksheet = async () => resolve(await window.originalWorksheetText.call(file)) }) }
+    })
+    await upload(sheets)
+    await expect.poll(() => page.evaluate(() => typeof window.resumeWorksheet)).toBe('function')
+    if (change === 'route') await page.locator('#workspace-role-switcher').selectOption('admin')
+    else if (change === 'contract') await page.locator('#pack-id').selectOption('sme.business-plan')
+    else await page.locator('#sme-plan-mode').selectOption('buy_build')
+    await page.evaluate(() => { File.prototype.text = window.originalWorksheetText; window.resumeWorksheet(); delete window.resumeWorksheet })
+    await expect.poll(() => page.locator('#sme-worksheet-import').evaluate(input => input.files.length)).toBe(0)
+    if (change === 'route') {
+      await page.locator('#workspace-role-switcher').selectOption('sme')
+      await expect(host).not.toContainText(texts.next_action)
+    } else if (change === 'contract') {
+      await expect(page.locator('#pack-id')).toHaveValue('sme.business-plan')
+      await expect(page.locator('#compare-a-next_action')).toHaveCount(0)
+      await page.locator('#pack-id').selectOption('sme.takeover-checker')
+      await expect(page.locator('#service-status')).toContainText('v1.2.0')
+    } else await expect(page.locator('#sme-plan-mode')).toHaveValue('buy_build')
+  }
+  await page.locator('#sample').click(); await page.locator('#sme-compare-run').click()
+}
+
+async function checkTakeoverOffline(browser, url, output) {
+  const context = await browser.newContext({ viewport: { width: 360, height: 780 }, hasTouch: true })
+  // Deterministic WebMCP contract fixture; this does not claim native browser availability.
+  await context.addInitScript(() => {
+    window.smeTools = new Map()
+    Object.defineProperty(document, 'modelContext', { value: {
+      registerTool(tool, { signal }) { window.smeTools.set(tool.name, tool); signal.addEventListener('abort', () => window.smeTools.delete(tool.name)) },
+      unregisterTool(name) { window.smeTools.delete(name) },
+    } })
+  })
+  const page = await context.newPage(), services = []
+  page.on('request', request => { if (request.url().includes('/services/sme-business-pack')) services.push(request.url()) })
+  await page.goto(url)
+  await page.getByText('Offline access is ready.', { exact: false }).waitFor()
+  await page.locator('#workspace-role-switcher').selectOption('sme')
+  await page.locator('#pack-id').selectOption('sme.takeover-checker')
+  await expect(page.locator('#service-status')).toContainText('v1.2.0')
+  await expect(page.locator('#webmcp-status')).toContainText('4 optional pack tools registered')
+  const protocol = await page.evaluate(async () => JSON.parse((await window.smeTools.get('pack.protocol').execute({ pack_id: 'sme.takeover-checker' }, {})).content[0].text))
+  assert.equal(protocol.input_fields.length, 38)
+  assert.deepEqual(await page.evaluate(() => [...window.smeTools.keys()]), ['pack.list', 'pack.protocol', 'business.plan.build', 'business.plan.compare'])
+  await context.setOffline(true)
+  const worksheet = { schema: 'sme-business-plan/worksheet/v2', pack_id: protocol.pack.id, pack_version: protocol.pack.version,
+    mode: 'scenario', currency_code: 'USD', inputs: { ...protocol.illustrative_inputs, opportunity_label: 'Private offline option', next_action: 'Check the entered records' }, evidence: [] }
+  const rows = [worksheet, { ...worksheet, inputs: { ...worksheet.inputs, financial_basis: 'unknown' } },
+    { ...worksheet, inputs: { ...worksheet.inputs, financial_period_months: 3 } }]
+  const upload = value => page.locator('#sme-worksheet-import').setInputFiles({ name: 'offline.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(value)) })
+  await upload(rows); await expect(page.locator('#workflow-status')).toContainText('Worksheet imported')
+  await page.locator('#sme-compare-run').tap()
+  await expect(page.locator('#workflow-status')).toContainText('Local scenario comparison')
+  await expect(page.locator('#sme-workflow-table-host')).toContainText('not comparable on the supplied basis')
+  const comparison = await page.evaluate(async rows => JSON.parse((await window.smeTools.get('business.plan.compare').execute({ mode: 'scenario',
+    plan_sets: rows.map(({ pack_id, pack_version, inputs, evidence }) => ({ pack_id, pack_version, inputs, evidence })) }, {})).content[0].text), rows)
+  assert.deepEqual(comparison.slots.map(slot => slot.slot), ['A', 'B', 'C'])
+  assert(comparison.slots.every(slot => slot.report.model.cash_to_close.low === 117000))
+  assert.equal((await workflowHeaders(page)).length, 54)
+  const evidence = Array.from({ length: 40 }, () => ({ field_key: 'support_scope', value: 'Context', provenance: 'self_reported', observer_role: 'author', date: '2026-11-06' }))
+  await upload({ ...worksheet, evidence }); await expect(page.locator('#workflow-status')).toContainText('Worksheet imported')
+  await page.locator('#sme-compare-run').tap(); await expect(page.locator('#workflow-status')).toContainText('Local scenario plan built')
+  await upload(rows.map(row => ({ ...row, evidence: evidence.map(entry => ({ ...entry, value: '界'.repeat(280) })) })))
+  await expect(page.locator('#workflow-status')).toContainText('Current inputs are kept')
+  await expect(page.locator('#compare-a-next_action')).toHaveValue(worksheet.inputs.next_action)
+  await expect(page.locator('#sme-compare-count')).toHaveValue('1')
+  await upload({ ...worksheet, evidence: evidence.map(entry => ({ ...entry, value: 'Context '.repeat(12) })) })
+  await expect(page.locator('#workflow-status')).toContainText('Table limit reached')
+  await expect(page.locator('#compare-a-next_action')).toHaveValue(worksheet.inputs.next_action)
+  const download = page.waitForEvent('download'); await page.locator('[data-export="json"]').tap()
+  const content = await readFile(await (await download).path(), 'utf8')
+  assert.equal(JSON.parse(content).evidence.length, 40)
+  assert.equal(await page.evaluate(() => JSON.stringify({ ...localStorage }).includes('Private offline option')), false)
+  await page.reload()
+  await expect(page.locator('#sme')).toBeVisible()
+  await page.locator('#pack-id').selectOption('sme.takeover-checker')
+  await expect(page.locator('#service-status')).toContainText('v1.2.0')
+  await page.locator('#sme-workflow-table-host').getByRole('row', { name: 'Data row: Plan option A', exact: true }).tap()
+  await expect(page.locator('#compare-a-opportunity_label')).toHaveValue('')
+  await upload(worksheet); await expect(page.locator('#workflow-status')).toContainText('Worksheet imported')
+  await page.locator('#sme-compare-run').tap(); await expect(page.locator('#sme-workflow-table-host')).toContainText('USD 117,000')
+  await page.locator('#sme-workflow-pivot').tap()
+  await expect.poll(async () => (await workflowHeaders(page)).includes('Record type')).toBe(true)
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true)
+  await page.locator('#sme-workflow-table-host').scrollIntoViewIfNeeded()
+  await page.screenshot({ path: path.join(output, 'sme-review-offline-mobile.png') })
+  assert.equal(services.length, 0)
+  await writeFile(path.join(output, 'sme-review-offline.json'), JSON.stringify({ source: await page.locator('meta[name="commerce-source"]').getAttribute('content'),
+    contract: protocol.pack, threeRows: true, maximumEvidence: 40, limitsPreserveInputs: true, touch: true, cachedReload: true,
+    webMcp: 'contract fixture; native availability not claimed', smeServiceRequests: services.length }, null, 2))
+  await context.close()
 }
