@@ -6,9 +6,14 @@ import { handleSmeBusinessPackRequest } from '../../src/local-first/sme-business
 const packId = 'sme.business-plan'
 const takeoverId = 'sme.takeover-checker'
 const takeoverInputs = {
-  currency_code: 'USD', purchase_price: 80000, transition_costs: 3500, asset_setup_costs: 2500,
-  transaction_professional_costs: 1500, immediate_reinvestment_costs: 1000, location_obligation: 'applies',
-  location_deposit: 3600, location_monthly_cost: 1800, location_term_months: 12,
+  currency_code: 'USD', transaction_structure: 'asset_transfer', purchase_price: 80000,
+  included_items: 'User-listed equipment and other included items', excluded_items: 'Items not included in the entered amount',
+  transition_costs: 3500, asset_setup_costs: 2500, equipment_resale_estimate: 4000,
+  improvements_current_estimate: 7000, improvements_reference_year: 2023,
+  transaction_professional_costs: 1500, immediate_reinvestment_costs: 1000, handover_months: 1,
+  monthly_revenue: 12000, financial_basis: 'current_estimate', financial_period_months: 6,
+  location_obligation: 'applies', location_deposit: 3600, location_monthly_cost: 1800, location_term_months: 12,
+  location_renewal_months: 6, location_assignment_status: 'conditional',
   monthly_operating_costs: 6500, working_capital_months: 3, available_cash: 20000,
 }
 const baseInputs = {
@@ -28,7 +33,7 @@ describe('SME business plan contract', () => {
   it('publishes one neutral protocol, one tool registry, and explicit field/output collections', async () => {
     expect(PACK_INDEX).toMatchObject([
       { id: packId, label: 'General business plan', version: '2.3.0', review_status: 'provisional' },
-      { id: takeoverId, label: 'SME takeover checker', version: '1.0.0', review_status: 'provisional' },
+      { id: takeoverId, label: 'SME takeover checker', version: '1.1.0', review_status: 'provisional' },
     ])
     expect(TOOL_NAMES).toEqual(['pack.list', 'pack.protocol', 'business.plan.build', 'business.plan.compare'])
     expect(JSON.stringify(TOOL_SCHEMAS)).not.toMatch(/country|sector|SGD|takeover|listing/i)
@@ -59,31 +64,36 @@ describe('SME business plan contract', () => {
 
   it('uses the same modes, table columns, tools, and local evaluator for the takeover contract', async () => {
     const protocol = await invokeSmePackTool('pack.protocol', { pack_id: takeoverId })
-    expect(protocol).toMatchObject({ calculation_model: 'takeover-cash/v1', pack: { id: takeoverId, label: 'SME takeover checker' } })
+    expect(protocol).toMatchObject({ calculation_model: 'takeover-cash/v1', pack: { id: takeoverId, label: 'SME takeover checker', version: '1.1.0' } })
     expect(protocol.plan_modes.map((mode: any) => mode.id)).toEqual(['buy_build', 'scenario'])
     expect(protocol.workflow_columns.map((column: any) => column.id)).toEqual([
       'plan-completeness', 'data-validation', 'evidence-values', 'evidence-provenance', 'evidence-observer',
       'evidence-date', 'evidence-status', 'model-coverage', 'next-checks',
     ])
     expect(protocol.input_fields.map((field: any) => field.name)).toEqual([
-      'currency_code', 'purchase_price', 'transition_costs', 'asset_setup_costs', 'transaction_professional_costs',
-      'immediate_reinvestment_costs', 'location_obligation', 'location_deposit', 'location_monthly_cost',
-      'location_term_months', 'monthly_operating_costs', 'working_capital_months', 'available_cash',
+      'currency_code', 'transaction_structure', 'purchase_price', 'included_items', 'excluded_items', 'transition_costs',
+      'asset_setup_costs', 'equipment_resale_estimate', 'improvements_current_estimate', 'improvements_reference_year',
+      'transaction_professional_costs', 'immediate_reinvestment_costs', 'handover_months', 'monthly_revenue',
+      'financial_basis', 'financial_period_months', 'location_obligation', 'location_deposit', 'location_monthly_cost',
+      'location_term_months', 'location_renewal_months', 'location_assignment_status', 'monthly_operating_costs',
+      'working_capital_months', 'available_cash',
     ])
+    expect(protocol.model_outputs.map((output: any) => output.id)).toContain('operating_difference_per_month')
     expect(protocol.artifacts).toEqual([])
     expect(protocol.illustrative_inputs).toEqual(takeoverInputs)
 
     const report: any = await invokeSmePackTool('business.plan.build', { pack_id: takeoverId, inputs: takeoverInputs })
     expect(report.check.completeness).toMatchObject({ required: 13, supplied: 13, missing_fields: [], invalid_fields: [] })
-    expect(report.model_display).toEqual({ cash_to_close: 'USD 117,000', location_exposure: 'USD 21,600', cash_shortfall: 'USD 97,000' })
+    expect(report.model_display).toEqual({ cash_to_close: 'USD 117,000', location_exposure: 'USD 21,600',
+      cash_shortfall: 'USD 97,000', operating_difference_per_month: 'USD 3,700' })
     expect(report.pitch_deck_outline).toEqual([])
     expect(report.projection_coverage).toEqual({})
-    expect(report.model.missing_inputs).toEqual({ cash_to_close: [], location_exposure: [], cash_shortfall: [] })
+    expect(report.model.missing_inputs).toEqual({ cash_to_close: [], location_exposure: [], cash_shortfall: [], operating_difference_per_month: [] })
     expect(report.worksheet.markdown).toContain('# SME takeover checker draft')
 
     const comparison: any = await invokeSmePackTool('business.plan.compare', { mode: 'scenario', plan_sets: [
-      { pack_id: takeoverId, pack_version: '1.0.0', inputs: takeoverInputs },
-      { pack_id: takeoverId, pack_version: '1.0.0', inputs: { ...takeoverInputs, purchase_price: 90000 } },
+      { pack_id: takeoverId, pack_version: '1.1.0', inputs: takeoverInputs },
+      { pack_id: takeoverId, pack_version: '1.1.0', inputs: { ...takeoverInputs, purchase_price: 90000 } },
     ] })
     expect(comparison.slots.map((slot: any) => slot.slot)).toEqual(['A', 'B', 'C'])
     expect(comparison.ranking).toBeNull()
@@ -94,20 +104,28 @@ describe('SME business plan contract', () => {
     const unknown: any = await invokeSmePackTool('business.plan.build', { pack_id: takeoverId, inputs: {} })
     expect(unknown.model_display.cash_to_close).toContain('Unknown')
     expect(unknown.model_display.location_exposure).toContain('Unknown')
+    expect(unknown.model_display.operating_difference_per_month).toContain('Unknown')
     expect(unknown.model.missing_inputs.location_exposure).toContain('location_obligation')
+    expect(unknown.model.missing_inputs.operating_difference_per_month).toContain('monthly_revenue')
 
     const notApplicable = { ...takeoverInputs, location_obligation: 'not_applicable' }
     delete (notApplicable as any).location_deposit
     delete (notApplicable as any).location_monthly_cost
     delete (notApplicable as any).location_term_months
     const report: any = await invokeSmePackTool('business.plan.build', { pack_id: takeoverId, inputs: notApplicable })
-    expect(report.model_display).toEqual({ cash_to_close: 'USD 108,000', location_exposure: 'Not applicable', cash_shortfall: 'USD 88,000' })
+    expect(report.model_display).toEqual({ cash_to_close: 'USD 108,000', location_exposure: 'Not applicable',
+      cash_shortfall: 'USD 88,000', operating_difference_per_month: 'USD 5,500' })
     expect(report.check.completeness.missing_fields).toEqual([])
 
     const ranged: any = await invokeSmePackTool('business.plan.build', { pack_id: takeoverId,
       inputs: { ...takeoverInputs, purchase_price: { low: 70000, high: 80000 } } })
     expect(ranged.model.cash_to_close).toEqual({ low: 107000, high: 117000 })
     expect(ranged.model.cash_shortfall).toEqual({ low: 87000, high: 97000 })
+
+    const operatingLoss: any = await invokeSmePackTool('business.plan.build', { pack_id: takeoverId,
+      inputs: { ...takeoverInputs, monthly_revenue: 4000 } })
+    expect(operatingLoss.model.operating_difference_per_month).toEqual({ low: -4300, high: -4300 })
+    expect(operatingLoss.model_display.operating_difference_per_month).toBe('USD -4,300')
   })
 
   it('returns explicit unknowns for blank financial assumptions and preserves required completeness', async () => {

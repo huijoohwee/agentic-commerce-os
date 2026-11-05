@@ -80,8 +80,11 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
     text: host.shadowRoot.textContent,
     conditionalRequirements: [...host.shadowRoot.querySelectorAll('tbody tr')]
       .map(row => [...row.cells].map(cell => cell.innerText.trim()))
-      .filter(row => ['buy_build_path', 'acquisition_price', 'transition_costs'].includes(row[1]))
+      .filter(row => row[0] === 'Input field' && ['buy_build_path', 'acquisition_price', 'transition_costs'].includes(row[1]))
       .map(row => [row[1], row[6]]),
+    inputKeys: [...host.shadowRoot.querySelectorAll('tbody tr')]
+      .map(row => [...row.cells].map(cell => cell.innerText.trim()))
+      .filter(row => row[0] === 'Input field').map(row => row[1]),
   }))
   assert(dictionary.headers.includes('Stable key') && dictionary.headers.includes('Formula / source'))
   assert(dictionary.rows >= 50)
@@ -97,6 +100,7 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   assert.deepEqual(dictionary.conditionalRequirements, [
     ['buy_build_path', 'Conditional'], ['acquisition_price', 'Conditional'], ['transition_costs', 'Conditional'],
   ])
+  assert.equal(new Set(dictionary.inputKeys).size, dictionary.inputKeys.length, 'Active contract input keys must be unique')
   assert.match(dictionary.text, /evidence-values/)
   if (await navigationToggle.getAttribute('aria-expanded') === 'false') await navigationToggle.click()
   await planPage.locator('#sme-navigation a[href="#sme-workflow"]').click()
@@ -122,14 +126,19 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   }
 
   const contracts = await planPage.locator('#pack-id option').evaluateAll(options => options.map(option => option.textContent.trim()))
-  assert(contracts.some(label => label.startsWith('SME takeover checker · v1.0.0')))
+  assert(contracts.some(label => label.startsWith('SME takeover checker · v1.1.0')))
   await planPage.locator('#pack-id').selectOption('sme.takeover-checker')
-  await expect(planPage.locator('#service-status')).toContainText('SME takeover checker · v1.0.0')
+  await expect(planPage.locator('#service-status')).toContainText('SME takeover checker · v1.1.0')
   await expect(planPage.locator('#sme-plan-mode')).toHaveValue('buy_build')
   const takeoverHeaders = await workflowHeaders(planPage)
-  for (const label of ['Input · Currency code', 'Input · Business or asset purchase price', 'Input · Location payment obligation',
+  for (const label of ['Input · Currency code', 'Input · Transfer structure', 'Input · Business or asset purchase price',
+    'Input · Items or rights included', 'Input · Items or rights excluded', 'Input · User-entered equipment resale estimate',
+    'Input · User-entered current improvements estimate', 'Input · User-entered monthly revenue', 'Input · Financial information basis',
+    'Input · Financial information period covered', 'Input · Location payment obligation', 'Input · User-stated location renewal period',
+    'Input · User-stated location assignment status',
     'Input · Cash available for the acquisition', 'Model · Cash required to close and fund the selected period',
-    'Model · Remaining location payment exposure', 'Model · Cash shortfall after available cash'])
+    'Model · Remaining location payment exposure', 'Model · Cash shortfall after available cash',
+    'Model · User-entered monthly revenue less listed monthly costs'])
     assert(takeoverHeaders.some(header => header === label || header.startsWith(`${label} ·`)), `Missing takeover checker column: ${label}`)
   assert(!takeoverHeaders.some(header => header.startsWith('Pitch · Slide')), 'Contract-specific pitch columns leaked into the takeover checker')
   await planPage.locator('#sample').click()
@@ -139,13 +148,16 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   assert.match(text, /USD 117,000/)
   assert.match(text, /USD 21,600/)
   assert.match(text, /USD 97,000/)
+  assert.match(text, /USD 3,700/)
   await assertSingleWorkflow(planPage)
 
   if (await navigationToggle.getAttribute('aria-expanded') === 'false') await navigationToggle.click()
   await planPage.locator('#sme-navigation a[href="#sme-dictionary"]').click()
-  await expect(planPage.locator('#sme-dictionary-status')).toContainText('SME takeover checker · v1.0.0')
+  await expect(planPage.locator('#sme-dictionary-status')).toContainText('SME takeover checker · v1.1.0')
   const takeoverDictionary = await tableTextFor(planPage, '#sme-dictionary-table-host')
   assert.match(takeoverDictionary, /sme\.takeover-checker/)
+  assert.match(takeoverDictionary, /transaction_structure/)
+  assert.match(takeoverDictionary, /financial_basis/)
   assert.match(takeoverDictionary, /location_obligation/)
   assert.match(takeoverDictionary, /takeover-cash\/v1/)
   if (await navigationToggle.getAttribute('aria-expanded') === 'false') await navigationToggle.click()

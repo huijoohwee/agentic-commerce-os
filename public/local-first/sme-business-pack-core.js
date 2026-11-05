@@ -2,10 +2,10 @@ export const PACK_PATH = '/agentic-commerce-os/services/sme-business-pack'
 const PACK_REGISTRY = Object.freeze([
   Object.freeze({ metadata: Object.freeze({ id: 'sme.business-plan', label: 'General business plan',
     version: '2.3.0', as_of: '2026-11-04', review_status: 'provisional' }),
-  load: () => import('./sme-pack-business-plan.js?v=business-plan-pack-v2-3-0') }),
+  load: () => import('./sme-pack-business-plan.js?v=business-plan-pack-v2-3-0-sme-1-1') }),
   Object.freeze({ metadata: Object.freeze({ id: 'sme.takeover-checker', label: 'SME takeover checker',
-    version: '1.0.0', as_of: '2026-11-05', review_status: 'provisional' }),
-  load: async () => ({ PACK: (await import('./sme-pack-business-plan.js?v=business-plan-pack-v2-3-0')).TAKEOVER_PACK }) }),
+    version: '1.1.0', as_of: '2026-11-05', review_status: 'provisional' }),
+  load: async () => ({ PACK: (await import('./sme-pack-business-plan.js?v=business-plan-pack-v2-3-0-sme-1-1')).TAKEOVER_PACK }) }),
 ])
 export const PACK_INDEX = Object.freeze(PACK_REGISTRY.map(entry => entry.metadata))
 export const TOOL_NAMES = Object.freeze(['pack.list', 'pack.protocol', 'business.plan.build', 'business.plan.compare'])
@@ -207,20 +207,29 @@ function takeoverCashModel(inputs) {
   const availableMissing = missing(['available_cash', 'currency_code'])
   const shortfallMissing = [...new Set([...required, ...availableMissing])]
   const shortfall = !shortfallMissing.length && cashToClose ? positivePart(subtract(cashToClose, number('available_cash'))) : null
+  const operatingDifferenceMissing = missing(['monthly_revenue', 'monthly_operating_costs', 'location_obligation',
+    ...(applies ? ['location_monthly_cost'] : [])])
+  const totalMonthlyCosts = !operatingDifferenceMissing.length
+    ? add(number('monthly_operating_costs'), applies ? number('location_monthly_cost') : range(0)) : null
+  const operatingDifference = totalMonthlyCosts ? subtract(number('monthly_revenue'), totalMonthlyCosts) : null
   const displayMoney = value => value ? textRange(value, currency) : 'Unknown · required inputs not supplied'
   return {
     currency_code: currency,
     cash_to_close: cashToClose,
     location_exposure: locationExposure === 'not_applicable' ? null : locationExposure,
     cash_shortfall: shortfall,
+    operating_difference_per_month: operatingDifference,
     missing_inputs: { cash_to_close: required,
-      location_exposure: locationMissing, cash_shortfall: shortfallMissing },
+      location_exposure: locationMissing, cash_shortfall: shortfallMissing,
+      operating_difference_per_month: operatingDifferenceMissing },
     formula_status: { cash_to_close: cashToClose ? 'calculated' : 'unknown',
       location_exposure: notApplicable ? 'not_applicable' : locationExposure ? 'calculated' : 'unknown',
-      cash_shortfall: shortfall ? 'calculated' : shortfallMissing.length ? 'unknown' : 'no_shortfall' },
+      cash_shortfall: shortfall ? 'calculated' : shortfallMissing.length ? 'unknown' : 'no_shortfall',
+      operating_difference_per_month: operatingDifference ? 'calculated' : 'unknown' },
     display: { cash_to_close: displayMoney(cashToClose),
       location_exposure: notApplicable ? 'Not applicable' : displayMoney(locationExposure),
-      cash_shortfall: displayMoney(shortfall) },
+      cash_shortfall: displayMoney(shortfall),
+      operating_difference_per_month: displayMoney(operatingDifference) },
   }
 }
 function monthlyModel(inputs, mode) {

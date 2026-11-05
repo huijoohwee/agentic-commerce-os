@@ -1,6 +1,6 @@
 # SME plan codebook and data dictionary
 
-Plan contracts: `sme.business-plan@2.3.0`; `sme.takeover-checker@1.0.0`
+Plan contracts: `sme.business-plan@2.3.0`; `sme.takeover-checker@1.1.0`
 Status: provisional, user-defined planning contracts
 Contract and shared workflow definition owner: `public/local-first/sme-pack-business-plan.js`
 Schema, shared evaluator, and registry owner: `public/local-first/sme-business-pack-core.js`
@@ -17,7 +17,7 @@ This contract organizes user-defined venture and organization inputs into pitch 
 
 ### SME takeover checker
 
-This contract records user-supplied acquisition, location-obligation, working-capital, and available-cash inputs in the same workflow. It computes cash required to close and fund the user-selected period, remaining location payment exposure, and cash shortfall after available cash. Required values remain unknown until entered; an explicit `not_applicable` location state is distinct from `unknown`. The contract contains no default location, sector, currency, earnings, price threshold, benchmark, score, fairness opinion, or recommendation. It declares its own input and evidence prompts, shares the nine workflow columns and two modes, and has no pitch or projection mapping.
+This contract records user-supplied transfer structure and scope, acquisition and asset inputs, operating figures and their stated basis, location obligations, transition period, working capital, and available cash in the same workflow. Optional context fields do not silently change cash-to-close arithmetic. It computes cash required to close and fund the user-selected period, remaining location payment exposure, cash shortfall, and a clearly labelled monthly revenue-minus-costs arithmetic result when its inputs are present. Required values remain unknown until entered; an explicit `not_applicable` location state is distinct from `unknown`. User-recorded renewal and assignment states are not evidence of legal rights or consent. The contract contains no default location, sector, currency, earnings, price threshold, benchmark, score, valuation, fairness opinion, or recommendation. It declares its own input and evidence prompts, shares the nine workflow columns and two modes, and has no pitch or projection mapping.
 
 ## Canonical guideline alignment
 
@@ -98,15 +98,27 @@ All money uses the row's user-selected ISO 4217 currency code, accepts a nonnega
 | Stable key | Field | Section | Type / unit | Required | Limits or allowed values |
 |---|---|---|---|---:|---|
 | `currency_code` | Currency code | Measurement | currency / ISO 4217 | Yes | Three uppercase letters; no conversion |
-| `purchase_price` | Business or asset purchase price | Acquisition | money / selected currency | Yes | Nonnegative single amount or low/high range |
-| `transition_costs` | Transition costs | Acquisition | money / selected currency | Yes | Nonnegative single amount or low/high range |
-| `asset_setup_costs` | Included assets, equipment, and setup costs | Acquisition | money / selected currency | Yes | Nonnegative single amount or low/high range |
+| `transaction_structure` | Transfer structure | Acquisition | enum | No | `asset_transfer`, `entity_interest`, `other`, `unknown` |
+| `purchase_price` | Business or asset purchase price | Acquisition | money / selected currency | Yes | User-supplied transfer amount; describe included and excluded scope; nonnegative single amount or range |
+| `included_items` | Items or rights included | Acquisition | text | No | Up to 280 characters; user-described |
+| `excluded_items` | Items or rights excluded | Acquisition | text | No | Up to 280 characters; user-described |
+| `transition_costs` | Transition costs | Acquisition | money / selected currency | Yes | Additional outlay, excluding transfer price, transaction costs, and immediate reinvestment |
+| `asset_setup_costs` | Additional asset acquisition and setup outlay | Acquisition | money / selected currency | Yes | Beyond transfer amount; do not double-count included items |
+| `equipment_resale_estimate` | User-entered equipment resale estimate | Acquisition | money / selected currency | No | Single amount or low/high range; user-supplied basis |
+| `improvements_current_estimate` | User-entered current improvements estimate | Acquisition | money / selected currency | No | Single amount or low/high range; user-supplied basis |
+| `improvements_reference_year` | Improvements reference year | Acquisition | integer / year | No | 1800–3000 |
 | `transaction_professional_costs` | Transaction and professional costs | Acquisition | money / selected currency | Yes | Nonnegative single amount or low/high range |
 | `immediate_reinvestment_costs` | Immediate repairs or reinvestment | Acquisition | money / selected currency | Yes | Nonnegative single amount or low/high range |
+| `handover_months` | User-stated handover period | Transition | integer / months | No | 0–1,200 |
+| `monthly_revenue` | User-entered monthly revenue | Operating information | money / selected currency per month | No | Single amount or low/high range |
+| `financial_basis` | Financial information basis | Operating information | enum | No | `historical_records`, `current_estimate`, `forward_estimate`, `unknown` |
+| `financial_period_months` | Financial information period covered | Operating information | integer / months | No | 1–1,200 |
 | `location_obligation` | Location payment obligation | Location | enum | Yes | `applies`, `not_applicable`, `unknown` |
 | `location_deposit` | Location deposit | Location | money / selected currency | When applicable | Nonnegative single amount or low/high range |
 | `location_monthly_cost` | Location cost per month | Location | money / selected currency per month | When applicable | Nonnegative single amount or low/high range |
 | `location_term_months` | Location term remaining | Location | integer / months | When applicable | 0–1,200 whole months |
+| `location_renewal_months` | User-stated location renewal period | Location | integer / months | No | 0–1,200; blank remains unknown |
+| `location_assignment_status` | User-stated location assignment status | Location | enum | No | `reported_available`, `reported_not_available`, `conditional`, `unknown`; not authenticated |
 | `monthly_operating_costs` | Monthly operating costs excluding location | Working capital | money / selected currency per month | Yes | Nonnegative single amount or low/high range |
 | `working_capital_months` | Working capital period | Working capital | integer / months | Yes | 0–120 whole months |
 | `available_cash` | Cash available for the acquisition | Funding | money / selected currency | Yes | Nonnegative single amount or low/high range |
@@ -134,6 +146,7 @@ Every output is a deterministic arithmetic result from explicit inputs. Missing 
 | `cash_to_close` | Cash required to close and fund the selected period | Purchase, transition, asset/setup, transaction/professional, immediate reinvestment, applicable location deposit and monthly cost, operating costs, working-capital months, currency | Purchase + transition + asset/setup + transaction/professional + immediate reinvestment + applicable deposit + (monthly operating costs + applicable location cost) × selected months |
 | `location_exposure` | Remaining location payment exposure | Obligation status, monthly location cost, remaining term, currency | Monthly location cost × remaining term; `Not applicable` only when explicitly selected |
 | `cash_shortfall` | Cash shortfall after available cash | Cash-to-close inputs and available cash | max(0, cash required to close and fund the selected period − available cash) |
+| `operating_difference_per_month` | User-entered monthly revenue less listed monthly costs | User-entered monthly revenue, monthly operating costs, location status and applicable location cost | Monthly revenue − monthly operating costs − applicable location cost; arithmetic only, not a profit claim |
 
 Outputs are arithmetic on user-entered amounts. Missing inputs keep an output unknown; a low/high range propagates through the calculation. None is a price opinion, valuation, forecast, accounting result, or recommendation.
 

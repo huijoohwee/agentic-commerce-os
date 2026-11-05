@@ -1,4 +1,4 @@
-import { invokeSmePackTool, PACK_INDEX, TOOL_SCHEMAS } from './sme-business-pack-core.js?v=business-plan-contract-v5'
+import { invokeSmePackTool, PACK_INDEX, TOOL_SCHEMAS } from './sme-business-pack-core.js?v=business-plan-contract-v6'
 import { getOrCreateSingleton } from './workspace-singleton.js'
 import { createSmeWorkflowEditor } from './sme-workflow-editor.js'
 
