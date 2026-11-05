@@ -15,7 +15,7 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   await expect(planPage.locator('#sme')).toBeVisible()
   await expect(planPage.locator('#sme-workflow-table-host')).toBeVisible()
   await expect(planPage.locator('#sme-plan-mode')).toHaveValue('buy_build')
-  await expect(planPage.getByText('Choose a plan mode and contract. One table keeps all declared inputs, evidence, calculations, coverage, and next checks together. Select a row to edit its fields and evidence.', { exact: true })).toBeVisible()
+  await expect(planPage.getByText('Choose a plan mode and contract. One table keeps all declared inputs, evidence, calculations, coverage, and next checks together. Select a plan row to edit its fields and evidence, or inspect each field in metadata columns.', { exact: true })).toBeVisible()
   await planPage.locator('#sample').click()
   await planPage.locator('#compare-a-buy_build_path').selectOption('buy_existing')
   await expect(planPage.locator('#compare-a-acquisition_price-low')).toHaveAttribute('aria-required', 'true')
@@ -30,12 +30,8 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   const headers = await workflowHeaders(planPage)
   assert(headers.length <= 64, 'Shared Multi-dimensional Table column limit exceeded')
   assert.equal(new Set(headers).size, headers.length, 'Shared Multi-dimensional Table labels must be unique')
-  for (const label of ['Plan › Selection › Mode and contract [plan-mode]',
-    'Input › Pitch Problem or need problem_statement · text · required',
-    'Input › Financial model Model currency code currency_code · currency · ISO 4217 code · required',
-    'Input › Buy/Build Buy/Build approach buy_build_path · enum · required in Buy/Build',
-    'Input › Buy/Build Existing business or asset purchase price acquisition_price · money · currency · when buy_build_path=buy_existing',
-    'Input › Buy/Build Acquisition and transition costs transition_costs · money · currency · when buy_build_path=buy_existing',
+  for (const label of ['Plan › Selection › Mode and contract [plan-mode]', 'Problem or need', 'Model currency code',
+    'Buy/Build approach', 'Existing business or asset purchase price', 'Acquisition and transition costs',
     'Readiness › Input coverage › required inputs [plan-completeness]',
     'Readiness › Validation › invalid entries [data-validation]', 'Evidence › Field context › values [evidence-values]',
     'Evidence › Record attributes › provenance [evidence-provenance]', 'Evidence › Record attributes › observer role [evidence-observer]',
@@ -45,12 +41,8 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
     'Coverage › evidence › evidence prompts [evidence]', 'Model › Calculated outputs › Revenue per month [monthly_revenue]',
     'Pitch › Slide 1 › Venture and stage', 'Pitch › Slide 12 › Risks and milestones', 'Plan › Follow-up › next checks [next-checks]'])
     assert(headers.some(header => header.startsWith(label)), `Missing workflow column: ${label}`)
-  const wrappedHeaders = await planPage.locator('#sme-workflow-table-host').evaluate(host => ({
-    labels: [...host.shadowRoot.querySelectorAll('thead th button > span')].map(label => label.textContent),
-    style: host.shadowRoot.querySelector('#sme-workflow-header-wrap')?.textContent ?? '',
-  }))
-  assert(wrappedHeaders.labels.some(label => label.split('\n').length >= 3)
-    && /white-space:\s*pre-line\s*!important/u.test(wrappedHeaders.style), 'Nested field labels should preserve their wrapped header line groups')
+  assert(headers.includes('Venture or project name'))
+  assert(!headers.some(header => header.includes('venture_name') || / · (?:text|enum|money|currency) · /u.test(header)), 'Field metadata should not be concatenated into input headers')
   let text = await tableText(planPage)
   assert.match(text, /USD 6,000/)
   assert.match(text, /USD 4,800/)
@@ -62,7 +54,7 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
 
   await planPage.locator('#sme-plan-mode').selectOption('scenario')
   await expect(planPage.locator('#sme-workflow-table-host')).toContainText('Illustrative project')
-  await expect(planPage.locator('#sme-workflow-table-region')).toHaveAttribute('aria-label', /Plan scenarios are rows/)
+  await expect(planPage.locator('#sme-workflow-table-region')).toHaveAttribute('aria-label', /Scenarios are rows/)
   await planPage.locator('#sme-compare-count').selectOption('2')
   await selectScenario(planPage, 'B')
   await planPage.locator('#sme-compare-run').click()
@@ -75,14 +67,28 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   assert.deepEqual(labels, ['Scenario A', 'Scenario B'])
   assert.match(await tableText(planPage), /Scenario/)
 
-  await planPage.locator('#sme-workflow-table-host').evaluate(host => host.shadowRoot.querySelector('.base-multi-dimensional-table-pivot').click())
+  await planPage.locator('#sme-workflow-pivot').click()
   await expect.poll(() => planPage.locator('#sme-workflow-table-region').getAttribute('data-orientation')).toBe('columns')
   const pivotHeaders = await workflowHeaders(planPage)
-  assert.deepEqual(pivotHeaders.slice(0, 3), ['Field', 'Scenario A', 'Scenario B'])
+  assert.deepEqual(pivotHeaders.slice(0, 14), ['Record type', 'Section', 'Group', 'Parameter', 'Stable key', 'Data type', 'Unit', 'Requirement', 'Allowed values', 'Minimum', 'Maximum', 'Length limit', 'Pattern', 'Definition'])
+  assert.deepEqual(pivotHeaders.slice(-2), ['Scenario A', 'Scenario B'])
+  const ventureField = await planPage.locator('#sme-workflow-table-host').evaluate(host => {
+    const headers = [...host.shadowRoot.querySelectorAll('thead th')].map(cell => cell.innerText.trim())
+    const row = [...host.shadowRoot.querySelectorAll('tbody tr')].find(item => item.cells[headers.indexOf('Parameter')]?.innerText.trim() === 'Venture or project name')
+    return row ? Object.fromEntries(headers.map((header, index) => [header, row.cells[index].innerText.trim()])) : null
+  })
+  assert.equal(ventureField.Section, 'Venture')
+  assert.equal(ventureField.Parameter, 'Venture or project name')
+  assert.equal(ventureField['Stable key'], 'venture_name')
+  assert.equal(ventureField['Data type'], 'text')
+  assert.equal(ventureField.Requirement, 'optional')
+  assert.equal(await planPage.locator('#sme-workflow-table-host').evaluate(host => host.shadowRoot.querySelectorAll('.base-multi-dimensional-table-pivot').length), 0)
+  await assertSingleWorkflow(planPage)
   text = await tableText(planPage)
   assert.match(text, /USD 6,000/)
   assert.match(text, /A defined user group has a recurring task that takes time to complete/)
-  assert.match(text, /Pitch › Slide 1 › Venture and stage/)
+  assert.match(text, /Venture and stage/)
+  assert.match(text, /Slide 1/)
 
   const navigationToggle = planPage.locator('#workspace-navigation-toggle')
   if (await navigationToggle.getAttribute('aria-expanded') === 'false') await navigationToggle.click()
@@ -137,7 +143,8 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
     await planPage.locator('#sme-compare-run').click()
     await expect(planPage.locator('#workflow-status')).toContainText('Local scenario plan built')
     text = await tableText(planPage)
-    assert.match(text, /Model › Calculated outputs › Revenue per month/)
+    assert.match(text, /Calculated outputs/)
+    assert.match(text, /Revenue per month/)
     assert.match(text, /USD 6,000/)
     await assertSingleWorkflow(planPage)
   }
@@ -150,19 +157,9 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   await setWorkflowOrientation(planPage, 'rows')
   const takeoverHeaders = await workflowHeaders(planPage)
   assert.equal(new Set(takeoverHeaders).size, takeoverHeaders.length, 'Takeover checker column labels must be unique')
-  for (const label of ['Input › Measurement Currency code currency_code · currency · ISO 4217 code · required',
-    'Input › Acquisition Transfer structure transaction_structure · enum · optional',
-    'Input › Acquisition Business or asset purchase price purchase_price · money · currency · required',
-    'Input › Acquisition Items or rights included included_items · text · optional', 'Input › Acquisition Items or rights excluded excluded_items · text · optional',
-    'Input › Acquisition User-entered equipment resale estimate equipment_resale_estimate · money · currency · optional',
-    'Input › Acquisition User-entered current improvements estimate improvements_current_estimate · money · currency · optional',
-    'Input › Operating information User-entered monthly revenue monthly_revenue · money · currency/month · optional',
-    'Input › Operating information Financial information basis financial_basis · enum · optional',
-    'Input › Operating information Financial information period covered financial_period_months · integer · months · optional',
-    'Input › Location Location payment obligation location_obligation · enum · required',
-    'Input › Location User-stated location renewal period location_renewal_months · integer · months · optional',
-    'Input › Location User-stated location assignment status location_assignment_status · enum · optional',
-    'Input › Funding Cash available for the acquisition available_cash · money · currency · required',
+  for (const label of ['Currency code', 'Transfer structure', 'Business or asset purchase price', 'Items or rights included', 'Items or rights excluded',
+    'User-entered equipment resale estimate', 'User-entered current improvements estimate', 'User-entered monthly revenue', 'Financial information basis',
+    'Financial information period covered', 'Location payment obligation', 'User-stated location renewal period', 'User-stated location assignment status', 'Cash available for the acquisition',
     'Model › Calculated outputs › Cash required to close and fund the selected period [cash_to_close]',
     'Model › Calculated outputs › Remaining location payment exposure [location_exposure]',
     'Model › Calculated outputs › Cash shortfall after available cash [cash_shortfall]',
@@ -197,6 +194,7 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   await expect(planPage.locator('#service-status')).toContainText('General business plan · v2.3.0')
   await expect(planPage.locator('#sme-plan-mode')).toHaveValue('buy_build')
   await expect(planPage.locator('#compare-a-purchase_price-low')).toHaveCount(0)
+  await setWorkflowOrientation(planPage, 'rows')
   assert((await workflowHeaders(planPage)).some(header => header.includes('Venture or project name')))
   await assertSingleWorkflow(planPage)
 
@@ -234,8 +232,7 @@ async function workflowHeaders(page) {
 async function setWorkflowOrientation(page, orientation) {
   const region = page.locator('#sme-workflow-table-region')
   if (await region.getAttribute('data-orientation') === orientation) return
-  await page.locator('#sme-workflow-table-host').evaluate(host =>
-    host.shadowRoot.querySelector('.base-multi-dimensional-table-pivot')?.click())
+  await page.locator('#sme-workflow-pivot').click()
   await expect.poll(() => region.getAttribute('data-orientation')).toBe(orientation)
 }
 

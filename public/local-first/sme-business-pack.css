@@ -28,6 +28,8 @@
 #sme .workflow-toolbar select, #sme .sme-workflow-editor select { display: block; width: 100%; min-height: 44px; padding: 9px 11px; border: 1px solid var(--commerce-control-border); border-radius: var(--commerce-radius-control); background: var(--commerce-surface); color: var(--commerce-ink); }
 #sme .workflow-toolbar button, #sme .actions button, #sme .button.secondary, #sme .sme-workflow-editor button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 9px 13px; border: 1px solid var(--commerce-action); border-radius: 9px; background: var(--commerce-action); color: var(--commerce-surface); font-size: .76rem; font-weight: 600; cursor: pointer; text-decoration: none; }
 #sme .workflow-toolbar button.secondary, #sme .actions button.secondary, #sme .button.secondary, #sme .sme-workflow-editor button.secondary { border-color: var(--commerce-border-strong); background: var(--commerce-surface); color: var(--commerce-action); }
+#sme .workflow-table-actions { display: flex; justify-content: flex-end; margin: 9px 0 6px; }
+#sme .workflow-table-actions button { min-height: 42px; padding: 8px 12px; border: 1px solid var(--commerce-border-strong); border-radius: 9px; background: var(--commerce-surface); color: var(--commerce-action); font-size: .75rem; font-weight: 600; cursor: pointer; }
 #sme .workflow-toolbar button:disabled { opacity: .55; cursor: wait; }
 #sme .sme-workflow-editor { margin-top: 14px; padding: 14px; border: 1px solid var(--commerce-border); border-radius: 10px; background: var(--commerce-surface-subtle); }
 #sme .sme-workflow-editor[hidden] { display: none; }
@@ -85,5 +87,6 @@
   #sme-overview, #sme-workflow, #sme-agent-tools { scroll-margin-top: 72px; }
   #sme .workflow-toolbar { align-items: stretch; }
   #sme .workflow-control, #sme .workflow-toolbar button { flex: 1 1 100%; }
+  #sme .workflow-table-actions button { width: 100%; }
   #sme .workflow-parameter-grid, #sme .workflow-edit-fields, #sme .evidence-fields { grid-template-columns: minmax(0, 1fr); }
 }

@@ -26,7 +26,7 @@ async function createSmeBusinessPack() {
   const $ = selector => root.querySelector(selector)
   const form = $('#sme-check-form'), packSelect = $('#pack-id'), planModeSelect = $('#sme-plan-mode'), comparisonCount = $('#sme-compare-count')
   const comparisonCountLabel = $('#sme-compare-count-label'), planModeDescription = $('#sme-plan-mode-description')
-  const workflowTableHost = $('#sme-workflow-table-host'), workflowTableRegion = $('#sme-workflow-table-region')
+  const workflowTableHost = $('#sme-workflow-table-host'), workflowTableRegion = $('#sme-workflow-table-region'), workflowPivot = $('#sme-workflow-pivot')
   const dictionaryHost = $('#sme-dictionary-table-host'), dictionaryRegion = $('#sme-dictionary-table-region')
   const dictionaryStatus = $('#sme-dictionary-status'), overview = $('#sme-overview'), dictionary = $('#sme-dictionary')
   const workflowEditor = $('#sme-workflow-editor'), inputFields = $('#sme-workflow-inputs')
@@ -105,11 +105,7 @@ async function createSmeBusinessPack() {
     }
     return 'optional'
   }
-  const inputTableLabel = field => {
-    const unit = field.unit?.replace(/^selected /u, '')
-    const metadata = [field.type, unit, inputRequirementLabel(field)].filter(Boolean).join(' · ')
-    return [`Input › ${field.section ?? 'Plan'}`, field.label, `${field.name} · ${metadata}`].filter(Boolean).join('\n')
-  }
+  const inputTableLabel = field => field.label
   function tableDimensions() {
     const reportValue = (slot, read) => slot.status === 'not_supplied' ? 'Not in this comparison.' : slot.report ? read(slot.report) : 'Not built · build local plan'
     const evidenceValue = (slot, read) => slot.status === 'not_supplied' ? 'Not in this comparison.' : slot.evidence.length
@@ -137,7 +133,7 @@ async function createSmeBusinessPack() {
         'next-checks': ['Plan', 'Follow-up', 'Next checks'],
       }[id] ?? ['Workflow', 'Protocol field', column?.label ?? id]
       const label = column?.label?.split(' · ').at(-1) ?? path.at(-1)
-      return { id, name: `${tablePathLabel([...path.slice(0, 2), `${label} [${id}]`])}`, read }
+      return { id, name: `${tablePathLabel([...path.slice(0, 2), `${label} [${id}]`])}`, section: path[0], group: path[1], parameter: label, read }
     }
     const pitchRoles = currentProtocol?.artifacts?.find(artifact => artifact.id === 'pitch_deck_outline')?.roles ?? []
     const dimensions = [
@@ -179,27 +175,36 @@ async function createSmeBusinessPack() {
     const slots = comparisonSlotElements.slice(0, Number(comparisonCount.value))
     const resultSlots = tableSlots(comparisonValue)
     const dimensions = tableDimensions()
-    const columns = [{ id: 'plan-row', name: currentMode()?.row_label ?? 'Plan option' }, ...currentFields.map(field => ({ id: field.name, name: inputTableLabel(field) })),
-      ...dimensions.map(({ id, name }) => ({ id, name }))]
-    const rows = slots.map(item => ({ id: item.slot, cells: [rowLabel(item.slot),
-      ...currentFields.map(field => formatFieldValue(field, item.inputs[field.name], item.inputs.currency_code)),
-      ...dimensions.map(dimension => dimension.read(resultSlots.find(slot => slot.slot === item.slot)))] }))
-    return { columns, rows, layout: 'multiDimensional', orientation: tableOrientation,
-      ariaLabel: `SME plan; ${pluralRows()} are rows and the selected mode, all contract inputs, evidence, coverage, declared outputs, and next checks are columns.`, selectedRowId: selectedWorkflowSet ?? undefined,
-      onActivateRow: slot => {
-        if (!slots.some(item => item.slot === slot)) return
-        selectedWorkflowSet = slot; renderWorkflowEditor()
-        workflowStatus.textContent = `Editing ${rowLabel(slot)}. Values and evidence stay on this device.`
-        void renderWorkflowTable()
-      }, onOrientationChange: orientation => {
-        if (!workflowTableHost.isConnected) return
-        tableOrientation = orientation
-        workflowTableRegion.dataset.orientation = orientation
-        workflowTableRegion.setAttribute('aria-label', orientation === 'rows'
-          ? `Plan ${pluralRows()} as rows; mode, narrative inputs, evidence values and attributes, projection coverage, every model output, every pitch role, and next checks as columns.`
-          : 'The same plan table pivoted to fields and outputs as records.')
-        void renderWorkflowTable()
-      } }
+    if (tableOrientation === 'columns') {
+      const names = ['Record type', 'Section', 'Group', 'Parameter', 'Stable key', 'Data type', 'Unit', 'Requirement', 'Allowed values', 'Minimum', 'Maximum', 'Length limit', 'Pattern', 'Definition']
+      const columns = [...names.map((name, index) => ({ id: `metadata-${index}`, name })), ...slots.map(item => ({ id: `value-${item.slot}`, name: rowLabel(item.slot) }))]
+      const record = (id, cells) => ({ id, cells: cells.map(value => value == null ? 'Not declared' : String(value)) })
+      const inputRows = currentFields.map(field => record(`input:${field.name}`, ['Input', field.section ?? 'Not declared', 'Input', field.label, field.name, field.type, field.unit ?? 'Not declared', inputRequirementLabel(field), field.values?.map(enumLabel).join(', ') ?? 'Not declared', field.min ?? 'Not declared', field.max ?? 'Not declared', field.max_length ?? 'Not declared', field.pattern ?? 'Not declared', field.definition ?? 'Not declared', ...slots.map(item => formatFieldValue(field, item.inputs[field.name], item.inputs.currency_code))]))
+      const outputRows = dimensions.map(dimension => {
+        const parts = dimension.name.split(' › '), parameter = parts.pop().replace(/\s+\[[^\]]+\]$/u, '')
+        const section = dimension.section ?? parts[0] ?? 'Workflow', group = dimension.group ?? (parts.slice(1).join(' › ') || 'Not declared')
+        const kind = section === 'Plan' ? 'Plan state' : section === 'Readiness' ? 'Readiness' : section === 'Evidence' ? 'Evidence' : `${section} output`
+        return record(`output:${dimension.id}`, [kind, section, group, dimension.parameter ?? parameter, dimension.id, 'Derived', 'Not declared', 'Calculated or reported', 'Not declared', 'Not declared', 'Not declared', 'Not declared', 'Not declared', 'Not declared', ...slots.map(item => dimension.read(resultSlots.find(slot => slot.slot === item.slot)))])
+      })
+      return { columns, rows: [...inputRows, ...outputRows], layout: 'multiDimensional', orientation: 'rows', ariaLabel: 'Workflow fields and outputs are rows; each metadata attribute and each plan option has its own column.' }
+    }
+    const columns = [{ id: 'plan-row', name: currentMode()?.row_label ?? 'Plan option' }, ...currentFields.map(field => ({ id: field.name, name: inputTableLabel(field) })), ...dimensions.map(({ id, name }) => ({ id, name }))]
+    const rows = slots.map(item => ({ id: item.slot, cells: [rowLabel(item.slot), ...currentFields.map(field => formatFieldValue(field, item.inputs[field.name], item.inputs.currency_code)), ...dimensions.map(dimension => dimension.read(resultSlots.find(slot => slot.slot === item.slot)))] }))
+    return { columns, rows, layout: 'multiDimensional', orientation: 'rows', ariaLabel: `SME plan; ${pluralRows()} are rows and the selected mode, all contract inputs, evidence, coverage, declared outputs, and next checks are columns.`, selectedRowId: selectedWorkflowSet ?? undefined,
+      onActivateRow: slot => { if (!slots.some(item => item.slot === slot)) return; selectedWorkflowSet = slot; renderWorkflowEditor(); workflowStatus.textContent = `Editing ${rowLabel(slot)}. Values and evidence stay on this device.`; void renderWorkflowTable() } }
+  }
+  function setWorkflowOrientation(orientation) {
+    tableOrientation = orientation === 'columns' ? 'columns' : 'rows'
+    workflowTableRegion.dataset.orientation = tableOrientation
+    updateWorkflowOrientationCopy()
+    void renderWorkflowTable()
+  }
+  function updateWorkflowOrientationCopy() {
+    const metadata = tableOrientation === 'columns'
+    const rowType = currentMode()?.id === 'scenario' ? 'Scenarios' : 'Plan options'
+    workflowTableRegion.setAttribute('aria-label', metadata ? 'Workflow fields and outputs are rows; each metadata attribute and each plan option has its own column.' : `${rowType} are rows; fields and workflow outputs are columns.`)
+    workflowPivot.textContent = metadata ? `Show ${pluralRows()} as rows` : 'Show field metadata columns'
+    workflowPivot.setAttribute('aria-label', workflowPivot.textContent)
   }
   async function renderWorkflowTable(expectedGeneration = comparisonGeneration) {
     const current = () => expectedGeneration === comparisonGeneration
@@ -299,7 +304,7 @@ async function createSmeBusinessPack() {
       : `${pluralRows()} · compare`}`
     updateComparisonSlotVisibility()
     renderWorkflowEditor()
-    workflowTableRegion.setAttribute('aria-label', `Plan ${pluralRows()} are rows; mode, inputs, evidence facets, coverage, model outputs, pitch roles, and next checks are columns.`)
+    updateWorkflowOrientationCopy()
     void renderWorkflowTable()
   }
   function invalidateComparison() {
@@ -422,7 +427,8 @@ async function createSmeBusinessPack() {
   await refreshFields()
   comparisonCount.value = '1'; updateComparisonSlotVisibility()
   updateModePresentation()
-  workflowTableRegion.setAttribute('aria-label', 'Plan options are rows. Mode, all inputs, each evidence facet, scoped coverage measures, every model output, every pitch role, and next checks are columns.')
+  updateWorkflowOrientationCopy()
+  workflowPivot.addEventListener('click', () => setWorkflowOrientation(tableOrientation === 'rows' ? 'columns' : 'rows'))
   void renderWorkflowTable()
   comparisonCount.addEventListener('change', () => { updateComparisonSlotVisibility(); invalidateComparison() })
   planModeSelect.addEventListener('change', () => { updateModePresentation(); invalidateComparison() })
