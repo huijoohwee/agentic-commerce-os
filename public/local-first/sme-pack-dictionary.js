@@ -18,6 +18,47 @@ const display = value => {
   const text = typeof value === 'string' ? value : JSON.stringify(value)
   return text.length > 1000 ? text.slice(0, 997) + '…' : text
 }
+const dictionaryGroups = rows => {
+  const rootOrder = [], roots = new Map()
+  const pathFor = row => {
+    const [record, , , section] = row.cells
+    if (record === 'Input field') return ['Inputs', section || 'Plan']
+    if (['Plan contract', 'Calculation model', 'Illustrative input set', 'Protocol schema', 'Workflow mode'].includes(record)) return ['Contract', 'Identity and modes']
+    if (record === 'Model output') return ['Plan outputs', 'Model calculations']
+    if (record === 'Coverage output') return ['Plan outputs', 'Coverage']
+    if (record === 'Workflow column') return ['Plan outputs', 'Readiness and evidence']
+    if (record === 'Plan artifact') return ['Projection outline', 'Artifacts']
+    if (record === 'Pitch role column') return ['Projection outline', 'Role columns']
+    if (record === 'Guideline source') return ['Canonical owners', 'Guideline sources']
+    if (record === 'Shared requirement') return ['Canonical owners', 'Shared requirements']
+    if (record === 'Projection contract' || record === 'Projection requirement') return ['Canonical owners', section || 'Projection requirements']
+    if (['Calculation parameter', 'Evidence guidance', 'Tolerance', 'Ratio'].includes(record)) return ['Protocol collections', record]
+    if (record === 'Review metadata' || record === 'Invocation metadata') return ['Protocol metadata', record]
+    if (record === 'Tool schema') return ['Invocation surfaces', 'Tool schemas']
+    if (record === 'Shared token' || record === 'Skill metadata') return ['Shared vocabulary', 'Owner references']
+    return ['Protocol records', section || record]
+  }
+  for (const row of rows) {
+    const path = pathFor(row), root = path[0], section = path[1] ?? row.cells[0]
+    if (!roots.has(root)) { roots.set(root, new Map()); rootOrder.push(root) }
+    const sections = roots.get(root)
+    if (!sections.has(section)) sections.set(section, [])
+    sections.get(section).push(row)
+  }
+  const groupRow = (path, depth) => {
+    const label = path.at(-1), key = `group:${path.join('.')}`
+    const id = `group-${path.map(part => part.toLowerCase().replace(/[^a-z0-9]+/gu, '-').replace(/^-|-$/gu, '')).join('--')}`
+    return { id, depth, cells: ['Hierarchy group', key, label, path.slice(0, -1).join(' › '),
+      'Display grouping derived from the active protocol. This row is not an input, output, evidence claim, or rule.',
+      'group label', 'No', '', '', 'Display structure only', 'pack.protocol', 'Base Multi-dimensional Table'] }
+  }
+  return rootOrder.flatMap(root => {
+    const sections = roots.get(root)
+    return [groupRow([root], 1), ...[...sections].flatMap(([section, items]) => [
+      groupRow([root, section], 2), ...items.map(row => ({ ...row, depth: 3 })),
+    ])]
+  })
+}
 
 export function createSmePackDictionaryView(protocol, orientation = 'rows', onOrientationChange, toolSchemas = []) {
   if (!protocol?.pack || protocol.schema !== 'sme-business-plan/protocol/v3' || !Array.isArray(protocol.plan_modes) || !Array.isArray(protocol.input_fields)
@@ -118,6 +159,7 @@ export function createSmePackDictionaryView(protocol, orientation = 'rows', onOr
     tool.annotations, 'TOOL_SCHEMAS', 'Shared pack core and local adapters')
   for (const [record, key, definition, owner] of ownerRows) add(record, key, key, 'Shared vocabulary',
     `${definition}. This row points to its canonical owner and does not redefine shared semantics.`, 'reference', 'No', '', '', '', 'Canonical source reference', owner)
-  return { columns, rows, layout: 'multiDimensional', orientation,
-    ariaLabel: 'SME plan data dictionary; input, output, evidence, tool, and shared vocabulary records are rows and their definitions are columns.', onOrientationChange }
+  const nestedRows = dictionaryGroups(rows)
+  return { columns, rows: nestedRows, layout: 'multiDimensional', orientation,
+    ariaLabel: 'SME plan data dictionary; protocol records are nested by contract, section, output, and canonical owner, with definitions and owners as columns.', onOrientationChange }
 }

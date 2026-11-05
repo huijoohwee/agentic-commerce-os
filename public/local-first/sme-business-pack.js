@@ -92,6 +92,22 @@ async function createSmeBusinessPack() {
       return { ...slot, slot: item.slot, status: slot?.status ?? (visible ? 'ready' : 'not_supplied'), report: slot?.report ?? null, evidence: item.evidence }
     })
   }
+  const tablePathLabel = parts => parts.map(part => String(part ?? '').trim()).filter(Boolean).join(' › ')
+  const inputRequirementLabel = field => {
+    if (field.required) return 'required'
+    if (field.required_when?.field) {
+      const trigger = field.required_when
+      return `conditional when ${trigger.field}=${String(trigger.equals ?? trigger.value ?? 'true')}`
+    }
+    if (field.required_modes?.length) {
+      const modes = field.required_modes.map(id => currentProtocol?.plan_modes?.find(mode => mode.id === id)?.label ?? id)
+      return `required in ${modes.join(', ')}`
+    }
+    return 'optional'
+  }
+  const inputTableLabel = field => tablePathLabel(['Input', field.section ?? 'Plan', [
+    field.label, `[${field.name}]`, field.type, field.unit, inputRequirementLabel(field),
+  ].filter(Boolean).join(' · ')])
   function tableDimensions() {
     const reportValue = (slot, read) => slot.status === 'not_supplied' ? 'Not in this comparison.' : slot.report ? read(slot.report) : 'Not built · build local plan'
     const evidenceValue = (slot, read) => slot.status === 'not_supplied' ? 'Not in this comparison.' : slot.evidence.length
@@ -99,7 +115,7 @@ async function createSmeBusinessPack() {
         const field = currentFields.find(item => item.name === row.field_key)
         const inputs = comparisonSlotElements.find(item => item.slot === slot.slot)?.inputs
         const value = field ? formatFieldValue(field, row.value, inputs?.currency_code) : JSON.stringify(row.value)
-        return read(row, field, value)
+        return read(row, field, `${row.field_key} · ${field?.label ?? lineLabel(row.field_key)}: ${value}`)
       }).join(' · ')
       : 'No evidence entries recorded.'
     const modelOutputs = currentProtocol?.model_outputs ?? []
@@ -107,11 +123,23 @@ async function createSmeBusinessPack() {
     const workflowColumns = currentProtocol?.workflow_columns ?? []
     const workflowColumn = (id, read) => {
       const column = workflowColumns.find(item => item.id === id)
-      return { id, name: column?.label ?? `Missing workflow column: ${id}`, read }
+      const path = {
+        'plan-completeness': ['Readiness', 'Input coverage', 'Required inputs'],
+        'data-validation': ['Readiness', 'Validation', 'Invalid entries'],
+        'evidence-values': ['Evidence', 'Field context', 'Recorded values'],
+        'evidence-provenance': ['Evidence', 'Record attributes', 'Provenance'],
+        'evidence-observer': ['Evidence', 'Record attributes', 'Observer role'],
+        'evidence-date': ['Evidence', 'Record attributes', 'Date'],
+        'evidence-status': ['Evidence', 'Record status', 'Authentication state'],
+        'model-coverage': ['Readiness', 'Model coverage', 'Calculated outputs'],
+        'next-checks': ['Plan', 'Follow-up', 'Next checks'],
+      }[id] ?? ['Workflow', 'Protocol field', column?.label ?? id]
+      path[path.length - 1] = `${path.at(-1)} [${id}]`
+      return { id, name: tablePathLabel(path), read }
     }
     const pitchRoles = currentProtocol?.artifacts?.find(artifact => artifact.id === 'pitch_deck_outline')?.roles ?? []
     const dimensions = [
-      { id: 'plan-mode', name: 'Plan · mode and contract', read: () => currentProtocol?.pack && currentMode()
+      { id: 'plan-mode', name: tablePathLabel(['Plan', 'Selection', 'Mode and contract [plan-mode]']), read: () => currentProtocol?.pack && currentMode()
         ? `${currentMode().label} · ${currentProtocol.pack.label} · v${currentProtocol.pack.version} · ${currentProtocol.pack.review_status}` : 'Loading plan…' },
       workflowColumn('plan-completeness', slot => reportValue(slot, report => {
         const status = report.check.completeness, missing = status.required - status.supplied
@@ -121,12 +149,12 @@ async function createSmeBusinessPack() {
         report.check.completeness.invalid_fields.length
           ? report.check.completeness.invalid_fields.map(lineLabel).join(' · ')
           : 'No invalid entries reported.')),
-      workflowColumn('evidence-values', slot => evidenceValue(slot, (row, field, value) => `${field?.label ?? lineLabel(row.field_key)}: ${value}`)),
-      workflowColumn('evidence-provenance', slot => evidenceValue(slot, (row, field) => `${field?.label ?? lineLabel(row.field_key)}: ${enumLabel(row.provenance)}`)),
-      workflowColumn('evidence-observer', slot => evidenceValue(slot, (row, field) => `${field?.label ?? lineLabel(row.field_key)}: ${enumLabel(row.observer_role)}`)),
-      workflowColumn('evidence-date', slot => evidenceValue(slot, (row, field) => `${field?.label ?? lineLabel(row.field_key)}: ${row.date}`)),
+      workflowColumn('evidence-values', slot => evidenceValue(slot, (row, field, value) => `${row.field_key} · ${field?.label ?? lineLabel(row.field_key)}: ${value}`)),
+      workflowColumn('evidence-provenance', slot => evidenceValue(slot, (row, field) => `${row.field_key} · ${field?.label ?? lineLabel(row.field_key)}: ${enumLabel(row.provenance)}`)),
+      workflowColumn('evidence-observer', slot => evidenceValue(slot, (row, field) => `${row.field_key} · ${field?.label ?? lineLabel(row.field_key)}: ${enumLabel(row.observer_role)}`)),
+      workflowColumn('evidence-date', slot => evidenceValue(slot, (row, field) => `${row.field_key} · ${field?.label ?? lineLabel(row.field_key)}: ${row.date}`)),
       workflowColumn('evidence-status', slot => slot.status === 'not_supplied' ? 'Not in this comparison.' : slot.evidence.length ? 'User-recorded · not authenticated' : 'No evidence entries recorded.'),
-      ...coverageOutputs.map(output => ({ id: `coverage-${output.id}`, name: output.label, read: slot => reportValue(slot, report => {
+      ...coverageOutputs.map(output => ({ id: `coverage-${output.id}`, name: tablePathLabel(['Coverage', output.id, output.label.replace(/^Coverage\s*·\s*/u, '')]), read: slot => reportValue(slot, report => {
         const coverage = output.kind === 'evidence' ? report.evidence_coverage : report.projection_coverage?.[output.projection_id]
         if (!coverage) return 'Coverage unavailable.'
         if (output.kind === 'evidence') return `${coverage.evidenced_fields}/${coverage.guided_fields} guided fields have context · ${coverage.evidence_count} records · not authenticated`
@@ -136,9 +164,9 @@ async function createSmeBusinessPack() {
         const rows = Object.values(report.model.missing_inputs), complete = rows.filter(values => values.length === 0).length
         return `${complete}/${rows.length} outputs have their required inputs`
       })),
-      ...modelOutputs.map(output => ({ id: `model-${output.id}`, name: `Model · ${output.label}`, read: slot =>
+      ...modelOutputs.map(output => ({ id: `model-${output.id}`, name: tablePathLabel(['Model', 'Calculated output', `${output.label} [${output.id}]`]), read: slot =>
         reportValue(slot, report => report.model_display[output.id]) })),
-      ...pitchRoles.map(role => ({ id: `pitch-${role.id}`, name: `Pitch · Slide ${role.slide} · ${role.label}`, read: slot =>
+      ...pitchRoles.map(role => ({ id: `pitch-${role.id}`, name: tablePathLabel(['Pitch deck', `Slide ${role.slide}`, `${role.label} [${role.id}]`]), read: slot =>
         reportValue(slot, report => report.pitch_deck_outline.find(row => row.id === role.id)?.content ?? 'Role output unavailable.') })),
       workflowColumn('next-checks', slot => reportValue(slot, report => report.next_checks.length
         ? report.next_checks.map(row => `${row.order}. ${row.action}`).join(' · ') : 'No next checks from the entered fields.')),
@@ -149,7 +177,7 @@ async function createSmeBusinessPack() {
     const slots = comparisonSlotElements.slice(0, Number(comparisonCount.value))
     const resultSlots = tableSlots(comparisonValue)
     const dimensions = tableDimensions()
-    const columns = [{ id: 'plan-row', name: currentMode()?.row_label ?? 'Plan option' }, ...currentFields.map(field => ({ id: field.name, name: 'Input · ' + field.label + (field.unit ? ' · ' + field.unit : '') })),
+    const columns = [{ id: 'plan-row', name: currentMode()?.row_label ?? 'Plan option' }, ...currentFields.map(field => ({ id: field.name, name: inputTableLabel(field) })),
       ...dimensions.map(({ id, name }) => ({ id, name }))]
     const rows = slots.map(item => ({ id: item.slot, cells: [rowLabel(item.slot),
       ...currentFields.map(field => formatFieldValue(field, item.inputs[field.name], item.inputs.currency_code)),
