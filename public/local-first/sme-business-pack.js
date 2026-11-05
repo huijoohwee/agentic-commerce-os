@@ -34,7 +34,7 @@ async function createSmeBusinessPack() {
   const workflowStatus = $('#workflow-status'), serviceStatus = $('#service-status')
   const runtimeMode = $('#runtime-mode'), runtimeStatus = $('#runtime-status')
   let currentFields = [], currentProtocol, registration, active = false, previousScrollRestoration = null,
-    comparisonGeneration = 0, packGeneration = 0, comparisonPending = false, tableOrientation = 'rows',
+    comparisonGeneration = 0, packGeneration = 0, importGeneration = 0, comparisonPending = false, tableOrientation = 'rows',
     comparisonValue = null, selectedWorkflowSet = null, selectedEvidenceField = null,
     tableAdapter = null, dictionaryModule = null, dictionaryOrientation = 'rows'
   const comparisonSlotElements = ['A', 'B', 'C'].map(slot => ({ slot, inputs: {}, evidence: [] }))
@@ -248,12 +248,18 @@ async function createSmeBusinessPack() {
     return reports
   }
   async function importWorksheet(file) {
-    const generation = comparisonGeneration, pack = currentProtocol.pack, packVersion = packGeneration
+    const generation = comparisonGeneration, pack = currentProtocol.pack, packVersion = packGeneration, request = ++importGeneration
     if (file.size > 65536) throw Error('sme_pack_worksheet_limit')
-    const isCurrent = () => generation === comparisonGeneration && packVersion === packGeneration && document.body.dataset.workspaceRole === 'sme'
-    const text = await file.text()
-    if (!isCurrent()) throw Error('sme_pack_worksheet_cancelled')
-    const worksheets = await readSmeWorksheets(text, file.name.split('.').pop().toLowerCase(), pack)
+    const isCurrent = () => request === importGeneration && generation === comparisonGeneration && packVersion === packGeneration && document.body.dataset.workspaceRole === 'sme'
+    let worksheets
+    try {
+      const text = await file.text()
+      if (!isCurrent()) throw Error('sme_pack_worksheet_cancelled')
+      worksheets = await readSmeWorksheets(text, file.name.split('.').pop().toLowerCase(), pack)
+    } catch (error) {
+      if (!isCurrent()) throw Error('sme_pack_worksheet_cancelled')
+      throw error
+    }
     if (!isCurrent()) throw Error('sme_pack_worksheet_cancelled')
     planModeSelect.value = worksheets[0].mode; comparisonCount.value = String(worksheets.length)
     for (const [index, item] of comparisonSlotElements.entries()) {

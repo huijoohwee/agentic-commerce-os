@@ -334,6 +334,18 @@ async function checkTakeoverReview(page, output) {
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true)
   await host.scrollIntoViewIfNeeded()
   await page.screenshot({ path: path.join(output, 'sme-review-mobile.png') })
+  await page.evaluate(() => {
+    window.worksheetReads = []; window.originalWorksheetText = File.prototype.text
+    File.prototype.text = function () { const file = this; return new Promise(resolve => window.worksheetReads.push(async () => resolve(await window.originalWorksheetText.call(file)))) }
+  })
+  for (const next_action of ['Older selection', 'Newest selection']) await upload([{ ...first, inputs: { ...first.inputs, next_action } }])
+  await expect.poll(() => page.evaluate(() => window.worksheetReads.length)).toBe(2)
+  await page.evaluate(() => window.worksheetReads[0]())
+  await expect.poll(() => page.locator('#sme-worksheet-import').evaluate(input => input.files.length)).toBe(0)
+  await expect(page.locator('#compare-a-next_action')).toHaveValue(texts.next_action)
+  await page.evaluate(() => { File.prototype.text = window.originalWorksheetText; window.worksheetReads[1]() })
+  await expect(page.locator('#compare-a-next_action')).toHaveValue('Newest selection')
+  await upload(sheets); await expect(page.locator('#workflow-status')).toContainText('Worksheet imported')
   // A delayed file read cannot undo a mode edit or repopulate a route that was left.
   for (const change of ['mode', 'contract', 'route']) {
     await page.evaluate(() => {
