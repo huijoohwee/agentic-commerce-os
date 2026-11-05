@@ -136,7 +136,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await page.locator('#sme-compare-run').click();
   await expect(page.locator('#workflow-status')).toContainText('Local Buy/Build plan built');
   const workflowText = await page.locator('#sme-workflow-table-host').evaluate(host => host.shadowRoot.textContent);
-  assert.match(workflowText, /Model · Revenue per month/);
+  assert.match(workflowText, /Model › Calculated outputs › Revenue per month \[monthly_revenue\]/u);
   assert.match(workflowText, /USD 6,000/);
   assert.equal(smeServiceRequests.length, 0);
   assert.equal(await page.evaluate(() => document.querySelector('#workspace-shell') === window.__smeShellAtEntry), true);
