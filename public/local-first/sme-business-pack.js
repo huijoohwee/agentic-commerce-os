@@ -1,10 +1,10 @@
-import { invokeSmePackTool, PACK_INDEX, TOOL_SCHEMAS } from './sme-business-pack-core.js'
+import { invokeSmePackTool, PACK_INDEX, TOOL_SCHEMAS } from './sme-business-pack-core.js?v=business-plan-contract-v5'
 import { getOrCreateSingleton } from './workspace-singleton.js'
 import { createSmeWorkflowEditor } from './sme-workflow-editor.js'
 
 const style = document.createElement('link')
 style.rel = 'stylesheet'
-style.href = new URL('./sme-business-pack.css?v=business-plan-table-v1', import.meta.url).href
+style.href = new URL('./sme-business-pack.css?v=business-plan-table-v2', import.meta.url).href
 let stylePromise
 const attachStyles = () => {
   if (!stylePromise) stylePromise = new Promise((resolve, reject) => {
@@ -24,7 +24,8 @@ async function createSmeBusinessPack() {
   const root = document.querySelector('#sme .workspace-content')
   if (!(root instanceof HTMLElement)) throw Error('sme_business_pack_mount_missing')
   const $ = selector => root.querySelector(selector)
-  const form = $('#sme-check-form'), packSelect = $('#pack-id'), comparisonCount = $('#sme-compare-count')
+  const form = $('#sme-check-form'), packSelect = $('#pack-id'), planModeSelect = $('#sme-plan-mode'), comparisonCount = $('#sme-compare-count')
+  const comparisonCountLabel = $('#sme-compare-count-label'), planModeDescription = $('#sme-plan-mode-description')
   const workflowTableHost = $('#sme-workflow-table-host'), workflowTableRegion = $('#sme-workflow-table-region')
   const dictionaryHost = $('#sme-dictionary-table-host'), dictionaryRegion = $('#sme-dictionary-table-region')
   const dictionaryStatus = $('#sme-dictionary-status'), overview = $('#sme-overview'), dictionary = $('#sme-dictionary')
@@ -48,6 +49,9 @@ async function createSmeBusinessPack() {
     return /^[A-Z]{3}$/u.test(currency ?? '') ? `${currency} ${amount}` : amount
   }
   const lineLabel = id => currentFields.find(field => field.name === id)?.label || id.replaceAll('_', ' ')
+  const currentMode = () => currentProtocol?.plan_modes?.find(mode => mode.id === planModeSelect.value)
+  const rowLabel = slot => `${currentMode()?.row_label ?? 'Plan option'} ${slot}`
+  const pluralRows = () => currentMode()?.id === 'scenario' ? 'scenarios' : 'plan options'
   function download(name, mime, content) { const url = URL.createObjectURL(new Blob([content], { type: mime })); const anchor = node('a'); anchor.href = url; anchor.download = name; anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 1000) }
   const worksheetSection = node('section', undefined, 'worksheet-controls')
   worksheetSection.append(node('h3', 'Offline worksheet'))
@@ -75,6 +79,7 @@ async function createSmeBusinessPack() {
     workflowEditor, inputFields, evidenceEditor, heading: $('#sme-workflow-editor-heading'), note: $('#sme-workflow-editor-note'),
     evidenceHeading: $('#sme-workflow-evidence-heading'), parameterDetails: $('#sme-workflow-parameter-details'), workflowStatus,
     getFields: () => currentFields, getProtocol: () => currentProtocol,
+    getMode: currentMode,
     getSlots: () => comparisonSlotElements.slice(0, Number(comparisonCount.value)), getSelectedSlot: () => selectedWorkflowSet,
     getEvidenceField: () => selectedEvidenceField, setEvidenceField: value => { selectedEvidenceField = value },
     node, option, enumLabel, formatFieldValue, formatMoney, invalidate: invalidateComparison,
@@ -89,36 +94,54 @@ async function createSmeBusinessPack() {
   }
   function tableDimensions() {
     const reportValue = (slot, read) => slot.status === 'not_supplied' ? 'Not in this comparison.' : slot.report ? read(slot.report) : 'Not built · build local plan'
-    const evidenceRecords = slot => slot.evidence.length
-      ? slot.evidence.map((row, index) => {
+    const evidenceValue = (slot, read) => slot.status === 'not_supplied' ? 'Not in this comparison.' : slot.evidence.length
+      ? slot.evidence.map(row => {
         const field = currentFields.find(item => item.name === row.field_key)
         const inputs = comparisonSlotElements.find(item => item.slot === slot.slot)?.inputs
         const value = field ? formatFieldValue(field, row.value, inputs?.currency_code) : JSON.stringify(row.value)
-        return `${index + 1}. ${lineLabel(row.field_key)} · ${value} · ${enumLabel(row.provenance)} · ${enumLabel(row.observer_role)} · ${row.date}`
+        return read(row, field, value)
       }).join(' · ')
       : 'No evidence entries recorded.'
     const modelOutputs = currentProtocol?.model_outputs ?? []
+    const coverageOutputs = currentProtocol?.coverage_outputs ?? []
+    const workflowColumns = currentProtocol?.workflow_columns ?? []
+    const workflowColumn = (id, read) => {
+      const column = workflowColumns.find(item => item.id === id)
+      return { id, name: column?.label ?? `Missing workflow column: ${id}`, read }
+    }
+    const pitchRoles = currentProtocol?.artifacts?.find(artifact => artifact.id === 'pitch_deck_outline')?.roles ?? []
     const dimensions = [
-      { id: 'plan-contract', name: 'Plan · contract', read: () => currentProtocol?.pack ? `${currentProtocol.pack.label} · v${currentProtocol.pack.version} · ${currentProtocol.pack.review_status}` : 'Loading plan…' },
-      { id: 'plan-completeness', name: 'Plan · required inputs', read: slot => reportValue(slot, report => {
+      { id: 'plan-mode', name: 'Plan · mode and contract', read: () => currentProtocol?.pack && currentMode()
+        ? `${currentMode().label} · ${currentProtocol.pack.label} · v${currentProtocol.pack.version} · ${currentProtocol.pack.review_status}` : 'Loading plan…' },
+      workflowColumn('plan-completeness', slot => reportValue(slot, report => {
         const status = report.check.completeness, missing = status.required - status.supplied
         return missing ? `Incomplete · ${status.supplied}/${status.required} supplied · ${missing} unknown` : `Entered · ${status.supplied}/${status.required} required fields`
-      }) },
-      { id: 'data-validation', name: 'Plan · invalid entries', read: slot => reportValue(slot, report =>
+      })),
+      workflowColumn('data-validation', slot => reportValue(slot, report =>
         report.check.completeness.invalid_fields.length
           ? report.check.completeness.invalid_fields.map(lineLabel).join(' · ')
-          : 'No invalid entries reported.') },
-      { id: 'evidence-records', name: 'Plan · recorded evidence', read: slot => slot.status === 'not_supplied' ? 'Not in this comparison.' : evidenceRecords(slot) },
-      { id: 'model-coverage', name: 'Model · calculated outputs', read: slot => reportValue(slot, report => {
+          : 'No invalid entries reported.')),
+      workflowColumn('evidence-values', slot => evidenceValue(slot, (row, field, value) => `${field?.label ?? lineLabel(row.field_key)}: ${value}`)),
+      workflowColumn('evidence-provenance', slot => evidenceValue(slot, (row, field) => `${field?.label ?? lineLabel(row.field_key)}: ${enumLabel(row.provenance)}`)),
+      workflowColumn('evidence-observer', slot => evidenceValue(slot, (row, field) => `${field?.label ?? lineLabel(row.field_key)}: ${enumLabel(row.observer_role)}`)),
+      workflowColumn('evidence-date', slot => evidenceValue(slot, (row, field) => `${field?.label ?? lineLabel(row.field_key)}: ${row.date}`)),
+      workflowColumn('evidence-status', slot => slot.status === 'not_supplied' ? 'Not in this comparison.' : slot.evidence.length ? 'User-recorded · not authenticated' : 'No evidence entries recorded.'),
+      ...coverageOutputs.map(output => ({ id: `coverage-${output.id}`, name: output.label, read: slot => reportValue(slot, report => {
+        const coverage = output.kind === 'evidence' ? report.evidence_coverage : report.projection_coverage?.[output.projection_id]
+        if (!coverage) return 'Coverage unavailable.'
+        if (output.kind === 'evidence') return `${coverage.evidenced_fields}/${coverage.guided_fields} guided fields have context · ${coverage.evidence_count} records · not authenticated`
+        return `${coverage.inputs_supplied}/${coverage.inputs_mapped} mapped inputs supplied · ${coverage.requirements_mapped}/${coverage.requirements_total} requirements mapped · ${coverage.support_status}; coverage only`
+      }) })),
+      workflowColumn('model-coverage', slot => reportValue(slot, report => {
         const rows = Object.values(report.model.missing_inputs), complete = rows.filter(values => values.length === 0).length
         return `${complete}/${rows.length} outputs have their required inputs`
-      }) },
+      })),
       ...modelOutputs.map(output => ({ id: `model-${output.id}`, name: `Model · ${output.label}`, read: slot =>
         reportValue(slot, report => report.model_display[output.id]) })),
-      { id: 'pitch-deck-outline', name: 'Pitch · deck outline', read: slot => reportValue(slot, report =>
-        report.pitch_deck_outline.map(row => `Slide ${row.slide}. ${row.section}: ${row.content}`).join(' · ')) },
-      { id: 'next-checks', name: 'Plan · next checks', read: slot => reportValue(slot, report => report.next_checks.length
-        ? report.next_checks.map(row => `${row.order}. ${row.action}`).join(' · ') : 'No next checks from the entered fields.') },
+      ...pitchRoles.map(role => ({ id: `pitch-${role.id}`, name: `Pitch · Slide ${role.slide} · ${role.label}`, read: slot =>
+        reportValue(slot, report => report.pitch_deck_outline.find(row => row.id === role.id)?.content ?? 'Role output unavailable.') })),
+      workflowColumn('next-checks', slot => reportValue(slot, report => report.next_checks.length
+        ? report.next_checks.map(row => `${row.order}. ${row.action}`).join(' · ') : 'No next checks from the entered fields.')),
     ]
     return dimensions
   }
@@ -126,27 +149,25 @@ async function createSmeBusinessPack() {
     const slots = comparisonSlotElements.slice(0, Number(comparisonCount.value))
     const resultSlots = tableSlots(comparisonValue)
     const dimensions = tableDimensions()
-    const columns = [{ id: 'scenario', name: 'Plan scenario' }, ...currentFields.map(field => ({ id: field.name, name: 'Input · ' + field.label + (field.unit ? ' · ' + field.unit : '') })),
+    const columns = [{ id: 'plan-row', name: currentMode()?.row_label ?? 'Plan option' }, ...currentFields.map(field => ({ id: field.name, name: 'Input · ' + field.label + (field.unit ? ' · ' + field.unit : '') })),
       ...dimensions.map(({ id, name }) => ({ id, name }))]
-    const rows = slots.map(item => ({ id: item.slot, cells: [`Scenario ${item.slot}`,
-      ...currentFields.map(field => {
-        const count = item.evidence.filter(row => row.field_key === field.name).length
-        return formatFieldValue(field, item.inputs[field.name], item.inputs.currency_code) + (count ? ` · ${count} evidence ${count === 1 ? 'entry' : 'entries'}` : '')
-      }), ...dimensions.map(dimension => dimension.read(resultSlots.find(slot => slot.slot === item.slot)))] }))
+    const rows = slots.map(item => ({ id: item.slot, cells: [rowLabel(item.slot),
+      ...currentFields.map(field => formatFieldValue(field, item.inputs[field.name], item.inputs.currency_code)),
+      ...dimensions.map(dimension => dimension.read(resultSlots.find(slot => slot.slot === item.slot)))] }))
     return { columns, rows, layout: 'multiDimensional', orientation: tableOrientation,
-      ariaLabel: 'SME business plan; scenarios are rows and every plan field, evidence record, model output and next check is a column.', selectedRowId: selectedWorkflowSet ?? undefined,
+      ariaLabel: `SME plan; ${pluralRows()} are rows and the selected mode, all contract inputs, evidence, coverage, declared outputs, and next checks are columns.`, selectedRowId: selectedWorkflowSet ?? undefined,
       onActivateRow: slot => {
         if (!slots.some(item => item.slot === slot)) return
         selectedWorkflowSet = slot; renderWorkflowEditor()
-        workflowStatus.textContent = `Editing Scenario ${slot}. Values and evidence stay on this device.`
+        workflowStatus.textContent = `Editing ${rowLabel(slot)}. Values and evidence stay on this device.`
         void renderWorkflowTable()
       }, onOrientationChange: orientation => {
         if (!workflowTableHost.isConnected) return
         tableOrientation = orientation
         workflowTableRegion.dataset.orientation = orientation
         workflowTableRegion.setAttribute('aria-label', orientation === 'rows'
-          ? 'Plan scenarios as rows; all plan fields, evidence, model outputs and next checks as columns.'
-          : 'The same business plan pivoted to fields and outputs as records.')
+          ? `Plan ${pluralRows()} as rows; mode, narrative inputs, evidence values and attributes, projection coverage, every model output, every pitch role, and next checks as columns.`
+          : 'The same plan table pivoted to fields and outputs as records.')
         void renderWorkflowTable()
       } }
   }
@@ -158,14 +179,17 @@ async function createSmeBusinessPack() {
     return ok || !current()
   }
   async function runPlan(item = comparisonSlotElements[0]) {
-    return invokeSmePackTool('business.plan.build', { pack_id: packSelect.value, inputs: readInputs(item), evidence: item.evidence })
+    return invokeSmePackTool('business.plan.build', { pack_id: packSelect.value, mode: planModeSelect.value, inputs: readInputs(item), evidence: item.evidence })
   }
   async function fillWorksheet(worksheet) {
-    if (worksheet?.schema !== 'sme-business-plan/worksheet/v1' || worksheet.pack_id !== packSelect.value
+    if (worksheet?.schema !== 'sme-business-plan/worksheet/v2' || worksheet.pack_id !== packSelect.value
       || worksheet.pack_version !== currentProtocol.pack.version
+      || !currentProtocol.plan_modes.some(mode => mode.id === worksheet.mode)
       || !worksheet.inputs || typeof worksheet.inputs !== 'object' || !Array.isArray(worksheet.evidence)) throw Error('worksheet_invalid')
-    const candidate = { pack_id: worksheet.pack_id, inputs: worksheet.inputs, evidence: worksheet.evidence }
+    const candidate = { pack_id: worksheet.pack_id, mode: worksheet.mode, inputs: worksheet.inputs, evidence: worksheet.evidence }
     await invokeSmePackTool('business.plan.build', candidate)
+    planModeSelect.value = worksheet.mode
+    updateModePresentation()
     const item = comparisonSlotElements[0]
     item.inputs = { ...worksheet.inputs }
     item.evidence.splice(0, item.evidence.length, ...worksheet.evidence.map(row => ({ ...row })))
@@ -189,12 +213,14 @@ async function createSmeBusinessPack() {
     if (quoted) throw Error('worksheet_csv_invalid')
     if (cell || row.length) { row.push(cell); rows.push(row) }
     if (rows[0]?.join(',') !== 'kind,key,value,provenance,observer_role,date') throw Error('worksheet_csv_invalid')
-    const worksheet = { schema: 'sme-business-plan/worksheet/v1', pack_id: packSelect.value, pack_version: currentProtocol.pack.version, inputs: {}, evidence: [] }
+    const worksheet = { schema: 'sme-business-plan/worksheet/v2', pack_id: packSelect.value, pack_version: currentProtocol.pack.version, mode: undefined, inputs: {}, evidence: [] }
     for (const [kind, key, value, provenance, observer_role, date] of rows.slice(1)) {
       if (kind === 'input') worksheet.inputs[key] = JSON.parse(value)
       else if (kind === 'evidence') worksheet.evidence.push({ field_key: key, value: JSON.parse(value), provenance, observer_role, date })
+      else if (kind === 'meta' && key === 'mode') worksheet.mode = JSON.parse(value)
       else throw Error('worksheet_csv_invalid')
     }
+    if (!worksheet.mode) throw Error('worksheet_csv_invalid')
     return worksheet
   }
   async function importWorksheet(file) {
@@ -215,6 +241,11 @@ async function createSmeBusinessPack() {
     if (packId !== packSelect.value) return false
     currentProtocol = protocol
     currentFields = currentProtocol.input_fields
+    planModeSelect.replaceChildren()
+    for (const mode of currentProtocol.plan_modes) option(planModeSelect, mode.id, mode.label)
+    planModeSelect.value = currentProtocol.plan_modes.find(mode => mode.default)?.id ?? ''
+    $('#sme-heading').textContent = currentProtocol.pack.label
+    runtimeMode.textContent = `${currentProtocol.pack.label.toUpperCase()} · LOCAL WORKSPACE`
     serviceStatus.textContent = `${currentProtocol.pack.label} · v${currentProtocol.pack.version} · ${currentProtocol.pack.review_status} · local protocol`
     if (location.hash.slice(1).split('?')[0] === 'sme-dictionary') void renderDictionaryTable()
     return true
@@ -226,7 +257,20 @@ async function createSmeBusinessPack() {
     }
     if (selectedWorkflowSet && !comparisonSlotElements.slice(0, count).some(item => item.slot === selectedWorkflowSet)) selectedWorkflowSet = 'A'
     renderWorkflowEditor()
-    compareButton.textContent = count === 1 ? 'Build local plan' : `Compare ${count} scenarios locally`
+    compareButton.textContent = count === 1 ? 'Build local plan' : `Compare ${count} ${pluralRows()} locally`
+  }
+  function updateModePresentation() {
+    const mode = currentMode()
+    if (!mode) return
+    comparisonCountLabel.textContent = mode.id === 'scenario' ? 'Scenarios' : 'Plan options'
+    planModeDescription.textContent = mode.description
+    for (const item of comparisonCount.options) item.textContent = `${item.value} ${item.value === '1'
+      ? mode.id === 'scenario' ? 'scenario · build' : 'plan option · build'
+      : `${pluralRows()} · compare`}`
+    updateComparisonSlotVisibility()
+    renderWorkflowEditor()
+    workflowTableRegion.setAttribute('aria-label', `Plan ${pluralRows()} are rows; mode, inputs, evidence facets, coverage, model outputs, pitch roles, and next checks are columns.`)
+    void renderWorkflowTable()
   }
   function invalidateComparison() {
     ++comparisonGeneration
@@ -248,7 +292,7 @@ async function createSmeBusinessPack() {
     try {
       const adapter = await (tableAdapter ??= import('./agentic-base-data-view.js?v=base-0cd7602-sme-workflow-table-v2')
         .catch(error => { tableAdapter = null; throw error }))
-      if (generation !== mount.generation || !isCurrent() || !host.isConnected) return false
+      if (generation !== mount.generation || !isCurrent() || !host.isConnected) return true
       let target = host.shadowRoot?.querySelector('[data-sme-table-target]')
       if (!target) {
         const shadow = host.shadowRoot ?? host.attachShadow({ mode: 'open' }), stylesheet = document.createElement('link')
@@ -263,10 +307,11 @@ async function createSmeBusinessPack() {
         shadow.append(stylesheet, target)
       }
       await mount.ready
-      if (generation !== mount.generation || !isCurrent() || !host.isConnected) return false
+      if (generation !== mount.generation || !isCurrent() || !host.isConnected) return true
       mount.handle ? mount.handle.update(view) : mount.handle = adapter.mountDataView(target, view)
       return true
-    } catch {
+    } catch (error) {
+      console.error('sme_shared_table_unavailable', error)
       if (!mount.handle) host.shadowRoot?.replaceChildren()
       mount.ready = null
       return false
@@ -275,7 +320,7 @@ async function createSmeBusinessPack() {
   async function renderDictionaryTable() {
     if (!currentProtocol || !dictionaryHost?.isConnected) return
     try {
-      dictionaryModule ??= await import('./sme-pack-dictionary.js?v=business-plan-dictionary-v1')
+    dictionaryModule ??= await import('./sme-pack-dictionary.js?v=business-plan-dictionary-v2')
       const view = dictionaryModule.createSmePackDictionaryView(currentProtocol, dictionaryOrientation, orientation => {
         if (!dictionaryHost.isConnected) return
         dictionaryOrientation = orientation
@@ -300,23 +345,31 @@ async function createSmeBusinessPack() {
       inputs: readInputs(item), ...(item.evidence.length ? { evidence: item.evidence } : {}) }))
     const generation = ++comparisonGeneration
     comparisonPending = true; compareButton.disabled = true; comparisonValue = null
-    workflowStatus.textContent = count === 1 ? 'Building plan locally…' : 'Comparing scenarios locally…'
+    workflowStatus.textContent = count === 1 ? 'Building plan locally…' : `Comparing ${pluralRows()} locally…`
     void renderWorkflowTable()
     let deadline, timedOut = false
     try {
       const pending = count === 1 ? runPlan(comparisonSlotElements[0])
-        .then(report => ({ schema: 'sme-business-plan/comparison/v1', pack: currentProtocol.pack,
-          slots: [{ slot: 'A', status: 'included', report }], persisted: false, inference_tokens: 0 }))
-        : invokeSmePackTool('business.plan.compare', { plan_sets: planSets })
+        .then(report => ({ schema: 'sme-business-plan/comparison/v2', pack: currentProtocol.pack,
+          mode: report.mode, slots: [{ slot: 'A', status: 'included', report }], persisted: false, inference_tokens: 0 }))
+        : invokeSmePackTool('business.plan.compare', { mode: planModeSelect.value, plan_sets: planSets })
       const value = await Promise.race([pending, new Promise((_, reject) => { deadline = setTimeout(() => { timedOut = true; reject(Error('sme_pack_comparison_deadline')) }, 2000) })])
       if (generation !== comparisonGeneration || document.body.dataset.workspaceRole !== 'sme') return
       comparisonValue = value
       if (!await renderWorkflowTable()) throw Error('shared_table_unavailable')
-      workflowStatus.textContent = count === 1 ? 'Local plan built · inputs and report stay in this tab' : 'Local scenario comparison · inputs and reports stay in this tab'
-    } catch {
+      const modeLabel = currentMode().id === 'scenario' ? 'scenario' : currentMode().label
+      workflowStatus.textContent = count === 1 ? `Local ${modeLabel} plan built · inputs and report stay in this tab`
+        : `Local ${modeLabel} comparison · inputs and reports stay in this tab`
+    } catch (error) {
       if (generation === comparisonGeneration && document.body.dataset.workspaceRole === 'sme') {
         comparisonValue = null; void renderWorkflowTable()
-        workflowStatus.textContent = timedOut ? 'Plan exceeded 2 seconds; no report was kept.' : 'Plan refused. Review entered values and the shared protocol.'
+        const code = error instanceof Error ? error.message : ''
+        workflowStatus.textContent = timedOut ? 'Plan exceeded 2 seconds; no report was kept.'
+          : code === 'sme_pack_comparison_currency_required'
+            ? 'Enter the same ISO 4217 currency code in every row before comparing.'
+            : code === 'sme_pack_comparison_identity_mismatch'
+              ? 'Comparison requires the same plan contract and currency code across rows.'
+              : 'Plan refused. Review entered values and the shared protocol.'
       }
     } finally {
       clearTimeout(deadline)
@@ -326,34 +379,30 @@ async function createSmeBusinessPack() {
   for (const pack of PACK_INDEX) option(packSelect, pack.id, `${pack.label} · v${pack.version} · ${pack.review_status}`)
   packSelect.value = PACK_INDEX[0].id
   $('#sample').textContent = 'Load illustrative inputs'
-  runtimeMode.textContent = 'BUSINESS PLAN · LOCAL WORKSPACE'
+  runtimeMode.textContent = 'SME PLAN · LOCAL WORKSPACE'
   runtimeStatus.textContent = 'Local computation ready. No service request is needed.'
   $('#mcp-url').textContent = new URL('services/sme-business-pack/mcp', document.baseURI).href
   $('#webmcp-status').textContent = 'Browser tools are optional; local checks work without a network.'
   await refreshFields()
   comparisonCount.value = '1'; updateComparisonSlotVisibility()
-  workflowTableRegion.setAttribute('aria-label', 'Plan scenarios as rows; all pitch, financial, evidence, model and readiness fields as columns.')
+  updateModePresentation()
+  workflowTableRegion.setAttribute('aria-label', 'Plan options are rows. Mode, all inputs, each evidence facet, scoped coverage measures, every model output, every pitch role, and next checks are columns.')
   void renderWorkflowTable()
   comparisonCount.addEventListener('change', () => { updateComparisonSlotVisibility(); invalidateComparison() })
+  planModeSelect.addEventListener('change', () => { updateModePresentation(); invalidateComparison() })
   packSelect.addEventListener('change', async () => {
     const generation = ++packGeneration
     clearComparison()
     if (await refreshFields(packSelect.value) && generation === packGeneration) {
-      renderWorkflowEditor(); void renderWorkflowTable()
+      updateModePresentation()
       if (location.hash.slice(1).split('?')[0] === 'sme-dictionary') void renderDictionaryTable()
     }
   })
   form.addEventListener('submit', event => { event.preventDefault(); void runComparison() })
   $('#sample').addEventListener('click', () => {
-    const sample = {
-      venture_name: 'Illustrative project', venture_stage: 'validation', currency_code: 'USD',
-      problem_statement: 'A defined user group has a recurring task that takes time to complete.',
-      target_customer: 'A specific group the team can reach for interviews and trials.',
-      solution_offer: 'A simple service that helps users complete the task.',
-      business_model: 'A user-selected price per completed service.', go_to_market: 'Direct interviews and a small opt-in trial.',
-      key_risks: 'Demand, delivery effort, and repeat use are unverified.', milestones: 'Interview users, run a trial, review costs.',
-      price_per_unit: 20, units_per_month: 300, variable_cost_per_unit: 4, fixed_costs_per_month: 1800,
-      payroll_per_month: 2500, setup_costs: 1200, cash_available: 5000, runway_target_months: 4, funding_requested: 4000,
+    const sample = currentProtocol.illustrative_inputs
+    if (!sample || !Object.keys(sample).length) {
+      workflowStatus.textContent = 'No illustrative inputs are declared by this plan contract.'; return
     }
     comparisonCount.value = '1'; updateComparisonSlotVisibility()
     const item = comparisonSlotElements[0]; item.inputs = {}
@@ -364,7 +413,7 @@ async function createSmeBusinessPack() {
     }
     item.evidence.length = 0; selectedWorkflowSet = 'A'; selectedEvidenceField = currentProtocol.protocols[0]?.field_key ?? currentFields[0]?.name ?? null
     renderWorkflowEditor(); invalidateComparison()
-    workflowStatus.textContent = 'Illustrative values only; they are not market data and remain in this tab.'
+    workflowStatus.textContent = 'Illustrative values only; review them and replace as needed. They remain in this tab.'
   })
   for (const button of worksheetActions.querySelectorAll('[data-export]')) button.addEventListener('click', async () => {
     try {
@@ -372,7 +421,7 @@ async function createSmeBusinessPack() {
       const suffix = format === 'markdown' ? 'md' : format
       const content = plan.worksheet[format]
       if (typeof content !== 'string') throw Error('worksheet_format_missing')
-      download('business-plan-worksheet.' + suffix, format === 'json' ? 'application/json'
+      download(`${currentProtocol.pack.id.replaceAll('.', '-')}-worksheet.` + suffix, format === 'json' ? 'application/json'
         : format === 'csv' ? 'text/csv' : 'text/markdown', content)
       workflowStatus.textContent = 'Worksheet downloaded locally. No report was uploaded.'
     } catch { workflowStatus.textContent = 'Worksheet export refused. Review the entered values.' }
@@ -381,9 +430,9 @@ async function createSmeBusinessPack() {
     let sheet
     try {
       const plan = await runPlan(), worksheet = JSON.parse(plan.worksheet.json)
-      if (worksheet.schema !== 'sme-business-plan/worksheet/v1' || worksheet.evidence.length > 40) throw Error('worksheet_evidence_limit')
+      if (worksheet.schema !== 'sme-business-plan/worksheet/v2' || worksheet.evidence.length > 40) throw Error('worksheet_evidence_limit')
       sheet = node('article', undefined, 'sme-print-sheet')
-      sheet.append(node('h1', worksheet.inputs.venture_name || 'Business plan draft'), node('p', 'Plan contract v' + plan.pack.version + ' · ' + plan.pack.review_status + ' · ' + worksheet.currency_code + ' · ' + plan.as_of))
+      sheet.append(node('h1', worksheet.inputs.venture_name || 'Business plan draft'), node('p', plan.mode.label + ' · Plan contract v' + plan.pack.version + ' · ' + plan.pack.review_status + ' · ' + worksheet.currency_code + ' · ' + plan.as_of))
       const table = node('table'), head = node('thead'), header = node('tr'), body = node('tbody'), addRow = (kind, field, value) => {
         const row = node('tr'); row.append(node('th', kind), node('td', field), node('td', value)); body.append(row)
       }

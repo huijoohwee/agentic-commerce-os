@@ -1,6 +1,6 @@
 export function createSmeWorkflowEditor({
   workflowEditor, inputFields, evidenceEditor, heading, note, evidenceHeading, parameterDetails,
-  workflowStatus, getFields, getProtocol, getSlots, getSelectedSlot, getEvidenceField, setEvidenceField,
+  workflowStatus, getFields, getProtocol, getMode, getSlots, getSelectedSlot, getEvidenceField, setEvidenceField,
   node, option, enumLabel, formatFieldValue, formatMoney, invalidate,
 }) {
   let activeParameter = null
@@ -10,22 +10,28 @@ export function createSmeWorkflowEditor({
     if (field) showParameter(field)
   })
 
-  function inputControl(field, prefix, protocol, currencyCode) {
+  function isRequired(field, mode, inputs) {
+    return Boolean(field.required || field.required_modes?.includes(mode?.id)
+      || field.required_when && inputs[field.required_when.field] === field.required_when.equals)
+  }
+
+  function inputControl(field, prefix, protocol, currencyCode, mode, inputs) {
     const wrap = node('section', undefined, 'field'), label = node('label', field.label + (field.unit ? ' · ' + field.unit : ''))
-    const id = prefix + '-' + field.name, scope = prefix === 'compare-evidence' ? 'Evidence value' : `Scenario ${prefix.at(-1).toUpperCase()}`
+    const id = prefix + '-' + field.name, scope = prefix === 'compare-evidence' ? 'Evidence value' : `${mode?.row_label ?? 'Plan option'} ${prefix.at(-1).toUpperCase()}`
+    const required = isRequired(field, mode, inputs)
     if (field.type === 'enum' || field.type === 'boolean') {
       const control = node('select'); control.id = id; control.dataset.input = field.name; control.autocomplete = 'off'
       option(control, '', 'Choose…')
       const values = field.type === 'boolean' ? [['true', 'Yes'], ['false', 'No']] : field.values.map(value => [value, enumLabel(value)])
       for (const value of values) option(control, value[0], value[1])
-      label.htmlFor = id; control.setAttribute('aria-label', `${scope} ${field.label}`); control.setAttribute('aria-required', String(Boolean(field.required))); wrap.append(label, control); return wrap
+      label.htmlFor = id; control.setAttribute('aria-label', `${scope} ${field.label}`); control.setAttribute('aria-required', String(required)); wrap.append(label, control); return wrap
     }
     if (field.type === 'text' || field.type === 'currency') {
       const control = node('input'); control.type = 'text'; control.id = id; control.dataset.input = field.name
       control.autocomplete = 'off'; control.maxLength = field.type === 'currency' ? 3 : field.max_length ?? 280
       control.autocapitalize = field.type === 'currency' ? 'characters' : 'sentences'
       if (field.type === 'currency') control.placeholder = 'ABC'
-      control.setAttribute('aria-label', `${scope} ${field.label}`); control.setAttribute('aria-required', String(Boolean(field.required)))
+      control.setAttribute('aria-label', `${scope} ${field.label}`); control.setAttribute('aria-required', String(required))
       label.htmlFor = id; wrap.append(label, control); return wrap
     }
     if (field.type === 'money') {
@@ -38,7 +44,7 @@ export function createSmeWorkflowEditor({
         control.inputMode = 'numeric'; control.autocomplete = 'off'
         control.id = id + '-' + bound; control.dataset.input = field.name; control.dataset.bound = bound
         control.setAttribute('aria-label', `${scope} ${field.label} ${bound === 'low' ? 'minimum' : 'maximum'} amount in ${currency || 'selected currency'}${bound === 'high' ? ' (optional)' : ''}`)
-        control.setAttribute('aria-required', String(Boolean(field.required) && bound === 'low'))
+        control.setAttribute('aria-required', String(required && bound === 'low'))
         control.placeholder = bound === 'low' ? 'Amount' : 'Optional'
         const boundLabel = node('label', `${bound === 'low' ? 'Minimum' : 'Maximum'} · ${currency || 'selected currency'}`, 'cash-bound')
         boundLabel.htmlFor = control.id; boundLabel.append(control); range.append(boundLabel)
@@ -51,7 +57,7 @@ export function createSmeWorkflowEditor({
     const control = node('input'); control.type = 'number'; control.step = '1'; control.inputMode = 'numeric'
     control.min = String(field.min ?? 0); control.max = String(field.max ?? 100000000)
     control.id = id; control.dataset.input = field.name; control.autocomplete = 'off'
-    label.htmlFor = id; control.setAttribute('aria-label', `${scope} ${label.textContent}`); control.setAttribute('aria-required', String(Boolean(field.required))); wrap.append(label, control); return wrap
+    label.htmlFor = id; control.setAttribute('aria-label', `${scope} ${label.textContent}`); control.setAttribute('aria-required', String(required)); wrap.append(label, control); return wrap
   }
 
   function readValue(field, prefix, scope) {
@@ -81,7 +87,7 @@ export function createSmeWorkflowEditor({
     }
   }
 
-  function guidance(field, protocol) {
+  function guidance(field, protocol, mode, inputs) {
     const details = node('dl', undefined, 'workflow-parameter-grid')
     const add = (name, value) => { const row = node('div'); row.append(node('dt', name), node('dd', value)); details.append(row) }
     const target = protocol?.protocols?.find(row => row.field_key === field.name)
@@ -96,7 +102,10 @@ export function createSmeWorkflowEditor({
     add('Section', field.section ?? 'Plan')
     add('Parameter', field.label + (field.unit ? ' · ' + field.unit : ''))
     add('Input', field.type === 'money' ? `Amount · ${currency || 'selected currency'}` : field.type === 'integer' ? `Whole number${field.unit ? ' · ' + field.unit : ''}` : field.type === 'enum' ? 'Choose one' : field.type === 'currency' ? 'Currency code' : field.type === 'text' ? 'Short text' : 'Yes or no')
-    add('Completeness', field.required ? 'Required for a complete plan · blank stays unknown' : 'Optional input')
+    const required = isRequired(field, mode, inputs)
+    add('Completeness', required ? 'Required for this mode or selected path · blank stays unknown' : 'Optional input')
+    if (field.required_modes?.length) add('Mode scope', `Required in: ${field.required_modes.map(id => protocol.plan_modes.find(item => item.id === id)?.label ?? id).join(', ')}`)
+    if (field.required_when) add('Path condition', `Required when ${field.required_when.field} is ${field.required_when.equals}`)
     add(field.type === 'enum' || field.type === 'boolean' ? 'Allowed values' : field.type === 'money' || field.type === 'integer' || field.type === 'currency' || field.type === 'text' ? 'Entry limits' : 'Entry rule', bounds)
     if (lines.length) add('Model use', lines.map(line => `${line.id} · ${line.label} (${line.formula})`).join(' · '))
     add('Evidence target', target ? 'User-recorded context; not authenticated' : 'No evidence guidance defined for this input')
@@ -110,12 +119,13 @@ export function createSmeWorkflowEditor({
     if (!evidenceFields.length) { evidenceEditor.append(node('p', 'No evidence guidance is defined for this plan.', 'muted')); return }
     let selected = evidenceFields.find(field => field.name === getEvidenceField()) ?? evidenceFields[0]
     setEvidenceField(selected.name)
-    evidenceHeading.textContent = `Evidence for ${selected.label} · Scenario ${item.slot}`
+    const scope = `${getMode()?.row_label ?? 'Plan option'} ${item.slot}`
+    evidenceHeading.textContent = `Evidence for ${selected.label} · ${scope}`
     const fieldWrap = node('section', undefined, 'field'), fieldLabel = node('label', 'Evidence field'), fieldSelect = node('select')
     fieldSelect.id = 'sme-evidence-field'; fieldLabel.htmlFor = fieldSelect.id
     for (const field of evidenceFields) option(fieldSelect, field.name, field.label + (field.unit ? ' · ' + field.unit : ''))
     fieldSelect.value = selected.name
-    fieldSelect.setAttribute('aria-label', 'Evidence field for Scenario ' + item.slot)
+    fieldSelect.setAttribute('aria-label', `Evidence field for ${scope}`)
     fieldSelect.addEventListener('change', () => { setEvidenceField(fieldSelect.value); renderEvidence(item, fields, protocol) })
     fieldWrap.append(fieldLabel, fieldSelect)
 
@@ -144,7 +154,7 @@ export function createSmeWorkflowEditor({
     add.addEventListener('click', () => {
       const value = readValue(selected, valuePrefix, evidenceEditor)
       if (value === undefined || !provenance.value || !role.value || !date.value || item.evidence.length >= 40) {
-        workflowStatus.textContent = item.evidence.length >= 40 ? 'A scenario can include at most 40 evidence entries.'
+        workflowStatus.textContent = item.evidence.length >= 40 ? 'A plan row can include at most 40 evidence entries.'
           : 'Choose a value, provenance, observer and date before adding evidence.'; return
       }
       item.evidence.push({ field_key: selected.name, value, provenance: provenance.value, observer_role: role.value, date: date.value })
@@ -158,21 +168,23 @@ export function createSmeWorkflowEditor({
     workflowEditor.hidden = !item
     inputFields.replaceChildren(); evidenceEditor.replaceChildren()
     if (!item) return
-    heading.textContent = `Edit · Scenario ${item.slot}`
-    note.textContent = 'Edit every table field for this scenario. Blank stays unknown; values and evidence records stay in this tab and are not authenticated.'
+    const mode = getMode(), scope = `${mode?.row_label ?? 'Plan option'} ${item.slot}`
+    heading.textContent = `Edit · ${scope}`
+    note.textContent = `Edit every table field for this ${mode?.row_label?.toLowerCase() ?? 'plan option'}. Blank stays unknown; values and evidence records stay in this tab and are not authenticated.`
     const fallback = fields[0]
     activeParameter = fields.some(field => field.name === activeParameter) ? activeParameter : fallback?.name ?? null
-    showParameter = field => { activeParameter = field.name; parameterDetails.replaceChildren(guidance(field, protocol)) }
+    showParameter = field => { activeParameter = field.name; parameterDetails.replaceChildren(guidance(field, protocol, mode, item.inputs)) }
     if (fields.length) showParameter(fields.find(field => field.name === activeParameter) ?? fields[0])
     const fieldset = node('fieldset', undefined, 'workflow-edit-set'), grid = node('div', undefined, 'workflow-edit-fields')
-    fieldset.append(node('legend', 'Scenario ' + item.slot), grid)
+    fieldset.append(node('legend', scope), grid)
     const prefix = 'compare-' + item.slot.toLowerCase()
     for (const field of fields) {
-      const control = inputControl(field, prefix, protocol, item.inputs.currency_code)
+      const control = inputControl(field, prefix, protocol, item.inputs.currency_code, mode, item.inputs)
       writeValue(field, prefix, item.inputs[field.name], control)
       for (const input of control.querySelectorAll('input, select')) input.addEventListener(input instanceof HTMLSelectElement ? 'change' : 'input', () => {
         const value = readValue(field, prefix, control)
         if (value === undefined) delete item.inputs[field.name]; else item.inputs[field.name] = value
+        if (field.name === 'buy_build_path') render()
         invalidate()
       })
       grid.append(control)

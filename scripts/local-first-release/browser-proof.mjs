@@ -11,7 +11,7 @@ export const BROWSER_CHECKS = Object.freeze({
   review: 'unsaved and concurrently changed offers require fresh merchant review',
   economics: 'launch terms survive offline reload and loss-making estimates fail review',
   roles: 'shopper, vendor and admin views use durable drafts, private projections, human review and offline mobile navigation',
-  smeComparison: 'mobile SME E2E business plan, twelve-section pitch deck outline and financial model in one Base table: every protocol input, evidence note, model output and next check; native pivot, live data dictionary route, no duplicate workflow, local worksheet, back-forward, stale-result suppression, route-exit clearing and no service writes',
+  smeComparison: 'mobile SME workflow contract selector for general business plan and SME takeover checker, Buy/Build and Scenario modes, contract-scoped inputs and outputs in one Base table; native pivot, live data dictionary route, no duplicate workflow, local worksheet, back-forward, stale-result suppression, route-exit clearing and no service writes',
   checkout: 'Stripe test checkout review, provider identity, pending delivery refusal, cancellation, reload and offline safety',
   privacy: 'imported text cannot inject markup; no private draft network writes',
   housing: 'one Housing workflow using the shared Base Multi-dimensional Table, listing facts, local plans, privacy and final mobile/offline journeys',
