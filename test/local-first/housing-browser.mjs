@@ -41,14 +41,19 @@ async function addManualListing(page, { label, rent, photos = [] }) {
   await expect(card).toBeVisible()
   return card.getAttribute('data-id')
 }
-async function comparisonTable(page) {
-  return page.locator('[data-housing-table-host]').evaluate(host => {
-    const table = host.shadowRoot?.querySelector('table')
-    if (!table) return null
-    const rows = [...table.rows].map(row => [...row.cells].map(cell => cell.innerText.trim().replaceAll('\u00a0', ' ')))
-    return { rows, headers: rows[0], width: table.scrollWidth,
-      multiDimensional: !!host.shadowRoot.querySelector('.base-multi-dimensional-table') }
-  })
+async function comparisonTable(page, ready = table => table !== null) {
+  let snapshot
+  await expect.poll(async () => {
+    snapshot = await page.locator('[data-housing-table-host]').evaluate(host => {
+      const table = host.shadowRoot?.querySelector('table')
+      if (!table) return null
+      const rows = [...table.rows].map(row => [...row.cells].map(cell => cell.innerText.trim().replaceAll('\u00a0', ' ')))
+      return { rows, headers: rows[0], width: table.scrollWidth,
+        multiDimensional: !!host.shadowRoot.querySelector('.base-multi-dimensional-table') }
+    })
+    return ready(snapshot)
+  }, { timeout: 5000 }).toBe(true)
+  return snapshot
 }
 const valueAt = (table, rowName, columnName) => {
   const column = table.headers.indexOf(columnName), row = table.rows.find(cells => cells[0] === rowName)
@@ -214,7 +219,8 @@ export async function checkHousingWorkspace({ browser, url, output, observeConte
     await page.locator(`[data-listing-item][data-id="${id}"] .housing-save`).click()
     await expect(page.locator(`[data-listing-item][data-id="${id}"] .housing-save`)).toHaveAttribute('aria-pressed', 'true')
   }
-  sampleTable = await comparisonTable(page)
+  sampleTable = await comparisonTable(page, table => table?.headers.slice(1).join('\0')
+    === ['Crimson Room', 'Azure Room', 'Scarlet Room'].join('\0'))
   assert.deepEqual(sampleTable.headers.slice(1), ['Crimson Room', 'Azure Room', 'Scarlet Room'])
   assert.match(valueAt(sampleTable, 'Selected local images', 'Crimson Room'), /exact file also selected/u)
   assert.doesNotMatch(valueAt(sampleTable, 'Selected local images', 'Azure Room'), /exact file also selected/u)
@@ -239,7 +245,8 @@ export async function checkHousingWorkspace({ browser, url, output, observeConte
   await page.getByLabel('Monthly rent').fill('875')
   await page.getByRole('button', { name: 'Update listing facts' }).click()
   await expect(page.locator('.housing-status').last()).toContainText('Existing local photos remain attached.')
-  sampleTable = await comparisonTable(page)
+  sampleTable = await comparisonTable(page, table => Boolean(table && valueAt(table, 'Selected local images', 'Crimson Room')
+    .includes('2 selected · exact file also selected')))
   assert.match(valueAt(sampleTable, 'Selected local images', 'Crimson Room'), /2 selected · exact file also selected/u)
   const editedRed = page.locator(`[data-listing-item][data-id="${redId}"]`)
   await editedRed.locator('[data-action="remove-listing"]').click()

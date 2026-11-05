@@ -1,235 +1,255 @@
 import assert from 'node:assert/strict'
 import path from 'node:path'
-import { writeFile } from 'node:fs/promises'
+import { readFile, writeFile } from 'node:fs/promises'
 import { expect } from '@playwright/test'
 import { BROWSER_CHECKS } from '../../scripts/local-first-release/browser-proof.mjs'
 
 export async function checkSmeComparisonBrowser({ browser, page, url, output, smeServiceRequests, record }) {
-  const fresh = await browser.newContext({ viewport: { width: 360, height: 780 }, serviceWorkers: 'block' })
-  const firstPage = await fresh.newPage(), serviceCalls = []
-  firstPage.on('request', request => {
+  const context = await browser.newContext({ viewport: { width: 360, height: 780 }, serviceWorkers: 'block' })
+  const planPage = await context.newPage(), serviceCalls = [], started = performance.now()
+  planPage.on('request', request => {
     if (new URL(request.url()).pathname.startsWith('/agentic-commerce-os/services/sme-business-pack')) serviceCalls.push(request.url())
   })
-  const started = performance.now()
-  await firstPage.goto(url)
-  await expect(firstPage.locator('#workspace-role-switcher')).toBeVisible()
-  await firstPage.locator('#workspace-role-switcher').selectOption('sme')
-  await expect(firstPage.locator('#sme')).toBeVisible()
-  await firstPage.locator('#sample').click()
-  await firstPage.locator('#sme-check-form button[type="submit"]').click()
-  await expect(firstPage.locator('#result-status')).toContainText('On-device calculation')
-  const elapsedMs = Math.round(performance.now() - started)
-  assert(elapsedMs < 300000)
+  await planPage.goto(url)
+  await planPage.locator('#workspace-role-switcher').selectOption('sme')
+  await expect(planPage.locator('#sme')).toBeVisible()
+  await expect(planPage.locator('#sme-workflow-table-host')).toBeVisible()
+  await expect(planPage.locator('#sme-plan-mode')).toHaveValue('buy_build')
+  await expect(planPage.getByText('Choose a plan mode and contract. One table keeps all declared inputs, evidence, calculations, coverage, and next checks together. Select a plan row to edit its fields and evidence, or inspect each field in metadata columns.', { exact: true })).toBeVisible()
+  await planPage.locator('#sample').click()
+  await planPage.locator('#compare-a-buy_build_path').selectOption('buy_existing')
+  await expect(planPage.locator('#compare-a-acquisition_price-low')).toHaveAttribute('aria-required', 'true')
+  await expect(planPage.locator('#compare-a-transition_costs-low')).toHaveAttribute('aria-required', 'true')
+  await planPage.locator('#compare-a-buy_build_path').selectOption('build_new')
+  await planPage.locator('#sme-compare-run').click()
+  await expect(planPage.locator('#workflow-status')).toContainText('Local Buy/Build plan built')
+  const firstPlanMs = Math.round(performance.now() - started)
+  assert(firstPlanMs < 300000)
   assert.equal(serviceCalls.length, 0)
+  await assertSingleWorkflow(planPage)
+  const headers = await workflowHeaders(planPage)
+  assert(headers.length <= 64, 'Shared Multi-dimensional Table column limit exceeded')
+  assert.equal(new Set(headers).size, headers.length, 'Shared Multi-dimensional Table labels must be unique')
+  for (const label of ['Plan › Selection › Mode and contract [plan-mode]', 'Problem or need', 'Model currency code',
+    'Buy/Build approach', 'Existing business or asset purchase price', 'Acquisition and transition costs',
+    'Readiness › Input coverage › required inputs [plan-completeness]',
+    'Readiness › Validation › invalid entries [data-validation]', 'Evidence › Field context › values [evidence-values]',
+    'Evidence › Record attributes › provenance [evidence-provenance]', 'Evidence › Record attributes › observer role [evidence-observer]',
+    'Evidence › Record attributes › date [evidence-date]', 'Evidence › Record status › status [evidence-status]',
+    'Readiness › Model coverage › calculated outputs [model-coverage]', 'Coverage › projection › pitch inputs [pitch_deck]',
+    'Coverage › projection › business-plan inputs [business_plan]', 'Coverage › projection › financial model [financial_model]',
+    'Coverage › evidence › evidence prompts [evidence]', 'Model › Calculated outputs › Revenue per month [monthly_revenue]',
+    'Pitch › Slide 1 › Venture and stage', 'Pitch › Slide 12 › Risks and milestones', 'Plan › Follow-up › next checks [next-checks]'])
+    assert(headers.some(header => header.startsWith(label)), `Missing workflow column: ${label}`)
+  assert(headers.includes('Venture or project name'))
+  assert(!headers.some(header => header.includes('venture_name') || / · (?:text|enum|money|currency) · /u.test(header)), 'Field metadata should not be concatenated into input headers')
+  let text = await tableText(planPage)
+  assert.match(text, /USD 6,000/)
+  assert.match(text, /USD 4,800/)
   await writeFile(path.join(output, 'sme-first-report-timing.json'), JSON.stringify({
     schema: 'commerce.sme-first-report-timing/v1', surface: 'fresh-anonymous-mobile', viewport: '360x780',
-    elapsedMs, limitMs: 300000, serviceCalls: serviceCalls.length,
-    sourceRevision: await firstPage.locator('meta[name="commerce-source"]').getAttribute('content'),
+    elapsedMs: firstPlanMs, limitMs: 300000, serviceCalls: serviceCalls.length,
+    sourceRevision: await planPage.locator('meta[name="commerce-source"]').getAttribute('content'),
   }, null, 2) + '\n')
-  await fresh.close()
-  if (BROWSER_CHECKS.firstReport) record(BROWSER_CHECKS.firstReport)
 
-  await page.setViewportSize({ width: 360, height: 780 })
-  await page.goto(url + '#sme-compare')
-  await expect(page.locator('#sme-compare')).toBeInViewport()
-  await page.locator('#compare-a-price-low').fill('150000')
-  await page.locator('#compare-b-price-low').fill('180000')
-  await page.locator('#compare-evidence-a-details > summary').click()
-  await page.locator('#compare-evidence-a-kind').selectOption('price')
-  await page.locator('#compare-evidence-a-provenance').selectOption('document_sighted')
-  await page.locator('#compare-evidence-a-role').selectOption('adviser')
-  await page.locator('#compare-evidence-a-date').fill('2026-10-31')
-  await page.locator('#compare-evidence-a-price-low').fill('150000')
-  await page.locator('#compare-evidence-a-add').click()
-  await page.locator('#sme-compare-run').click()
-  const result = page.locator('#result-summary')
-  await expect(result).toContainText('Slot A')
-  await expect(result).toContainText('Slot B')
-  await expect(result).toContainText('Not supplied.')
-  await expect(result).toContainText('No winner reported')
-  await expect(result).toContainText('Singapore · SGD')
-  await expect(result).toContainText('Pack v1.0.0')
-  await expect(result).toContainText('As of 2026-10-22')
-  await expect(result).toContainText('Unknown · incomplete')
-  await expect(result.locator('.base-multi-dimensional-table')).toHaveCount(1)
-  await expect(result.locator('.comparison-card')).toHaveCount(0)
-  const tableText = async () => result.locator('[data-sme-comparison-table-host]').evaluate(host => host.shadowRoot.textContent)
-  const table = result.locator('[data-sme-comparison-table-host] .base-multi-dimensional-table')
-  await expect(table).toContainText('Slot A')
-  await expect(table).toContainText('Slot B')
-  const fixedRows = ['Cash to close', 'Gap above asking price', 'Opening runway', 'Lease exposure', 'Unchecked share', 'Missing claims']
-  const firstOrientationText = await tableText()
-  let previousRowIndex = -1
-  for (const label of fixedRows) {
-    const rowIndex = firstOrientationText.indexOf(label)
-    assert(rowIndex > previousRowIndex, `Expected fixed comparison row ${label} in order`)
-    previousRowIndex = rowIndex
-  }
-  const mobileScroll = await result.locator('[data-sme-comparison-table-host]').evaluate(host => {
-    const view = host.shadowRoot.querySelector('.agentic-base-data-view')
-    return { clientWidth: view.clientWidth, scrollWidth: view.scrollWidth }
+  await planPage.locator('#sme-plan-mode').selectOption('scenario')
+  await expect(planPage.locator('#sme-workflow-table-host')).toContainText('Illustrative project')
+  await expect(planPage.locator('#sme-workflow-table-region')).toHaveAttribute('aria-label', /Scenarios are rows/)
+  await planPage.locator('#sme-compare-count').selectOption('2')
+  await selectScenario(planPage, 'B')
+  await planPage.locator('#sme-compare-run').click()
+  await expect(planPage.locator('#workflow-status')).toContainText('same plan contract and currency code across rows')
+  await planPage.locator('#compare-b-currency_code').fill('USD')
+  await planPage.locator('#sme-compare-run').click()
+  await expect(planPage.locator('#workflow-status')).toContainText('Local scenario comparison')
+  const labels = await planPage.locator('#sme-workflow-table-host').evaluate(host =>
+    [...host.shadowRoot.querySelectorAll('tbody tr')].map(row => row.cells[0].innerText.trim()))
+  assert.deepEqual(labels, ['Scenario A', 'Scenario B'])
+  assert.match(await tableText(planPage), /Scenario/)
+
+  await planPage.locator('#sme-workflow-pivot').click()
+  await expect.poll(() => planPage.locator('#sme-workflow-table-region').getAttribute('data-orientation')).toBe('columns')
+  const pivotHeaders = await workflowHeaders(planPage)
+  assert.deepEqual(pivotHeaders.slice(0, 14), ['Record type', 'Section', 'Group', 'Parameter', 'Stable key', 'Data type', 'Unit', 'Requirement', 'Allowed values', 'Minimum', 'Maximum', 'Length limit', 'Pattern', 'Definition'])
+  assert.deepEqual(pivotHeaders.slice(-2), ['Scenario A', 'Scenario B'])
+  const ventureField = await planPage.locator('#sme-workflow-table-host').evaluate(host => {
+    const headers = [...host.shadowRoot.querySelectorAll('thead th')].map(cell => cell.innerText.trim())
+    const row = [...host.shadowRoot.querySelectorAll('tbody tr')].find(item => item.cells[headers.indexOf('Parameter')]?.innerText.trim() === 'Venture or project name')
+    return row ? Object.fromEntries(headers.map((header, index) => [header, row.cells[index].innerText.trim()])) : null
   })
-  assert(mobileScroll.scrollWidth > mobileScroll.clientWidth, 'mobile comparison should remain horizontally scrollable inside Base')
-  await result.scrollIntoViewIfNeeded()
-  const touch = await page.context().newCDPSession(page)
-  await touch.send('Emulation.setTouchEmulationEnabled', { enabled: true, configuration: 'mobile' })
-  const touchBounds = await result.locator('[data-sme-comparison-table-host]').evaluate(host => {
-    const view = host.shadowRoot.querySelector('.agentic-base-data-view'), rect = view.getBoundingClientRect()
-    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height, left: view.scrollLeft }
-  })
-  await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ id: 1, x: touchBounds.x + touchBounds.width - 12, y: touchBounds.y + 80, force: 1 }] })
-  await touch.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ id: 1, x: touchBounds.x + 24, y: touchBounds.y + 80, force: 1 }] })
-  await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
-  const touchLeft = await result.locator('[data-sme-comparison-table-host]').evaluate(host => host.shadowRoot.querySelector('.agentic-base-data-view').scrollLeft)
-  await touch.send('Emulation.setTouchEmulationEnabled', { enabled: false }); await touch.detach()
-  assert(touchLeft > touchBounds.left, 'touch swipe should scroll the shared Base table')
-  const region = result.locator('.comparison-table-scroll')
-  await region.focus()
-  assert.equal(await region.evaluate(element => document.activeElement === element), true, 'comparison region should be keyboard focusable')
-  const pivot = result.locator('.base-multi-dimensional-table-pivot')
-  await expect(pivot).toHaveAttribute('aria-label', 'Current table orientation: columns as records')
-  await pivot.focus()
-  await pivot.press('Space')
-  await expect(pivot).toHaveAttribute('aria-label', 'Current table orientation: rows as records')
-  const rowOrientationText = await tableText()
-  for (const label of fixedRows) assert(rowOrientationText.includes(label), `Pivot lost comparison row ${label}`)
-  for (const label of ['Slot A', 'Slot B']) assert(rowOrientationText.includes(label), `Pivot lost ${label}`)
-  await pivot.press('Space')
-  await expect(pivot).toHaveAttribute('aria-label', 'Current table orientation: columns as records')
-  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'mobile page should not scroll horizontally')
-  await page.setViewportSize({ width: 1280, height: 900 })
-  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'desktop page should not scroll horizontally')
-  await page.setViewportSize({ width: 360, height: 780 })
-  assert.equal(smeServiceRequests.length, 0)
-  const payload = JSON.parse(await page.locator('#result').textContent())
-  assert.equal(payload.persisted, false)
-  assert.equal(payload.inference_tokens, 0)
-  assert.equal(payload.slots[0].report.check.claim_counts_by_tier.T2, 1)
-  assert.equal(payload.slots[0].report.budget.budget.lines.find(row => row.id === 'L1').checked, true)
-  assert.equal(payload.slots[1].report.check.claim_counts_by_tier.T2, 0)
-  const inPageComparison = await page.evaluate(async claim_sets => {
-    const result = await document.modelContext.executeTool({ name: 'takeover.compare_claim_sets' }, { claim_sets })
-    return JSON.parse(result.content[0].text)
-  }, [
-    { pack_id: 'sg.fnb.takeover', pack_version: '1.0.0', currency: 'SGD', claims: { price: 150000 },
-      evidence: [{ claim_kind: 'price', value: 150000, provenance: 'document_sighted', observer_role: 'adviser', date: '2026-10-31' }] },
-    { pack_id: 'sg.fnb.takeover', pack_version: '1.0.0', currency: 'SGD', claims: { price: 180000 } },
+  assert.equal(ventureField.Section, 'Venture')
+  assert.equal(ventureField.Parameter, 'Venture or project name')
+  assert.equal(ventureField['Stable key'], 'venture_name')
+  assert.equal(ventureField['Data type'], 'text')
+  assert.equal(ventureField.Requirement, 'optional')
+  assert.equal(await planPage.locator('#sme-workflow-table-host').evaluate(host => host.shadowRoot.querySelectorAll('.base-multi-dimensional-table-pivot').length), 0)
+  await assertSingleWorkflow(planPage)
+  text = await tableText(planPage)
+  assert.match(text, /USD 6,000/)
+  assert.match(text, /A defined user group has a recurring task that takes time to complete/)
+  assert.match(text, /Venture and stage/)
+  assert.match(text, /Slide 1/)
+
+  const navigationToggle = planPage.locator('#workspace-navigation-toggle')
+  if (await navigationToggle.getAttribute('aria-expanded') === 'false') await navigationToggle.click()
+  await planPage.locator('#sme-navigation a[href="#sme-dictionary"]').click()
+  await expect(planPage.locator('#sme-dictionary-heading')).toBeVisible()
+  await expect(planPage.locator('#sme-dictionary-status')).toContainText('read-only schema and owner records')
+  const dictionary = await planPage.locator('#sme-dictionary-table-host').evaluate(host => ({
+    headers: [...host.shadowRoot.querySelectorAll('thead th')].map(cell => cell.innerText.trim()),
+    rows: [...host.shadowRoot.querySelectorAll('tbody tr')].map(row => [...row.cells].map(cell => cell.innerText.trim())),
+    text: host.shadowRoot.textContent,
+  }))
+  const recordColumn = dictionary.headers.indexOf('Record'), keyColumn = dictionary.headers.indexOf('Stable key'), requiredColumn = dictionary.headers.indexOf('Required')
+  const dictionaryRecords = dictionary.rows.map(row => ({ record: row[recordColumn], key: row[keyColumn], required: row[requiredColumn] }))
+  const conditionalRequirements = dictionaryRecords
+    .filter(row => row.record === 'Input field' && ['buy_build_path', 'acquisition_price', 'transition_costs'].includes(row.key))
+    .map(row => [row.key, row.required])
+  const inputKeys = dictionaryRecords.filter(row => row.record === 'Input field').map(row => row.key)
+  const hierarchyKeys = dictionaryRecords.filter(row => row.record === 'Hierarchy group').map(row => row.key)
+  assert(dictionary.headers.includes('Stable key') && dictionary.headers.includes('Formula / source'))
+  assert(dictionary.rows.length >= 50)
+  assert(hierarchyKeys.includes('group:Inputs'))
+  assert(hierarchyKeys.includes('group:Inputs.Buy/Build'))
+  assert.match(dictionary.text, /sme\.business-plan/)
+  assert.match(dictionary.text, /business\.plan\.build/)
+  assert.match(dictionary.text, /DICTIONARY-SEMANTIC/)
+  assert.match(dictionary.text, /pitch_deck_outline/)
+  assert.match(dictionary.text, /Coverage output/)
+  assert.match(dictionary.text, /workflow_columns/)
+  assert.match(dictionary.text, /Workflow mode/)
+  assert.match(dictionary.text, /plan_modes/)
+  assert.match(dictionary.text, /buy_build_path/)
+  assert.deepEqual(conditionalRequirements, [
+    ['buy_build_path', 'Conditional'], ['acquisition_price', 'Conditional'], ['transition_costs', 'Conditional'],
   ])
-  assert.deepEqual(inPageComparison, payload)
+  assert.equal(new Set(inputKeys).size, inputKeys.length, 'Active contract input keys must be unique')
+  assert.match(dictionary.text, /evidence-values/)
+  if (await navigationToggle.getAttribute('aria-expanded') === 'false') await navigationToggle.click()
+  await planPage.locator('#sme-navigation a[href="#sme-workflow"]').click()
+  await planPage.locator('#sample').click()
+  await planPage.locator('#sme-compare-run').click()
+  await expect(planPage.locator('#workflow-status')).toContainText('Local scenario plan built')
+  for (const [format, selector] of [['json', '[data-export="json"]'], ['csv', '[data-export="csv"]'], ['markdown', '[data-export="markdown"]']]) {
+    const downloadEvent = planPage.waitForEvent('download')
+    await planPage.locator(selector).click()
+    const download = await downloadEvent, content = await readFile(await download.path(), 'utf8')
+    await planPage.locator('#sme-worksheet-import').setInputFiles({
+      name: download.suggestedFilename(), mimeType: format === 'json' ? 'application/json'
+        : format === 'csv' ? 'text/csv' : 'text/markdown', buffer: Buffer.from(content),
+    })
+    await expect(planPage.locator('#workflow-status')).toContainText('Worksheet imported in this tab')
+    await expect(planPage.locator('#sme-plan-mode')).toHaveValue('scenario')
+    await planPage.locator('#sme-compare-run').click()
+    await expect(planPage.locator('#workflow-status')).toContainText('Local scenario plan built')
+    text = await tableText(planPage)
+    assert.match(text, /Calculated outputs/)
+    assert.match(text, /Revenue per month/)
+    assert.match(text, /USD 6,000/)
+    await assertSingleWorkflow(planPage)
+  }
 
-  await page.evaluate(() => {
-    window.__smeRouteEvents = []
-    addEventListener('hashchange', () => window.__smeRouteEvents.push('hash:' + location.hash))
-    addEventListener('popstate', () => window.__smeRouteEvents.push('pop:' + location.hash))
-    location.hash = 'sme'
-  })
-  await expect(page).toHaveURL(url + '#sme')
-  await page.evaluate(() => { location.hash = 'sme-compare' })
-  await page.goBack()
-  await expect(page).toHaveURL(url + '#sme')
-  await page.goForward()
-  await expect(page).toHaveURL(url + '#sme-compare')
-  const routeEvents = await page.evaluate(() => window.__smeRouteEvents)
-  assert(routeEvents.includes('pop:#sme-compare') && routeEvents.includes('hash:#sme-compare'))
-  await expect(page.locator('#sme-compare')).toBeInViewport()
-  await expect(page.locator('#compare-a-price-low')).toHaveValue('150000')
+  const contracts = await planPage.locator('#pack-id option').evaluateAll(options => options.map(option => option.textContent.trim()))
+  assert(contracts.some(label => label.startsWith('SME takeover checker · v1.1.0')))
+  await planPage.locator('#pack-id').selectOption('sme.takeover-checker')
+  await expect(planPage.locator('#service-status')).toContainText('SME takeover checker · v1.1.0')
+  await expect(planPage.locator('#sme-plan-mode')).toHaveValue('buy_build')
+  await setWorkflowOrientation(planPage, 'rows')
+  const takeoverHeaders = await workflowHeaders(planPage)
+  assert.equal(new Set(takeoverHeaders).size, takeoverHeaders.length, 'Takeover checker column labels must be unique')
+  for (const label of ['Currency code', 'Transfer structure', 'Business or asset purchase price', 'Items or rights included', 'Items or rights excluded',
+    'User-entered equipment resale estimate', 'User-entered current improvements estimate', 'User-entered monthly revenue', 'Financial information basis',
+    'Financial information period covered', 'Location payment obligation', 'User-stated location renewal period', 'User-stated location assignment status', 'Cash available for the acquisition',
+    'Model › Calculated outputs › Cash required to close and fund the selected period [cash_to_close]',
+    'Model › Calculated outputs › Remaining location payment exposure [location_exposure]',
+    'Model › Calculated outputs › Cash shortfall after available cash [cash_shortfall]',
+    'Model › Calculated outputs › User-entered monthly revenue less listed monthly costs [operating_difference_per_month]'])
+    assert(takeoverHeaders.some(header => header.startsWith(label)), `Missing takeover checker column: ${label}`)
+  assert(!takeoverHeaders.some(header => header.startsWith('Pitch › Slide')), 'Contract-specific pitch columns leaked into the takeover checker')
+  await planPage.locator('#sample').click()
+  await planPage.locator('#sme-compare-run').click()
+  await expect(planPage.locator('#workflow-status')).toContainText('Local Buy/Build plan built')
+  text = await tableText(planPage)
+  assert.match(text, /USD 117,000/)
+  assert.match(text, /USD 21,600/)
+  assert.match(text, /USD 97,000/)
+  assert.match(text, /USD 3,700/)
+  await assertSingleWorkflow(planPage)
 
-  await page.locator('#claim-price-low').fill('150000')
-  await page.locator('#sme-check-form button[type="submit"]').click()
-  await expect(result).toContainText('Cash to close')
-  await page.locator('#sample').click()
-  await page.locator('#sme-evidence-kind').selectOption('price')
-  await page.locator('#sme-evidence-provenance').selectOption('document_sighted')
-  await page.locator('#sme-evidence-role').selectOption('adviser')
-  await page.locator('#sme-evidence-date').fill('2026-10-31')
-  await page.locator('#evidence-price-low').fill('150000')
-  await page.evaluate(() => { for (let index = 0; index < 40; index++) document.querySelector('#sme-add-evidence').click() })
-  await page.locator('#sme-check-form button[type="submit"]').click()
-  await expect(result).toContainText('Cash to close')
-  await page.evaluate(() => { window.__smePrintOpened = false; window.print = () => { window.__smePrintOpened = true } })
-  await page.getByRole('button', { name: 'Print worksheet', exact: true }).click()
-  await expect(page.locator('#result-status')).toContainText(/Print view opened|Print worksheet refused/)
-  const printStatus = await page.locator('#result-status').textContent()
-  assert.match(printStatus ?? '', /Print view opened/, `Printable worksheet failed: ${await page.locator('#result-status').getAttribute('data-print-error')}`)
-  assert.equal(await page.evaluate(() => window.__smePrintOpened), true)
-  const printPdf = await page.pdf({ printBackground: true, preferCSSPageSize: true })
-  const printPages = Buffer.from(printPdf).toString('latin1').match(/\/Type\s*\/Page\b/g)?.length ?? 0
-  assert(printPages > 0 && printPages <= 4, `Printable worksheet should fit 1–4 pages; saw ${printPages}`)
-  await page.evaluate(() => window.dispatchEvent(new Event('afterprint')))
-  await expect(page.locator('body')).not.toHaveClass(/sme-printing/)
-  assert.equal(await page.locator('.sme-print-sheet').count(), 0)
-  await writeFile(path.join(output, 'sme-print-worksheet.pdf'), printPdf)
-  await writeFile(path.join(output, 'sme-print-proof.json'), JSON.stringify({
-    schema: 'commerce.sme-print-proof/v1', sourceRevision: await page.locator('meta[name="commerce-source"]').getAttribute('content'),
-    evidenceEntries: 40, pages: printPages, maximumPages: 4, dialogInvoked: true, afterprintCleanup: true,
+  if (await navigationToggle.getAttribute('aria-expanded') === 'false') await navigationToggle.click()
+  await planPage.locator('#sme-navigation a[href="#sme-dictionary"]').click()
+  await expect(planPage.locator('#sme-dictionary-status')).toContainText('SME takeover checker · v1.1.0')
+  const takeoverDictionary = await tableTextFor(planPage, '#sme-dictionary-table-host')
+  assert.match(takeoverDictionary, /sme\.takeover-checker/)
+  assert.match(takeoverDictionary, /transaction_structure/)
+  assert.match(takeoverDictionary, /financial_basis/)
+  assert.match(takeoverDictionary, /location_obligation/)
+  assert.match(takeoverDictionary, /takeover-cash\/v1/)
+  if (await navigationToggle.getAttribute('aria-expanded') === 'false') await navigationToggle.click()
+  await planPage.locator('#sme-navigation a[href="#sme-workflow"]').click()
+  await planPage.locator('#sme-plan-mode').selectOption('scenario')
+  await expect(planPage.locator('#sme-workflow-table-host')).toContainText('Scenario A')
+  await expect(planPage.locator('#compare-a-purchase_price-low')).toHaveValue('80000')
+  await planPage.locator('#pack-id').selectOption('sme.business-plan')
+  await expect(planPage.locator('#service-status')).toContainText('General business plan · v2.3.0')
+  await expect(planPage.locator('#sme-plan-mode')).toHaveValue('buy_build')
+  await expect(planPage.locator('#compare-a-purchase_price-low')).toHaveCount(0)
+  await setWorkflowOrientation(planPage, 'rows')
+  assert((await workflowHeaders(planPage)).some(header => header.includes('Venture or project name')))
+  await assertSingleWorkflow(planPage)
+
+  assert.equal(await planPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true)
+  assert.equal(serviceCalls.length, 0)
+  await assertSingleWorkflow(planPage)
+  await writeFile(path.join(output, 'sme-first-report-timing.json'), JSON.stringify({
+    schema: 'commerce.sme-first-report-timing/v1', surface: 'fresh-anonymous-mobile', viewport: '360x780',
+    elapsedMs: firstPlanMs, limitMs: 300000, serviceCalls: serviceCalls.length,
+    sourceRevision: await planPage.locator('meta[name="commerce-source"]').getAttribute('content'),
   }, null, 2) + '\n')
-  await holdNextComparison(page)
-  await page.locator('#sme-compare-run').click()
-  await expect(page.locator('#result-status')).toContainText('Comparing locally')
-  await expect(page.locator('#result')).toHaveText('')
-  await releaseComparison(page)
-  await expect(result).toContainText('Slot A')
+  await context.close()
 
-  await page.locator('#sme-compare-count').selectOption('3')
-  await page.locator('#compare-c-price-low').fill('210000')
-  await page.locator('#sme-compare-run').click()
-  await expect(result.locator('.base-multi-dimensional-table')).toHaveCount(1)
-  await expect(result.locator('.comparison-card')).toHaveCount(0)
-  await expect(result.locator('[data-sme-comparison-table-host] .base-multi-dimensional-table')).toContainText('Slot C')
-  await expect(result.locator('[data-sme-comparison-table-host] .base-multi-dimensional-table')).toContainText('210,000')
-  await expect(result).not.toContainText('Not supplied.')
-  assert.equal(smeServiceRequests.length, 0)
-
-  await holdNextComparison(page)
-  await page.locator('#sme-compare-run').click()
-  await expect(page.locator('#result-status')).toContainText('Comparing locally')
-  await page.locator('#compare-a-price-low').fill('160000')
-  await releaseComparison(page)
-  await expect(page.locator('#result')).toHaveText('')
-  await expect(result).not.toContainText('Slot A')
-
-  await holdNextComparison(page)
-  await page.locator('#sme-compare-run').click()
-  await expect(page.locator('#result-status')).toContainText('Comparing locally')
-  await page.locator('#workspace-role-switcher').selectOption('vendor')
-  await expect(page.locator('#vendor')).toBeVisible()
-  await releaseComparison(page)
-  await page.locator('#workspace-role-switcher').selectOption('sme')
-  await expect(page.locator('#compare-a-price-low')).toHaveValue('')
-  await expect(page.locator('#compare-evidence-a-list')).toBeEmpty()
-  await expect(page.locator('#result')).toHaveText('')
-  assert.equal(smeServiceRequests.length, 0)
-  await page.locator('#sample').click()
-  await page.locator('#sme-evidence-kind').selectOption('price')
-  await page.locator('#sme-evidence-provenance').selectOption('document_sighted')
-  await page.locator('#sme-evidence-role').selectOption('buyer')
-  await page.locator('#sme-evidence-date').fill('2026-10-31')
-  await page.locator('#evidence-price-low').fill('150000')
-  await page.locator('#sme-add-evidence').click()
-  await page.locator('#sme-check-form button[type="submit"]').click()
-  await expect(page.locator('#result-status')).toContainText('On-device calculation')
+  await page.setViewportSize({ width: 360, height: 780 })
+  await page.goto(url + '#sme-workflow')
+  await expect(page.locator('#sme-workflow')).toBeInViewport()
+  await assertSingleWorkflow(page)
+  if (BROWSER_CHECKS.firstReport) record(BROWSER_CHECKS.firstReport)
   if (BROWSER_CHECKS.smeComparison) record(BROWSER_CHECKS.smeComparison)
 }
 
-async function holdNextComparison(page) {
-  await page.evaluate(() => {
-    const original = Promise.race
-    let release
-    window.__releaseSmeComparison = () => {
-      Promise.race = original
-      window.__releaseSmeComparison = null
-      return release().then(() => new Promise(resolve => setTimeout(resolve, 0)))
-    }
-    Promise.race = items => {
-      const promises = Array.from(items)
-      if (!release && promises.length === 2) return new Promise((resolve, reject) => {
-        release = () => original.call(Promise, promises).then(value => { resolve(value); return value }, error => { reject(error); throw error })
-      })
-      return original.call(Promise, promises)
-    }
-  })
+async function tableText(page) {
+  return page.locator('#sme-workflow-table-host').evaluate(host => host.shadowRoot?.textContent ?? '')
 }
 
-async function releaseComparison(page) {
-  await page.evaluate(async () => { await window.__releaseSmeComparison?.() })
+async function tableTextFor(page, selector) {
+  return page.locator(selector).evaluate(host => host.shadowRoot?.textContent ?? '')
+}
+
+async function workflowHeaders(page) {
+  return page.locator('#sme-workflow-table-host').evaluate(host =>
+    [...host.shadowRoot.querySelectorAll('table thead th')].map(cell => cell.innerText.trim().replace(/\s+/gu, ' ')))
+}
+
+async function setWorkflowOrientation(page, orientation) {
+  const region = page.locator('#sme-workflow-table-region')
+  if (await region.getAttribute('data-orientation') === orientation) return
+  await page.locator('#sme-workflow-pivot').click()
+  await expect.poll(() => region.getAttribute('data-orientation')).toBe(orientation)
+}
+
+async function selectScenario(page, slot) {
+  await page.locator('#sme-workflow-table-host').evaluate((host, row) => {
+    host.shadowRoot.querySelector(`tbody tr[aria-label="Data row: Scenario ${row}"]`)?.click()
+  }, slot)
+  await expect(page.locator('#sme-workflow-editor-heading')).toHaveText(`Edit · Scenario ${slot}`)
+}
+
+async function assertSingleWorkflow(page) {
+  const shape = await page.locator('#sme').evaluate(root => ({
+    workflowHosts: root.querySelectorAll('[data-sme-workflow-table-host]').length,
+    dictionaryHosts: root.querySelectorAll('[data-sme-dictionary-table-host], #sme-dictionary-table-host').length,
+    legacyResultHosts: root.querySelectorAll('[data-sme-results-table-host], #result, #result-summary').length,
+    workflowNavigation: root.ownerDocument.querySelectorAll('#sme-navigation a[href="#sme-workflow"]').length,
+    dictionaryNavigation: root.ownerDocument.querySelectorAll('#sme-navigation a[href="#sme-dictionary"]').length,
+  }))
+  assert.deepEqual(shape, { workflowHosts: 1, dictionaryHosts: 1, legacyResultHosts: 0, workflowNavigation: 1, dictionaryNavigation: 1 })
 }
