@@ -130,6 +130,7 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   await planPage.locator('#pack-id').selectOption('sme.takeover-checker')
   await expect(planPage.locator('#service-status')).toContainText('SME takeover checker · v1.1.0')
   await expect(planPage.locator('#sme-plan-mode')).toHaveValue('buy_build')
+  await setWorkflowOrientation(planPage, 'rows')
   const takeoverHeaders = await workflowHeaders(planPage)
   for (const label of ['Input · Currency code', 'Input · Transfer structure', 'Input · Business or asset purchase price',
     'Input · Items or rights included', 'Input · Items or rights excluded', 'Input · User-entered equipment resale estimate',
@@ -201,6 +202,14 @@ async function tableTextFor(page, selector) {
 async function workflowHeaders(page) {
   return page.locator('#sme-workflow-table-host').evaluate(host =>
     [...host.shadowRoot.querySelectorAll('table thead th')].map(cell => cell.innerText.trim()))
+}
+
+async function setWorkflowOrientation(page, orientation) {
+  const region = page.locator('#sme-workflow-table-region')
+  if (await region.getAttribute('data-orientation') === orientation) return
+  await page.locator('#sme-workflow-table-host').evaluate(host =>
+    host.shadowRoot.querySelector('.base-multi-dimensional-table-pivot')?.click())
+  await expect.poll(() => region.getAttribute('data-orientation')).toBe(orientation)
 }
 
 async function selectScenario(page, slot) {
