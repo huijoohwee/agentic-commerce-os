@@ -29,13 +29,25 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   await assertSingleWorkflow(planPage)
   const headers = await workflowHeaders(planPage)
   assert(headers.length <= 64, 'Shared Multi-dimensional Table column limit exceeded')
-  for (const label of ['Plan · mode and contract', 'Input · Problem or need', 'Input · Model currency code', 'Input · Buy/Build approach',
-    'Input · Existing business or asset purchase price', 'Input · Acquisition and transition costs', 'Readiness · required inputs',
-    'Readiness · invalid entries', 'Evidence · values', 'Evidence · provenance', 'Evidence · observer role', 'Evidence · date',
-    'Evidence · status', 'Coverage · calculated outputs', 'Coverage · pitch inputs',
-    'Coverage · business-plan inputs', 'Coverage · financial model', 'Coverage · evidence prompts',
-    'Model · Revenue per month', 'Pitch · Slide 1 · Venture and stage', 'Pitch · Slide 12 · Risks and milestones', 'Plan · next checks'])
-    assert(headers.some(header => header === label || header.startsWith(`${label} ·`)), `Missing workflow column: ${label}`)
+  assert.equal(new Set(headers).size, headers.length, 'Shared Multi-dimensional Table labels must be unique')
+  for (const label of ['Plan › Selection › Mode and contract [plan-mode]',
+    'Input › Pitch Problem or need problem_statement · text · required',
+    'Input › Financial model Model currency code currency_code · currency · ISO 4217 code · required',
+    'Input › Buy/Build Buy/Build approach buy_build_path · enum · required in Buy/Build',
+    'Input › Buy/Build Existing business or asset purchase price acquisition_price · money · currency · when buy_build_path=buy_existing',
+    'Input › Buy/Build Acquisition and transition costs transition_costs · money · currency · when buy_build_path=buy_existing',
+    'Readiness › Input coverage › required inputs [plan-completeness]',
+    'Readiness › Validation › invalid entries [data-validation]', 'Evidence › Field context › values [evidence-values]',
+    'Evidence › Record attributes › provenance [evidence-provenance]', 'Evidence › Record attributes › observer role [evidence-observer]',
+    'Evidence › Record attributes › date [evidence-date]', 'Evidence › Record status › status [evidence-status]',
+    'Readiness › Model coverage › calculated outputs [model-coverage]', 'Coverage › projection › pitch inputs [pitch_deck]',
+    'Coverage › projection › business-plan inputs [business_plan]', 'Coverage › projection › financial model [financial_model]',
+    'Coverage › evidence › evidence prompts [evidence]', 'Model › Calculated outputs › Revenue per month [monthly_revenue]',
+    'Pitch › Slide 1 › Venture and stage', 'Pitch › Slide 12 › Risks and milestones', 'Plan › Follow-up › next checks [next-checks]'])
+    assert(headers.some(header => header.startsWith(label)), `Missing workflow column: ${label}`)
+  const wrappedHeaders = await planPage.locator('#sme-workflow-table-host').evaluate(host => [...host.shadowRoot.querySelectorAll('thead th button > span')]
+    .map(label => ({ text: label.textContent, whiteSpace: getComputedStyle(label).whiteSpace })))
+  assert(wrappedHeaders.some(header => header.text.includes('\n') && header.whiteSpace === 'pre-line'), 'Nested field labels should keep their visible line groups')
   let text = await tableText(planPage)
   assert.match(text, /USD 6,000/)
   assert.match(text, /USD 4,800/)
@@ -67,7 +79,7 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   text = await tableText(planPage)
   assert.match(text, /USD 6,000/)
   assert.match(text, /A defined user group has a recurring task that takes time to complete/)
-  assert.match(text, /Pitch · Slide 1 · Venture and stage/)
+  assert.match(text, /Pitch › Slide 1 › Venture and stage/)
 
   const navigationToggle = planPage.locator('#workspace-navigation-toggle')
   if (await navigationToggle.getAttribute('aria-expanded') === 'false') await navigationToggle.click()
@@ -76,18 +88,20 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   await expect(planPage.locator('#sme-dictionary-status')).toContainText('read-only schema and owner records')
   const dictionary = await planPage.locator('#sme-dictionary-table-host').evaluate(host => ({
     headers: [...host.shadowRoot.querySelectorAll('thead th')].map(cell => cell.innerText.trim()),
-    rows: host.shadowRoot.querySelectorAll('tbody tr').length,
+    rows: [...host.shadowRoot.querySelectorAll('tbody tr')].map(row => [...row.cells].map(cell => cell.innerText.trim())),
     text: host.shadowRoot.textContent,
-    conditionalRequirements: [...host.shadowRoot.querySelectorAll('tbody tr')]
-      .map(row => [...row.cells].map(cell => cell.innerText.trim()))
-      .filter(row => row[0] === 'Input field' && ['buy_build_path', 'acquisition_price', 'transition_costs'].includes(row[1]))
-      .map(row => [row[1], row[6]]),
-    inputKeys: [...host.shadowRoot.querySelectorAll('tbody tr')]
-      .map(row => [...row.cells].map(cell => cell.innerText.trim()))
-      .filter(row => row[0] === 'Input field').map(row => row[1]),
   }))
+  const recordColumn = dictionary.headers.indexOf('Record'), keyColumn = dictionary.headers.indexOf('Stable key'), requiredColumn = dictionary.headers.indexOf('Required')
+  const dictionaryRecords = dictionary.rows.map(row => ({ record: row[recordColumn], key: row[keyColumn], required: row[requiredColumn] }))
+  const conditionalRequirements = dictionaryRecords
+    .filter(row => row.record === 'Input field' && ['buy_build_path', 'acquisition_price', 'transition_costs'].includes(row.key))
+    .map(row => [row.key, row.required])
+  const inputKeys = dictionaryRecords.filter(row => row.record === 'Input field').map(row => row.key)
+  const hierarchyKeys = dictionaryRecords.filter(row => row.record === 'Hierarchy group').map(row => row.key)
   assert(dictionary.headers.includes('Stable key') && dictionary.headers.includes('Formula / source'))
-  assert(dictionary.rows >= 50)
+  assert(dictionary.rows.length >= 50)
+  assert(hierarchyKeys.includes('group:Inputs'))
+  assert(hierarchyKeys.includes('group:Inputs.Buy/Build'))
   assert.match(dictionary.text, /sme\.business-plan/)
   assert.match(dictionary.text, /business\.plan\.build/)
   assert.match(dictionary.text, /DICTIONARY-SEMANTIC/)
@@ -97,10 +111,10 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   assert.match(dictionary.text, /Workflow mode/)
   assert.match(dictionary.text, /plan_modes/)
   assert.match(dictionary.text, /buy_build_path/)
-  assert.deepEqual(dictionary.conditionalRequirements, [
+  assert.deepEqual(conditionalRequirements, [
     ['buy_build_path', 'Conditional'], ['acquisition_price', 'Conditional'], ['transition_costs', 'Conditional'],
   ])
-  assert.equal(new Set(dictionary.inputKeys).size, dictionary.inputKeys.length, 'Active contract input keys must be unique')
+  assert.equal(new Set(inputKeys).size, inputKeys.length, 'Active contract input keys must be unique')
   assert.match(dictionary.text, /evidence-values/)
   if (await navigationToggle.getAttribute('aria-expanded') === 'false') await navigationToggle.click()
   await planPage.locator('#sme-navigation a[href="#sme-workflow"]').click()
@@ -120,7 +134,7 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
     await planPage.locator('#sme-compare-run').click()
     await expect(planPage.locator('#workflow-status')).toContainText('Local scenario plan built')
     text = await tableText(planPage)
-    assert.match(text, /Model · Revenue per month/)
+    assert.match(text, /Model › Calculated outputs › Revenue per month/)
     assert.match(text, /USD 6,000/)
     await assertSingleWorkflow(planPage)
   }
@@ -132,16 +146,26 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   await expect(planPage.locator('#sme-plan-mode')).toHaveValue('buy_build')
   await setWorkflowOrientation(planPage, 'rows')
   const takeoverHeaders = await workflowHeaders(planPage)
-  for (const label of ['Input · Currency code', 'Input · Transfer structure', 'Input · Business or asset purchase price',
-    'Input · Items or rights included', 'Input · Items or rights excluded', 'Input · User-entered equipment resale estimate',
-    'Input · User-entered current improvements estimate', 'Input · User-entered monthly revenue', 'Input · Financial information basis',
-    'Input · Financial information period covered', 'Input · Location payment obligation', 'Input · User-stated location renewal period',
-    'Input · User-stated location assignment status',
-    'Input · Cash available for the acquisition', 'Model · Cash required to close and fund the selected period',
-    'Model · Remaining location payment exposure', 'Model · Cash shortfall after available cash',
-    'Model · User-entered monthly revenue less listed monthly costs'])
-    assert(takeoverHeaders.some(header => header === label || header.startsWith(`${label} ·`)), `Missing takeover checker column: ${label}`)
-  assert(!takeoverHeaders.some(header => header.startsWith('Pitch · Slide')), 'Contract-specific pitch columns leaked into the takeover checker')
+  assert.equal(new Set(takeoverHeaders).size, takeoverHeaders.length, 'Takeover checker column labels must be unique')
+  for (const label of ['Input › Measurement Currency code currency_code · currency · ISO 4217 code · required',
+    'Input › Acquisition Transfer structure transaction_structure · enum · optional',
+    'Input › Acquisition Business or asset purchase price purchase_price · money · currency · required',
+    'Input › Acquisition Items or rights included included_items · text · optional', 'Input › Acquisition Items or rights excluded excluded_items · text · optional',
+    'Input › Acquisition User-entered equipment resale estimate equipment_resale_estimate · money · currency · optional',
+    'Input › Acquisition User-entered current improvements estimate improvements_current_estimate · money · currency · optional',
+    'Input › Operating information User-entered monthly revenue monthly_revenue · money · currency/month · optional',
+    'Input › Operating information Financial information basis financial_basis · enum · optional',
+    'Input › Operating information Financial information period covered financial_period_months · integer · months · optional',
+    'Input › Location Location payment obligation location_obligation · enum · required',
+    'Input › Location User-stated location renewal period location_renewal_months · integer · months · optional',
+    'Input › Location User-stated location assignment status location_assignment_status · enum · optional',
+    'Input › Funding Cash available for the acquisition available_cash · money · currency · required',
+    'Model › Calculated outputs › Cash required to close and fund the selected period [cash_to_close]',
+    'Model › Calculated outputs › Remaining location payment exposure [location_exposure]',
+    'Model › Calculated outputs › Cash shortfall after available cash [cash_shortfall]',
+    'Model › Calculated outputs › User-entered monthly revenue less listed monthly costs [operating_difference_per_month]'])
+    assert(takeoverHeaders.some(header => header.startsWith(label)), `Missing takeover checker column: ${label}`)
+  assert(!takeoverHeaders.some(header => header.startsWith('Pitch › Slide')), 'Contract-specific pitch columns leaked into the takeover checker')
   await planPage.locator('#sample').click()
   await planPage.locator('#sme-compare-run').click()
   await expect(planPage.locator('#workflow-status')).toContainText('Local Buy/Build plan built')
@@ -201,7 +225,7 @@ async function tableTextFor(page, selector) {
 
 async function workflowHeaders(page) {
   return page.locator('#sme-workflow-table-host').evaluate(host =>
-    [...host.shadowRoot.querySelectorAll('table thead th')].map(cell => cell.innerText.trim()))
+    [...host.shadowRoot.querySelectorAll('table thead th')].map(cell => cell.innerText.trim().replace(/\s+/gu, ' ')))
 }
 
 async function setWorkflowOrientation(page, orientation) {

@@ -97,7 +97,7 @@ async function createSmeBusinessPack() {
     if (field.required) return 'required'
     if (field.required_when?.field) {
       const trigger = field.required_when
-      return `conditional when ${trigger.field}=${String(trigger.equals ?? trigger.value ?? 'true')}`
+      return `when ${trigger.field}=${String(trigger.equals ?? trigger.value ?? 'true')}`
     }
     if (field.required_modes?.length) {
       const modes = field.required_modes.map(id => currentProtocol?.plan_modes?.find(mode => mode.id === id)?.label ?? id)
@@ -105,9 +105,11 @@ async function createSmeBusinessPack() {
     }
     return 'optional'
   }
-  const inputTableLabel = field => tablePathLabel(['Input', field.section ?? 'Plan', [
-    field.label, `[${field.name}]`, field.type, field.unit, inputRequirementLabel(field),
-  ].filter(Boolean).join(' · ')])
+  const inputTableLabel = field => {
+    const unit = field.unit?.replace(/^selected /u, '')
+    const metadata = [field.type, unit, inputRequirementLabel(field)].filter(Boolean).join(' · ')
+    return [`Input › ${field.section ?? 'Plan'}`, field.label, `${field.name} · ${metadata}`].filter(Boolean).join('\n')
+  }
   function tableDimensions() {
     const reportValue = (slot, read) => slot.status === 'not_supplied' ? 'Not in this comparison.' : slot.report ? read(slot.report) : 'Not built · build local plan'
     const evidenceValue = (slot, read) => slot.status === 'not_supplied' ? 'Not in this comparison.' : slot.evidence.length
@@ -134,12 +136,12 @@ async function createSmeBusinessPack() {
         'model-coverage': ['Readiness', 'Model coverage', 'Calculated outputs'],
         'next-checks': ['Plan', 'Follow-up', 'Next checks'],
       }[id] ?? ['Workflow', 'Protocol field', column?.label ?? id]
-      path[path.length - 1] = `${path.at(-1)} [${id}]`
-      return { id, name: tablePathLabel(path), read }
+      const label = column?.label?.split(' · ').at(-1) ?? path.at(-1)
+      return { id, name: `${tablePathLabel([...path.slice(0, 2), `${label} [${id}]`])}`, read }
     }
     const pitchRoles = currentProtocol?.artifacts?.find(artifact => artifact.id === 'pitch_deck_outline')?.roles ?? []
     const dimensions = [
-      { id: 'plan-mode', name: tablePathLabel(['Plan', 'Selection', 'Mode and contract [plan-mode]']), read: () => currentProtocol?.pack && currentMode()
+      { id: 'plan-mode', name: 'Plan › Selection › Mode and contract [plan-mode]', read: () => currentProtocol?.pack && currentMode()
         ? `${currentMode().label} · ${currentProtocol.pack.label} · v${currentProtocol.pack.version} · ${currentProtocol.pack.review_status}` : 'Loading plan…' },
       workflowColumn('plan-completeness', slot => reportValue(slot, report => {
         const status = report.check.completeness, missing = status.required - status.supplied
@@ -154,7 +156,7 @@ async function createSmeBusinessPack() {
       workflowColumn('evidence-observer', slot => evidenceValue(slot, (row, field) => `${row.field_key} · ${field?.label ?? lineLabel(row.field_key)}: ${enumLabel(row.observer_role)}`)),
       workflowColumn('evidence-date', slot => evidenceValue(slot, (row, field) => `${row.field_key} · ${field?.label ?? lineLabel(row.field_key)}: ${row.date}`)),
       workflowColumn('evidence-status', slot => slot.status === 'not_supplied' ? 'Not in this comparison.' : slot.evidence.length ? 'User-recorded · not authenticated' : 'No evidence entries recorded.'),
-      ...coverageOutputs.map(output => ({ id: `coverage-${output.id}`, name: tablePathLabel(['Coverage', output.id, output.label.replace(/^Coverage\s*·\s*/u, '')]), read: slot => reportValue(slot, report => {
+      ...coverageOutputs.map(output => ({ id: `coverage-${output.id}`, name: `Coverage › ${output.kind} › ${output.label.replace(/^Coverage\s*·\s*/u, '')} [${output.id}]`, read: slot => reportValue(slot, report => {
         const coverage = output.kind === 'evidence' ? report.evidence_coverage : report.projection_coverage?.[output.projection_id]
         if (!coverage) return 'Coverage unavailable.'
         if (output.kind === 'evidence') return `${coverage.evidenced_fields}/${coverage.guided_fields} guided fields have context · ${coverage.evidence_count} records · not authenticated`
@@ -164,9 +166,9 @@ async function createSmeBusinessPack() {
         const rows = Object.values(report.model.missing_inputs), complete = rows.filter(values => values.length === 0).length
         return `${complete}/${rows.length} outputs have their required inputs`
       })),
-      ...modelOutputs.map(output => ({ id: `model-${output.id}`, name: tablePathLabel(['Model', 'Calculated output', `${output.label} [${output.id}]`]), read: slot =>
+      ...modelOutputs.map(output => ({ id: `model-${output.id}`, name: `Model › Calculated outputs › ${output.label} [${output.id}]`, read: slot =>
         reportValue(slot, report => report.model_display[output.id]) })),
-      ...pitchRoles.map(role => ({ id: `pitch-${role.id}`, name: tablePathLabel(['Pitch deck', `Slide ${role.slide}`, `${role.label} [${role.id}]`]), read: slot =>
+      ...pitchRoles.map(role => ({ id: `pitch-${role.id}`, name: `Pitch › Slide ${role.slide} › ${role.label} [${role.id}]`, read: slot =>
         reportValue(slot, report => report.pitch_deck_outline.find(row => row.id === role.id)?.content ?? 'Role output unavailable.') })),
       workflowColumn('next-checks', slot => reportValue(slot, report => report.next_checks.length
         ? report.next_checks.map(row => `${row.order}. ${row.action}`).join(' · ') : 'No next checks from the entered fields.')),
@@ -337,6 +339,12 @@ async function createSmeBusinessPack() {
       await mount.ready
       if (generation !== mount.generation || !isCurrent() || !host.isConnected) return true
       mount.handle ? mount.handle.update(view) : mount.handle = adapter.mountDataView(target, view)
+      if (host === workflowTableHost && !host.shadowRoot.querySelector('#sme-workflow-header-wrap')) {
+        const headerStyle = node('style')
+        headerStyle.id = 'sme-workflow-header-wrap'
+        headerStyle.textContent = `th button > span { white-space: pre-line !important; overflow: visible !important; text-overflow: clip !important; overflow-wrap: anywhere !important; font-size: 12px !important; line-height: 1.2 !important; } th button { align-items: flex-start !important; } th > section { align-items: flex-start !important; }`
+        host.shadowRoot.append(headerStyle)
+      }
       return true
     } catch (error) {
       console.error('sme_shared_table_unavailable', error)
