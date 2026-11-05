@@ -1,3 +1,30 @@
+
+export function nestSmePackTableRows({ rows, pathFor, createGroupRow }) {
+  if (!Array.isArray(rows) || typeof pathFor !== 'function' || typeof createGroupRow !== 'function')
+    throw Error('sme_table_hierarchy_arguments_invalid')
+  const root = { children: new Map(), rows: [] }
+  for (const row of rows) {
+    const path = pathFor(row).map(value => String(value ?? '').trim()).filter(Boolean)
+    let node = root
+    for (const label of path) {
+      if (!node.children.has(label)) node.children.set(label, { children: new Map(), rows: [] })
+      node = node.children.get(label)
+    }
+    node.rows.push(row)
+  }
+  const output = []
+  const visit = (node, path, depth) => {
+    for (const [label, child] of node.children) {
+      const nextPath = [...path, label]
+      output.push({ ...createGroupRow({ path: nextPath, depth }), depth })
+      visit(child, nextPath, depth + 1)
+    }
+    output.push(...node.rows.map(row => ({ ...row, depth })))
+  }
+  visit(root, [], 1)
+  return output
+}
+
 const columns = [
   { id: 'record', name: 'Record' }, { id: 'key', name: 'Stable key' }, { id: 'label', name: 'Label' },
   { id: 'section', name: 'Section' }, { id: 'definition', name: 'Definition / use' }, { id: 'type', name: 'Type' },
@@ -19,7 +46,6 @@ const display = value => {
   return text.length > 1000 ? text.slice(0, 997) + '…' : text
 }
 const dictionaryGroups = rows => {
-  const rootOrder = [], roots = new Map()
   const pathFor = row => {
     const [record, , , section] = row.cells
     if (record === 'Input field') return ['Inputs', section || 'Plan']
@@ -38,26 +64,13 @@ const dictionaryGroups = rows => {
     if (record === 'Shared token' || record === 'Skill metadata') return ['Shared vocabulary', 'Owner references']
     return ['Protocol records', section || record]
   }
-  for (const row of rows) {
-    const path = pathFor(row), root = path[0], section = path[1] ?? row.cells[0]
-    if (!roots.has(root)) { roots.set(root, new Map()); rootOrder.push(root) }
-    const sections = roots.get(root)
-    if (!sections.has(section)) sections.set(section, [])
-    sections.get(section).push(row)
-  }
-  const groupRow = (path, depth) => {
+  return nestSmePackTableRows({ rows, pathFor, createGroupRow: ({ path, depth }) => {
     const label = path.at(-1), key = `group:${path.join('.')}`
     const id = `group-${path.map(part => part.toLowerCase().replace(/[^a-z0-9]+/gu, '-').replace(/^-|-$/gu, '')).join('--')}`
     return { id, depth, cells: ['Hierarchy group', key, label, path.slice(0, -1).join(' › '),
       'Display grouping derived from the active protocol. This row is not an input, output, evidence claim, or rule.',
       'group label', 'No', '', '', 'Display structure only', 'pack.protocol', 'Base Multi-dimensional Table'] }
-  }
-  return rootOrder.flatMap(root => {
-    const sections = roots.get(root)
-    return [groupRow([root], 1), ...[...sections].flatMap(([section, items]) => [
-      groupRow([root, section], 2), ...items.map(row => ({ ...row, depth: 3 })),
-    ])]
-  })
+  } })
 }
 
 export function createSmePackDictionaryView(protocol, orientation = 'rows', onOrientationChange, toolSchemas = []) {

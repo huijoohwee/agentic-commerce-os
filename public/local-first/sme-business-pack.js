@@ -171,11 +171,12 @@ async function createSmeBusinessPack() {
     ]
     return dimensions
   }
-  function workflowTableView() {
+  async function workflowTableView() {
     const slots = comparisonSlotElements.slice(0, Number(comparisonCount.value))
     const resultSlots = tableSlots(comparisonValue)
     const dimensions = tableDimensions()
     if (tableOrientation === 'columns') {
+      const { nestSmePackTableRows } = await import('./sme-pack-dictionary.js?v=business-plan-dictionary-v2')
       const names = ['Record type', 'Section', 'Group', 'Parameter', 'Stable key', 'Data type', 'Unit', 'Requirement', 'Allowed values', 'Minimum', 'Maximum', 'Length limit', 'Pattern', 'Definition']
       const columns = [...names.map((name, index) => ({ id: `metadata-${index}`, name })), ...slots.map(item => ({ id: `value-${item.slot}`, name: rowLabel(item.slot) }))]
       const record = (id, cells) => ({ id, cells: cells.map(value => value == null ? 'Not declared' : String(value)) })
@@ -186,7 +187,24 @@ async function createSmeBusinessPack() {
         const kind = section === 'Plan' ? 'Plan state' : section === 'Readiness' ? 'Readiness' : section === 'Evidence' ? 'Evidence' : `${section} output`
         return record(`output:${dimension.id}`, [kind, section, group, dimension.parameter ?? parameter, dimension.id, 'Derived', 'Not declared', 'Calculated or reported', 'Not declared', 'Not declared', 'Not declared', 'Not declared', 'Not declared', 'Not declared', ...slots.map(item => dimension.read(resultSlots.find(slot => slot.slot === item.slot)))])
       })
-      return { columns, rows: [...inputRows, ...outputRows], layout: 'multiDimensional', orientation: 'rows', ariaLabel: 'Workflow fields and outputs are rows; each metadata attribute and each plan option has its own column.' }
+      const rows = nestSmePackTableRows({ rows: [...inputRows, ...outputRows],
+        pathFor: row => {
+          const [recordType, section, group] = row.cells
+          const path = [recordType, section, group === 'Input' ? '' : group]
+          return path.filter((value, index) => value && value !== path[index - 1])
+        },
+        createGroupRow: ({ path }) => {
+          const [recordType, section, group] = path
+          const slug = path.map(part => part.toLowerCase().replace(/[^a-z0-9]+/gu, '-').replace(/^-|-$/gu, '')).join('--')
+          const label = path.at(-1)
+          const cells = ['Hierarchy group', section ?? 'Workflow', group ?? 'Workflow records', label, `group:${slug}`,
+            'group label', 'Not applicable', 'No', 'Not applicable', 'Not applicable', 'Not applicable', 'Not applicable',
+            'Not applicable', 'Display grouping derived from the active contract. This row is not an input, output, evidence, result, or rule.',
+            ...slots.map(() => 'Not applicable')]
+          return record(`group:${recordType}:${slug}`, cells)
+        },
+      })
+      return { columns, rows, layout: 'multiDimensional', orientation: 'rows', ariaLabel: 'Workflow fields and outputs are nested by record type, section, and group; each field attribute and plan option has its own column.' }
     }
     const columns = [{ id: 'plan-row', name: currentMode()?.row_label ?? 'Plan option' }, ...currentFields.map(field => ({ id: field.name, name: inputTableLabel(field) })), ...dimensions.map(({ id, name }) => ({ id, name }))]
     const rows = slots.map(item => ({ id: item.slot, cells: [rowLabel(item.slot), ...currentFields.map(field => formatFieldValue(field, item.inputs[field.name], item.inputs.currency_code)), ...dimensions.map(dimension => dimension.read(resultSlots.find(slot => slot.slot === item.slot)))] }))
@@ -208,7 +226,9 @@ async function createSmeBusinessPack() {
   }
   async function renderWorkflowTable(expectedGeneration = comparisonGeneration) {
     const current = () => expectedGeneration === comparisonGeneration
-    const ok = await renderSharedTable(workflowTableHost, workflowTableView(), workflowTableMount, current)
+    const view = await workflowTableView()
+    if (!current()) return true
+    const ok = await renderSharedTable(workflowTableHost, view, workflowTableMount, current)
     if (!ok && current())
       workflowStatus.textContent = 'Shared workflow table unavailable. Reload this page to retry.'
     return ok || !current()
