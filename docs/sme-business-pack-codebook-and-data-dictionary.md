@@ -11,6 +11,8 @@ The plan contract selector contains one general business plan and one SME takeov
 
 The versioned protocol is returned by `pack.protocol` as `sme-business-plan/protocol/v3`. It exposes the active contract's modes, fields, calculation model, outputs, workflow columns, evidence guidance, examples, and optional guideline alignment. The shared tool registry and JSON Schemas are declared once in `sme-business-pack-core.js` and reused by local, worker, MCP, and optional WebMCP adapters. Illustrative values are applied only after the user activates the example-input action; they are never defaults.
 
+Bounded empty or whitespace-only text is unknown across the editor, local/API/MCP builds and worksheet imports. The shared evaluator omits it from supplied inputs, completeness and exports, so missing-context checks remain visible. Blank evidence is refused, and invalid evidence leaves the current worksheet intact during import. Oversized text still fails validation; undeclared fields, including inherited object-property names, are refused.
+
 ### General business plan
 
 This contract organizes user-defined venture and organization inputs into pitch roles, business-plan prompts, and single-period financial arithmetic. It makes no location, sector, benchmark, market-data, assumption, inference, or currency-conversion claims. It has twelve pitch roles, four scoped coverage outputs, evidence guidance, and a versioned map to canonical projection requirements. Calculation parameters, ratios, and tolerances are explicitly empty. The author chooses a three-letter currency code per row; concise user notes remain local and unknown values remain unknown.

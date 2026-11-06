@@ -25,7 +25,7 @@ function summary(pack) {
   return { id: pack.id, label: pack.label, version: pack.version, as_of: pack.as_of,
     review_status: pack.review_status, reviewer: pack.reviewer }
 }
-function definitions(pack) { return Object.fromEntries(pack.input_fields.map(field => [field.name, field])) }
+function definitions(pack) { return Object.assign(Object.create(null), Object.fromEntries(pack.input_fields.map(field => [field.name, field]))) }
 function packEntry(packId) { return PACK_REGISTRY.find(entry => entry.metadata.id === packId) }
 
 export async function loadPack(packId) {
@@ -127,7 +127,7 @@ function validEvidence(pack, evidence) {
     if (!field || !provenanceTypes.includes(row.provenance) || !observerRoles.includes(row.observer_role)
       || typeof row.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/u.test(row.date)
       || !Number.isFinite(Date.parse(row.date)) || new Date(row.date).toISOString().slice(0, 10) !== row.date
-      || !validFieldValue(field, row.value)) fail('sme_pack_evidence_invalid')
+      || !validFieldValue(field, row.value) || field.type === 'text' && !row.value.trim()) fail('sme_pack_evidence_invalid')
     return { field_key: row.field_key, provenance: row.provenance, observer_role: row.observer_role, date: row.date, value: clone(row.value) }
   })
 }
@@ -143,6 +143,7 @@ async function validateInput(args) {
     const field = fields[key]
     if (!field) fail('sme_pack_unknown_field')
     if (!validFieldValue(field, value)) { invalid.push(key); continue }
+    if (field.type === 'text' && !value.trim()) continue
     inputs[key] = clone(value)
   }
   const missing = pack.input_fields.filter(field => requiredForMode(field, mode, inputs) && !Object.hasOwn(inputs, field.name)).map(field => field.name)
@@ -430,6 +431,7 @@ export async function readSmeWorksheets(text, format, identity) {
       || !Array.isArray(sheet.evidence) || sheet.currency_code !== (sheet.inputs.currency_code ?? null)) fail('sme_pack_worksheet_identity')
     const checked = await validateInput({ pack_id: sheet.pack_id, mode: sheet.mode, inputs: sheet.inputs, evidence: sheet.evidence })
     if (checked.invalid.length) fail('sme_pack_worksheet_invalid')
+    sheet.inputs = clone(checked.inputs)
   }
   const sets = sheets.map(sheet => ({ pack_id: sheet.pack_id, pack_version: sheet.pack_version, inputs: sheet.inputs, evidence: sheet.evidence }))
   if (sets.length > 1) await invokeSmePackTool('business.plan.compare', { mode: sheets[0].mode, plan_sets: sets })

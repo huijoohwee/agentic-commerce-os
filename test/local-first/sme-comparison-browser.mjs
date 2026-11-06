@@ -283,6 +283,12 @@ async function checkTakeoverReview(page, output) {
   assert.equal(Object.keys(first.inputs).length, 38)
   const sheets = [first, { ...first, inputs: { ...first.inputs, opportunity_label: 'Option B', next_action: 'Clarify option B', financial_basis: 'historical_records' } }]
   const upload = async (value, name = 'review.json') => page.locator('#sme-worksheet-import').setInputFiles({ name, mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(value)) })
+  await upload({ ...first, inputs: { ...first.inputs, support_scope: '   ' } })
+  await expect(page.locator('#workflow-status')).toContainText('Worksheet imported')
+  await expect(page.locator('#compare-a-support_scope')).toHaveValue('')
+  const blankDownload = page.waitForEvent('download'); await page.locator('[data-export="json"]').click()
+  const normalized = JSON.parse(await readFile(await (await blankDownload).path(), 'utf8'))
+  assert.equal(Object.hasOwn(normalized.inputs, 'support_scope'), false)
   await upload(sheets); await expect(page.locator('#workflow-status')).toContainText('Worksheet imported')
   await expect(page.locator('#sme-compare-count')).toHaveValue('2')
   await page.locator('#sme-compare-run').click()
@@ -313,7 +319,8 @@ async function checkTakeoverReview(page, output) {
     await expect(page.locator('#compare-a-next_action')).toHaveValue(texts.next_action)
     await expect(page.locator('#sme-compare-count')).toHaveValue('2')
   }
-  for (const invalid of [{ ...sheets[1], pack_version: '1.1.0' }, { ...sheets[1], inputs: { ...sheets[1].inputs, next_action: 'person@example.test' } }]) {
+  for (const invalid of [{ ...sheets[1], pack_version: '1.1.0' }, { ...sheets[1], inputs: { ...sheets[1].inputs, next_action: 'person@example.test' } },
+    { ...sheets[1], evidence: [{ field_key: 'support_scope', value: '   ', provenance: 'self_reported', observer_role: 'author', date: '2026-11-06' }] }]) {
     await upload([first, invalid]); await expect(page.locator('#workflow-status')).toContainText('Current inputs are kept')
     await expect(page.locator('#compare-a-next_action')).toHaveValue(texts.next_action)
     await expect(page.locator('#sme-compare-count')).toHaveValue('2')
