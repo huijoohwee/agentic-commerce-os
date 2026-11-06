@@ -1,4 +1,4 @@
-import { invokeSmePackTool, PACK_INDEX, TOOL_SCHEMAS } from './sme-business-pack-core.js?v=business-plan-contract-v6'
+import { invokeSmePackTool, PACK_INDEX, TOOL_SCHEMAS, readSmeWorksheets, serializeSmeWorksheets } from './sme-business-pack-core.js?v=business-plan-contract-v6'
 import { getOrCreateSingleton } from './workspace-singleton.js'
 import { createSmeWorkflowEditor } from './sme-workflow-editor.js'
 
@@ -34,7 +34,7 @@ async function createSmeBusinessPack() {
   const workflowStatus = $('#workflow-status'), serviceStatus = $('#service-status')
   const runtimeMode = $('#runtime-mode'), runtimeStatus = $('#runtime-status')
   let currentFields = [], currentProtocol, registration, active = false, previousScrollRestoration = null,
-    comparisonGeneration = 0, packGeneration = 0, comparisonPending = false, tableOrientation = 'rows',
+    comparisonGeneration = 0, packGeneration = 0, importGeneration = 0, comparisonPending = false, tableOrientation = 'rows',
     comparisonValue = null, selectedWorkflowSet = null, selectedEvidenceField = null,
     tableAdapter = null, dictionaryModule = null, dictionaryOrientation = 'rows'
   const comparisonSlotElements = ['A', 'B', 'C'].map(slot => ({ slot, inputs: {}, evidence: [] }))
@@ -230,65 +230,43 @@ async function createSmeBusinessPack() {
     if (!current()) return true
     const ok = await renderSharedTable(workflowTableHost, view, workflowTableMount, current)
     if (!ok && current())
-      workflowStatus.textContent = 'Shared workflow table unavailable. Reload this page to retry.'
+      workflowStatus.textContent = workflowTableHost.dataset.limitError
+        ? 'Table limit reached (4,096 characters per cell; 196,608 bytes per view). Inputs are kept; shorten evidence or use fewer rows.'
+        : 'Shared workflow table unavailable. Inputs are kept; reload only after exporting them.'
     return ok || !current()
   }
   async function runPlan(item = comparisonSlotElements[0]) {
-    return invokeSmePackTool('business.plan.build', { pack_id: packSelect.value, mode: planModeSelect.value, inputs: readInputs(item), evidence: item.evidence })
+    return invokeSmePackTool('business.plan.build', { pack_id: packSelect.value, mode: planModeSelect.value, inputs: readInputs(item), evidence: structuredClone(item.evidence) })
   }
-  async function fillWorksheet(worksheet) {
-    if (worksheet?.schema !== 'sme-business-plan/worksheet/v2' || worksheet.pack_id !== packSelect.value
-      || worksheet.pack_version !== currentProtocol.pack.version
-      || !currentProtocol.plan_modes.some(mode => mode.id === worksheet.mode)
-      || !worksheet.inputs || typeof worksheet.inputs !== 'object' || !Array.isArray(worksheet.evidence)) throw Error('worksheet_invalid')
-    const candidate = { pack_id: worksheet.pack_id, mode: worksheet.mode, inputs: worksheet.inputs, evidence: worksheet.evidence }
-    await invokeSmePackTool('business.plan.build', candidate)
-    planModeSelect.value = worksheet.mode
-    updateModePresentation()
-    const item = comparisonSlotElements[0]
-    item.inputs = { ...worksheet.inputs }
-    item.evidence.splice(0, item.evidence.length, ...worksheet.evidence.map(row => ({ ...row })))
-    selectedWorkflowSet = 'A'
-    renderWorkflowEditor(); invalidateComparison()
-  }
-  function parseCsv(text) {
-    const rows = []; let row = [], cell = '', quoted = false
-    for (let index = 0; index < text.length; index++) {
-      const char = text[index]
-      if (quoted && char === '"' && text[index + 1] === '"') { cell += '"'; index++; continue }
-      if (char === '"') { quoted = !quoted; continue }
-      if (!quoted && char === ',') { row.push(cell); cell = ''; continue }
-      if (!quoted && (char === '\n' || char === '\r')) {
-        if (char === '\r' && text[index + 1] === '\n') index++
-        row.push(cell); if (row.some(value => value !== '')) rows.push(row)
-        row = []; cell = ''; continue
-      }
-      cell += char
-    }
-    if (quoted) throw Error('worksheet_csv_invalid')
-    if (cell || row.length) { row.push(cell); rows.push(row) }
-    if (rows[0]?.join(',') !== 'kind,key,value,provenance,observer_role,date') throw Error('worksheet_csv_invalid')
-    const worksheet = { schema: 'sme-business-plan/worksheet/v2', pack_id: packSelect.value, pack_version: currentProtocol.pack.version, mode: undefined, inputs: {}, evidence: [] }
-    for (const [kind, key, value, provenance, observer_role, date] of rows.slice(1)) {
-      if (kind === 'input') worksheet.inputs[key] = JSON.parse(value)
-      else if (kind === 'evidence') worksheet.evidence.push({ field_key: key, value: JSON.parse(value), provenance, observer_role, date })
-      else if (kind === 'meta' && key === 'mode') worksheet.mode = JSON.parse(value)
-      else throw Error('worksheet_csv_invalid')
-    }
-    if (!worksheet.mode) throw Error('worksheet_csv_invalid')
-    return worksheet
+  async function worksheetReports() {
+    const generation = comparisonGeneration, pack = currentProtocol.pack, mode = planModeSelect.value
+    const sets = comparisonSlotElements.slice(0, Number(comparisonCount.value)).map(item => ({ pack_id: pack.id, pack_version: pack.version,
+      inputs: readInputs(item), evidence: structuredClone(item.evidence) }))
+    const reports = sets.length === 1 ? [await runPlan()] : (await invokeSmePackTool('business.plan.compare', { mode, plan_sets: sets })).slots.flatMap(slot => slot.report ? [slot.report] : [])
+    if (generation !== comparisonGeneration || document.body.dataset.workspaceRole !== 'sme') throw Error('sme_pack_worksheet_cancelled')
+    if (reports.some(report => report.check.completeness.invalid_fields.length)) throw Error('sme_pack_worksheet_invalid')
+    return reports
   }
   async function importWorksheet(file) {
-    const text = await file.text(), suffix = file.name.split('.').pop().toLowerCase()
-    let worksheet
-    if (suffix === 'md' || suffix === 'markdown') {
-      const fence = '~~~json'
-      const start = text.indexOf(fence), end = start < 0 ? -1 : text.indexOf('~~~', start + fence.length)
-      if (start < 0 || end < 0) throw Error('worksheet_markdown_invalid')
-      worksheet = JSON.parse(text.slice(start + fence.length, end).trim())
-    } else if (suffix === 'csv') worksheet = parseCsv(text)
-    else worksheet = JSON.parse(text)
-    await fillWorksheet(worksheet)
+    const generation = comparisonGeneration, pack = currentProtocol.pack, packVersion = packGeneration, request = ++importGeneration
+    if (file.size > 65536) throw Error('sme_pack_worksheet_limit')
+    const isCurrent = () => request === importGeneration && generation === comparisonGeneration && packVersion === packGeneration && document.body.dataset.workspaceRole === 'sme'
+    let worksheets
+    try {
+      const text = await file.text()
+      if (!isCurrent()) throw Error('sme_pack_worksheet_cancelled')
+      worksheets = await readSmeWorksheets(text, file.name.split('.').pop().toLowerCase(), pack)
+    } catch (error) {
+      if (!isCurrent()) throw Error('sme_pack_worksheet_cancelled')
+      throw error
+    }
+    if (!isCurrent()) throw Error('sme_pack_worksheet_cancelled')
+    planModeSelect.value = worksheets[0].mode; comparisonCount.value = String(worksheets.length)
+    for (const [index, item] of comparisonSlotElements.entries()) {
+      item.inputs = { ...(worksheets[index]?.inputs ?? {}) }
+      item.evidence = structuredClone(worksheets[index]?.evidence ?? [])
+    }
+    selectedWorkflowSet = 'A'; updateModePresentation(); invalidateComparison()
     workflowStatus.textContent = 'Worksheet imported in this tab. Build the plan to refresh model and readiness columns.'
   }
   async function refreshFields(packId = packSelect.value) {
@@ -364,6 +342,7 @@ async function createSmeBusinessPack() {
       await mount.ready
       if (generation !== mount.generation || !isCurrent() || !host.isConnected) return true
       mount.handle ? mount.handle.update(view) : mount.handle = adapter.mountDataView(target, view)
+      delete host.dataset.limitError
       if (host === workflowTableHost && !host.shadowRoot.querySelector('#sme-workflow-header-wrap')) {
         const headerStyle = node('style')
         headerStyle.id = 'sme-workflow-header-wrap'
@@ -372,9 +351,10 @@ async function createSmeBusinessPack() {
       }
       return true
     } catch (error) {
-      console.error('sme_shared_table_unavailable', error)
-      if (!mount.handle) host.shadowRoot?.replaceChildren()
-      mount.ready = null
+      if (generation !== mount.generation || !isCurrent()) return true
+      if (error instanceof RangeError || error.message === 'Invalid data view cell.') host.dataset.limitError = 'true'; else console.error('sme_shared_table_unavailable', error)
+      mount.handle?.destroy(); mount.handle = null
+      host.shadowRoot?.replaceChildren(); mount.ready = null
       return false
     }
   }
@@ -403,7 +383,7 @@ async function createSmeBusinessPack() {
     const count = Number(comparisonCount.value), identity = PACK_INDEX.find(pack => pack.id === packSelect.value)
     if (!identity) { workflowStatus.textContent = 'Check refused. The selected pack is unavailable.'; return }
     const planSets = comparisonSlotElements.slice(0, count).map(item => ({ pack_id: identity.id, pack_version: identity.version,
-      inputs: readInputs(item), ...(item.evidence.length ? { evidence: item.evidence } : {}) }))
+      inputs: readInputs(item), ...(item.evidence.length ? { evidence: structuredClone(item.evidence) } : {}) }))
     const generation = ++comparisonGeneration
     comparisonPending = true; compareButton.disabled = true; comparisonValue = null
     workflowStatus.textContent = count === 1 ? 'Building plan locally…' : `Comparing ${pluralRows()} locally…`
@@ -430,7 +410,9 @@ async function createSmeBusinessPack() {
             ? 'Enter the same ISO 4217 currency code in every row before comparing.'
             : code === 'sme_pack_comparison_identity_mismatch'
               ? 'Comparison requires the same plan contract and currency code across rows.'
-              : 'Plan refused. Review entered values and the shared protocol.'
+              : code === 'sme_pack_response_too_large' || code === 'sme_pack_arguments_invalid'
+                ? 'Plan limit reached (32 KB request; 64 KB response). Inputs are kept; shorten evidence or use fewer rows.'
+                : code === 'shared_table_unavailable' ? workflowStatus.textContent : 'Plan refused. Review entered values and the shared protocol.'
       }
     } finally {
       clearTimeout(deadline)
@@ -480,22 +462,25 @@ async function createSmeBusinessPack() {
   })
   for (const button of worksheetActions.querySelectorAll('[data-export]')) button.addEventListener('click', async () => {
     try {
-      const plan = await runPlan(), format = button.dataset.export
-      const suffix = format === 'markdown' ? 'md' : format
-      const content = plan.worksheet[format]
+      const reports = await worksheetReports(), format = button.dataset.export
+      const suffix = format === 'markdown' ? 'md' : format, worksheets = reports.map(report => JSON.parse(report.worksheet.json))
+      const content = format === 'markdown' ? reports.map(report => report.worksheet.markdown.slice(0, report.worksheet.markdown.lastIndexOf('\n~~~json\n')) + '\n').join('\n')
+        + '~~~json\n' + serializeSmeWorksheets(worksheets, 'json') + '\n~~~\n' : serializeSmeWorksheets(worksheets, format)
+      if (new TextEncoder().encode(content).byteLength > 65536) throw Error('sme_pack_worksheet_limit')
       if (typeof content !== 'string') throw Error('worksheet_format_missing')
       download(`${currentProtocol.pack.id.replaceAll('.', '-')}-worksheet.` + suffix, format === 'json' ? 'application/json'
         : format === 'csv' ? 'text/csv' : 'text/markdown', content)
       workflowStatus.textContent = 'Worksheet downloaded locally. No report was uploaded.'
-    } catch { workflowStatus.textContent = 'Worksheet export refused. Review the entered values.' }
+    } catch (error) { if (error.message !== 'sme_pack_worksheet_cancelled') workflowStatus.textContent = 'Worksheet export refused. Inputs are kept; review values or reduce rows/evidence to fit 32/64 KB limits.' }
   })
   printButton.addEventListener('click', async () => {
     let sheet
     try {
-      const plan = await runPlan(), worksheet = JSON.parse(plan.worksheet.json)
-      if (worksheet.schema !== 'sme-business-plan/worksheet/v2' || worksheet.evidence.length > 40) throw Error('worksheet_evidence_limit')
+      const reports = await worksheetReports()
       sheet = node('article', undefined, 'sme-print-sheet')
-      sheet.append(node('h1', worksheet.inputs.venture_name || 'Business plan draft'), node('p', plan.mode.label + ' · Plan contract v' + plan.pack.version + ' · ' + plan.pack.review_status + ' · ' + worksheet.currency_code + ' · ' + plan.as_of))
+      for (const [index, plan] of reports.entries()) {
+      const worksheet = JSON.parse(plan.worksheet.json)
+      sheet.append(node('h1', rowLabel(['A', 'B', 'C'][index]) + ' · ' + (worksheet.inputs.opportunity_label || worksheet.inputs.venture_name || plan.pack.label + ' draft')), node('p', plan.mode.label + ' · Plan contract v' + plan.pack.version + ' · ' + plan.pack.review_status + ' · ' + worksheet.currency_code + ' · ' + plan.as_of))
       const table = node('table'), head = node('thead'), header = node('tr'), body = node('tbody'), addRow = (kind, field, value) => {
         const row = node('tr'); row.append(node('th', kind), node('td', field), node('td', value)); body.append(row)
       }
@@ -508,13 +493,15 @@ async function createSmeBusinessPack() {
       sheet.append(table, node('h2', 'Next checks'))
       const tasks = node('ol')
       for (const task of plan.next_checks) tasks.append(node('li', task.action))
-      sheet.append(tasks, node('p', plan.check.disclaimer))
+      sheet.append(tasks, node('p', plan.disclaimer))
+      }
       const cleanup = () => { sheet.remove(); document.body.classList.remove('sme-printing') }
       document.body.append(sheet); document.body.classList.add('sme-printing')
       window.addEventListener('afterprint', cleanup, { once: true }); window.print()
       workflowStatus.textContent = 'Print view opened. Use the browser dialog to print or save locally.'
     } catch (error) {
       sheet?.remove(); document.body.classList.remove('sme-printing')
+      if (error.message === 'sme_pack_worksheet_cancelled') return
       workflowStatus.dataset.printError = error instanceof Error ? error.message : 'unknown'
       workflowStatus.textContent = 'Print worksheet refused. Review the entered values.'
     }
@@ -522,7 +509,9 @@ async function createSmeBusinessPack() {
   importInput.addEventListener('change', async () => {
     const file = importInput.files?.[0]; if (!file) return
     try { await importWorksheet(file) }
-    catch { workflowStatus.textContent = 'Worksheet import refused. Use an unmodified JSON, CSV or Markdown worksheet.' }
+    catch (error) { if (error.message !== 'sme_pack_worksheet_cancelled') workflowStatus.textContent = error.message === 'sme_pack_worksheet_identity'
+      ? 'Worksheet contract or version does not match. Current inputs are kept; use a worksheet for the selected contract version.'
+      : 'Worksheet import refused. Current inputs are kept; check values, row identity and the 64 KB file limit.' }
     finally { importInput.value = '' }
   })
   const modelContext = document.modelContext?.registerTool ? document.modelContext : navigator.modelContext

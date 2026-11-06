@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 // @ts-expect-error The browser-safe JavaScript module is shared by the Worker and UI.
-import { invokeSmePackTool, PACK_INDEX, PACK_PATH, TOOL_NAMES, TOOL_SCHEMAS } from '../../public/local-first/sme-business-pack-core.js'
+import { invokeSmePackTool, PACK_INDEX, PACK_PATH, TOOL_NAMES, TOOL_SCHEMAS, readSmeWorksheets, serializeSmeWorksheets } from '../../public/local-first/sme-business-pack-core.js'
 import { handleSmeBusinessPackRequest } from '../../src/local-first/sme-business-pack'
 
 const packId = 'sme.business-plan'
@@ -33,7 +33,7 @@ describe('SME business plan contract', () => {
   it('publishes one neutral protocol, one tool registry, and explicit field/output collections', async () => {
     expect(PACK_INDEX).toMatchObject([
       { id: packId, label: 'General business plan', version: '2.3.0', review_status: 'provisional' },
-      { id: takeoverId, label: 'SME takeover checker', version: '1.1.0', review_status: 'provisional' },
+      { id: takeoverId, label: 'SME takeover checker', version: '1.2.0', review_status: 'provisional' },
     ])
     expect(TOOL_NAMES).toEqual(['pack.list', 'pack.protocol', 'business.plan.build', 'business.plan.compare'])
     expect(JSON.stringify(TOOL_SCHEMAS)).not.toMatch(/country|sector|SGD|takeover|listing/i)
@@ -64,7 +64,7 @@ describe('SME business plan contract', () => {
 
   it('uses the same modes, table columns, tools, and local evaluator for the takeover contract', async () => {
     const protocol = await invokeSmePackTool('pack.protocol', { pack_id: takeoverId })
-    expect(protocol).toMatchObject({ calculation_model: 'takeover-cash/v1', pack: { id: takeoverId, label: 'SME takeover checker', version: '1.1.0' } })
+    expect(protocol).toMatchObject({ calculation_model: 'takeover-cash/v1', pack: { id: takeoverId, label: 'SME takeover checker', version: '1.2.0' } })
     expect(protocol.plan_modes.map((mode: any) => mode.id)).toEqual(['buy_build', 'scenario'])
     expect(protocol.workflow_columns.map((column: any) => column.id)).toEqual([
       'plan-completeness', 'data-validation', 'evidence-values', 'evidence-provenance', 'evidence-observer',
@@ -76,7 +76,9 @@ describe('SME business plan contract', () => {
       'transaction_professional_costs', 'immediate_reinvestment_costs', 'handover_months', 'monthly_revenue',
       'financial_basis', 'financial_period_months', 'location_obligation', 'location_deposit', 'location_monthly_cost',
       'location_term_months', 'location_renewal_months', 'location_assignment_status', 'monthly_operating_costs',
-      'working_capital_months', 'available_cash',
+      'working_capital_months', 'available_cash', 'opportunity_label', 'business_activity', 'operating_area', 'transfer_reason',
+      'buyer_budget', 'target_handover_months', 'operator_experience', 'accounts_access', 'permission_transfer_status',
+      'team_continuity', 'support_scope', 'review_stage', 'next_action',
     ])
     expect(protocol.model_outputs.map((output: any) => output.id)).toContain('operating_difference_per_month')
     expect(protocol.artifacts).toEqual([])
@@ -85,15 +87,15 @@ describe('SME business plan contract', () => {
     const report: any = await invokeSmePackTool('business.plan.build', { pack_id: takeoverId, inputs: takeoverInputs })
     expect(report.check.completeness).toMatchObject({ required: 13, supplied: 13, missing_fields: [], invalid_fields: [] })
     expect(report.model_display).toEqual({ cash_to_close: 'USD 117,000', location_exposure: 'USD 21,600',
-      cash_shortfall: 'USD 97,000', operating_difference_per_month: 'USD 3,700' })
+      cash_shortfall: 'USD 97,000', operating_difference_per_month: 'USD 3,700 · Basis: current estimate · Period: 6 months' })
     expect(report.pitch_deck_outline).toEqual([])
     expect(report.projection_coverage).toEqual({})
     expect(report.model.missing_inputs).toEqual({ cash_to_close: [], location_exposure: [], cash_shortfall: [], operating_difference_per_month: [] })
     expect(report.worksheet.markdown).toContain('# SME takeover checker draft')
 
     const comparison: any = await invokeSmePackTool('business.plan.compare', { mode: 'scenario', plan_sets: [
-      { pack_id: takeoverId, pack_version: '1.1.0', inputs: takeoverInputs },
-      { pack_id: takeoverId, pack_version: '1.1.0', inputs: { ...takeoverInputs, purchase_price: 90000 } },
+      { pack_id: takeoverId, pack_version: '1.2.0', inputs: takeoverInputs },
+      { pack_id: takeoverId, pack_version: '1.2.0', inputs: { ...takeoverInputs, purchase_price: 90000 } },
     ] })
     expect(comparison.slots.map((slot: any) => slot.slot)).toEqual(['A', 'B', 'C'])
     expect(comparison.ranking).toBeNull()
@@ -114,7 +116,7 @@ describe('SME business plan contract', () => {
     delete (notApplicable as any).location_term_months
     const report: any = await invokeSmePackTool('business.plan.build', { pack_id: takeoverId, inputs: notApplicable })
     expect(report.model_display).toEqual({ cash_to_close: 'USD 108,000', location_exposure: 'Not applicable',
-      cash_shortfall: 'USD 88,000', operating_difference_per_month: 'USD 5,500' })
+      cash_shortfall: 'USD 88,000', operating_difference_per_month: 'USD 5,500 · Basis: current estimate · Period: 6 months' })
     expect(report.check.completeness.missing_fields).toEqual([])
 
     const ranged: any = await invokeSmePackTool('business.plan.build', { pack_id: takeoverId,
@@ -125,7 +127,7 @@ describe('SME business plan contract', () => {
     const operatingLoss: any = await invokeSmePackTool('business.plan.build', { pack_id: takeoverId,
       inputs: { ...takeoverInputs, monthly_revenue: 4000 } })
     expect(operatingLoss.model.operating_difference_per_month).toEqual({ low: -4300, high: -4300 })
-    expect(operatingLoss.model_display.operating_difference_per_month).toBe('USD -4,300')
+    expect(operatingLoss.model_display.operating_difference_per_month).toBe('USD -4,300 · Basis: current estimate · Period: 6 months')
   })
 
   it('returns explicit unknowns for blank financial assumptions and preserves required completeness', async () => {
@@ -223,4 +225,134 @@ describe('SME business plan contract', () => {
     const service = await handleSmeBusinessPackRequest(new Request(`https://local.test${PACK_PATH}/service.json`), 'local-unreleased')
     expect(await service?.json()).toMatchObject({ persistence: 'none', inferenceTokens: 0, packs: [{ id: packId }, { id: takeoverId }] })
   })
+
+  it('accepts all 38 fields while context and stage never change arithmetic or completeness', async () => {
+    const context = { opportunity_label: 'Option A', business_activity: 'Repairs', operating_area: 'Remote', transfer_reason: 'User-stated transition',
+      buyer_budget: { low: 90000, high: 150000 }, target_handover_months: 2, operator_experience: 'related_reported',
+      accounts_access: 'requested', permission_transfer_status: 'conditional', team_continuity: 'not_discussed',
+      support_scope: 'User-stated support', review_stage: 'handover_planning', next_action: 'Clarify transition assumptions' }
+    const args = { pack_id: takeoverId, inputs: { ...takeoverInputs, ...context } }
+    const report: any = await invokeSmePackTool('business.plan.build', args)
+    const baseline: any = await invokeSmePackTool('business.plan.build', { pack_id: takeoverId, inputs: takeoverInputs })
+    expect(report.model).toEqual(baseline.model)
+    expect(report.check.completeness).toEqual(baseline.check.completeness)
+    expect(Object.keys(JSON.parse(report.worksheet.json).inputs)).toHaveLength(38)
+    expect(TOOL_SCHEMAS.find((tool: any) => tool.name === 'business.plan.build').inputSchema.properties.inputs.maxProperties).toBe(38)
+    expect(report.next_checks.some((check: any) => check.field === 'accounts_access')).toBe(true)
+    expect(report.next_checks.some((check: any) => check.field === 'next_action')).toBe(false)
+    const reviewed: any = await invokeSmePackTool('business.plan.build', { ...args, inputs: { ...args.inputs, accounts_access: 'reviewed_by_user' } })
+    expect(reviewed.next_checks.some((check: any) => check.field === 'accounts_access')).toBe(false)
+    expect(reviewed.check.evidence_status).toBe('user-recorded; not authenticated')
+    const unavailable: any = await invokeSmePackTool('business.plan.build', { ...args, inputs: { ...args.inputs, location_assignment_status: 'reported_not_available' } })
+    expect(unavailable.next_checks.some((check: any) => check.field === 'location_assignment_status')).toBe(true)
+    for (const value of ['https://example.test', 'person@example.test', '+65 8123 4567', 'Hidden\u0000text']) {
+      const invalid: any = await invokeSmePackTool('business.plan.build', { ...args, inputs: { ...args.inputs, next_action: value } })
+      expect(invalid.check.completeness.invalid_fields).toContain('next_action')
+    }
+  })
+
+  it('keeps blank text unknown across reports, evidence and atomic worksheet imports', async () => {
+    for (const blank of ['', ' \t\n', '\u00a0']) {
+      const general: any = await build({ ...baseInputs, problem_statement: blank })
+      expect(general.check.completeness).toMatchObject({ supplied: 9, missing_fields: ['problem_statement'], invalid_fields: [] })
+      expect(general.projection_coverage.pitch_deck.missing_inputs).toContain('problem_statement')
+      expect(JSON.parse(general.worksheet.json).inputs).not.toHaveProperty('problem_statement')
+      const report: any = await invokeSmePackTool('business.plan.build', { pack_id: takeoverId, inputs: { ...takeoverInputs, support_scope: blank } })
+      expect(report.check.completeness.invalid_fields).toEqual([])
+      expect(report.next_checks.some((row: any) => row.field === 'support_scope')).toBe(true)
+      const sheet = JSON.parse(report.worksheet.json), incoming = { ...sheet, inputs: { ...sheet.inputs, support_scope: blank } }
+      for (const format of ['json', 'csv', 'md']) {
+        const encoded = format === 'md' ? '# Worksheet\n~~~json\n' + JSON.stringify(incoming) + '\n~~~' : serializeSmeWorksheets([incoming], format)
+        expect(await readSmeWorksheets(encoded, format, report.pack)).toEqual([sheet])
+      }
+      await expect(invokeSmePackTool('business.plan.build', { pack_id: takeoverId, inputs: takeoverInputs,
+        evidence: [{ field_key: 'support_scope', value: blank, provenance: 'self_reported', observer_role: 'author', date: '2026-11-06' }] })).rejects.toThrow('sme_pack_evidence_invalid')
+    }
+    const oversized: any = await invokeSmePackTool('business.plan.build', { pack_id: takeoverId, inputs: { support_scope: ' '.repeat(281) } })
+    expect(oversized.check.completeness.invalid_fields).toEqual(['support_scope'])
+    for (const name of ['constructor', '__proto__', 'toString']) {
+      await expect(invokeSmePackTool('business.plan.build', { pack_id: takeoverId,
+        inputs: JSON.parse(`{"${name}":"unexpected"}`) })).rejects.toThrow('sme_pack_unknown_field')
+    }
+  })
+
+  it('does not turn unknown location obligations into zero and preserves explicit zero purchase amounts', async () => {
+    for (const inputs of [{ ...takeoverInputs, location_obligation: 'unknown' }, { ...takeoverInputs, currency_code: undefined }] as Record<string, unknown>[]) {
+      if (inputs.currency_code === undefined) delete inputs.currency_code
+      const report: any = await invokeSmePackTool('business.plan.build', { pack_id: takeoverId, inputs })
+      for (const output of ['cash_to_close', 'cash_shortfall', 'operating_difference_per_month']) {
+        expect(report.model[output]).toBeNull(); expect(report.model_display[output]).toContain('Unknown')
+      }
+    }
+    const zero: any = await invokeSmePackTool('business.plan.build', { pack_id: takeoverId, inputs: { ...takeoverInputs, purchase_price: 0 } })
+    expect(zero.model.cash_to_close).toEqual({ low: 37000, high: 37000 })
+  })
+
+  it('keeps basis/period mismatch checks separate from cash results in two and three row comparisons', async () => {
+    const set = { pack_id: takeoverId, pack_version: '1.2.0', inputs: takeoverInputs }
+    for (const delta of [{ financial_basis: 'historical_records' }, { financial_period_months: 12 }, { financial_basis: 'unknown' }, { financial_period_months: undefined }]) {
+      const second: Record<string, unknown> = { ...takeoverInputs, ...delta }; if (second.financial_period_months === undefined) delete second.financial_period_months
+      const result: any = await invokeSmePackTool('business.plan.compare', { mode: 'scenario', plan_sets: [set, { ...set, inputs: second }, set] })
+      for (const slot of result.slots) {
+        expect(slot.report.model.cash_to_close).toEqual({ low: 117000, high: 117000 })
+        expect(slot.report.next_checks[0].action).toContain('not comparable on the supplied basis')
+        expect(slot.report.worksheet.markdown).toContain('not comparable on the supplied basis')
+      }
+      expect(result.slots.map((slot: any) => slot.slot)).toEqual(['A', 'B', 'C'])
+      expect(result.winner).toBeNull()
+    }
+    const same: any = await invokeSmePackTool('business.plan.compare', { plan_sets: [set, set] })
+    expect(same.slots[0].report.next_checks.some((row: any) => row.label === 'Operating figure comparison')).toBe(false)
+    await expect(invokeSmePackTool('business.plan.compare', { plan_sets: [set, { ...set, pack_version: '1.1.0' }] })).rejects.toThrow('sme_pack_comparison_identity_mismatch')
+  })
+
+  it('binds all worksheet rows to exact identity and rejects stale, malformed and oversized imports', async () => {
+    const protocol = await invokeSmePackTool('pack.protocol', { pack_id: takeoverId })
+    const report = await invokeSmePackTool('business.plan.build', { pack_id: takeoverId, inputs: takeoverInputs })
+    const sheet = JSON.parse(report.worksheet.json), rows = [sheet, { ...sheet, inputs: { ...sheet.inputs, next_action: 'Review second option ~~~json, \"notes\"' } }]
+    for (const format of ['json', 'csv']) {
+      const encoded = serializeSmeWorksheets(rows, format)
+      expect(await readSmeWorksheets(encoded, format, protocol.pack)).toEqual(rows)
+      await expect(readSmeWorksheets(serializeSmeWorksheets([sheet, { ...sheet, pack_version: '1.1.0' }], format), format, protocol.pack)).rejects.toThrow('sme_pack_worksheet_identity')
+      await expect(readSmeWorksheets(serializeSmeWorksheets([sheet, { ...sheet, inputs: { ...sheet.inputs, buyer_budget: -1 } }], format), format, protocol.pack)).rejects.toThrow('sme_pack_worksheet_invalid')
+    }
+    const markdown = (await invokeSmePackTool('business.plan.build', { pack_id: takeoverId, inputs: rows[1].inputs })).worksheet.markdown
+    expect(await readSmeWorksheets(markdown, 'md', protocol.pack)).toEqual([rows[1]])
+    const csv = serializeSmeWorksheets(rows, 'csv')
+    await expect(readSmeWorksheets(csv.replace('\"plan\"', '\"plan\"junk'), 'csv', protocol.pack)).rejects.toThrow('sme_pack_worksheet_invalid')
+    await expect(readSmeWorksheets('"kind","key","value","provenance","observer_role","date"', 'csv', protocol.pack)).rejects.toThrow('sme_pack_worksheet_identity')
+    await expect(readSmeWorksheets('界'.repeat(22000), 'json', protocol.pack)).rejects.toThrow('sme_pack_worksheet_limit')
+  })
+
+  it('retains byte limits for maximum Unicode evidence and caps individual as well as comparison reports', async () => {
+    const evidence = Array.from({ length: 40 }, () => ({ field_key: 'support_scope', value: '界'.repeat(280),
+      provenance: 'self_reported', observer_role: 'author', date: '2026-11-06' }))
+    await expect(invokeSmePackTool('business.plan.build', { pack_id: takeoverId, inputs: takeoverInputs, evidence })).rejects.toThrow('sme_pack_arguments_invalid')
+    const responseHeavy = evidence.map(row => ({ ...row, value: '"'.repeat(280) }))
+    await expect(invokeSmePackTool('business.plan.build', { pack_id: takeoverId, inputs: takeoverInputs, evidence: responseHeavy })).rejects.toThrow('sme_pack_response_too_large')
+    const valid = evidence.map(row => ({ ...row, value: 'Context' }))
+    const report: any = await invokeSmePackTool('business.plan.build', { pack_id: takeoverId, inputs: takeoverInputs, evidence: valid })
+    expect(report.evidence_coverage.evidence_count).toBe(40)
+    await expect(invokeSmePackTool('business.plan.build', { pack_id: takeoverId, inputs: takeoverInputs, evidence: [...valid, valid[0]] })).rejects.toThrow('sme_pack_evidence_invalid')
+  })
+
+  it('exposes the same protocol and review calculations through API and MCP tools', async () => {
+    const args = { pack_id: takeoverId, inputs: { ...takeoverInputs, review_stage: 'closed_by_user', accounts_access: 'requested', support_scope: '   ' } }
+    const local: any = await invokeSmePackTool('business.plan.build', args)
+    expect(local.next_checks.some((row: any) => row.field === 'support_scope')).toBe(true)
+    const api = await handleSmeBusinessPackRequest(request({ tool: 'business.plan.build', arguments: args }), 'local-unreleased')
+    expect(await api?.json()).toMatchObject({ model: local.model, next_checks: local.next_checks })
+    for (const [method, params] of [['tools/list', {}], ['tools/call', { name: 'pack.protocol', arguments: { pack_id: takeoverId } }], ['tools/call', { name: 'business.plan.build', arguments: args }]] as const) {
+      const response = await handleSmeBusinessPackRequest(new Request(`https://local.test${PACK_PATH}/mcp`, { method: 'POST',
+        headers: { 'content-type': 'application/json', accept: 'application/json, text/event-stream' },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }) }), 'local-unreleased')
+      expect(response?.status).toBe(200)
+      const body: any = await response?.json()
+      expect(body.error).toBeUndefined(); expect(body.result.isError).not.toBe(true)
+      if (method === 'tools/list') expect(body.result.tools.map((tool: any) => tool.name)).toEqual(TOOL_NAMES)
+      else if (params.name === 'pack.protocol') expect(body.result.structuredContent.input_fields).toHaveLength(38)
+      else expect(body.result.structuredContent).toMatchObject({ model: local.model, next_checks: local.next_checks })
+    }
+  })
+
 })
