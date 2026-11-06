@@ -2,13 +2,13 @@
   "schema": "agentic-base/consumer-artifact/v1",
   "source": {
     "repository": "github.com/huijoohwee/agentic-base",
-    "revision": "ca442954360ba016b061cf926a695b12a7b2bed2",
+    "revision": "f311aedf8af9908caff2f98742b0415c01efb26f",
     "sourceDirty": false,
     "package": "@agentic-base/views-react",
     "packageVersion": "0.1.0",
     "packagePath": "packages/views-react",
     "buildManifest": "packages/views-react/dist/browser-data-view.manifest.json",
-    "buildManifestSha256": "1e876e27d2195a5d4b78a42dd1971e49858a36d1eac53ecb9c200559ad62daa6"
+    "buildManifestSha256": "32a481e3542adbfc3e03a094c896ea6878c5f5dd93649c21b308cf6dfec6b9f9"
   },
   "contract": {
     "source": "agentic-base/browser-data-view/v1",
@@ -122,16 +122,16 @@
     },
     {
       "path": "packages/views-react/src/table/stickyHierarchy.ts",
-      "bytes": 7928,
-      "sha256": "523c554e892f8cf86853ebc3c2cc869e5b99fa34abdc0f071d2041e8e8dcc46d"
+      "bytes": 7950,
+      "sha256": "69a2d79dfa288b8084a437f3862e04a7ae1dfcdcb83749a1f4df1c3021bc36c7"
     }
   ],
   "outputs": [
     {
       "path": "agentic-base-data-view.js",
       "sourcePath": "browser-data-view.js",
-      "bytes": 218532,
-      "sha256": "7e7ec5c4655bf71c56153b2f718c33cc81ca74c0f5ba6a9b176ffbf72eb18005"
+      "bytes": 218566,
+      "sha256": "48bc136814a1f9df758817296af7399d2457a89ab470d2550001d4f611874ae7"
     },
     {
       "path": "agentic-base-data-view.css",
