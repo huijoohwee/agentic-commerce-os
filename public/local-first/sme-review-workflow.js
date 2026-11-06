@@ -101,6 +101,7 @@ export function createSmeReviewWorkflow({ root, getState, renderTable, createTab
   }
   async function timeline(data, current) {
     if (!nativeModule) nativeModule = await import('./graph-gantt-timeline.js').catch(error => { nativeModule = null; throw error })
+    const fieldView = await createTableView()
     if (!current()) return
     let target = timelineHost.shadowRoot?.querySelector('[data-review-timeline-target]')
     if (!target) {
@@ -117,7 +118,7 @@ export function createSmeReviewWorkflow({ root, getState, renderTable, createTab
     }
     await ready
     if (!current()) return
-    const projection = { rows: data, selected, columns: getState().protocol.workflow_columns.filter(field => field.kind === 'review_view'), onSelect: id => choose(id),
+    const projection = { rows: data, selected, fieldView, onActivateRecord: (slot, id) => activateParameter(slot, id.split(':').slice(1).join(':')), columns: getState().protocol.workflow_columns.filter(field => field.kind === 'review_view'), onSelect: id => choose(id),
       onEditDates: id => { choose(id); start.focus({ preventScroll: true }); editor.scrollIntoView({ block: 'nearest' }) } }
     nativeHandle ? nativeHandle.update(projection) : nativeHandle = nativeModule.mountGanttTimeline(target, projection)
   }
@@ -169,7 +170,7 @@ export function createSmeReviewWorkflow({ root, getState, renderTable, createTab
   const activateParameter = (slot, key) => {
     const field = getState().protocol.input_fields.find(field => field.name === key)
     if (field) { if (field.review_step) choose(`${slot}:${field.review_step}`, key); else { focusField(slot, key); onViewChange() }; return }
-    if (key === 'review-start' || key === 'review-end') { choose(selected ?? `${slot}:${getState().protocol.review_workflow.steps[0].id}`); (key === 'review-start' ? start : end).focus() }
+    if (key === 'review-start' || key === 'review-end') { choose(selected?.startsWith(slot + ':') ? selected : `${slot}:${getState().protocol.review_workflow.steps[0].id}`); (key === 'review-start' ? start : end).focus() }
   }
   const dimensions = () => (getState().protocol?.workflow_columns ?? []).filter(field => field.kind === 'review_view').map(field => ({
     id: field.id, name: `Review › Workflow › ${field.label.split(' · ').at(-1)} [${field.id}]`, section: 'Review', group: 'Workflow', parameter: field.label.split(' · ').at(-1),

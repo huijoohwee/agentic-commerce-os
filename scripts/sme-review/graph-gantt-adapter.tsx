@@ -10,12 +10,43 @@ import { reviewTimingState } from '../../public/local-first/sme-review-workflow.
 
 type Row = { guidance: string; fields: { name: string; label: string }[]; id: string; option: string; order: number; task: string; predecessor: string; successor: string; start: string; end: string }
 type Column = { id: string; label: string; value_key: keyof Row; empty_label?: string; definition: string }
-type Projection = { columns: Column[]; rows: Row[]; selected: string | null; onSelect: (id: string) => void; onEditDates: (id: string) => void }
+type FieldRecord = { id: string; depth: number; cells: string[] }
+type FieldView = { columns: { id: string; name: string }[]; rows: FieldRecord[] }
+type RecordNode = { record: FieldRecord; children: RecordNode[] }
+type Projection = { columns: Column[]; rows: Row[]; fieldView: FieldView; selected: string | null; onSelect: (id: string) => void; onEditDates: (id: string) => void; onActivateRecord: (option: string, id: string) => void }
+const fieldCell = (record: FieldRecord, view: FieldView, id: string) => record.cells[view.columns.findIndex(column => column.id === id)]
+function recordTree(view: FieldView) {
+  const roots: RecordNode[] = [], stack: RecordNode[] = []
+  for (const record of view.rows) {
+    while (stack.length && stack.at(-1)!.record.depth >= record.depth) stack.pop()
+    const node = { record, children: [] }
+    ;(stack.at(-1)?.children ?? roots).push(node); stack.push(node)
+  }
+  return roots
+}
+function ReviewRecord({ node, view, option, activate }: { node: RecordNode; view: FieldView; option: string; activate: Projection['onActivateRecord'] }) {
+  const { record, children } = node, label = fieldCell(record, view, 'metadata-3'), key = fieldCell(record, view, 'metadata-4')
+  const editable = record.id.startsWith('input:') || ['review-start', 'review-end'].includes(key)
+  const cells = view.columns.map((column, index) => ({ ...column, value: record.cells[index] }))
+    .filter(column => !column.id.startsWith('value-') || column.id === `value-${option}`)
+  return <li data-review-record={record.id} data-review-option={option}>
+    <details open={record.id.startsWith('group:')}><summary>{label}</summary>
+      {!record.id.startsWith('group:') && <p className="review-record-value"><output>{fieldCell(record, view, `value-${option}`)}</output></p>}
+      {editable && <button type="button" onClick={() => activate(option, record.id)}>Edit {label}</button>}
+      <details className="review-record-metadata"><summary>Record details</summary><dl>{cells.map(column => <React.Fragment key={column.id}>
+        <dt>{column.name}</dt><dd data-review-cell={column.id}>{column.value}</dd>
+      </React.Fragment>)}</dl></details>
+      {children.length > 0 && <ul className="review-records">{children.map(child => <ReviewRecord key={child.record.id} node={child} view={view} option={option} activate={activate} />)}</ul>}
+    </details>
+  </li>
+}
 const day = 86400000
 const timestamp = (value: string) => Date.parse(value + 'T00:00:00Z')
-function OptionTimeline({ rows, columns, selected, onSelect, onEditDates }: Projection) {
+function OptionTimeline({ rows, columns, fieldView, selected, onSelect, onEditDates, onActivateRecord }: Projection) {
   const viewportRef = React.useRef<HTMLElement>(null), contentRef = React.useRef<HTMLElement>(null)
   const timing = reviewTimingState(rows)
+  const records = recordTree(fieldView), activityTitles = new Set(rows.map(row => row.task))
+  const renderRecord = (node: RecordNode) => <ReviewRecord key={node.record.id} node={node} view={fieldView} option={rows[0].option} activate={onActivateRecord} />
   const placed = timing.dated ? rows.filter(row => timing.placedIds.includes(row.id)) : rows
   const origin = timing.dated ? Math.min(...placed.map(row => timestamp(row.start))) : 0
   const position = (value: string) => (timestamp(value) - origin) / day
@@ -62,8 +93,13 @@ function OptionTimeline({ rows, columns, selected, onSelect, onEditDates }: Proj
           : gap < 0 ? `Starts ${Math.abs(gap)} calendar ${Math.abs(gap) === 1 ? 'day' : 'days'} before the preceding activity’s recorded end.`
             : `Gap: ${gap} calendar ${gap === 1 ? 'day' : 'days'} after the preceding activity’s recorded end.`}</p>}
         {observation?.overlapDays !== null && observation?.overlapDays !== undefined && observation.overlapDays > 0 && <p>Recorded windows overlap by {observation.overlapDays} calendar {observation.overlapDays === 1 ? 'day' : 'days'}.</p>}
+        <ul className="review-records" aria-label={`${row.task} shared records`}>{records.filter(node => fieldCell(node.record, fieldView, 'metadata-3') === row.task).map(renderRecord)}</ul>
       </div>
     })}</nav>
+    <section aria-label={`Plan option ${rows[0].option} shared parameters and outputs`}>
+      <h4>Shared parameters and outputs</h4><p>All Review steps records use the same definitions and live option values. Expand a record to inspect it. Fields and outputs have no independent schedule.</p>
+      <ul className="review-records">{records.filter(node => !activityTitles.has(fieldCell(node.record, fieldView, 'metadata-3'))).map(renderRecord)}</ul>
+    </section>
   </section>
 }
 function Timeline(props: Projection) {
