@@ -64,22 +64,12 @@ function OptionTimeline({ rows, columns, fieldView, selected, onSelect, onEditDa
   const ticks = timing.dated ? Array.from({ length: Math.min(5, Math.ceil(max) + 1) }, (_, i) => {
     const value = Math.round(max * i / Math.max(1, Math.min(5, Math.ceil(max) + 1) - 1)); return { label: label(value), minutes: value, percent: value / max * 100 }
   }) : rows.map(row => ({ label: `Step ${row.order}`, minutes: row.order - 1, percent: (row.order - 1) / max * 100 }))
-  return <section aria-label={`Plan option ${rows[0].option} review timeline`} data-timing={timing.dated ? 'dates' : 'dependencies'}>
-    <h3>Plan option {rows[0].option}</h3><p role="status">{timing.reason}</p>
-    <div style={{ overflowX: 'auto' }}><section className="timeline-transport-shell timeline-transport-ruler timeline-transport-ruler--tracks timeline-transport-ruler--video-sequence" style={{ minWidth: 560, '--kg-video-sequence-lane-count': placed.length } as React.CSSProperties}>
-      <VideoSequenceTimelineRuler contentRef={contentRef} viewportRef={viewportRef} displayTicks={ticks}
-        dragPreview={null} draggingMode={null} draggingRowKey="" editable={false} maxMinutes={max}
-        mediaDurationSeconds={0} playheadPercent={0} projectionMode="workflow" workflowRows selectedRowKey={selected ?? ''}
-        taskSpans={spans} timelineZoom={1} formatPositionLabel={label}
-        onRulerPointerDown={() => {}} onSelectRowKey={onSelect} onSelectRowPosition={(_, position) => { const span = spans.find(span => position >= span.startMinutes && position < span.endMinutes) ?? spans.at(-1); if (span) onSelect(span.rowKey) }}
-        onDropMedia={() => false} onTrackPointerStart={() => {}} />
-    </section></div>
-    <p>Suggested links: {rows.map(row => row.id).join(' → ')}. Activities can be revisited.</p>
-    <nav aria-label={`Plan option ${rows[0].option} review steps`}>{rows.map(row => {
+  const workflowRowContents = rows.map(row => {
       const observation = timing.observations.find(item => item.id === row.id), gap = observation?.gapDays
-      return <div key={row.id} className="review-activity">
+      return { rowKey: row.id, label: `${row.order}. ${row.task}`, content: <details className="review-activity" data-review-activity={row.id} open={selected === row.id}>
+        <summary>{row.order}. {row.task}</summary>
         <button type="button" aria-pressed={selected === row.id} onClick={() => onSelect(row.id)}
-          title={`Fields: ${row.fields.map(field => field.label).join(', ')}`}>{row.order}. {row.task}</button>
+          aria-label={`Edit plan option for ${row.order}. ${row.task}`} title={`Fields: ${row.fields.map(field => field.label).join(', ')}`}>Edit plan option</button>
         <p>{row.guidance}</p>
         <button type="button" onClick={() => onEditDates(row.id)} aria-label={`Edit dates for ${row.order}. ${row.task}`}>Edit dates</button>
         <p>{row.start && row.end ? (row.start === row.end ? 'Entered milestone' : 'Entered interval') : row.start ? 'Start entered; end unknown' : row.end ? 'End entered; start unknown' : 'Timing not entered'}</p>
@@ -94,12 +84,24 @@ function OptionTimeline({ rows, columns, fieldView, selected, onSelect, onEditDa
             : `Gap: ${gap} calendar ${gap === 1 ? 'day' : 'days'} after the preceding activity’s recorded end.`}</p>}
         {observation?.overlapDays !== null && observation?.overlapDays !== undefined && observation.overlapDays > 0 && <p>Recorded windows overlap by {observation.overlapDays} calendar {observation.overlapDays === 1 ? 'day' : 'days'}.</p>}
         <ul className="review-records" aria-label={`${row.task} shared records`}>{records.filter(node => fieldCell(node.record, fieldView, 'metadata-3') === row.task).map(renderRecord)}</ul>
-      </div>
-    })}</nav>
-    <section aria-label={`Plan option ${rows[0].option} shared parameters and outputs`}>
-      <h4>Shared parameters and outputs</h4><p>All Review steps records use the same definitions and live option values. Expand a record to inspect it. Fields and outputs have no independent schedule.</p>
+      </details> }
+    })
+  workflowRowContents.push({ rowKey: `${rows[0].option}:shared-records`, label: 'Shared records', content: <details className="review-activity" data-review-shared-records="true">
+      <summary>Shared parameters and outputs</summary>
+      <h4>Shared records</h4><p>All Review steps records use the same definitions and live option values. Expand a record to inspect it. Fields and outputs have no independent schedule.</p>
       <ul className="review-records">{records.filter(node => !activityTitles.has(fieldCell(node.record, fieldView, 'metadata-3'))).map(renderRecord)}</ul>
-    </section>
+    </details> })
+
+  return <section aria-label={`Plan option ${rows[0].option} review timeline`} data-timing={timing.dated ? 'dates' : 'dependencies'}>
+    <h3>Plan option {rows[0].option}</h3><p role="status">{timing.reason}</p>
+    <div style={{ overflowX: 'auto' }}><section className="timeline-transport-shell timeline-transport-ruler timeline-transport-ruler--tracks timeline-transport-ruler--video-sequence" style={{ minWidth: 560, '--kg-video-sequence-lane-count': placed.length } as React.CSSProperties}>
+      <VideoSequenceTimelineRuler contentRef={contentRef} viewportRef={viewportRef} displayTicks={ticks}
+        dragPreview={null} draggingMode={null} draggingRowKey="" editable={false} maxMinutes={max}
+        mediaDurationSeconds={0} playheadPercent={0} projectionMode="workflow" workflowRows selectedRowKey={selected ?? ''}
+        taskSpans={spans} workflowRowContents={workflowRowContents} timelineZoom={1} formatPositionLabel={label}
+        onRulerPointerDown={() => {}} onSelectRowKey={onSelect} onSelectRowPosition={(_, position) => { const span = spans.find(span => position >= span.startMinutes && position < span.endMinutes) ?? spans.at(-1); if (span) onSelect(span.rowKey) }}
+        onDropMedia={() => false} onTrackPointerStart={() => {}} />
+    </section></div>
   </section>
 }
 function Timeline(props: Projection) {

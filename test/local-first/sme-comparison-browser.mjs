@@ -190,6 +190,9 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   await expect(planPage.locator('#compare-a-buyer_budget-low')).toBeFocused(); await planPage.locator('#compare-a-buyer_budget-low').fill('125001')
   await expect(ganttBudget.locator('output')).toContainText('125,001'); await planPage.locator('#compare-a-buyer_budget-low').fill('125000')
   assert.equal(await gantt.locator('.timeline-transport-track-clip').count(), 3)
+  await expect(gantt.locator('.sme-native-gantt > section > nav')).toHaveCount(0); await expect(gantt.locator('[data-kg-video-sequence-ruler-body] [data-review-record]')).toHaveCount(reviewRecords.length)
+  await expect(gantt.locator('[data-kg-workflow-content-row]')).toHaveCount(4)
+  await expect.poll(() => gantt.locator('[data-kg-workflow-content-row]').evaluateAll(rows => rows.every(row => { const label = row.getRootNode().querySelector(`[data-kg-video-sequence-display-lane-label="${row.getAttribute('data-kg-video-sequence-display-lane-row')}"]`); return Math.abs(row.getBoundingClientRect().y-label.getBoundingClientRect().y)<2 }))).toBe(true)
   const labelHeights = await gantt.locator('.timeline-video-sequence-lane-select').evaluateAll(labels => labels.map(label => {
     const range = document.createRange(); range.selectNodeContents(label)
     return { text: range.getBoundingClientRect().height, lane: label.getBoundingClientRect().height }
@@ -198,7 +201,7 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   assert.equal(await gantt.locator('time[datetime]').count(), 0, 'Dependency order must not invent clock durations')
   await gantt.getByRole('button', { name: 'Seek to Step 2', exact: true }).click()
   await expect(planPage.locator('#compare-a-transaction_structure')).toBeFocused()
-  assert((await gantt.getByRole('button', { name: '1. Frame the review', exact: true }).boundingBox()).height >= 44)
+  assert((await gantt.locator('[data-review-activity="A:transfer"] > summary').boundingBox()).height >= 44)
   assert((await gantt.locator('.timeline-transport-track-clip').first().boundingBox()).height >= 20)
   await planPage.setViewportSize({ width: 1440, height: 1000 })
   await gantt.screenshot({ path: path.join(output, 'takeover-gantt-desktop.png') })
@@ -207,7 +210,7 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   await gantt.screenshot({ path: path.join(output, 'takeover-gantt-mobile.png') })
   assert.equal(await planPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true)
   for (const [i, step] of ['Frame the review', 'Examine the transfer', 'Record questions and next action'].entries()) {
-    await gantt.getByRole('button', { name: `Edit dates for ${i + 1}. ${step}`, exact: true }).click()
+    await openReviewActivity(planPage, ['A:limits','A:transfer','A:questions'][i]); await gantt.getByRole('button', { name: `Edit dates for ${i + 1}. ${step}`, exact: true }).click()
     await expect(planPage.locator('#sme-review-start')).toBeFocused()
     await planPage.locator('#sme-review-start').fill(`2026-11-0${i + 1}`); await planPage.locator('#sme-review-start').press('Tab')
     await planPage.locator('#sme-review-end').fill(`2026-11-0${i + 2}`); await planPage.locator('#sme-review-end').press('Tab')
@@ -216,18 +219,18 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   await expect(gantt.locator('[data-timing]')).toHaveAttribute('data-timing', 'dates')
   await expect(gantt).toContainText('2026-11-01')
   await expect(gantt.locator('time[datetime="2026-11-01"]').first()).toBeVisible()
-  await gantt.getByRole('button', { name: '2. Examine the transfer', exact: true }).click()
+  await openReviewActivity(planPage, 'A:transfer'); await gantt.getByRole('button', { name: 'Edit plan option for 2. Examine the transfer', exact: true }).click()
   await planPage.locator('#sme-review-start').fill('2026-11-01'); await planPage.locator('#sme-review-start').press('Tab')
   await expect(gantt.locator('[data-timing]')).toHaveAttribute('data-timing', 'dates')
-  assert.equal(await gantt.locator('[data-kg-video-sequence-display-lane-row]').count(), 3)
+  assert.equal(await gantt.locator('[data-kg-workflow-content-row]:has([data-review-activity])').count(), 3)
   const overlappingBoxes = await Promise.all([0,1].map(i => gantt.locator('.timeline-transport-track-clip').nth(i).boundingBox()))
   assert.notEqual(overlappingBoxes[0].y, overlappingBoxes[1].y, 'Overlapping intervals must remain on distinct visible native lanes')
   await expect(gantt).toContainText('Recorded windows overlap by 1 calendar day')
-  await expect(gantt.locator('nav time[datetime="2026-11-01"]')).toHaveCount(2)
+  await expect(gantt.locator('[data-review-activity] time[datetime="2026-11-01"]')).toHaveCount(2)
   await planPage.setViewportSize({ width: 1440, height: 1000 }); await gantt.screenshot({ path: path.join(output, 'timeline-overlap-desktop.png') })
   await planPage.setViewportSize({ width: 360, height: 780 })
   await planPage.locator('#sme-review-start').fill('2026-11-02'); await planPage.locator('#sme-review-start').press('Tab')
-  await gantt.getByRole('button', { name: '3. Record questions and next action', exact: true }).click()
+  await openReviewActivity(planPage, 'A:questions'); await gantt.getByRole('button', { name: 'Edit plan option for 3. Record questions and next action', exact: true }).click()
   await planPage.locator('#sme-review-end').fill('2026-11-03'); await planPage.locator('#sme-review-end').press('Tab')
   await expect(gantt).toContainText('Entered milestone')
   await planPage.locator('#sme-review-end').fill('2026-11-04'); await planPage.locator('#sme-review-end').press('Tab')
@@ -241,7 +244,7 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   await expect(gantt.locator('[data-timing]')).toHaveAttribute('data-timing', 'dates')
   await expect(gantt).toContainText('2 of 3 activities placed')
   assert.equal(await gantt.locator('.timeline-transport-track-clip').count(), 2)
-  await expect(gantt.locator('nav time[datetime="2026-11-02"]')).toHaveCount(2)
+  await expect(gantt.locator('[data-review-activity] time[datetime="2026-11-02"]')).toHaveCount(2)
   await expect(gantt).toContainText('End entered; start unknown')
   await planPage.locator('#sme-review-import').setInputFiles({ name: 'review.json', mimeType: 'application/json', buffer: Buffer.from(reviewFile) })
   await expect(gantt.locator('[data-timing]')).toHaveAttribute('data-timing', 'dates')
@@ -256,7 +259,7 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   await planPage.locator('#sme-review-view').selectOption('gantt')
   await expect(gantt.locator('[data-timing]')).toHaveCount(3)
   const optionBBudget = gantt.locator('[data-review-record="input:buyer_budget"][data-review-option="B"]')
-  await optionBBudget.locator(':scope > details > summary').click(); await optionBBudget.getByRole('button',{name:'Edit Stated buyer budget',exact:true}).click()
+  await openReviewActivity(planPage, 'B:limits'); await optionBBudget.locator(':scope > details > summary').click(); await optionBBudget.getByRole('button',{name:'Edit Stated buyer budget',exact:true}).click()
   await expect(planPage.locator('#compare-b-buyer_budget-low')).toBeFocused(); await planPage.locator('#compare-b-buyer_budget-low').fill('200')
   await expect(optionBBudget.locator('output')).toContainText('200'); await expect(ganttBudget.locator('output')).toContainText('125,000')
   await planPage.locator('#sme-compare-count').selectOption('1')
@@ -587,3 +590,5 @@ async function checkTakeoverOffline(browser, url, output) {
 }
 
 function fieldRow(page, key) { return page.locator('#sme-workflow-table-host').getByRole('row').filter({ has: page.getByText(key, { exact: true }) }) }
+
+async function openReviewActivity(page, id) { const details = page.locator(`#sme-workflow-table-host [data-review-activity="${id}"]`); if (await details.getAttribute('open') === null) await details.locator(':scope > summary').click() }

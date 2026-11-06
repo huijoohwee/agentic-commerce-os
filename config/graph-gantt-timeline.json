@@ -1,7 +1,7 @@
 {
   "schema": "agentic-commerce/graph-gantt-artifact/v1",
   "owner": "github.com/huijoohwee/agentic-graph",
-  "sourceRevision": "601d4310d69867abf1eb92e2f710540141d96a5d",
+  "sourceRevision": "33a48a80862357f77fad4cda8b90ac717e1a8116",
   "sourceDirty": false,
   "browserExport": "mountGanttTimeline",
   "cssScope": "shadow-root",
@@ -114,23 +114,23 @@
     },
     {
       "path": "canvas/src/components/timeline/VideoSequenceTimelineLanes.tsx",
-      "bytes": 5174,
-      "sha256": "c291a9275b934767f0ad341c9530a37234db30464f44665e3571c7d09d8b675d"
+      "bytes": 7281,
+      "sha256": "c6fb769ab9250ff4c9c1c17ca23728ea713d0d828aaf7c223596aa0c85b7b736"
     },
     {
       "path": "canvas/src/components/timeline/VideoSequenceTimelineRuler.css",
-      "bytes": 18445,
-      "sha256": "56a0ca8789a72dfc35167cd4595c286c154aba24de6404ce85132950d858938c"
+      "bytes": 19132,
+      "sha256": "1ae526610ee1fb49f1a77adfc18f5605ed48618d05c3e728df1bb0dee9dff161"
     },
     {
       "path": "canvas/src/components/timeline/VideoSequenceTimelineRuler.tsx",
-      "bytes": 45185,
-      "sha256": "003ac3f2ab9494c769382558d1567f9fc2b4138ccf43a3038c81aca154e1efbc"
+      "bytes": 46246,
+      "sha256": "b77749c4c766e1977f5c89d39a0f50d2c1ac2a1c0d3f4c7213cea8864ffb7a08"
     },
     {
       "path": "canvas/src/components/timeline/videoSequenceTimelineRulerGeometry.ts",
-      "bytes": 2232,
-      "sha256": "5b5acf00284d16ba460c77947a7110fec0139bc6ef8c22241810bf80f49810c0"
+      "bytes": 2839,
+      "sha256": "d184ce2ed7d33a0b0fbde80f9964253994d18a9cc9d9aa3d741d3068cdbf7be0"
     },
     {
       "path": "canvas/src/components/timeline/VideoSequenceTimelineRulerTicks.tsx",
@@ -144,8 +144,8 @@
     },
     {
       "path": "canvas/src/components/timeline/VideoSequenceTimelineScope.css",
-      "bytes": 1442,
-      "sha256": "4b24068d4a4fdedfb43cb32cc7e2327713a35e9a0441761571f5fd29377fe8cc"
+      "bytes": 1485,
+      "sha256": "5ef1b8edc2ef06dca5e9b9bf6031f05c0e38d1aa1563011bc2f2517ddb0cbef2"
     },
     {
       "path": "canvas/src/components/timeline/videoSequenceTimelineZoom.ts",
@@ -323,19 +323,19 @@
       "sha256": "d20fbec5f0817db868f7d23098110032408a2d73a46558299fb682be17820bff"
     }
   ],
-  "inputDigest": "92cb389d1c1f8685f1be170825f7a46641849e6c833a1f7f24f1b7a0651f6aa2",
+  "inputDigest": "769d495d378c9001ffd62f0e501eb7d0d435dacddfe21600d6ca5b08236e5093",
   "consumerInputs": [
     {
       "path": "scripts/sme-review/graph-gantt-adapter.tsx",
-      "sha256": "8350e31248f8400a8cb31c12eac18c310f10b99175e17e05584a0d0b61e230d0"
+      "sha256": "2cc9fca9129c82c08cbfb498cfaeac4f366325dd23b64ce9edef59c56ceaea29"
     },
     {
       "path": "scripts/sme-review/graph-gantt-host.css",
-      "sha256": "d2c57c05e098269be558fd7fcf0e0c00270835f7dd71acb9989b0f6731fe9ed8"
+      "sha256": "bdcb0cb7aac9adf5ecd9493fbecc08cfe2e040ceff23cabea949a0d63eb1e967"
     },
     {
       "path": "public/local-first/sme-review-workflow.js",
-      "sha256": "f2dd23e5e4df763c088f3dc898bd151305c1d3da9e25765c9b5dd04dc48d6afa"
+      "sha256": "b0f15226eb72f3534f2b2258460c8ccf49b0dda966af749938bcee5e5f889bdb"
     },
     {
       "path": "scripts/sme-review/build-timeline.mjs",
@@ -345,13 +345,13 @@
   "outputs": [
     {
       "path": "graph-gantt-timeline.js",
-      "bytes": 274572,
-      "sha256": "98275a9044a68ed1c68c469d0f7a72afd4f1b497abe50ee9bdf9ed21798308bc"
+      "bytes": 276382,
+      "sha256": "98d7548cc891d5aa36a08104cbfed0270320c167e7adeb0b1e9adf41fe9eb34c"
     },
     {
       "path": "graph-gantt-timeline.css",
-      "bytes": 77502,
-      "sha256": "57877cf3ccb7328b07761b39b6220f1953c8da2d6bf1ecfb3184e0d4e5388eec"
+      "bytes": 78078,
+      "sha256": "5c427ded27606c0e551f801ff53efdb9f478f3fa51c3c7849c55b35dab5382dc"
     }
   ]
 }

@@ -33,9 +33,9 @@ export function reviewTimingState(rows) {
   })
   const placedIds = rows.filter(row => row.start && row.end && validReviewDates(row)).map(row => row.id)
   if (!placedIds.length) return { dated: false, observations, placedIds,
-    reason: `Dependency order; dates are optional. 0 of ${rows.length} complete date pairs entered. Equal bar widths show suggested order, not elapsed time. Recorded dates remain below.` }
+    reason: `Dependency order; dates are optional. 0 of ${rows.length} complete date pairs entered. Equal bar widths show suggested order, not elapsed time. Open an activity row to inspect its dates and shared records.` }
   return { dated: true, observations, placedIds,
-    reason: `Entered dates; ${placedIds.length} of ${rows.length} activities placed on separate lanes. Only complete date pairs are placed; other activities remain below. Calendar days and exclusive ends; equal dates are milestones. This is not a completion forecast.` }
+    reason: `Entered dates; ${placedIds.length} of ${rows.length} activities placed on separate lanes. Only complete date pairs are placed; other activities remain in their unplaced rows. Calendar days and exclusive ends; equal dates are milestones. This is not a completion forecast.` }
 
 }
 export function readSmeReviewDates(text, currentRows, protocol) {
