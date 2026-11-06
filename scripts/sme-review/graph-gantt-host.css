@@ -10,3 +10,6 @@ nav button[aria-pressed=true] { outline:2px solid var(--kg-accent); }
 .review-activity button { width:100%; text-align:left; } .review-activity p { overflow-wrap:anywhere; }
 .review-activity dl { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:6px; font-size:12px; }
 .review-activity dt,.review-activity dd { margin:0; overflow-wrap:anywhere; } .review-activity dt { font-weight:600; }
+
+.sme-native-gantt .timeline-video-sequence-lane-label { min-width:0; overflow:hidden; }
+.sme-native-gantt .timeline-video-sequence-lane-select { min-width:0; width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
