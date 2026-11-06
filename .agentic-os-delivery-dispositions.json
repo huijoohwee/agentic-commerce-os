@@ -113,7 +113,30 @@
       "evidenceDigest": "e07f29375605f682fbe793e3208fee22a279a568511a6d27309e4df1275df02a",
       "decisionRef": "https://github.com/huijoohwee/agentic-commerce-os/pull/168",
       "reason": "The PRD is repository documentation outside the local-first Worker and static asset inputs enumerated by the committed artifact builder; this candidate changes no deployed runtime input."
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/sme-native-review",
+      "laneHead": "7d8b97b4db8774aeb6b8fe220e7620097c22dd4a",
+      "paths": [
+        "docs/sme-business-pack-codebook-and-data-dictionary.md",
+        "public/local-first/sme-business-pack-core.js",
+        "public/local-first/sme-business-pack.js",
+        "public/local-first/sme-pack-business-plan.js",
+        "test/local-first/sme-comparison-browser.mjs",
+        "test/shared/sme-business-pack.test.ts"
+      ],
+      "disposition": "deployed",
+      "candidateRevision": "6d0693f03ac16b5d99e5c6c897ad9625b322187d",
+      "candidateDigest": "b74bbd2f46dab0df43c158d489b0deff374e74fd41d8e8605f860a6392a85109",
+      "sourceReleaseReceiptDigest": "0d39ebe077bf748edd186d6a645e5c79352c4b5bfd51f46abb1fe135658c3c28",
+      "deploymentReceiptDigest": "f0866c07461a72b32b69b2a29c2d64658efa7d22912c14bef1788a255831b42c",
+      "runtimeVerificationReceiptDigest": "06b6aab10a0cc8a412485072dc040ca4398606a21d56dc19eae39e03de104613",
+      "evidencePath": "docs/reports/sme-production-release-42138564108.json",
+      "evidenceDigest": "7d29729dfdb432893cc8a15ff3b9dcfc534edbce36fa67d6ec8e92623e7c7dff",
+      "decisionRef": "https://github.com/huijoohwee/agentic-commerce-os/actions/runs/42141754796",
+      "reason": null
     }
   ],
-  "receiptDigest": "c9be6d97ef1b9d7e32294f2be06dc2a848a6cbfe936c2de5fd15963dd15fc0da"
+  "receiptDigest": "6f9c96f274a3145cee7421a9ce7fa5dd6bf2ec10dee0e911b2c86239652f8feb"
 }
