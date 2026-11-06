@@ -52,7 +52,7 @@ export function readSmeReviewDates(text, currentRows, protocol) {
   }
   return dates
 }
-export function createSmeReviewWorkflow({ root, getState, renderTable, createTableView, disposeTable, focusField, onViewChange }) {
+export function createSmeReviewWorkflow({ root, getState, renderTable, createTableView, disposeTable, updateTablePresentation, focusField, onViewChange }) {
   const $ = selector => root.querySelector(selector), view = $('#sme-review-view'), controls = $('#sme-review-controls')
   const timelineHost = $('#sme-workflow-table-host'), editor = $('#sme-review-dates'), note = $('#sme-review-note')
   const start = $('#sme-review-start'), end = $('#sme-review-end'), selectedLabel = $('#sme-review-selected')
@@ -91,7 +91,8 @@ export function createSmeReviewWorkflow({ root, getState, renderTable, createTab
     selectRenderer(gantt ? 'gantt' : 'table')
     viewRegion.dataset.view = gantt ? 'gantt' : supported && view.value === 'review' ? 'review' : 'plan'
     heading.textContent = gantt ? 'Gantt Timeline' : 'Multi-dimensional Table'
-    viewRegion.setAttribute('aria-label', gantt ? 'SME workflow Gantt Timeline using the same plan data.' : 'SME workflow field table using the same plan data.')
+    if (gantt) viewRegion.setAttribute('aria-label', 'SME workflow Gantt Timeline using the same plan data.')
+    else updateTablePresentation()
     pivot.hidden = active
     editor.hidden = !supported || !selected || !state.slots.some(slot => selected.startsWith(slot.slot + ':'))
     note.hidden = !active
