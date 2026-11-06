@@ -257,7 +257,7 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   const optionBBudget = gantt.locator('[data-review-record="input:buyer_budget"][data-review-option="B"]')
   await optionBBudget.locator(':scope > details > summary').click(); await optionBBudget.getByRole('button',{name:'Edit Stated buyer budget',exact:true}).click()
   await expect(planPage.locator('#compare-b-buyer_budget-low')).toBeFocused(); await planPage.locator('#compare-b-buyer_budget-low').fill('200')
-  await expect(optionBBudget.locator('output')).toContainText('200'); await expect(planPage.locator('#compare-a-buyer_budget-low')).toHaveValue('125000')
+  await expect(optionBBudget.locator('output')).toContainText('200'); await expect(ganttBudget.locator('output')).toContainText('125,000')
   await planPage.locator('#sme-compare-count').selectOption('1')
   await expect(gantt.locator('[data-timing]')).toHaveCount(1)
   await planPage.locator('#sme-plan-mode').selectOption('scenario'); await expect(guide).toBeHidden()
