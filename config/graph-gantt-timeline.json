@@ -335,7 +335,7 @@
     },
     {
       "path": "public/local-first/sme-review-workflow.js",
-      "sha256": "6ded9b16c773fe052ff218b7afbf58a2b30034ae278be77e6767434bfd4eaf82"
+      "sha256": "6bc30003542b73856bf403d3809ca6d721cb79aed8698d7621e0a158d4800190"
     },
     {
       "path": "scripts/sme-review/build-timeline.mjs",
