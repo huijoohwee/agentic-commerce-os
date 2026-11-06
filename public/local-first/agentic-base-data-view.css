@@ -1,3 +1,9 @@
+/* Generated from agentic-design-system@3224afd19c086e511dcfd892d82d12b68460b971; profile sha256 f335bd273298f267eddffdf3b3f344a69e31e965223e527e6f599b2947ac9856. Do not edit. */
+:root, :host {
+  --agentic-icon-size-compact: 0.75rem;
+  --agentic-icon-size-default: 1rem;
+}
+
 .agentic-base-data-view {
   box-sizing: border-box;
   isolation: isolate;
@@ -18,8 +24,16 @@
   font: 14px/1.45 system-ui, sans-serif;
   -webkit-overflow-scrolling: touch;
 }
+.agentic-base-data-view .agentic-base-compact-glyph {
+  width: var(--agentic-icon-size-compact);
+  inline-size: var(--agentic-icon-size-compact);
+  height: var(--agentic-icon-size-compact);
+  block-size: var(--agentic-icon-size-compact);
+  flex: 0 0 auto;
+}
 .agentic-base-data-view .flex { display: flex; }
-.base-multi-dimensional-table { min-width: 0; }
+.base-multi-dimensional-table { display: flex; flex-direction: column; height: 100%; min-width: 0; min-height: 0; }
+.base-multi-dimensional-table > .agentic-base-data-view { flex: 1; min-height: 0; }
 .agentic-base-data-view .inline-flex { display: inline-flex; }
 .agentic-base-data-view .min-w-0 { min-width: 0; }
 .agentic-base-data-view .items-center { align-items: center; }
@@ -260,8 +274,8 @@
 .agentic-base-row-drag-handle {
   grid-column: 1;
   justify-self: start;
-  width: 1rem;
-  height: 1rem;
+  width: var(--agentic-icon-size-default);
+  height: var(--agentic-icon-size-default);
   color: var(--agentic-base-text-tertiary, #6b7280);
   opacity: 0;
 }
@@ -407,7 +421,11 @@
 .agentic-base-data-table td > span { white-space: pre-wrap; }
 .agentic-base-data-table th > section { min-width: 0; }
 .agentic-base-data-table th button { max-width: 100%; }
-.agentic-base-data-table svg { flex: none; }
+.agentic-base-data-table svg {
+  flex: none;
+  width: var(--agentic-icon-size-default);
+  height: var(--agentic-icon-size-default);
+}
 .agentic-base-data-table td > span.agentic-base-data-table-value { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .agentic-base-data-empty { color: var(--agentic-base-muted, #64748b); }
 .agentic-base-data-more {
