@@ -16,7 +16,7 @@ export function verifyTimelineBundle() {
     || !/^[a-f0-9]{40}$/.test(pin.sourceRevision) || pin.sourceDirty !== false || pin.browserExport !== 'mountGanttTimeline'
     || hash(JSON.stringify(pin.inputs)) !== pin.inputDigest || !pin.inputs.some(input => input.path.endsWith('/VideoSequenceTimelineRuler.tsx'))
     || pin.inputs.length > 100 || pin.inputs.some(input => /useGraphStore|workspace-seeds|maplibre|elkjs/.test(input.path))) throw Error('gantt_source_contract_invalid')
-  if (pin.consumerInputs.map(input => input.path).join() !== [adapter, projection, 'scripts/sme-review/build-timeline.mjs'].join()) throw Error('gantt_consumer_inventory_invalid')
+  if (pin.consumerInputs.map(input => input.path).join() !== [adapter, 'scripts/sme-review/graph-gantt-host.css', projection, 'scripts/sme-review/build-timeline.mjs'].join()) throw Error('gantt_consumer_inventory_invalid')
   for (const input of pin.consumerInputs) if (hash(fs.readFileSync(path.join(root, input.path))) !== input.sha256) throw Error('gantt_adapter_changed_rebuild_required')
   if (pin.outputs.map(output => output.path).join() !== 'graph-gantt-timeline.js,graph-gantt-timeline.css') throw Error('gantt_output_inventory_invalid')
   for (const output of pin.outputs) {
@@ -45,7 +45,7 @@ export async function buildTimelineBundle(graphRoot) {
   const outputs = result.outputFiles.map(file => ({ path: path.basename(file.path), bytes: file.contents.length, sha256: hash(file.contents) }))
   if (outputs.some(output => output.bytes >= 500000) || inputs.length > 100 || inputs.some(input => /useGraphStore|workspace-seeds|maplibre|elkjs/.test(input.path))) throw Error('gantt_bundle_budget_exceeded')
   for (const file of result.outputFiles) fs.writeFileSync(file.path, file.contents)
-  const consumerInputs = [adapter, projection, 'scripts/sme-review/build-timeline.mjs'].map(file => ({ path: file, sha256: hash(fs.readFileSync(path.join(root, file))) }))
+  const consumerInputs = [adapter, 'scripts/sme-review/graph-gantt-host.css', projection, 'scripts/sme-review/build-timeline.mjs'].map(file => ({ path: file, sha256: hash(fs.readFileSync(path.join(root, file))) }))
   fs.writeFileSync(manifestPath, JSON.stringify({ schema: 'agentic-commerce/graph-gantt-artifact/v1', owner: 'github.com/huijoohwee/agentic-graph',
     sourceRevision, sourceDirty: false, browserExport: 'mountGanttTimeline', cssScope: 'shadow-root', hostTokens: 'graph-ui-tokens.css',
     inputs, inputDigest: hash(JSON.stringify(inputs)), consumerInputs, outputs }, null, 2) + '\n')

@@ -5,6 +5,7 @@ import { buildMermaidGanttTimelineModel } from '@graph/lib/mermaid/mermaidGanttT
 import '@graph/components/timeline/TimelineTransportControls.css'
 import '@graph/components/timeline/TimelineTransportControlsMermaidGantt.css'
 import '@graph/components/timeline/TimelineTransportLane.css'
+import './graph-gantt-host.css'
 import { reviewTimingState } from '../../public/local-first/sme-review-workflow.js'
 
 type Row = { id: string; option: string; order: number; task: string; predecessor: string; successor: string; start: string; end: string }
@@ -48,14 +49,7 @@ function OptionTimeline({ rows, selected, onSelect }: Projection) {
 }
 function Timeline(props: Projection) {
   const options = [...new Set(props.rows.map(row => row.option))]
-  return <div className="sme-native-gantt"><style>{`
-    :host { display:block; color:var(--kg-text-primary); font:inherit; }
-    * { box-sizing:border-box; } h3 { margin:16px 0 6px; } p { font-size:13px; line-height:1.5; }
-    nav { display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 20px; }
-    nav button { font:inherit; font-size:13px; min-height:var(--kg-touch-target,44px); padding:8px; border:1px solid var(--kg-border); border-radius:var(--island-radius); background:var(--kg-panel-bg); color:var(--kg-text-primary); cursor:pointer; }
-    nav button[aria-pressed=true] { outline:2px solid var(--kg-accent); }
-    .sme-native-gantt .timeline-playhead-control,.timeline-video-sequence-ruler-playhead-marker,.timeline-video-sequence-motion-vector,.timeline-video-sequence-ruler-scope-strip,.timeline-video-sequence-ruler-footer { display:none; }
-  `}</style>{options.map(option => <OptionTimeline key={option} {...props} rows={props.rows.filter(row => row.option === option)} />)}</div>
+  return <div className="sme-native-gantt">{options.map(option => <OptionTimeline key={option} {...props} rows={props.rows.filter(row => row.option === option)} />)}</div>
 }
 export function mountGanttTimeline(target: HTMLElement, projection: Projection) {
   const root = createRoot(target); root.render(<Timeline {...projection} />)
