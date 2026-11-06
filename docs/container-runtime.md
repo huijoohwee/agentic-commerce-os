@@ -1,6 +1,6 @@
 # Local container runtime
 
-Commerce uses Podman for Dev, browser/E2E checks, and authorized Sandbox image builds.
+Commerce uses Podman for the explicit `dev:apex` integration profile, container browser/E2E checks, and authorized Sandbox image builds. Bare `npm run dev` starts the local-first MVP without these container prerequisites.
 No Docker executable, Docker Desktop, or Docker Engine is required. OCI image registry
 names and the existing Dockerfile input remain unchanged.
 
@@ -11,7 +11,7 @@ brew install podman
 podman machine init --cpus 2 --memory 4096 --disk-size 30
 podman machine start
 export MINIFLARE_WORKERD_PATH=/absolute/path/to/verified/workerd
-npm run dev
+npm run dev:apex
 # After the owned workload has closed:
 podman machine stop
 ```
