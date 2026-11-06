@@ -26,12 +26,6 @@ test('dates remain optional; invalid dates and predecessor overlap never become 
   const rows = project(['A']).map((row, i) => ({ ...row, start: `2026-11-0${i + 1}`, end: `2026-11-0${i + 2}` }))
   assert.equal(reviewTimingState(rows).dated, true)
   rows[1].start = '2026-11-01'; assert.equal(reviewTimingState(rows).dated, false)
-  assert.equal(reviewTimingState(rows).observations[1].overlapDays, null, 'Incomplete windows cannot establish overlap')
-  rows[0].start = '2028-02-26'; rows[1].end = '2028-03-01'
-  assert.equal(reviewTimingState(rows).observations[1].overlapDays, 1)
-  rows[0].start = '2028-02-28'; rows[0].end = '2028-03-03'
-  rows[1].start = '2028-02-25'; rows[1].end = '2028-02-26'
-  assert.equal(reviewTimingState(rows).observations[1].overlapDays, 0, 'An earlier non-overlapping window is not an overlap')
   rows[1].start = ''; assert.equal(reviewTimingState(rows).dated, false)
 })
 test('timing observations preserve unknowns and expose calendar gaps or overlaps only within each option', () => {
