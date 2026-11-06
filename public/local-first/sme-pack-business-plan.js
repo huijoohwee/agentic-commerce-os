@@ -197,6 +197,31 @@ const cashInputs = ['currency_code', 'purchase_price', 'transition_costs', 'asse
   'location_deposit', 'location_monthly_cost', 'transaction_professional_costs',
   'immediate_reinvestment_costs', 'monthly_operating_costs', 'working_capital_months']
 
+const reviewSteps = Object.freeze([
+  Object.freeze({ id: 'limits', title: 'Set your buying limits', focus_field: 'buyer_budget',
+    guidance: 'Record your spending ceiling, cash available, desired timing and relevant experience. Budget and available cash are distinct.' }),
+  Object.freeze({ id: 'transfer', title: 'Define the transfer', focus_field: 'transaction_structure',
+    guidance: 'Clarify the business, assets or premises included. Keep price, operating figures, currency, period, rent and remaining term together. Monthly revenue less listed costs is not verified profit; a profit multiple is not payback. Clarify landlord consent, reinstatement, renewal and any franchise obligations.' }),
+  Object.freeze({ id: 'questions', title: 'Resolve the open questions', focus_field: 'accounts_access',
+    guidance: 'Record access to accounts, permission status, staff continuity and handover support. Keep unknown answers explicit and choose one next action.' }),
+])
+const reviewColumns = Object.freeze([
+  { id: 'review-step-id', label: 'Review · Step ID', type: 'text', value_key: 'id', definition: 'Stable review-step identity within the same plan option.' },
+  { id: 'review-predecessor', label: 'Review · Predecessor', type: 'reference', value_key: 'predecessor', empty_label: 'None', definition: 'Previous step in this plan option; no cross-option dependency.' },
+  { id: 'review-successor', label: 'Review · Successor', type: 'reference', value_key: 'successor', empty_label: 'None', definition: 'Next step in this plan option; no automatic progression.' },
+  { id: 'review-instructions', label: 'Review · Instructions', type: 'text', value_key: 'guidance', definition: 'Protocol-owned review guidance; not a financial assumption or clearance.' },
+  { id: 'review-field-keys', label: 'Review · Linked input fields', type: 'reference', value_key: 'field_keys', definition: 'References to the same input_fields used by Plan options, the editor and dictionary.' },
+  { id: 'review-start', label: 'Review · Start (optional)', type: 'date', value_key: 'start', unit: 'ISO 8601 date', pattern: '^[0-9]{4}-[0-9]{2}-[0-9]{2}$', writable: true, definition: 'Optional local review start date; blank keeps dependency order. No financial calculation uses it.' },
+  { id: 'review-end', label: 'Review · End (optional)', type: 'date', value_key: 'end', unit: 'ISO 8601 date', pattern: '^[0-9]{4}-[0-9]{2}-[0-9]{2}$', writable: true, definition: 'Optional exclusive end date, on or after start. Equal dates are a milestone; no inferred duration.' },
+].map(field => Object.freeze({ ...field, kind: 'review_view', cardinality: 'review_step', definition: 'Per review step. ' + field.definition, required: false })))
+const reviewWorkflow = Object.freeze({ schema: 'sme-business-plan/review-workflow/v1', mode: 'buy_build', default_view: 'review',
+  views: [{ id: 'review', label: 'Review steps' }, { id: 'gantt', label: 'Gantt Timeline' }, { id: 'plan', label: 'Plan options' }],
+  steps: reviewSteps, field_source: 'input_fields', column_source: 'workflow_columns',
+  exchange: { schema: 'sme-business-plan/view-notes/v1', fields: ['review-start', 'review-end'], max_bytes: 65536 },
+})
+const reviewStepFor = field => field.section === 'Measurement' || field.section === 'Buyer context' || field.name === 'available_cash'
+  ? 'limits' : ['Review', 'Transition'].includes(field.section) ? 'questions' : 'transfer'
+
 export const TAKEOVER_PACK = Object.freeze({
   id: 'sme.takeover-checker', label: 'SME takeover checker', version: '1.2.0', as_of: '2026-11-06',
   review_status: 'provisional', reviewer: null, calculation_model: 'takeover-cash/v1',
@@ -210,7 +235,7 @@ export const TAKEOVER_PACK = Object.freeze({
     shared_requirements: [], projections: [] },
   coverage_outputs: [{ id: 'evidence', label: 'Coverage · evidence prompts', kind: 'evidence',
     definition: 'Count of evidence-guided fields with user-recorded context; evidence is not authenticated.' }],
-  workflow_columns: sharedWorkflowColumns,
+  workflow_columns: [...sharedWorkflowColumns, ...reviewColumns], review_workflow: reviewWorkflow,
   input_fields: [
     { name: 'currency_code', label: 'Currency code', type: 'currency', required: true, section: 'Measurement',
       unit: 'ISO 4217 code', pattern: '^[A-Z]{3}$', definition: 'User-selected currency; no conversion is applied.' },
@@ -282,7 +307,7 @@ export const TAKEOVER_PACK = Object.freeze({
       values: ['captured', 'clarifying', 'reviewing', 'handover_planning', 'paused', 'closed_by_user', 'unknown'], definition: 'Reversible user selection; no automatic progression, clearance or transaction effect.' },
     { name: 'next_action', label: 'User-authored next action', type: 'text', required: false, section: 'Review', max_length: 280,
       definition: 'A manual follow-up note, separate from generated next checks; no reminder or outbound action.' },
-  ],
+  ].map(field => ({ ...field, review_step: reviewStepFor(field) })),
   model_outputs: [
     { id: 'cash_to_close', label: 'Cash required to close and fund the selected period', inputs: cashInputs,
       formula: 'purchase + transition + asset/setup + transaction/professional + immediate reinvestment + location deposit + (monthly operating costs + applicable location cost) × working capital months' },

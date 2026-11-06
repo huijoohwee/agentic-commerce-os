@@ -1,15 +1,4 @@
 // One review projection feeds the existing Base table, native Graph Gantt and local export.
-export const SME_REVIEW_STEPS = Object.freeze([
-  Object.freeze({ id: 'limits', title: 'Set your buying limits', focus: 'buyer_budget',
-    fields: ['buyer_budget', 'available_cash', 'target_handover_months', 'operator_experience'],
-    guidance: 'Record your spending ceiling, cash available, desired timing and relevant experience. Budget and available cash are distinct.' }),
-  Object.freeze({ id: 'transfer', title: 'Define the transfer', focus: 'transaction_structure',
-    fields: ['transaction_structure', 'purchase_price', 'included_items', 'excluded_items', 'monthly_revenue', 'financial_basis', 'financial_period_months', 'location_monthly_cost', 'location_term_months', 'location_renewal_months', 'location_assignment_status'],
-    guidance: 'Clarify the business, assets or premises included. Keep price, operating figures, currency, period, rent and remaining term together. Monthly revenue less listed costs is not verified profit; a profit multiple is not payback. Clarify landlord consent, reinstatement, renewal and any franchise obligations.' }),
-  Object.freeze({ id: 'questions', title: 'Resolve the open questions', focus: 'accounts_access',
-    fields: ['accounts_access', 'permission_transfer_status', 'team_continuity', 'handover_months', 'support_scope', 'review_stage', 'next_action'],
-    guidance: 'Record access to accounts, permission status, staff continuity and handover support. Keep unknown answers explicit and choose one next action.' }),
-])
 const dateNumber = value => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return NaN
   const time = Date.parse(value + 'T00:00:00Z')
@@ -20,14 +9,17 @@ export function validReviewDates({ start = '', end = '' }) {
     && (!start || !end || dateNumber(end) >= dateNumber(start))
 }
 export function projectSmeReviewRows(slots, protocol, format, dates = {}) {
-  const fields = new Map(protocol.input_fields.map(field => [field.name, field]))
-  return slots.flatMap(slot => SME_REVIEW_STEPS.map((step, index) => {
-    const id = `${slot.slot}:${step.id}`, timing = dates[id] ?? { start: '', end: '' }
-    return { id, option: slot.slot, order: index + 1, task: step.title, guidance: step.guidance, focus: step.focus,
-      predecessor: index ? `${slot.slot}:${SME_REVIEW_STEPS[index - 1].id}` : '',
-      successor: index < SME_REVIEW_STEPS.length - 1 ? `${slot.slot}:${SME_REVIEW_STEPS[index + 1].id}` : '',
-      inputs: step.fields.filter(key => fields.has(key)).map(key => `${fields.get(key).label}: ${format(fields.get(key), slot.inputs[key], slot.inputs.currency_code)}`).join('\n'),
-      start: timing.start, end: timing.end }
+  const definition = protocol.review_workflow
+  if (!definition) return []
+  const steps = definition.steps, ids = new Set(steps.map(step => step.id)), fields = protocol.input_fields
+  if (ids.size !== steps.length || fields.some(field => !ids.has(field.review_step))
+    || steps.some(step => !fields.some(field => field.name === step.focus_field && field.review_step === step.id))) throw Error('review_protocol_field_binding_invalid')
+  return slots.flatMap(slot => steps.map((step, index) => {
+    const id = `${slot.slot}:${step.id}`, timing = dates[id] ?? { start: '', end: '' }, linked = fields.filter(field => field.review_step === step.id)
+    return { id, option: slot.slot, order: index + 1, task: step.title, guidance: step.guidance, focus: step.focus_field,
+      predecessor: index ? `${slot.slot}:${steps[index - 1].id}` : '', successor: index < steps.length - 1 ? `${slot.slot}:${steps[index + 1].id}` : '',
+      fields: linked, field_keys: linked.map(field => field.name),
+      inputs: linked.map(field => `${field.label}: ${format(field, slot.inputs[field.name], slot.inputs.currency_code)}`).join('\n'), start: timing.start, end: timing.end }
   }))
 }
 export function reviewTimingState(rows) {
@@ -39,41 +31,52 @@ export function reviewTimingState(rows) {
   }
   return { dated: true, reason: 'Entered dates; the end date is exclusive. Equal start/end dates are milestones.' }
 }
-export function readSmeReviewDates(text, currentRows) {
-  if (new TextEncoder().encode(text).length > 65536) throw Error('review_file_limit')
+export function readSmeReviewDates(text, currentRows, protocol) {
+  const exchange = protocol.review_workflow.exchange
+  if (new TextEncoder().encode(text).length > exchange.max_bytes) throw Error('review_file_limit')
   const value = JSON.parse(text), allowed = new Set(currentRows.map(row => row.id)), dates = {}, seen = new Set()
-  if (value?.schema !== 'sme-review-records/v1' || !Array.isArray(value.rows) || value.rows.length !== allowed.size) throw Error('review_file_identity')
+  if (value?.schema !== exchange.schema || value.pack_id !== protocol.pack.id || value.pack_version !== protocol.pack.version
+    || value.mode !== protocol.review_workflow.mode || !Array.isArray(value.rows) || value.rows.length !== allowed.size) throw Error('review_file_identity')
   for (const row of value.rows) {
-    if (!allowed.has(row.id) || seen.has(row.id) || typeof row.start !== 'string' || typeof row.end !== 'string' || !validReviewDates(row)) throw Error('review_file_dates')
-    seen.add(row.id); dates[row.id] = { start: row.start, end: row.end }
+    const next = { start: row['review-start'], end: row['review-end'] }
+    if (Object.keys(row).sort().join() !== ['id', ...exchange.fields].sort().join() || !allowed.has(row.id) || seen.has(row.id)
+      || typeof next.start !== 'string' || typeof next.end !== 'string' || !validReviewDates(next)) throw Error('review_file_dates')
+    seen.add(row.id); dates[row.id] = next
   }
   return dates
 }
-export function createSmeReviewWorkflow({ root, getState, renderTable, focusField, onViewChange }) {
+export function createSmeReviewWorkflow({ root, getState, renderTable, createTableView, focusField, onViewChange }) {
   const $ = selector => root.querySelector(selector), view = $('#sme-review-view'), controls = $('#sme-review-controls')
   const timelineHost = $('#sme-review-timeline'), editor = $('#sme-review-dates'), note = $('#sme-review-note')
   const start = $('#sme-review-start'), end = $('#sme-review-end'), selectedLabel = $('#sme-review-selected')
   const tableHost = $('#sme-workflow-table-region'), pivot = $('#sme-workflow-pivot')
   let dates = {}, selected = null, generation = 0, nativeModule, nativeHandle, ready, context = ''
   const rows = () => { const state = getState(); return projectSmeReviewRows(state.slots, state.protocol, state.format, dates) }
-  const choose = id => {
+  const choose = (id, key) => {
     const row = rows().find(item => item.id === id); if (!row) return
     selected = id; selectedLabel.textContent = `${row.option} · ${row.task}`
     start.value = row.start; end.value = row.end; editor.hidden = false
-    focusField(row.option, row.focus); onViewChange()
+    focusField(row.option, key ?? row.focus); onViewChange()
   }
   function refresh() {
     const state = getState(), next = `${state.protocol?.pack.id}:${state.mode?.id}`
-    const supported = state.protocol?.pack.id === 'sme.takeover-checker' && state.mode?.id === 'buy_build'
+    const definition = state.protocol?.review_workflow, supported = definition?.mode === state.mode?.id && Boolean(definition)
     const ids = new Set(state.slots.map(slot => slot.slot))
     dates = Object.fromEntries(Object.entries(dates).filter(([id]) => ids.has(id.split(':')[0])))
     if (selected && !ids.has(selected.split(':')[0])) selected = null
     controls.hidden = !supported
-    if (context !== next) { context = next; view.value = supported ? 'review' : 'plan' }
+    if (context !== next) {
+      context = next; view.replaceChildren(...(definition?.views ?? []).map(item => { const option = document.createElement('option'); option.value = item.id; option.textContent = item.label; return option }))
+      view.value = supported ? definition.default_view : 'plan'
+    }
+    for (const [key, input] of [['review-start', start], ['review-end', end]]) {
+      const field = state.protocol?.workflow_columns.find(field => field.id === key); if (!field) continue
+      input.type = field.type; input.title = field.definition; root.querySelector(`label[for="${input.id}"]`).textContent = field.label.split(' · ').at(-1)
+    }
     const active = supported && view.value !== 'plan'
-    pivot.hidden = active; tableHost.hidden = active && view.value === 'gantt'
+    pivot.hidden = active; tableHost.hidden = false
     timelineHost.hidden = !active || view.value !== 'gantt'
-    editor.hidden = !active || !selected || !state.slots.some(slot => selected.startsWith(slot.slot + ':'))
+    editor.hidden = !supported || !selected || !state.slots.some(slot => selected.startsWith(slot.slot + ':'))
     note.hidden = !active
     if (!active) { ++generation; nativeHandle?.destroy(); nativeHandle = null }
     return active
@@ -96,26 +99,20 @@ export function createSmeReviewWorkflow({ root, getState, renderTable, focusFiel
     }
     await ready
     if (!current()) return
-    const projection = { rows: data, selected, onSelect: choose }
+    const projection = { rows: data, selected, onSelect: id => choose(id) }
     nativeHandle ? nativeHandle.update(projection) : nativeHandle = nativeModule.mountGanttTimeline(target, projection)
   }
   async function render() {
     if (!refresh()) return false
     const own = ++generation, data = rows(), current = () => own === generation && view.value === 'gantt' && !controls.hidden && root.isConnected
-    note.textContent = 'The same review records are shown in both views. Optional dates stay in this tab; export review records to retain them. Financial worksheet imports do not change these view notes.'
+    note.textContent = 'All views use the same Plan options fields, values and definitions. Optional timing is local view state; export view notes to retain it.'
     if (view.value === 'gantt') {
       try { await timeline(data, current) }
-      catch { if (current()) note.textContent = 'Gantt Timeline unavailable. Your review records and dates are kept; switch to Review steps.' }
-    } else {
-      nativeHandle?.destroy(); nativeHandle = null
-      const labels = ['Step ID', 'Plan option', 'Review step', 'Predecessor', 'Successor', 'Review content', 'Current inputs', 'Start (optional)', 'End (optional)']
-      const tableCurrent = () => own === generation && view.value === 'review' && !controls.hidden
-      const ok = await renderTable({ columns: labels.map((name, index) => ({ id: 'review-' + index, name })),
-        rows: data.map(row => ({ id: row.id, cells: [row.id, row.option, row.task, row.predecessor || 'None', row.successor || 'None', row.guidance, row.inputs, row.start || 'Not scheduled', row.end || 'Not scheduled'] })),
-        layout: 'multiDimensional', orientation: 'rows', selectedRowId: selected ?? undefined,
-        ariaLabel: 'Takeover review steps with predecessor and successor links; the same records are available as a Gantt Timeline.', onActivateRow: choose }, tableCurrent)
-      if (!ok && tableCurrent()) note.textContent = 'Review table unavailable or over its limits. Your inputs and dates are kept; shorten long input summaries or use fewer options.'
-    }
+      catch { if (current()) note.textContent = 'Gantt Timeline unavailable. Shared Plan options fields and view notes are kept below.' }
+    } else { nativeHandle?.destroy(); nativeHandle = null }
+    const tableCurrent = () => own === generation && !controls.hidden && view.value !== 'plan'
+    const table = await createTableView()
+    if (tableCurrent() && !await renderTable(table, tableCurrent)) note.textContent = 'Shared field table unavailable or over its limits. Inputs and view notes are kept.'
     return true
   }
   view.addEventListener('change', () => { ++generation; refresh(); onViewChange() })
@@ -126,22 +123,34 @@ export function createSmeReviewWorkflow({ root, getState, renderTable, focusFiel
     dates[selected] = next; onViewChange()
   })
   $('#sme-review-export').addEventListener('click', () => {
-    const text = JSON.stringify({ schema: 'sme-review-records/v1', rows: rows() }, null, 2)
-    if (new TextEncoder().encode(text).length > 65536) { note.textContent = 'Review export exceeds 64 KB; reduce the displayed plan content.'; return }
+    const state = getState(), definition = state.protocol.review_workflow
+    const text = JSON.stringify({ schema: definition.exchange.schema, pack_id: state.protocol.pack.id, pack_version: state.protocol.pack.version, mode: definition.mode,
+      rows: rows().map(row => ({ id: row.id, 'review-start': row.start, 'review-end': row.end })) }, null, 2)
+    if (new TextEncoder().encode(text).length > definition.exchange.max_bytes) { note.textContent = 'View-note export exceeds its declared size limit.'; return }
     const url = URL.createObjectURL(new Blob([text], { type: 'application/json' })), link = document.createElement('a')
-    link.href = url; link.download = 'sme-review-records.json'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000)
-    note.textContent = 'Review records exported locally, including displayed input summaries and optional dates. Keep this file private.'
+    link.href = url; link.download = 'sme-view-notes.json'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000)
+    note.textContent = 'View notes exported locally using the active plan contract field keys. Financial inputs remain in the existing worksheet.'
   })
   $('#sme-review-import').addEventListener('change', async event => {
     const file = event.target.files?.[0], own = generation; if (!file) return
     try {
-      if (file.size > 65536) throw Error('review_file_limit')
-      const next = readSmeReviewDates(await file.text(), rows())
+      if (file.size > getState().protocol.review_workflow.exchange.max_bytes) throw Error('review_file_limit')
+      const next = readSmeReviewDates(await file.text(), rows(), getState().protocol)
       if (own !== generation || controls.hidden) return
       dates = next; if (selected) { start.value = dates[selected]?.start ?? ''; end.value = dates[selected]?.end ?? '' }
       onViewChange()
-    } catch { if (own === generation) note.textContent = 'Review import refused. Current inputs and dates are kept; select a matching review-record file.' }
+    } catch { if (own === generation) note.textContent = 'Review import refused. Current inputs and dates are kept; select view notes for the active plan contract.' }
     finally { event.target.value = '' }
   })
-  return { render, refresh, clear() { ++generation; dates = {}; selected = null; context = ''; nativeHandle?.destroy(); nativeHandle = null; editor.hidden = true } }
+  const activateParameter = (slot, key) => {
+    const field = getState().protocol.input_fields.find(field => field.name === key)
+    if (field) { if (field.review_step) choose(`${slot}:${field.review_step}`, key); else { focusField(slot, key); onViewChange() }; return }
+    if (key === 'review-start' || key === 'review-end') { choose(selected ?? `${slot}:${getState().protocol.review_workflow.steps[0].id}`); (key === 'review-start' ? start : end).focus() }
+  }
+  const dimensions = () => (getState().protocol?.workflow_columns ?? []).filter(field => field.kind === 'review_view').map(field => ({
+    id: field.id, name: `Review › Workflow › ${field.label.split(' · ').at(-1)} [${field.id}]`, section: 'Review', group: 'Workflow', parameter: field.label.split(' · ').at(-1),
+    read: slot => getState().mode?.id !== getState().protocol.review_workflow.mode ? 'Not applicable in this mode' : rows().filter(row => row.option === slot.slot)
+      .map(row => `${row.task}: ${Array.isArray(row[field.value_key]) ? row[field.value_key].join(', ') : row[field.value_key] || field.empty_label || 'Not entered'}`).join('\n'),
+  }))
+  return { render, refresh, dimensions, activateParameter, clear() { ++generation; dates = {}; selected = null; context = ''; nativeHandle?.destroy(); nativeHandle = null; editor.hidden = true } }
 }
