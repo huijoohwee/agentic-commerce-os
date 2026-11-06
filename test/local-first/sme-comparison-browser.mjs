@@ -17,7 +17,7 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   await expect(planPage.locator('#sme-workflow-table-host')).toBeVisible()
   await expect(planPage.locator('#sme-plan-mode')).toHaveValue('buy_build')
   await expect(planPage.locator('#sme-review-controls')).toBeHidden()
-  await expect(planPage.getByText('Choose a plan mode and contract. One table keeps all declared inputs, evidence, calculations, coverage, and next checks together. Select a plan row to edit its fields and evidence, or inspect each field in metadata columns.', { exact: true })).toBeVisible()
+  await expect(planPage.getByText('Choose a plan mode, contract and available workflow view. Each view uses the same inputs, evidence and calculations. Select a record or activity to edit that plan option, or switch views to inspect its fields and outputs.', { exact: true })).toBeVisible()
   await planPage.locator('#sample').click()
   await planPage.locator('#compare-a-buy_build_path').selectOption('buy_existing')
   await expect(planPage.locator('#compare-a-acquisition_price-low')).toHaveAttribute('aria-required', 'true')
