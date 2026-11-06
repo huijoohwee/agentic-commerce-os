@@ -6,6 +6,7 @@ import { execFileSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 const root = fileURLToPath(new URL('../../', import.meta.url))
 const manifestPath = path.join(root, 'config/graph-gantt-timeline.json')
+const portablePath = value => value.split(path.sep).join('/')
 const hash = value => createHash('sha256').update(value).digest('hex')
 const adapter = 'scripts/sme-review/graph-gantt-adapter.tsx'
 const projection = 'public/local-first/sme-review-workflow.js'
@@ -36,8 +37,8 @@ export async function buildTimelineBundle(graphRoot) {
       'react': path.join(graphRoot, 'node_modules/react'), 'react-dom': path.join(graphRoot, 'node_modules/react-dom'), 'grph-shared': path.join(graphRoot, 'grph-shared/src') }, logLevel: 'silent' })
   const dependencyRoot = fs.realpathSync(path.join(graphRoot, 'node_modules'))
   const sourceInputs = Object.keys(result.metafile.inputs).map(file => path.resolve(root, file))
-    .flatMap(file => file.startsWith(graphRoot + '/') ? [{ path: path.relative(graphRoot, file), file }]
-      : file.startsWith(dependencyRoot + '/') ? [{ path: 'node_modules/' + path.relative(dependencyRoot, file), file }] : [])
+    .flatMap(file => file.startsWith(graphRoot + path.sep) ? [{ path: portablePath(path.relative(graphRoot, file)), file }]
+      : file.startsWith(dependencyRoot + path.sep) ? [{ path: 'node_modules/' + portablePath(path.relative(dependencyRoot, file)), file }] : [])
   for (const file of ['package.json', 'package-lock.json']) sourceInputs.push({ path: file, file: path.join(graphRoot, file) })
   const inputs = sourceInputs.map(input => { const bytes = fs.readFileSync(input.file); return { path: input.path, bytes: bytes.length, sha256: hash(bytes) } })
     .sort((a, b) => a.path.localeCompare(b.path))

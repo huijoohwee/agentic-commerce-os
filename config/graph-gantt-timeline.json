@@ -1,7 +1,7 @@
 {
   "schema": "agentic-commerce/graph-gantt-artifact/v1",
   "owner": "github.com/huijoohwee/agentic-graph",
-  "sourceRevision": "3a8c4050ce9717f3ca4989edc3cc5d331fecbc7d",
+  "sourceRevision": "c33b635be1124381d30b2d9fbad04dd868a2f986",
   "sourceDirty": false,
   "browserExport": "mountGanttTimeline",
   "cssScope": "shadow-root",
@@ -335,7 +335,7 @@
     },
     {
       "path": "scripts/sme-review/build-timeline.mjs",
-      "sha256": "cda07911a6f8d35a0ef88dcc1daff62f421baffe422edc236573778a8e6bd652"
+      "sha256": "0cc87c78f910283ac4c2bdbfdbdf6a53fb96df31128072d9eb2f1d2533f120b0"
     }
   ],
   "outputs": [
