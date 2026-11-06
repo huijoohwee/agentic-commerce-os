@@ -136,7 +136,26 @@
       "evidenceDigest": "7d29729dfdb432893cc8a15ff3b9dcfc534edbce36fa67d6ec8e92623e7c7dff",
       "decisionRef": "https://github.com/huijoohwee/agentic-commerce-os/actions/runs/42141754796",
       "reason": null
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/sme-production-closeout",
+      "laneHead": "0b5ff187f66498ab656fbb25081e4efefa72f119",
+      "paths": [
+        ".agentic-os-delivery-dispositions.json",
+        "docs/reports/sme-production-release-42138564108.json"
+      ],
+      "disposition": "no-deploy",
+      "candidateRevision": "76eea91d7a2ed7feb243af3a5a343a5d07e31efc",
+      "candidateDigest": "49deac71b98622be123bc44a5e6dcb376f1236b3e1bd4080ca7c39edbf179a1d",
+      "sourceReleaseReceiptDigest": null,
+      "deploymentReceiptDigest": null,
+      "runtimeVerificationReceiptDigest": null,
+      "evidencePath": "docs/reports/sme-production-release-42138564108.json",
+      "evidenceDigest": "7d29729dfdb432893cc8a15ff3b9dcfc534edbce36fa67d6ec8e92623e7c7dff",
+      "decisionRef": "https://github.com/huijoohwee/agentic-commerce-os/pull/213",
+      "reason": ".agentic-os-delivery-dispositions.json and docs/reports/sme-production-release-42138564108.json are excluded from the product artifact; both record repository delivery metadata outside the local-first Worker source and public/local-first assets. PR 213 records an existing production release and changes no runtime, deployment selection, service, checkout policy or dependency."
     }
   ],
-  "receiptDigest": "6f9c96f274a3145cee7421a9ce7fa5dd6bf2ec10dee0e911b2c86239652f8feb"
+  "receiptDigest": "c81a087f7a4237522f09dde4b3b45cd52e749eba5b37215f55fd4925936b9544"
 }
