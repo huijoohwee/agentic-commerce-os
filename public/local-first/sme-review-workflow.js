@@ -27,13 +27,15 @@ export function reviewTimingState(rows) {
     const predecessor = rows.find(item => item.id === row.predecessor)
     const gapDays = predecessor?.end && row.start && Number.isFinite(dateNumber(predecessor.end)) && Number.isFinite(dateNumber(row.start))
       ? (dateNumber(row.start) - dateNumber(predecessor.end)) / 86400000 : null
-    return { id: row.id, gapDays }
+    const overlapDays = predecessor?.start && predecessor.end && row.start && row.end && validReviewDates(predecessor) && validReviewDates(row)
+      ? Math.max(0, (Math.min(dateNumber(predecessor.end), dateNumber(row.end)) - Math.max(dateNumber(predecessor.start), dateNumber(row.start))) / 86400000) : null
+    return { id: row.id, gapDays, overlapDays }
   })
   const complete = rows.filter(row => row.start && row.end && validReviewDates(row)).length
   if (!rows.length || complete !== rows.length) return { dated: false, observations,
     reason: `Dependency order; dates are optional. ${complete} of ${rows.length} date pairs entered. Equal bar widths show suggested order, not elapsed time. Recorded dates remain below.` }
   if (observations.some(item => item.gapDays !== null && item.gapDays < 0)) return { dated: false, observations,
-    reason: 'Recorded dates overlap across a suggested dependency. Showing dependency order; entered dates and overlaps remain below. No date is moved automatically.' }
+    reason: 'Entered dates do not follow the suggested links. Showing dependency order; recorded dates and boundary observations remain below. No date is moved automatically.' }
   return { dated: true, observations,
     reason: 'Entered dates; calendar days, exclusive ends. Equal dates are milestones. This review outline is not a completion forecast.' }
 }

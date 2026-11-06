@@ -327,7 +327,7 @@
   "consumerInputs": [
     {
       "path": "scripts/sme-review/graph-gantt-adapter.tsx",
-      "sha256": "971898d119f880d9b477066690d06203736040598271d2eb8c5501b67b090111"
+      "sha256": "c938a292d1699a9852fa0d078ce4eb498b79808e66d02fcb475d7cd6e08eaf45"
     },
     {
       "path": "scripts/sme-review/graph-gantt-host.css",
@@ -335,7 +335,7 @@
     },
     {
       "path": "public/local-first/sme-review-workflow.js",
-      "sha256": "3630578aa2ccfb91a0c9f8029582be926183fa9ec612f181b5d6aab4845c1334"
+      "sha256": "be22bad271a98c70990841152834cb1b63055a25aa96570fbac4285e261f3741"
     },
     {
       "path": "scripts/sme-review/build-timeline.mjs",
@@ -345,8 +345,8 @@
   "outputs": [
     {
       "path": "graph-gantt-timeline.js",
-      "bytes": 271205,
-      "sha256": "fb7789ef25dcfbb06b50ea3b576235f18555edbf88a36081fa4df6b409ab21d8"
+      "bytes": 271618,
+      "sha256": "af61ecefdc0c4ecc27c0e296c0a44bc9e4c3fe45e621b052e0b41c4c03f89610"
     },
     {
       "path": "graph-gantt-timeline.css",
