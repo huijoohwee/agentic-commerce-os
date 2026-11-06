@@ -23,13 +23,19 @@ export function projectSmeReviewRows(slots, protocol, format, dates = {}) {
   }))
 }
 export function reviewTimingState(rows) {
-  if (!rows.every(row => row.start && row.end && validReviewDates(row))) return { dated: false, reason: 'Dependency order; dates are optional. Equal bar widths do not represent elapsed time.' }
-  for (const row of rows) {
+  const observations = rows.map(row => {
     const predecessor = rows.find(item => item.id === row.predecessor)
-    if (predecessor && dateNumber(row.start) < dateNumber(predecessor.end))
-      return { dated: false, reason: 'Dates overlap a predecessor. Showing dependency order until timing is reconciled.' }
-  }
-  return { dated: true, reason: 'Entered dates; the end date is exclusive. Equal start/end dates are milestones.' }
+    const gapDays = predecessor?.end && row.start && Number.isFinite(dateNumber(predecessor.end)) && Number.isFinite(dateNumber(row.start))
+      ? (dateNumber(row.start) - dateNumber(predecessor.end)) / 86400000 : null
+    return { id: row.id, gapDays }
+  })
+  const complete = rows.filter(row => row.start && row.end && validReviewDates(row)).length
+  if (!rows.length || complete !== rows.length) return { dated: false, observations,
+    reason: `Dependency order; dates are optional. ${complete} of ${rows.length} date pairs entered. Equal bar widths show suggested order, not elapsed time. Recorded dates remain below.` }
+  if (observations.some(item => item.gapDays !== null && item.gapDays < 0)) return { dated: false, observations,
+    reason: 'Recorded dates overlap across a suggested dependency. Showing dependency order; entered dates and overlaps remain below. No date is moved automatically.' }
+  return { dated: true, observations,
+    reason: 'Entered dates; calendar days, exclusive ends. Equal dates are milestones. This review outline is not a completion forecast.' }
 }
 export function readSmeReviewDates(text, currentRows, protocol) {
   const exchange = protocol.review_workflow.exchange
@@ -65,6 +71,7 @@ export function createSmeReviewWorkflow({ root, getState, renderTable, createTab
     dates = Object.fromEntries(Object.entries(dates).filter(([id]) => ids.has(id.split(':')[0])))
     if (selected && !ids.has(selected.split(':')[0])) selected = null
     controls.hidden = !supported
+    $('#sme-review-guidance').textContent = definition?.description ?? ''
     if (context !== next) {
       context = next; view.replaceChildren(...(definition?.views ?? []).map(item => { const option = document.createElement('option'); option.value = item.id; option.textContent = item.label; return option }))
       view.value = supported ? definition.default_view : 'plan'
@@ -99,7 +106,7 @@ export function createSmeReviewWorkflow({ root, getState, renderTable, createTab
     }
     await ready
     if (!current()) return
-    const projection = { rows: data, selected, onSelect: id => choose(id) }
+    const projection = { rows: data, selected, columns: getState().protocol.workflow_columns.filter(field => field.kind === 'review_view'), onSelect: id => choose(id) }
     nativeHandle ? nativeHandle.update(projection) : nativeHandle = nativeModule.mountGanttTimeline(target, projection)
   }
   async function render() {

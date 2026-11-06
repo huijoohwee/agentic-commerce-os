@@ -28,6 +28,21 @@ test('dates remain optional; invalid dates and predecessor overlap never become 
   rows[1].start = '2026-11-01'; assert.equal(reviewTimingState(rows).dated, false)
   rows[1].start = ''; assert.equal(reviewTimingState(rows).dated, false)
 })
+test('timing observations preserve unknowns and expose calendar gaps or overlaps only within each option', () => {
+  const rows = project(['A', 'B']).map(row => ({ ...row }))
+  rows[0].end = '2028-02-28'; rows[1].start = '2028-03-01'
+  let timing = reviewTimingState(rows)
+  assert.equal(timing.dated, false)
+  assert.equal(timing.observations.find(row => row.id === 'A:transfer').gapDays, 2)
+  assert(timing.observations.filter(row => row.id.startsWith('B:')).every(row => row.gapDays === null))
+  rows[1].start = '2028-02-28'; assert.equal(reviewTimingState(rows).observations[1].gapDays, 0)
+  rows[1].start = '2028-02-27'; assert.equal(reviewTimingState(rows).observations[1].gapDays, -1)
+  rows[1].start = ''; assert.equal(reviewTimingState(rows).observations[1].gapDays, null)
+  rows[1].start = '2028-02-30'; assert.equal(reviewTimingState(rows).observations[1].gapDays, null)
+  assert.match(protocol.review_workflow.description, /suggested.*Revisit.*no standard duration/s)
+  assert.match(protocol.review_workflow.steps.at(-1).guidance, /pause.*does not.*certify readiness/)
+  assert.equal(protocol.input_fields.length, 38)
+})
 test('review imports accept only matching bounded row identities and timing; financial inputs stay authoritative', () => {
   const rows = project(['A']), file = { schema: protocol.review_workflow.exchange.schema, pack_id: protocol.pack.id, pack_version: protocol.pack.version, mode: 'buy_build', rows: rows.map(row => ({ id: row.id, 'review-start': '', 'review-end': '' })) }
   assert.deepEqual(readSmeReviewDates(JSON.stringify(file), rows, protocol), Object.fromEntries(rows.map(row => [row.id, { start: '', end: '' }])))

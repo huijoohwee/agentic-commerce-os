@@ -118,8 +118,10 @@ export function createSmePackDictionaryView(protocol, orientation = 'rows', onOr
   }
   for (const column of protocol.workflow_columns) add('Workflow column', column.id, column.label, 'E2E workflow', column.definition,
     column.type ?? column.kind, 'No', column.unit ?? column.facet, { pattern: column.pattern, writable: column.writable, cardinality: column.cardinality }, 'Derived from the active plan protocol', `pack.protocol.workflow_columns.${column.id}`, 'Active plan protocol')
+  if (protocol.review_workflow) add('Review metadata', 'review_workflow', 'Review outline', 'E2E workflow', protocol.review_workflow.description,
+    'view guidance', 'No', '', protocol.review_workflow.schema, 'No standard duration, mandatory sequence or completion forecast', 'pack.protocol.review_workflow', 'Active plan protocol')
   for (const step of protocol.review_workflow?.steps ?? []) add('Review step', step.id, step.title, 'E2E workflow', step.guidance,
-    'field grouping', 'No', '', { focus_field: step.focus_field, input_fields: protocol.input_fields.filter(field => field.review_step === step.id).map(field => field.name) },
+    'field grouping', 'No', '', { order: 'Suggested; revisitable', focus_field: step.focus_field, input_fields: protocol.input_fields.filter(field => field.review_step === step.id).map(field => field.name) },
     'Same Plan options schema; no separate field definitions', 'pack.protocol.review_workflow.steps', 'Active plan protocol')
   if (protocol.review_workflow) add('View-note exchange', protocol.review_workflow.exchange.schema, 'Optional review timing', 'E2E workflow',
     'Local view notes keyed by canonical workflow fields; financial worksheet inputs are never imported from this file.', 'JSON', 'No', '', protocol.review_workflow.exchange,
