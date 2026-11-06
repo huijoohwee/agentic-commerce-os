@@ -52,7 +52,8 @@ const dictionaryGroups = rows => {
     if (['Plan contract', 'Calculation model', 'Illustrative input set', 'Protocol schema', 'Workflow mode'].includes(record)) return ['Contract', 'Identity and modes']
     if (record === 'Model output') return ['Plan outputs', 'Model calculations']
     if (record === 'Coverage output') return ['Plan outputs', 'Coverage']
-    if (record === 'Workflow column') return ['Plan outputs', 'Readiness and evidence']
+    if (record === 'Workflow column') return row.cells[1].startsWith('review-') ? ['Review workflow', 'Shared parameters'] : ['Plan outputs', 'Readiness and evidence']
+    if (record === 'Review step' || record === 'View-note exchange') return ['Review workflow', 'Field references and exchange']
     if (record === 'Plan artifact') return ['Projection outline', 'Artifacts']
     if (record === 'Pitch role column') return ['Projection outline', 'Role columns']
     if (record === 'Guideline source') return ['Canonical owners', 'Guideline sources']
@@ -103,7 +104,7 @@ export function createSmePackDictionaryView(protocol, orientation = 'rows', onOr
     field.definition ?? 'User-supplied planning input. Blank values remain unknown.', field.type,
     field.required ? 'Yes' : field.required_modes?.length || field.required_when ? 'Conditional' : 'No', field.unit,
     { values: field.values, min: field.min, max: field.max, max_length: field.max_length, pattern: field.pattern,
-      required_modes: field.required_modes, required_when: field.required_when },
+      required_modes: field.required_modes, required_when: field.required_when, review_step: field.review_step },
     field.evidence_status ?? 'User-recorded; not authenticated', 'pack.protocol.input_fields', 'Active plan contract')
   for (const output of protocol.model_outputs) add('Model output', output.id, output.label, 'Financial model',
     'Deterministic arithmetic from supplied inputs; not a forecast or benchmark.', 'derived value', 'No', '', output.inputs,
@@ -116,7 +117,13 @@ export function createSmePackDictionaryView(protocol, orientation = 'rows', onOr
       owner ? `${owner.path}@${owner.version}` : 'pack.protocol.protocols', owner?.path ?? 'Active plan evidence guidance')
   }
   for (const column of protocol.workflow_columns) add('Workflow column', column.id, column.label, 'E2E workflow', column.definition,
-    column.kind, 'No', column.facet, '', 'Derived from the active plan protocol', `pack.protocol.workflow_columns.${column.id}`, 'Active plan protocol')
+    column.type ?? column.kind, 'No', column.unit ?? column.facet, { pattern: column.pattern, writable: column.writable, cardinality: column.cardinality }, 'Derived from the active plan protocol', `pack.protocol.workflow_columns.${column.id}`, 'Active plan protocol')
+  for (const step of protocol.review_workflow?.steps ?? []) add('Review step', step.id, step.title, 'E2E workflow', step.guidance,
+    'field grouping', 'No', '', { focus_field: step.focus_field, input_fields: protocol.input_fields.filter(field => field.review_step === step.id).map(field => field.name) },
+    'Same Plan options schema; no separate field definitions', 'pack.protocol.review_workflow.steps', 'Active plan protocol')
+  if (protocol.review_workflow) add('View-note exchange', protocol.review_workflow.exchange.schema, 'Optional review timing', 'E2E workflow',
+    'Local view notes keyed by canonical workflow fields; financial worksheet inputs are never imported from this file.', 'JSON', 'No', '', protocol.review_workflow.exchange,
+    'Explicit local import/export; dates optional', 'pack.protocol.review_workflow.exchange', 'Active plan protocol')
   for (const artifact of protocol.artifacts ?? []) {
     add('Plan artifact', artifact.id, artifact.label, 'Pitch',
       'Structured draft assembled only from declared inputs and deterministic model displays; missing narrative remains explicit.',
@@ -175,4 +182,39 @@ export function createSmePackDictionaryView(protocol, orientation = 'rows', onOr
   const nestedRows = dictionaryGroups(rows)
   return { columns, rows: nestedRows, layout: 'multiDimensional', orientation,
     ariaLabel: 'SME plan data dictionary; protocol records are nested by contract, section, output, and canonical owner, with definitions and owners as columns.', onOrientationChange }
+}
+
+// The same field records and metadata columns back Plan options, Review steps and Gantt.
+export function createSmeWorkflowFieldView({ protocol, slots, dimensions, resultSlots, format, requirement, enumLabel, rowLabel, review = false, onActivateField }) {
+  const names = ['Record type', 'Section', 'Group', 'Parameter', 'Stable key', 'Data type', 'Unit', 'Requirement', 'Allowed values', 'Minimum', 'Maximum', 'Length limit', 'Pattern', 'Definition']
+  const columns = [...names.map((name, index) => ({ id: `metadata-${index}`, name })), ...slots.map(item => ({ id: `value-${item.slot}`, name: rowLabel(item.slot) }))]
+  const record = (id, cells) => ({ id, cells: cells.map(value => value == null ? 'Not declared' : String(value)) })
+  const inputs = new Map(protocol.input_fields.map(field => [field.name, field]))
+  const inputRows = protocol.input_fields.map(field => record(`input:${field.name}`, ['Input', field.section ?? 'Not declared', 'Input', field.label, field.name, field.type,
+    field.unit, requirement(field), field.values?.map(enumLabel).join(', '), field.min, field.max, field.max_length, field.pattern, field.definition,
+    ...slots.map(item => format(field, item.inputs[field.name], item.inputs.currency_code))]))
+  const outputRows = dimensions.map(dimension => {
+    const parts = dimension.name.split(' › '), parameter = parts.pop().replace(/\s+\[[^\]]+\]$/u, ''), field = dimension.field ?? {}
+    const section = dimension.section ?? parts[0] ?? 'Workflow', group = dimension.group ?? (parts.slice(1).join(' › ') || 'Not declared')
+    const kind = field.kind === 'review_view' ? 'Review parameter' : section === 'Plan' ? 'Plan state' : section === 'Readiness' ? 'Readiness' : section === 'Evidence' ? 'Evidence' : `${section} output`
+    return record(`output:${dimension.id}`, [kind, section, group, dimension.parameter ?? parameter, dimension.id, field.type ?? 'Derived', field.unit,
+      field.kind === 'review_view' ? field.writable ? 'Optional view note' : 'Protocol-derived' : 'Calculated or reported', field.values?.map(enumLabel).join(', '),
+      field.min, field.max, field.max_length, field.pattern, field.definition, ...slots.map(item => dimension.read(resultSlots.find(slot => slot.slot === item.slot)))])
+  })
+  const steps = new Map((protocol.review_workflow?.steps ?? []).map(step => [step.id, step.title]))
+  const rows = nestSmePackTableRows({ rows: [...inputRows, ...outputRows], pathFor: row => {
+    const [kind, section, group, , key] = row.cells
+    if (review && kind === 'Input') return [steps.get(inputs.get(key).review_step), section]
+    if (review && kind === 'Review parameter') return ['Review parameters']
+    const path = [kind, section, group === 'Input' ? '' : group]
+    return path.filter((value, index) => value && value !== path[index - 1])
+  }, createGroupRow: ({ path }) => {
+    const slug = path.map(part => part.toLowerCase().replace(/[^a-z0-9]+/gu, '-').replace(/^-|-$/gu, '')).join('--')
+    return record(`group:${slug}`, ['Hierarchy group', path[1] ?? 'Workflow', path[2] ?? 'Workflow records', path.at(-1), `group:${slug}`,
+      'group label', 'Not applicable', 'No', 'Not applicable', 'Not applicable', 'Not applicable', 'Not applicable', 'Not applicable',
+      'Display grouping derived from the active contract; not an input, output, evidence claim or rule.', ...slots.map(() => 'Not applicable')])
+  } })
+  return { columns, rows, layout: 'multiDimensional', orientation: 'rows', ariaLabel: review
+    ? 'Review steps grouped from the same Plan options fields, values and parameter definitions.' : 'Workflow fields and outputs with shared metadata and plan option values.',
+    onActivateRow: id => { const [kind, ...parts] = id.split(':'); if (kind === 'input' || kind === 'output') onActivateField?.(parts.join(':')) } }
 }

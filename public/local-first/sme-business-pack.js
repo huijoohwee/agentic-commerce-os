@@ -88,6 +88,7 @@ async function createSmeBusinessPack() {
   function renderWorkflowEditor() { workflowEditorView.render() }
   const review = createSmeReviewWorkflow({ root,
     getState: () => ({ protocol: currentProtocol, mode: currentMode(), slots: comparisonSlotElements.slice(0, Number(comparisonCount.value)), format: formatFieldValue }),
+    createTableView: () => workflowTableView(true),
     renderTable: (view, current) => renderSharedTable(workflowTableHost, view, workflowTableMount, current),
     focusField: (slot, key) => { selectedWorkflowSet = slot; renderWorkflowEditor(); const control = inputFields.querySelector(`[data-input="${key}"]`); control?.focus({ preventScroll: true }) },
     onViewChange: () => { void renderWorkflowTable() },
@@ -176,42 +177,17 @@ async function createSmeBusinessPack() {
       workflowColumn('next-checks', slot => reportValue(slot, report => report.next_checks.length
         ? report.next_checks.map(row => `${row.order}. ${row.action}`).join(' · ') : 'No next checks from the entered fields.')),
     ]
-    return dimensions
+    return [...dimensions, ...review.dimensions()].map(dimension => ({ ...dimension, field: currentProtocol.workflow_columns.find(field => field.id === dimension.id) }))
   }
-  async function workflowTableView() {
+  async function workflowTableView(reviewFields = false) {
     const slots = comparisonSlotElements.slice(0, Number(comparisonCount.value))
     const resultSlots = tableSlots(comparisonValue)
     const dimensions = tableDimensions()
-    if (tableOrientation === 'columns') {
-      const { nestSmePackTableRows } = await import('./sme-pack-dictionary.js?v=business-plan-dictionary-v2')
-      const names = ['Record type', 'Section', 'Group', 'Parameter', 'Stable key', 'Data type', 'Unit', 'Requirement', 'Allowed values', 'Minimum', 'Maximum', 'Length limit', 'Pattern', 'Definition']
-      const columns = [...names.map((name, index) => ({ id: `metadata-${index}`, name })), ...slots.map(item => ({ id: `value-${item.slot}`, name: rowLabel(item.slot) }))]
-      const record = (id, cells) => ({ id, cells: cells.map(value => value == null ? 'Not declared' : String(value)) })
-      const inputRows = currentFields.map(field => record(`input:${field.name}`, ['Input', field.section ?? 'Not declared', 'Input', field.label, field.name, field.type, field.unit ?? 'Not declared', inputRequirementLabel(field), field.values?.map(enumLabel).join(', ') ?? 'Not declared', field.min ?? 'Not declared', field.max ?? 'Not declared', field.max_length ?? 'Not declared', field.pattern ?? 'Not declared', field.definition ?? 'Not declared', ...slots.map(item => formatFieldValue(field, item.inputs[field.name], item.inputs.currency_code))]))
-      const outputRows = dimensions.map(dimension => {
-        const parts = dimension.name.split(' › '), parameter = parts.pop().replace(/\s+\[[^\]]+\]$/u, '')
-        const section = dimension.section ?? parts[0] ?? 'Workflow', group = dimension.group ?? (parts.slice(1).join(' › ') || 'Not declared')
-        const kind = section === 'Plan' ? 'Plan state' : section === 'Readiness' ? 'Readiness' : section === 'Evidence' ? 'Evidence' : `${section} output`
-        return record(`output:${dimension.id}`, [kind, section, group, dimension.parameter ?? parameter, dimension.id, 'Derived', 'Not declared', 'Calculated or reported', 'Not declared', 'Not declared', 'Not declared', 'Not declared', 'Not declared', 'Not declared', ...slots.map(item => dimension.read(resultSlots.find(slot => slot.slot === item.slot)))])
-      })
-      const rows = nestSmePackTableRows({ rows: [...inputRows, ...outputRows],
-        pathFor: row => {
-          const [recordType, section, group] = row.cells
-          const path = [recordType, section, group === 'Input' ? '' : group]
-          return path.filter((value, index) => value && value !== path[index - 1])
-        },
-        createGroupRow: ({ path }) => {
-          const [recordType, section, group] = path
-          const slug = path.map(part => part.toLowerCase().replace(/[^a-z0-9]+/gu, '-').replace(/^-|-$/gu, '')).join('--')
-          const label = path.at(-1)
-          const cells = ['Hierarchy group', section ?? 'Workflow', group ?? 'Workflow records', label, `group:${slug}`,
-            'group label', 'Not applicable', 'No', 'Not applicable', 'Not applicable', 'Not applicable', 'Not applicable',
-            'Not applicable', 'Display grouping derived from the active contract. This row is not an input, output, evidence, result, or rule.',
-            ...slots.map(() => 'Not applicable')]
-          return record(`group:${recordType}:${slug}`, cells)
-        },
-      })
-      return { columns, rows, layout: 'multiDimensional', orientation: 'rows', ariaLabel: 'Workflow fields and outputs are nested by record type, section, and group; each field attribute and plan option has its own column.' }
+    if (reviewFields || tableOrientation === 'columns') {
+      const { createSmeWorkflowFieldView } = await import('./sme-pack-dictionary.js?v=business-plan-dictionary-v2')
+      return createSmeWorkflowFieldView({ protocol: currentProtocol, slots, dimensions, resultSlots, format: formatFieldValue,
+        requirement: inputRequirementLabel, enumLabel, rowLabel, review: reviewFields,
+        onActivateField: key => review.activateParameter(selectedWorkflowSet ?? 'A', key) })
     }
     const columns = [{ id: 'plan-row', name: currentMode()?.row_label ?? 'Plan option' }, ...currentFields.map(field => ({ id: field.name, name: inputTableLabel(field) })), ...dimensions.map(({ id, name }) => ({ id, name }))]
     const rows = slots.map(item => ({ id: item.slot, cells: [rowLabel(item.slot), ...currentFields.map(field => formatFieldValue(field, item.inputs[field.name], item.inputs.currency_code)), ...dimensions.map(dimension => dimension.read(resultSlots.find(slot => slot.slot === item.slot)))] }))

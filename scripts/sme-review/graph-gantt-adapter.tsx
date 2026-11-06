@@ -8,7 +8,7 @@ import '@graph/components/timeline/TimelineTransportLane.css'
 import './graph-gantt-host.css'
 import { reviewTimingState } from '../../public/local-first/sme-review-workflow.js'
 
-type Row = { id: string; option: string; order: number; task: string; predecessor: string; successor: string; start: string; end: string }
+type Row = { fields: { name: string; label: string }[]; id: string; option: string; order: number; task: string; predecessor: string; successor: string; start: string; end: string }
 type Projection = { rows: Row[]; selected: string | null; onSelect: (id: string) => void }
 const day = 86400000
 const timestamp = (value: string) => Date.parse(value + 'T00:00:00Z')
@@ -43,7 +43,7 @@ function OptionTimeline({ rows, selected, onSelect }: Projection) {
     </section></div>
     <p>{rows.map(row => row.id).join(' → ')}</p>
     <nav aria-label={`Plan option ${rows[0].option} review steps`}>{rows.map(row => <button key={row.id} type="button"
-      aria-pressed={selected === row.id} onClick={() => onSelect(row.id)} title={`Predecessor: ${row.predecessor || 'None'}; successor: ${row.successor || 'None'}`}>
+      aria-pressed={selected === row.id} onClick={() => onSelect(row.id)} title={`Predecessor: ${row.predecessor || 'None'}; successor: ${row.successor || 'None'}; Fields: ${row.fields.map(field => field.label).join(', ')}`}>
       {row.order}. {row.task}</button>)}</nav>
   </section>
 }

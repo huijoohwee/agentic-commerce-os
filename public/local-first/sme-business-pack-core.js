@@ -77,7 +77,7 @@ export async function invokeSmePackTool(name, args = {}, now = Date.now()) {
     const pack = await loadPack(args.pack_id)
     return { schema: 'sme-business-plan/protocol/v3', pack: clone(summary(pack)), plan_modes: clone(pack.plan_modes), input_fields: clone(pack.input_fields),
       model_outputs: clone(pack.model_outputs), coverage_outputs: clone(pack.coverage_outputs ?? []),
-      workflow_columns: clone(pack.workflow_columns ?? []),
+      workflow_columns: clone(pack.workflow_columns ?? []), ...(pack.review_workflow ? { review_workflow: clone(pack.review_workflow) } : {}),
       calculation_model: pack.calculation_model ?? 'monthly-plan/v1', illustrative_inputs: clone(pack.illustrative_inputs ?? {}),
       artifacts: clone(pack.artifacts ?? []), parameters: clone(pack.parameters), ratios: clone(pack.ratios),
       protocols: clone(pack.protocols), tolerances: clone(pack.tolerances), guideline_sources: clone(pack.guideline_sources),
