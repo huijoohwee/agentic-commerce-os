@@ -3,8 +3,8 @@ import { createServer } from 'node:net'
 import { podmanRuntimeEnvironment } from './container-runtime.ts'
 import { build } from 'esbuild'
 
-const args = process.argv.slice(2), pack = args[0] === '--workspace-pack', local = args[0] === '--local-first'
-if (local && args.length !== 1) throw Error('local_first_dev_arguments_invalid')
+const args = process.argv.slice(2), pack = args[0] === '--workspace-pack', local = args.length === 0 || args[0] === '--local-first'
+if (local && args.length > 1) throw Error('local_first_dev_arguments_invalid')
 if (pack) {
   if (args.length !== 1) throw Error('workspace_pack_dev_arguments_invalid')
   await build({ entryPoints: ['src/local-host/workspace-pack-host.ts'], bundle: true, platform: 'node',
