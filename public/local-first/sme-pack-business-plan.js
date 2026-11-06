@@ -198,17 +198,17 @@ const cashInputs = ['currency_code', 'purchase_price', 'transition_costs', 'asse
   'immediate_reinvestment_costs', 'monthly_operating_costs', 'working_capital_months']
 
 const reviewSteps = Object.freeze([
-  Object.freeze({ id: 'limits', title: 'Set your buying limits', focus_field: 'buyer_budget',
-    guidance: 'Record your spending ceiling, cash available, desired timing and relevant experience. Budget and available cash are distinct.' }),
-  Object.freeze({ id: 'transfer', title: 'Define the transfer', focus_field: 'transaction_structure',
-    guidance: 'Clarify the business, assets or premises included. Keep price, operating figures, currency, period, rent and remaining term together. Monthly revenue less listed costs is not verified profit; a profit multiple is not payback. Clarify landlord consent, reinstatement, renewal and any franchise obligations.' }),
-  Object.freeze({ id: 'questions', title: 'Resolve the open questions', focus_field: 'accounts_access',
-    guidance: 'Record access to accounts, permission status, staff continuity and handover support. Keep unknown answers explicit and choose one next action.' }),
+  Object.freeze({ id: 'limits', title: 'Frame the review', focus_field: 'buyer_budget',
+    guidance: 'Describe the opportunity, resources, desired timing and relevant experience from your own perspective. A spending ceiling and available cash are separate inputs; neither establishes suitability.' }),
+  Object.freeze({ id: 'transfer', title: 'Examine the transfer', focus_field: 'transaction_structure',
+    guidance: 'Record the proposed scope and supplied figures, including their currency, basis and period. Keep included items, location obligations and unanswered conditions visible. Monthly revenue less listed costs is arithmetic, not verified profit. Record what needs clarification with the relevant parties.' }),
+  Object.freeze({ id: 'questions', title: 'Record questions and next action', focus_field: 'accounts_access',
+    guidance: 'Record the stated accounts access, operating permission context, team continuity and handover support. Leave missing answers unknown. Choose, revise or pause your next action; this activity does not complete a transfer or certify readiness.' }),
 ])
 const reviewColumns = Object.freeze([
   { id: 'review-step-id', label: 'Review · Step ID', type: 'text', value_key: 'id', definition: 'Stable review-step identity within the same plan option.' },
-  { id: 'review-predecessor', label: 'Review · Predecessor', type: 'reference', value_key: 'predecessor', empty_label: 'None', definition: 'Previous step in this plan option; no cross-option dependency.' },
-  { id: 'review-successor', label: 'Review · Successor', type: 'reference', value_key: 'successor', empty_label: 'None', definition: 'Next step in this plan option; no automatic progression.' },
+  { id: 'review-predecessor', label: 'Review · Predecessor', type: 'reference', value_key: 'predecessor', empty_label: 'None', definition: 'Suggested preceding review activity in this option; no mandatory deadline, completion state or cross-option dependency.' },
+  { id: 'review-successor', label: 'Review · Successor', type: 'reference', value_key: 'successor', empty_label: 'None', definition: 'Suggested following review activity in this option; activities can be revisited and no automatic progression occurs.' },
   { id: 'review-instructions', label: 'Review · Instructions', type: 'text', value_key: 'guidance', definition: 'Protocol-owned review guidance; not a financial assumption or clearance.' },
   { id: 'review-field-keys', label: 'Review · Linked input fields', type: 'reference', value_key: 'field_keys', definition: 'References to the same input_fields used by Plan options, the editor and dictionary.' },
   { id: 'review-start', label: 'Review · Start (optional)', type: 'date', value_key: 'start', unit: 'ISO 8601 date', pattern: '^[0-9]{4}-[0-9]{2}-[0-9]{2}$', writable: true, definition: 'Optional local review start date; blank keeps dependency order. No financial calculation uses it.' },
@@ -216,6 +216,7 @@ const reviewColumns = Object.freeze([
 ].map(field => Object.freeze({ ...field, kind: 'review_view', cardinality: 'review_step', definition: 'Per review step. ' + field.definition, required: false })))
 const reviewWorkflow = Object.freeze({ schema: 'sme-business-plan/review-workflow/v1', mode: 'buy_build', default_view: 'review',
   views: [{ id: 'review', label: 'Review steps' }, { id: 'gantt', label: 'Gantt Timeline' }, { id: 'plan', label: 'Plan options' }],
+  description: 'A suggested review outline. Revisit activities as information changes; no standard duration, required transaction sequence or completion forecast is implied. Select a field or activity to edit the same plan option and its evidence.',
   steps: reviewSteps, field_source: 'input_fields', column_source: 'workflow_columns',
   exchange: { schema: 'sme-business-plan/view-notes/v1', fields: ['review-start', 'review-end'], max_bytes: 65536 },
 })

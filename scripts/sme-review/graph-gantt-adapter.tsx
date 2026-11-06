@@ -8,11 +8,12 @@ import '@graph/components/timeline/TimelineTransportLane.css'
 import './graph-gantt-host.css'
 import { reviewTimingState } from '../../public/local-first/sme-review-workflow.js'
 
-type Row = { fields: { name: string; label: string }[]; id: string; option: string; order: number; task: string; predecessor: string; successor: string; start: string; end: string }
-type Projection = { rows: Row[]; selected: string | null; onSelect: (id: string) => void }
+type Row = { guidance: string; fields: { name: string; label: string }[]; id: string; option: string; order: number; task: string; predecessor: string; successor: string; start: string; end: string }
+type Column = { id: string; label: string; value_key: keyof Row; empty_label?: string; definition: string }
+type Projection = { columns: Column[]; rows: Row[]; selected: string | null; onSelect: (id: string) => void }
 const day = 86400000
 const timestamp = (value: string) => Date.parse(value + 'T00:00:00Z')
-function OptionTimeline({ rows, selected, onSelect }: Projection) {
+function OptionTimeline({ rows, columns, selected, onSelect }: Projection) {
   const viewportRef = React.useRef<HTMLElement>(null), contentRef = React.useRef<HTMLElement>(null)
   const timing = reviewTimingState(rows)
   const origin = timing.dated ? Math.min(...rows.map(row => timestamp(row.start))) : 0
@@ -41,10 +42,25 @@ function OptionTimeline({ rows, selected, onSelect }: Projection) {
         onRulerPointerDown={() => {}} onSelectRowKey={onSelect} onSelectRowPosition={(_, position) => { const span = spans.find(span => position >= span.startMinutes && position < span.endMinutes) ?? spans.at(-1); if (span) onSelect(span.rowKey) }}
         onDropMedia={() => false} onTrackPointerStart={() => {}} />
     </section></div>
-    <p>{rows.map(row => row.id).join(' → ')}</p>
-    <nav aria-label={`Plan option ${rows[0].option} review steps`}>{rows.map(row => <button key={row.id} type="button"
-      aria-pressed={selected === row.id} onClick={() => onSelect(row.id)} title={`Predecessor: ${row.predecessor || 'None'}; successor: ${row.successor || 'None'}; Fields: ${row.fields.map(field => field.label).join(', ')}`}>
-      {row.order}. {row.task}</button>)}</nav>
+    <p>Suggested links: {rows.map(row => row.id).join(' → ')}. Activities can be revisited.</p>
+    <nav aria-label={`Plan option ${rows[0].option} review steps`}>{rows.map(row => {
+      const observation = timing.observations.find(item => item.id === row.id), gap = observation?.gapDays
+      return <div key={row.id} className="review-activity">
+        <button type="button" aria-pressed={selected === row.id} onClick={() => onSelect(row.id)}
+          title={`Fields: ${row.fields.map(field => field.label).join(', ')}`}>{row.order}. {row.task}</button>
+        <p>{row.guidance}</p>
+        <dl>{columns.filter(column => ['review-predecessor', 'review-successor', 'review-start', 'review-end'].includes(column.id)).map(column => {
+          const value = String(row[column.value_key] || column.empty_label || 'Not entered')
+          return <React.Fragment key={column.id}><dt title={column.definition}>{column.label.split(' · ').at(-1)}</dt>
+            <dd>{['review-start', 'review-end'].includes(column.id) && row[column.value_key]
+              ? <time dateTime={value}>{value}</time> : value}</dd></React.Fragment>
+        })}</dl>
+        {gap !== null && gap !== undefined && <p className="review-timing-observation">{gap === 0 ? 'Starts at the preceding activity’s exclusive end.'
+          : gap < 0 ? `Starts ${Math.abs(gap)} calendar ${Math.abs(gap) === 1 ? 'day' : 'days'} before the preceding activity’s recorded end.`
+            : `Gap: ${gap} calendar ${gap === 1 ? 'day' : 'days'} after the preceding activity’s recorded end.`}</p>}
+        {observation?.overlapDays !== null && observation?.overlapDays !== undefined && observation.overlapDays > 0 && <p>Recorded windows overlap by {observation.overlapDays} calendar {observation.overlapDays === 1 ? 'day' : 'days'}.</p>}
+      </div>
+    })}</nav>
   </section>
 }
 function Timeline(props: Projection) {
