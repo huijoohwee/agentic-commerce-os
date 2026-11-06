@@ -1,6 +1,7 @@
 import { invokeSmePackTool, PACK_INDEX, TOOL_SCHEMAS, readSmeWorksheets, serializeSmeWorksheets } from './sme-business-pack-core.js?v=business-plan-contract-v6'
 import { getOrCreateSingleton } from './workspace-singleton.js'
 import { createSmeWorkflowEditor } from './sme-workflow-editor.js'
+import { createSmeReviewWorkflow } from './sme-review-workflow.js'
 
 const style = document.createElement('link')
 style.rel = 'stylesheet'
@@ -25,7 +26,6 @@ async function createSmeBusinessPack() {
   if (!(root instanceof HTMLElement)) throw Error('sme_business_pack_mount_missing')
   const $ = selector => root.querySelector(selector)
   const form = $('#sme-check-form'), packSelect = $('#pack-id'), planModeSelect = $('#sme-plan-mode'), comparisonCount = $('#sme-compare-count')
-  const takeoverGuide = $('#sme-takeover-guide')
   const comparisonCountLabel = $('#sme-compare-count-label'), planModeDescription = $('#sme-plan-mode-description')
   const workflowTableHost = $('#sme-workflow-table-host'), workflowTableRegion = $('#sme-workflow-table-region'), workflowPivot = $('#sme-workflow-pivot')
   const dictionaryHost = $('#sme-dictionary-table-host'), dictionaryRegion = $('#sme-dictionary-table-region')
@@ -35,7 +35,7 @@ async function createSmeBusinessPack() {
   const workflowStatus = $('#workflow-status'), serviceStatus = $('#service-status')
   const runtimeMode = $('#runtime-mode'), runtimeStatus = $('#runtime-status')
   let currentFields = [], currentProtocol, registration, active = false, previousScrollRestoration = null,
-    comparisonGeneration = 0, packGeneration = 0, importGeneration = 0, comparisonPending = false, tableOrientation = 'rows',
+    comparisonGeneration = 0, workflowGeneration = 0, packGeneration = 0, importGeneration = 0, comparisonPending = false, tableOrientation = 'rows',
     comparisonValue = null, selectedWorkflowSet = null, selectedEvidenceField = null,
     tableAdapter = null, dictionaryModule = null, dictionaryOrientation = 'rows'
   const comparisonSlotElements = ['A', 'B', 'C'].map(slot => ({ slot, inputs: {}, evidence: [] }))
@@ -86,15 +86,11 @@ async function createSmeBusinessPack() {
     node, option, enumLabel, formatFieldValue, formatMoney, invalidate: invalidateComparison,
   })
   function renderWorkflowEditor() { workflowEditorView.render() }
-  takeoverGuide.addEventListener('click', event => {
-    const key = event.target.closest('button[data-review-field]')?.dataset.reviewField
-    if (!key || takeoverGuide.hidden || !currentFields.some(field => field.name === key)) return
-    selectedWorkflowSet ??= 'A'
-    void renderWorkflowTable()
-    renderWorkflowEditor()
-    const control = inputFields.querySelector(`[data-input="${key}"]`)
-    control?.scrollIntoView({ block: 'center' })
-    control?.focus({ preventScroll: true })
+  const review = createSmeReviewWorkflow({ root,
+    getState: () => ({ protocol: currentProtocol, mode: currentMode(), slots: comparisonSlotElements.slice(0, Number(comparisonCount.value)), format: formatFieldValue }),
+    renderTable: (view, current) => renderSharedTable(workflowTableHost, view, workflowTableMount, current),
+    focusField: (slot, key) => { selectedWorkflowSet = slot; renderWorkflowEditor(); const control = inputFields.querySelector(`[data-input="${key}"]`); control?.focus({ preventScroll: true }) },
+    onViewChange: () => { void renderWorkflowTable() },
   })
   function tableSlots(value) {
     const supplied = new Map((value?.slots ?? []).map(slot => [slot.slot, slot]))
@@ -236,7 +232,8 @@ async function createSmeBusinessPack() {
     workflowPivot.setAttribute('aria-label', workflowPivot.textContent)
   }
   async function renderWorkflowTable(expectedGeneration = comparisonGeneration) {
-    const current = () => expectedGeneration === comparisonGeneration
+    const own = ++workflowGeneration, current = () => own === workflowGeneration && expectedGeneration === comparisonGeneration
+    if (await review.render()) return true
     const view = await workflowTableView()
     if (!current()) return true
     const ok = await renderSharedTable(workflowTableHost, view, workflowTableMount, current)
@@ -306,8 +303,7 @@ async function createSmeBusinessPack() {
   function updateModePresentation() {
     const mode = currentMode()
     if (!mode) return
-    takeoverGuide.hidden = currentProtocol.pack.id !== 'sme.takeover-checker' || mode.id !== 'buy_build'
-    if (takeoverGuide.hidden) takeoverGuide.querySelector('details').open = false
+    review.refresh()
     comparisonCountLabel.textContent = mode.id === 'scenario' ? 'Scenarios' : 'Plan options'
     planModeDescription.textContent = mode.description
     for (const item of comparisonCount.options) item.textContent = `${item.value} ${item.value === '1'
@@ -326,6 +322,7 @@ async function createSmeBusinessPack() {
     void renderWorkflowTable()
   }
   function clearComparison() {
+    review.clear()
     comparisonCount.value = '1'
     for (const item of comparisonSlotElements) {
       item.inputs = {}; item.evidence.length = 0
@@ -449,8 +446,6 @@ async function createSmeBusinessPack() {
   planModeSelect.addEventListener('change', () => { updateModePresentation(); invalidateComparison() })
   packSelect.addEventListener('change', async () => {
     const generation = ++packGeneration
-    takeoverGuide.hidden = true
-    takeoverGuide.querySelector('details').open = false
     clearComparison()
     if (await refreshFields(packSelect.value) && generation === packGeneration) {
       updateModePresentation()
