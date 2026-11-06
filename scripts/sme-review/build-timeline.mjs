@@ -15,6 +15,7 @@ export function verifyTimelineBundle() {
     || !/^[a-f0-9]{40}$/.test(pin.sourceRevision) || pin.sourceDirty !== false || pin.browserExport !== 'mountGanttTimeline'
     || hash(JSON.stringify(pin.inputs)) !== pin.inputDigest || !pin.inputs.some(input => input.path.endsWith('/VideoSequenceTimelineRuler.tsx'))
     || pin.inputs.length > 100 || pin.inputs.some(input => /useGraphStore|workspace-seeds|maplibre|elkjs/.test(input.path))) throw Error('gantt_source_contract_invalid')
+  if (pin.consumerInputs.map(input => input.path).join() !== [adapter, projection, 'scripts/sme-review/build-timeline.mjs'].join()) throw Error('gantt_consumer_inventory_invalid')
   for (const input of pin.consumerInputs) if (hash(fs.readFileSync(path.join(root, input.path))) !== input.sha256) throw Error('gantt_adapter_changed_rebuild_required')
   if (pin.outputs.map(output => output.path).join() !== 'graph-gantt-timeline.js,graph-gantt-timeline.css') throw Error('gantt_output_inventory_invalid')
   for (const output of pin.outputs) {
@@ -33,8 +34,13 @@ export async function buildTimelineBundle(graphRoot) {
     entryNames: 'graph-gantt-timeline', bundle: true, write: false, format: 'esm', platform: 'browser', target: 'es2022', minify: true, metafile: true,
     define: { 'process.env.NODE_ENV': '"production"' }, alias: { '@': path.join(graphRoot, 'canvas/src'), '@graph': path.join(graphRoot, 'canvas/src'),
       'react': path.join(graphRoot, 'node_modules/react'), 'react-dom': path.join(graphRoot, 'node_modules/react-dom'), 'grph-shared': path.join(graphRoot, 'grph-shared/src') }, logLevel: 'silent' })
-  const inputs = Object.keys(result.metafile.inputs).map(file => path.resolve(root, file)).filter(file => file.startsWith(graphRoot + '/'))
-    .map(file => { const bytes = fs.readFileSync(file); return { path: path.relative(graphRoot, file), bytes: bytes.length, sha256: hash(bytes) } }).sort((a, b) => a.path.localeCompare(b.path))
+  const dependencyRoot = fs.realpathSync(path.join(graphRoot, 'node_modules'))
+  const sourceInputs = Object.keys(result.metafile.inputs).map(file => path.resolve(root, file))
+    .flatMap(file => file.startsWith(graphRoot + '/') ? [{ path: path.relative(graphRoot, file), file }]
+      : file.startsWith(dependencyRoot + '/') ? [{ path: 'node_modules/' + path.relative(dependencyRoot, file), file }] : [])
+  for (const file of ['package.json', 'package-lock.json']) sourceInputs.push({ path: file, file: path.join(graphRoot, file) })
+  const inputs = sourceInputs.map(input => { const bytes = fs.readFileSync(input.file); return { path: input.path, bytes: bytes.length, sha256: hash(bytes) } })
+    .sort((a, b) => a.path.localeCompare(b.path))
   const outputs = result.outputFiles.map(file => ({ path: path.basename(file.path), bytes: file.contents.length, sha256: hash(file.contents) }))
   if (outputs.some(output => output.bytes >= 500000) || inputs.length > 100 || inputs.some(input => /useGraphStore|workspace-seeds|maplibre|elkjs/.test(input.path))) throw Error('gantt_bundle_budget_exceeded')
   for (const file of result.outputFiles) fs.writeFileSync(file.path, file.contents)

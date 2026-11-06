@@ -261,13 +261,73 @@
       "path": "grph-shared/src/url.ts",
       "bytes": 14011,
       "sha256": "75b7ab45d9d65e8cf188a9126685bf9b7afa81a92344b043ef707a2aedfa2a69"
+    },
+    {
+      "path": "node_modules/js-yaml/dist/js-yaml.mjs",
+      "bytes": 104118,
+      "sha256": "cea276c7e15f409a1adbe5d177aba7824398a474f7cf702bd57962c7d570636f"
+    },
+    {
+      "path": "node_modules/react-dom/cjs/react-dom.production.min.js",
+      "bytes": 131685,
+      "sha256": "cbf7fe6b9726ee65f8bcd5715289cc5161c8dacf74d0b8aaa0d29412516f5f47"
+    },
+    {
+      "path": "node_modules/react-dom/client.js",
+      "bytes": 619,
+      "sha256": "a510041dfc40d69b3aa574e5e111864186c711fbeb3db41aa2f27196b27c429f"
+    },
+    {
+      "path": "node_modules/react-dom/index.js",
+      "bytes": 1363,
+      "sha256": "f26fcb81b5d1dc32c6edea34645c75b60d259916293d3208c8be48ac33e882e4"
+    },
+    {
+      "path": "node_modules/react-dom/node_modules/scheduler/cjs/scheduler.production.min.js",
+      "bytes": 4235,
+      "sha256": "f6cb8cf42696980c702f6b879417ab8bd489660485eb012b46f67e92e18a78ee"
+    },
+    {
+      "path": "node_modules/react-dom/node_modules/scheduler/index.js",
+      "bytes": 198,
+      "sha256": "b413b3aac7bd209fd82cbe2241fda1467558daaef830744f45ed8396fac9185e"
+    },
+    {
+      "path": "node_modules/react/cjs/react-jsx-runtime.production.min.js",
+      "bytes": 859,
+      "sha256": "76e3364c46895ed2c4a8d5cc332e5e4ef31d6f732d35b1e56826dc5895245452"
+    },
+    {
+      "path": "node_modules/react/cjs/react.production.min.js",
+      "bytes": 6930,
+      "sha256": "4b35e378f469c4f492c7514bb106b5833746dbbae80496bd4aa9acc6e9ac4b42"
+    },
+    {
+      "path": "node_modules/react/index.js",
+      "bytes": 190,
+      "sha256": "a216c390bf956cbb906c66d29fdb2e2ad6999464a5ca83e476533a6f25ad0ef3"
+    },
+    {
+      "path": "node_modules/react/jsx-runtime.js",
+      "bytes": 214,
+      "sha256": "28170e60f2ff0bc045bc7d175f5849e86f68dd02d76d7255369420718b30295a"
+    },
+    {
+      "path": "package-lock.json",
+      "bytes": 637370,
+      "sha256": "12b26d6b58ed205a51d4a2854ec24c68ff49a54f7216a3b93b42732d91f2c8e3"
+    },
+    {
+      "path": "package.json",
+      "bytes": 50909,
+      "sha256": "d20fbec5f0817db868f7d23098110032408a2d73a46558299fb682be17820bff"
     }
   ],
-  "inputDigest": "3541c915e6434843d9546cd455d5cddf48a5743722e45509ce01e0a58552912e",
+  "inputDigest": "a58861f359891327c1ce4920856e55a3da2b59de01185848419bf7c047cdc41d",
   "consumerInputs": [
     {
       "path": "scripts/sme-review/graph-gantt-adapter.tsx",
-      "sha256": "9ca428d88bd1b3d328e0571e192025f5e18124cf020a7b03ed0b3fe7f6b35221"
+      "sha256": "cfb3bd34fc69a1c5e68379098b4eef2d3704b69a0a6038b203086e864181aa00"
     },
     {
       "path": "public/local-first/sme-review-workflow.js",
@@ -275,14 +335,14 @@
     },
     {
       "path": "scripts/sme-review/build-timeline.mjs",
-      "sha256": "350192b93a067456d1a3c87ad71482df88f3b4089cd3c66788304365c5aecedc"
+      "sha256": "cda07911a6f8d35a0ef88dcc1daff62f421baffe422edc236573778a8e6bd652"
     }
   ],
   "outputs": [
     {
       "path": "graph-gantt-timeline.js",
-      "bytes": 271861,
-      "sha256": "1a987f26e4414b232fa00ea4901579d8fcadb5597df6c2022f40c8f248cf7cc1"
+      "bytes": 272002,
+      "sha256": "05e5312194316d9cc8ae49ed67479dd1ae2c9fd23b70490b10c7f1bc3b95d07c"
     },
     {
       "path": "graph-gantt-timeline.css",

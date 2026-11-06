@@ -32,12 +32,12 @@ function OptionTimeline({ rows, selected, onSelect }: Projection) {
   }) : rows.map(row => ({ label: `Step ${row.order}`, minutes: row.order - 1, percent: (row.order - 1) / max * 100 }))
   return <section aria-label={`Plan option ${rows[0].option} review timeline`} data-timing={timing.dated ? 'dates' : 'dependencies'}>
     <h3>Plan option {rows[0].option}</h3><p role="status">{timing.reason}</p>
-    <div style={{ overflowX: 'auto' }}><section ref={viewportRef} className="timeline-transport-shell timeline-transport-ruler timeline-transport-ruler--tracks timeline-transport-ruler--video-sequence" style={{ minWidth: 560 }}>
+    <div style={{ overflowX: 'auto' }}><section className="timeline-transport-shell timeline-transport-ruler timeline-transport-ruler--tracks timeline-transport-ruler--video-sequence" style={{ minWidth: 560, '--kg-video-sequence-lane-count': 1 } as React.CSSProperties}>
       <VideoSequenceTimelineRuler contentRef={contentRef} viewportRef={viewportRef} displayTicks={ticks}
         dragPreview={null} draggingMode={null} draggingRowKey="" editable={false} maxMinutes={max}
         mediaDurationSeconds={0} playheadPercent={0} projectionMode="workflow" selectedRowKey={selected ?? ''}
         taskSpans={spans} timelineZoom={1} formatPositionLabel={label}
-        onRulerPointerDown={() => {}} onSelectRowKey={onSelect} onSelectRowPosition={id => { if (id) onSelect(id) }}
+        onRulerPointerDown={() => {}} onSelectRowKey={onSelect} onSelectRowPosition={(_, position) => { const span = spans.find(span => position >= span.startMinutes && position < span.endMinutes) ?? spans.at(-1); if (span) onSelect(span.rowKey) }}
         onDropMedia={() => false} onTrackPointerStart={() => {}} />
     </section></div>
     <p>{rows.map(row => row.id).join(' → ')}</p>
@@ -52,7 +52,7 @@ function Timeline(props: Projection) {
     :host { display:block; color:var(--kg-text-primary); font:inherit; }
     * { box-sizing:border-box; } h3 { margin:16px 0 6px; } p { font-size:13px; line-height:1.5; }
     nav { display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 20px; }
-    nav button { font:inherit; font-size:13px; padding:8px; border:1px solid var(--kg-border); border-radius:var(--island-radius); background:var(--kg-panel-bg); color:var(--kg-text-primary); cursor:pointer; }
+    nav button { font:inherit; font-size:13px; min-height:var(--kg-touch-target,44px); padding:8px; border:1px solid var(--kg-border); border-radius:var(--island-radius); background:var(--kg-panel-bg); color:var(--kg-text-primary); cursor:pointer; }
     nav button[aria-pressed=true] { outline:2px solid var(--kg-accent); }
     .sme-native-gantt .timeline-playhead-control,.timeline-video-sequence-ruler-playhead-marker,.timeline-video-sequence-motion-vector,.timeline-video-sequence-ruler-scope-strip,.timeline-video-sequence-ruler-footer { display:none; }
   `}</style>{options.map(option => <OptionTimeline key={option} {...props} rows={props.rows.filter(row => row.option === option)} />)}</div>
