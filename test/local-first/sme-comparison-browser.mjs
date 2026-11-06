@@ -179,10 +179,11 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   await expect(gantt.getByRole('button', { name: 'Select 1. Frame the review', exact: true })).toBeVisible()
   await expect(gantt).toContainText('Dependency order; dates are optional')
   assert.equal(await gantt.locator('.timeline-transport-track-clip').count(), 3)
-  for (let i = 0; i < 3; i++) {
-    const [label, lane] = await Promise.all([gantt.locator('.timeline-video-sequence-lane-select').nth(i).boundingBox(), gantt.locator('[data-kg-video-sequence-display-lane-row]').nth(i).boundingBox()])
-    assert(label.height <= lane.height, 'Activity labels must fit within their native lane height')
-  }
+  const labelHeights = await gantt.locator('.timeline-video-sequence-lane-select').evaluateAll(labels => labels.map(label => {
+    const range = document.createRange(); range.selectNodeContents(label)
+    return { text: range.getBoundingClientRect().height, lane: label.getBoundingClientRect().height }
+  }))
+  assert(labelHeights.every(item => item.text <= item.lane), 'Activity text must not spill into another native lane')
   assert.equal(await gantt.locator('time[datetime]').count(), 0, 'Dependency order must not invent clock durations')
   await gantt.getByRole('button', { name: 'Seek to Step 2', exact: true }).click()
   await expect(planPage.locator('#compare-a-transaction_structure')).toBeFocused()
@@ -212,6 +213,8 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   assert.notEqual(overlappingBoxes[0].y, overlappingBoxes[1].y, 'Overlapping intervals must remain on distinct visible native lanes')
   await expect(gantt).toContainText('Recorded windows overlap by 1 calendar day')
   await expect(gantt.locator('nav time[datetime="2026-11-01"]')).toHaveCount(2)
+  await planPage.setViewportSize({ width: 1440, height: 1000 }); await gantt.screenshot({ path: path.join(output, 'timeline-overlap-desktop.png') })
+  await planPage.setViewportSize({ width: 360, height: 780 })
   await planPage.locator('#sme-review-start').fill('2026-11-02'); await planPage.locator('#sme-review-start').press('Tab')
   await gantt.getByRole('button', { name: '3. Record questions and next action', exact: true }).click()
   await planPage.locator('#sme-review-end').fill('2026-11-03'); await planPage.locator('#sme-review-end').press('Tab')
