@@ -2,13 +2,13 @@
   "schema": "agentic-base/consumer-artifact/v1",
   "source": {
     "repository": "github.com/huijoohwee/agentic-base",
-    "revision": "6d001ab7867801342a62d32d9fd0676a7fc9004e",
+    "revision": "6608da167fe47821944df8bceb71d1ba50ec4034",
     "sourceDirty": false,
     "package": "@agentic-base/views-react",
     "packageVersion": "0.1.0",
     "packagePath": "packages/views-react",
     "buildManifest": "packages/views-react/dist/browser-data-view.manifest.json",
-    "buildManifestSha256": "db96ac6adc7acc7cc3d21d8a9e1c1971665b1338741c2f0d751583562a7f8a55"
+    "buildManifestSha256": "de46707b2deac1bbefb860afc959dff3cb084a631bef44028c2795e60bb65711"
   },
   "contract": {
     "source": "agentic-base/browser-data-view/v1",
@@ -122,16 +122,16 @@
     },
     {
       "path": "packages/views-react/src/table/stickyHierarchy.ts",
-      "bytes": 4931,
-      "sha256": "70b536b0836bc5207b6bcd3e03ab097d1ed2e51090ac625cd387c66c40151607"
+      "bytes": 7240,
+      "sha256": "27d91919f0e2e0a50db29a9adb5d9ad2cff32bace8bbc4b367a7d752f6cc028b"
     }
   ],
   "outputs": [
     {
       "path": "agentic-base-data-view.js",
       "sourcePath": "browser-data-view.js",
-      "bytes": 217305,
-      "sha256": "c5490d0b248fd89395cb9d82e867a9a502f9376690d0bff3c8695616c54dd225"
+      "bytes": 218254,
+      "sha256": "daad39fa7904641baef6db4aef29844c5b98408be4cf05034bf78c24a8d9e89a"
     },
     {
       "path": "agentic-base-data-view.css",
