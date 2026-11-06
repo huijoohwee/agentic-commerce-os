@@ -2,13 +2,13 @@
   "schema": "agentic-base/consumer-artifact/v1",
   "source": {
     "repository": "github.com/huijoohwee/agentic-base",
-    "revision": "1f9ceddea4961765389caf263b2ffd278fd6eee0",
+    "revision": "6d001ab7867801342a62d32d9fd0676a7fc9004e",
     "sourceDirty": false,
     "package": "@agentic-base/views-react",
     "packageVersion": "0.1.0",
     "packagePath": "packages/views-react",
     "buildManifest": "packages/views-react/dist/browser-data-view.manifest.json",
-    "buildManifestSha256": "f988dac192f2bc1c5b2c61fff33e5841e1bd354e5abd76ab2e09f73e57a5efd7"
+    "buildManifestSha256": "db96ac6adc7acc7cc3d21d8a9e1c1971665b1338741c2f0d751583562a7f8a55"
   },
   "contract": {
     "source": "agentic-base/browser-data-view/v1",
@@ -72,8 +72,8 @@
     },
     {
       "path": "packages/views-react/src/table/BaseTableHost.tsx",
-      "bytes": 29805,
-      "sha256": "1f79ae9531d82a21d9496e6515d3807ca892f797493288e1b710be1d35da7f11"
+      "bytes": 29875,
+      "sha256": "e7d8e52d412fd3a547768be0dd7decc375c320b34688dd713c770a4b47020bce"
     },
     {
       "path": "packages/views-react/src/table/ColumnsTableView.tsx",
@@ -122,16 +122,16 @@
     },
     {
       "path": "packages/views-react/src/table/stickyHierarchy.ts",
-      "bytes": 4921,
-      "sha256": "9f0632a072a56e964afe22112346a25739292c4bb4cb5deb3efc8901927edc24"
+      "bytes": 4931,
+      "sha256": "70b536b0836bc5207b6bcd3e03ab097d1ed2e51090ac625cd387c66c40151607"
     }
   ],
   "outputs": [
     {
       "path": "agentic-base-data-view.js",
       "sourcePath": "browser-data-view.js",
-      "bytes": 217196,
-      "sha256": "a196ab9cc0a727f2ffdb2d7c48b19095e949c7f5b3cb03423c9b41b5774ab188"
+      "bytes": 217305,
+      "sha256": "c5490d0b248fd89395cb9d82e867a9a502f9376690d0bff3c8695616c54dd225"
     },
     {
       "path": "agentic-base-data-view.css",
