@@ -1,0 +1,357 @@
+{
+  "schema": "agentic-commerce/graph-gantt-artifact/v1",
+  "owner": "github.com/huijoohwee/agentic-graph",
+  "sourceRevision": "c33b635be1124381d30b2d9fbad04dd868a2f986",
+  "sourceDirty": false,
+  "browserExport": "mountGanttTimeline",
+  "cssScope": "shadow-root",
+  "hostTokens": "graph-ui-tokens.css",
+  "inputs": [
+    {
+      "path": "canvas/src/components/timeline/timelineAnimationEngine.ts",
+      "bytes": 17237,
+      "sha256": "f5e56d7590d6169e349a6e923780758e0bc20ebb4b9ae805acaffb618a8e8667"
+    },
+    {
+      "path": "canvas/src/components/timeline/TimelinePlayhead.css",
+      "bytes": 1136,
+      "sha256": "bee31c2869e10dcf0fa2931617c69562dbc652c0e132011a1d919b51c2d13366"
+    },
+    {
+      "path": "canvas/src/components/timeline/TimelinePlayhead.tsx",
+      "bytes": 1540,
+      "sha256": "61d5d5a7fd546170e9655970b199c3f5301b3ca4f6b52a8b48747fbd2445fa99"
+    },
+    {
+      "path": "canvas/src/components/timeline/TimelineTransportControls.css",
+      "bytes": 12924,
+      "sha256": "37ca8515a6859e30b184d2b5528324d1a28e7d2e97015792230e526cd9575ca7"
+    },
+    {
+      "path": "canvas/src/components/timeline/TimelineTransportControlsMermaidGantt.css",
+      "bytes": 14130,
+      "sha256": "0c8f42662128fcf48d33f806a5cf666c075b7c3a60b44ff249832deffcde9443"
+    },
+    {
+      "path": "canvas/src/components/timeline/TimelineTransportLane.css",
+      "bytes": 5706,
+      "sha256": "7f5ae2fba3886db300c8e37c004e9426284569bd46756f1bb54d8e8e91617b72"
+    },
+    {
+      "path": "canvas/src/components/timeline/timelineTransportMath.ts",
+      "bytes": 4017,
+      "sha256": "c2c170bd8f59c36ea1aeeba9ebed0aaaf1ae2e26f4f4e740c8ca6dad6fc6acc4"
+    },
+    {
+      "path": "canvas/src/components/timeline/TimelineTransportPlayer.css",
+      "bytes": 7723,
+      "sha256": "9badb6868671247381e2b34e7de7710459b6f49cfdbd6d386c6c03cacff96c3b"
+    },
+    {
+      "path": "canvas/src/components/timeline/useVideoSequenceTimelineMediaDropTarget.ts",
+      "bytes": 4974,
+      "sha256": "6fb9f63dd720667794725eced06a88ec660718e02f18d23ce0272f7f7f4cc067"
+    },
+    {
+      "path": "canvas/src/components/timeline/VideoSequenceAudioDbControl.tsx",
+      "bytes": 4119,
+      "sha256": "226d06e159a2fc517aecf1c416a4fda7673a7f1e8569e932db26a52c065590ec"
+    },
+    {
+      "path": "canvas/src/components/timeline/videoSequenceClipThumbnailSelection.ts",
+      "bytes": 4530,
+      "sha256": "df516f4ff771d3d59741e03a559bda8959fc3e9936fd9d9729ca8cee12abe7f7"
+    },
+    {
+      "path": "canvas/src/components/timeline/VideoSequenceClipThumbnailStrip.tsx",
+      "bytes": 12620,
+      "sha256": "5aad13fa20ab87a9b14d702bb4325e0832680bac6e3ba39d51c46b52bd5b84e5"
+    },
+    {
+      "path": "canvas/src/components/timeline/VideoSequenceFrameSampleRail.tsx",
+      "bytes": 2928,
+      "sha256": "e14d3107db064f7836e1b9bb6ac282dd9cabcae9a23a272b74a7ac9f78d82a33"
+    },
+    {
+      "path": "canvas/src/components/timeline/videoSequenceGeneratedFrameThumbnails.ts",
+      "bytes": 8359,
+      "sha256": "9635f746f1d4ac314ac8746c0ac635127e463325ce8c682616112fa1bb246e42"
+    },
+    {
+      "path": "canvas/src/components/timeline/videoSequenceSourceImageThumbnail.ts",
+      "bytes": 1116,
+      "sha256": "300cec55558cb7e035bf914603a10b69211dc801d71cc4c8dfcce2927430c1e2"
+    },
+    {
+      "path": "canvas/src/components/timeline/videoSequenceSourceThumbnailSet.ts",
+      "bytes": 5623,
+      "sha256": "3f17594f7ffd96cc140c7a2824a9669c394eb959c7f13e87b242a44129a88f5f"
+    },
+    {
+      "path": "canvas/src/components/timeline/VideoSequenceTimeAxisControls.tsx",
+      "bytes": 438,
+      "sha256": "3c172a4332bd515ee9552fe19b5dc9bfe747d8bb49cf627759a3c77ed2161ac7"
+    },
+    {
+      "path": "canvas/src/components/timeline/videoSequenceTimeline.ts",
+      "bytes": 33215,
+      "sha256": "326aa2f69766518cfd8704d849abe78f18bdd70bbba6eb76c544aca239668b43"
+    },
+    {
+      "path": "canvas/src/components/timeline/VideoSequenceTimelineClipMeta.css",
+      "bytes": 731,
+      "sha256": "c0e0af04e9957c46e2e32c0ce98fc50350ecce4e576273314a9685b1706f4c54"
+    },
+    {
+      "path": "canvas/src/components/timeline/VideoSequenceTimelineClipMeta.tsx",
+      "bytes": 1246,
+      "sha256": "61eac63d5fc7694fda8ac03ed2fb4457fc14816aea5365bd3e653ddfad8d2966"
+    },
+    {
+      "path": "canvas/src/components/timeline/VideoSequenceTimelineDenseFbf.css",
+      "bytes": 20644,
+      "sha256": "409b8483c5395272f81f1ce80a3a71862159d021a68923fa1f49eb06377ca89b"
+    },
+    {
+      "path": "canvas/src/components/timeline/VideoSequenceTimelineLanes.tsx",
+      "bytes": 5174,
+      "sha256": "c291a9275b934767f0ad341c9530a37234db30464f44665e3571c7d09d8b675d"
+    },
+    {
+      "path": "canvas/src/components/timeline/VideoSequenceTimelineRuler.css",
+      "bytes": 18445,
+      "sha256": "56a0ca8789a72dfc35167cd4595c286c154aba24de6404ce85132950d858938c"
+    },
+    {
+      "path": "canvas/src/components/timeline/VideoSequenceTimelineRuler.tsx",
+      "bytes": 45187,
+      "sha256": "7a59e3170650ffd9ac559f91511181d6293c725d9ee1452173febf3a58360613"
+    },
+    {
+      "path": "canvas/src/components/timeline/videoSequenceTimelineRulerGeometry.ts",
+      "bytes": 1338,
+      "sha256": "5f7c038f6972f4150cb63b27ced81438eba1ef21b9c2fafc4dd326f7b0964a5e"
+    },
+    {
+      "path": "canvas/src/components/timeline/VideoSequenceTimelineRulerTicks.tsx",
+      "bytes": 2226,
+      "sha256": "6d8cda15d83e94e27f7f6271dabfc57486881f983722f3f1b12126164158deaf"
+    },
+    {
+      "path": "canvas/src/components/timeline/VideoSequenceTimelineRulerTimeAxis.css",
+      "bytes": 2638,
+      "sha256": "1d84c9cc7d259752f9fad3e5612d2bda42007cc85ef0834429e17c91f1d431c2"
+    },
+    {
+      "path": "canvas/src/components/timeline/VideoSequenceTimelineScope.css",
+      "bytes": 1442,
+      "sha256": "4b24068d4a4fdedfb43cb32cc7e2327713a35e9a0441761571f5fd29377fe8cc"
+    },
+    {
+      "path": "canvas/src/components/timeline/videoSequenceTimelineZoom.ts",
+      "bytes": 10947,
+      "sha256": "e2c515b91d4728fdf07de5d4ae4f4f77754d49d970476864b6b2df355628c19c"
+    },
+    {
+      "path": "canvas/src/features/markdown/ui/codeblock/asciiBoxTable.ts",
+      "bytes": 3284,
+      "sha256": "70b3ab82f23658e70c0686ee4936630ee358cf7ed12670be3a84aa30707ebf6c"
+    },
+    {
+      "path": "canvas/src/hooks/useContainerDims.ts",
+      "bytes": 4083,
+      "sha256": "759b92116aecd4133166bf1a4cb5fc102da6ddb84b8375df1cbdadeebad643ab"
+    },
+    {
+      "path": "canvas/src/lib/graph/mediaUrlKind.ts",
+      "bytes": 3272,
+      "sha256": "44335220231979e31124c4094a34d95a6445a2e7df094b6302dd9a795f23903c"
+    },
+    {
+      "path": "canvas/src/lib/graph/value.ts",
+      "bytes": 128,
+      "sha256": "45cbac9c7e10f7d2ffda172d6d95d37d6058d94566330a92b578f464d4abacfc"
+    },
+    {
+      "path": "canvas/src/lib/markdown.ts",
+      "bytes": 12918,
+      "sha256": "409a66cd93628f151c55844d7dfd488617d6a965a82d4e95cc0d7d28089e3d6f"
+    },
+    {
+      "path": "canvas/src/lib/markdown/frontmatterYamlRepair.ts",
+      "bytes": 5941,
+      "sha256": "e80caca203fdef3ff928c1150b7be7c31cfef3a3807aefda31429fd029fe6ba8"
+    },
+    {
+      "path": "canvas/src/lib/media/mediaFormatPreference.ts",
+      "bytes": 2724,
+      "sha256": "a2ef0bcb2935f0ff036f8a806b51738aa77e0e35e6712cdd8ff3e91f2a2783aa"
+    },
+    {
+      "path": "canvas/src/lib/mermaid/mermaidGanttBarInteraction.ts",
+      "bytes": 25224,
+      "sha256": "3fe7f5b4d275fdc1558acd29df5437a7622f554d60d303619ebe56d09ea66e5f"
+    },
+    {
+      "path": "canvas/src/lib/mermaid/mermaidGanttDragInteraction.ts",
+      "bytes": 4723,
+      "sha256": "a6248effd24b1e2d33727d82324186de911e5aa0ebdd890b6e382d3b890835be"
+    },
+    {
+      "path": "canvas/src/lib/mermaid/mermaidGanttFrameThumbnailToken.ts",
+      "bytes": 4884,
+      "sha256": "44694b8ebc8e5144e72c3580faf18da815c9d73cde602cfc021d85a175e5b871"
+    },
+    {
+      "path": "canvas/src/lib/mermaid/mermaidGanttSourceRangeToken.ts",
+      "bytes": 3887,
+      "sha256": "1d040191338e1d07c85db9dca5ee6a4e9ad809e9b6ceb2f32528c50d029da96f"
+    },
+    {
+      "path": "canvas/src/lib/mermaid/mermaidGanttTimelineModel.ts",
+      "bytes": 7026,
+      "sha256": "6d8380817c979a98d60f4079b3e97a796c200dfd70aeccbe06865cbf001dc4f3"
+    },
+    {
+      "path": "canvas/src/lib/react/useIsomorphicLayoutEffect.ts",
+      "bytes": 234,
+      "sha256": "405df5ee96f8e508abbd1fd82c2ebe85afd8ce7a52753c2e0316409c1878daaf"
+    },
+    {
+      "path": "canvas/src/lib/storage/runtimeMediaUrl.ts",
+      "bytes": 4987,
+      "sha256": "9e89da384a5c2a4cc2190eefa76a2541d6213106e07d3256c951d677b6f98a90"
+    },
+    {
+      "path": "canvas/src/lib/ui/mediaDragPayload.ts",
+      "bytes": 15351,
+      "sha256": "ac2f38eaf1d557c205d1b63b26fc4f2d1fd0b9498d5f7df2e0960b5038792d93"
+    },
+    {
+      "path": "canvas/src/lib/url.ts",
+      "bytes": 6940,
+      "sha256": "8b7f1851dbfd8fcc17c267f40525ecd4b9b86be8e146e4639dc8dc3d94564d20"
+    },
+    {
+      "path": "grph-shared/src/hash/stringHash.ts",
+      "bytes": 566,
+      "sha256": "9363a93a7115854eece0a87cc3f4a9eec9e7f26a35bc7a3a179edc51acbecc78"
+    },
+    {
+      "path": "grph-shared/src/rich-media/mediaKind.ts",
+      "bytes": 1059,
+      "sha256": "0432725e5fb23c29a318464ab754e3cf666cadbbc645a72239ca2f92451de5c0"
+    },
+    {
+      "path": "grph-shared/src/rich-media/providers.ts",
+      "bytes": 12741,
+      "sha256": "ae714378b376ec18e4443f1cca461d495fa890d8fb7d3b35ee1be96d3a98144e"
+    },
+    {
+      "path": "grph-shared/src/ui/fontStacks.js",
+      "bytes": 354,
+      "sha256": "27fe9d5fb35e866c662a28551162a3451604aea43b93ecaf7ba457cb8c356916"
+    },
+    {
+      "path": "grph-shared/src/ui/typography.ts",
+      "bytes": 1780,
+      "sha256": "82d83deb9cba2ae5549069780e028849ee7365d46d97dff2574cdd1a00df8047"
+    },
+    {
+      "path": "grph-shared/src/url.ts",
+      "bytes": 14011,
+      "sha256": "75b7ab45d9d65e8cf188a9126685bf9b7afa81a92344b043ef707a2aedfa2a69"
+    },
+    {
+      "path": "node_modules/js-yaml/dist/js-yaml.mjs",
+      "bytes": 104118,
+      "sha256": "cea276c7e15f409a1adbe5d177aba7824398a474f7cf702bd57962c7d570636f"
+    },
+    {
+      "path": "node_modules/react-dom/cjs/react-dom.production.min.js",
+      "bytes": 131685,
+      "sha256": "cbf7fe6b9726ee65f8bcd5715289cc5161c8dacf74d0b8aaa0d29412516f5f47"
+    },
+    {
+      "path": "node_modules/react-dom/client.js",
+      "bytes": 619,
+      "sha256": "a510041dfc40d69b3aa574e5e111864186c711fbeb3db41aa2f27196b27c429f"
+    },
+    {
+      "path": "node_modules/react-dom/index.js",
+      "bytes": 1363,
+      "sha256": "f26fcb81b5d1dc32c6edea34645c75b60d259916293d3208c8be48ac33e882e4"
+    },
+    {
+      "path": "node_modules/react-dom/node_modules/scheduler/cjs/scheduler.production.min.js",
+      "bytes": 4235,
+      "sha256": "f6cb8cf42696980c702f6b879417ab8bd489660485eb012b46f67e92e18a78ee"
+    },
+    {
+      "path": "node_modules/react-dom/node_modules/scheduler/index.js",
+      "bytes": 198,
+      "sha256": "b413b3aac7bd209fd82cbe2241fda1467558daaef830744f45ed8396fac9185e"
+    },
+    {
+      "path": "node_modules/react/cjs/react-jsx-runtime.production.min.js",
+      "bytes": 859,
+      "sha256": "76e3364c46895ed2c4a8d5cc332e5e4ef31d6f732d35b1e56826dc5895245452"
+    },
+    {
+      "path": "node_modules/react/cjs/react.production.min.js",
+      "bytes": 6930,
+      "sha256": "4b35e378f469c4f492c7514bb106b5833746dbbae80496bd4aa9acc6e9ac4b42"
+    },
+    {
+      "path": "node_modules/react/index.js",
+      "bytes": 190,
+      "sha256": "a216c390bf956cbb906c66d29fdb2e2ad6999464a5ca83e476533a6f25ad0ef3"
+    },
+    {
+      "path": "node_modules/react/jsx-runtime.js",
+      "bytes": 214,
+      "sha256": "28170e60f2ff0bc045bc7d175f5849e86f68dd02d76d7255369420718b30295a"
+    },
+    {
+      "path": "package-lock.json",
+      "bytes": 637370,
+      "sha256": "12b26d6b58ed205a51d4a2854ec24c68ff49a54f7216a3b93b42732d91f2c8e3"
+    },
+    {
+      "path": "package.json",
+      "bytes": 50909,
+      "sha256": "d20fbec5f0817db868f7d23098110032408a2d73a46558299fb682be17820bff"
+    }
+  ],
+  "inputDigest": "a58861f359891327c1ce4920856e55a3da2b59de01185848419bf7c047cdc41d",
+  "consumerInputs": [
+    {
+      "path": "scripts/sme-review/graph-gantt-adapter.tsx",
+      "sha256": "178107d15372f3aa0afdec4fe4817c2ae67512360bfde44221e58b1f7ea2484c"
+    },
+    {
+      "path": "scripts/sme-review/graph-gantt-host.css",
+      "sha256": "2daf4f49c0fc75645af262d772e82c2c0c20a9fbf5529c646af063793c7a97d8"
+    },
+    {
+      "path": "public/local-first/sme-review-workflow.js",
+      "sha256": "57498558452d9de96050979aaea474be904a9de1c297a4134a5ed02518b4644f"
+    },
+    {
+      "path": "scripts/sme-review/build-timeline.mjs",
+      "sha256": "8d0ac259aca68398b41a852066d995e8d028876554a9b4fe18d10ba5ec0c57f4"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "graph-gantt-timeline.js",
+      "bytes": 271158,
+      "sha256": "625bdbac5df7cb569e40652fb341cd4385c05391b895a0a551e24d6677af1a93"
+    },
+    {
+      "path": "graph-gantt-timeline.css",
+      "bytes": 75914,
+      "sha256": "a4d0fe35b4cf2572e897078326bc73c4240ab445196adcdf3933fb0b79110166"
+    }
+  ]
+}
