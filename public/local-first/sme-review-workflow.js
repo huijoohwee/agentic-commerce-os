@@ -52,13 +52,18 @@ export function readSmeReviewDates(text, currentRows, protocol) {
   }
   return dates
 }
-export function createSmeReviewWorkflow({ root, getState, renderTable, createTableView, focusField, onViewChange }) {
+export function createSmeReviewWorkflow({ root, getState, renderTable, createTableView, disposeTable, focusField, onViewChange }) {
   const $ = selector => root.querySelector(selector), view = $('#sme-review-view'), controls = $('#sme-review-controls')
-  const timelineHost = $('#sme-review-timeline'), editor = $('#sme-review-dates'), note = $('#sme-review-note')
+  const timelineHost = $('#sme-workflow-table-host'), editor = $('#sme-review-dates'), note = $('#sme-review-note')
   const start = $('#sme-review-start'), end = $('#sme-review-end'), selectedLabel = $('#sme-review-selected')
-  const tableHost = $('#sme-workflow-table-region'), pivot = $('#sme-workflow-pivot')
-  let dates = {}, selected = null, generation = 0, nativeModule, nativeHandle, ready, context = ''
+  const viewRegion = $('#sme-workflow-table-region'), heading = $('#sme-workflow-heading'), pivot = $('#sme-workflow-pivot')
+  let dates = {}, selected = null, generation = 0, nativeModule, nativeHandle, ready, context = '', renderer = null
   const rows = () => { const state = getState(); return projectSmeReviewRows(state.slots, state.protocol, state.format, dates) }
+  const selectRenderer = next => {
+    if (renderer === next) return
+    ++generation; disposeTable(); nativeHandle?.destroy(); nativeHandle = null
+    timelineHost.shadowRoot?.replaceChildren(); ready = null; renderer = next
+  }
   const choose = (id, key) => {
     const row = rows().find(item => item.id === id); if (!row) return
     selected = id; selectedLabel.textContent = `${row.option} · ${row.task}`
@@ -82,11 +87,15 @@ export function createSmeReviewWorkflow({ root, getState, renderTable, createTab
       input.type = field.type; input.title = field.definition; root.querySelector(`label[for="${input.id}"]`).textContent = field.label.split(' · ').at(-1)
     }
     const active = supported && view.value !== 'plan'
-    pivot.hidden = active; tableHost.hidden = false
-    timelineHost.hidden = !active || view.value !== 'gantt'
+    const gantt = active && view.value === 'gantt'
+    selectRenderer(gantt ? 'gantt' : 'table')
+    viewRegion.dataset.view = gantt ? 'gantt' : supported && view.value === 'review' ? 'review' : 'plan'
+    heading.textContent = gantt ? 'Gantt Timeline' : 'Multi-dimensional Table'
+    viewRegion.setAttribute('aria-label', gantt ? 'SME workflow Gantt Timeline using the same plan data.' : 'SME workflow field table using the same plan data.')
+    pivot.hidden = active
     editor.hidden = !supported || !selected || !state.slots.some(slot => selected.startsWith(slot.slot + ':'))
     note.hidden = !active
-    if (!active) { ++generation; nativeHandle?.destroy(); nativeHandle = null }
+    if (!active) ++generation
     return active
   }
   async function timeline(data, current) {
@@ -114,12 +123,17 @@ export function createSmeReviewWorkflow({ root, getState, renderTable, createTab
   async function render() {
     if (!refresh()) return false
     const own = ++generation, data = rows(), current = () => own === generation && view.value === 'gantt' && !controls.hidden && root.isConnected
-    note.textContent = 'All views use the same Plan options fields, values and definitions. Optional timing is local view state; export view notes to retain it.'
+    note.textContent = 'All views use the same plan data and field definitions. Gantt replaces the table in this workflow area. Export view notes to retain optional timing.'
     if (view.value === 'gantt') {
       try { await timeline(data, current) }
-      catch { if (current()) note.textContent = 'Gantt Timeline unavailable. Shared Plan options fields and view notes are kept below.' }
-    } else { nativeHandle?.destroy(); nativeHandle = null }
-    const tableCurrent = () => own === generation && !controls.hidden && view.value !== 'plan'
+      catch { if (current()) {
+        note.textContent = 'Gantt Timeline unavailable. Inputs and view notes are kept; choose Review steps or Plan options to continue.'
+        const shadow = timelineHost.shadowRoot ?? timelineHost.attachShadow({ mode: 'open' }), message = document.createElement('p')
+        message.setAttribute('role', 'status'); message.textContent = note.textContent; shadow.replaceChildren(message); ready = null
+      } }
+      return true
+    }
+    const tableCurrent = () => own === generation && !controls.hidden && view.value === 'review'
     const table = await createTableView()
     if (tableCurrent() && !await renderTable(table, tableCurrent)) note.textContent = 'Shared field table unavailable or over its limits. Inputs and view notes are kept.'
     return true
@@ -161,5 +175,5 @@ export function createSmeReviewWorkflow({ root, getState, renderTable, createTab
     read: slot => getState().mode?.id !== getState().protocol.review_workflow.mode ? 'Not applicable in this mode' : rows().filter(row => row.option === slot.slot)
       .map(row => `${row.task}: ${Array.isArray(row[field.value_key]) ? row[field.value_key].join(', ') : row[field.value_key] || field.empty_label || 'Not entered'}`).join('\n'),
   }))
-  return { render, refresh, dimensions, activateParameter, clear() { ++generation; dates = {}; selected = null; context = ''; nativeHandle?.destroy(); nativeHandle = null; editor.hidden = true } }
+  return { render, refresh, dimensions, activateParameter, clear() { ++generation; dates = {}; selected = null; context = ''; selectRenderer('table'); editor.hidden = true } }
 }

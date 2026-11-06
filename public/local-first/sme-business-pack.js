@@ -90,6 +90,7 @@ async function createSmeBusinessPack() {
     getState: () => ({ protocol: currentProtocol, mode: currentMode(), slots: comparisonSlotElements.slice(0, Number(comparisonCount.value)), format: formatFieldValue }),
     createTableView: () => workflowTableView(true),
     renderTable: (view, current) => renderSharedTable(workflowTableHost, view, workflowTableMount, current),
+    disposeTable: () => { ++workflowTableMount.generation; workflowTableMount.handle?.destroy(); workflowTableMount.handle = null; workflowTableMount.ready = null },
     focusField: (slot, key) => { selectedWorkflowSet = slot; renderWorkflowEditor(); const control = inputFields.querySelector(`[data-input="${key}"]`); control?.focus({ preventScroll: true }) },
     onViewChange: () => { void renderWorkflowTable() },
   })
