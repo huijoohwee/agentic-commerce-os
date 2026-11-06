@@ -25,6 +25,7 @@ async function createSmeBusinessPack() {
   if (!(root instanceof HTMLElement)) throw Error('sme_business_pack_mount_missing')
   const $ = selector => root.querySelector(selector)
   const form = $('#sme-check-form'), packSelect = $('#pack-id'), planModeSelect = $('#sme-plan-mode'), comparisonCount = $('#sme-compare-count')
+  const takeoverGuide = $('#sme-takeover-guide')
   const comparisonCountLabel = $('#sme-compare-count-label'), planModeDescription = $('#sme-plan-mode-description')
   const workflowTableHost = $('#sme-workflow-table-host'), workflowTableRegion = $('#sme-workflow-table-region'), workflowPivot = $('#sme-workflow-pivot')
   const dictionaryHost = $('#sme-dictionary-table-host'), dictionaryRegion = $('#sme-dictionary-table-region')
@@ -85,6 +86,16 @@ async function createSmeBusinessPack() {
     node, option, enumLabel, formatFieldValue, formatMoney, invalidate: invalidateComparison,
   })
   function renderWorkflowEditor() { workflowEditorView.render() }
+  takeoverGuide.addEventListener('click', event => {
+    const key = event.target.closest('button[data-review-field]')?.dataset.reviewField
+    if (!key || takeoverGuide.hidden || !currentFields.some(field => field.name === key)) return
+    selectedWorkflowSet ??= 'A'
+    void renderWorkflowTable()
+    renderWorkflowEditor()
+    const control = inputFields.querySelector(`[data-input="${key}"]`)
+    control?.scrollIntoView({ block: 'center' })
+    control?.focus({ preventScroll: true })
+  })
   function tableSlots(value) {
     const supplied = new Map((value?.slots ?? []).map(slot => [slot.slot, slot]))
     return comparisonSlotElements.map((item, index) => {
@@ -295,6 +306,8 @@ async function createSmeBusinessPack() {
   function updateModePresentation() {
     const mode = currentMode()
     if (!mode) return
+    takeoverGuide.hidden = currentProtocol.pack.id !== 'sme.takeover-checker' || mode.id !== 'buy_build'
+    if (takeoverGuide.hidden) takeoverGuide.querySelector('details').open = false
     comparisonCountLabel.textContent = mode.id === 'scenario' ? 'Scenarios' : 'Plan options'
     planModeDescription.textContent = mode.description
     for (const item of comparisonCount.options) item.textContent = `${item.value} ${item.value === '1'
@@ -436,6 +449,8 @@ async function createSmeBusinessPack() {
   planModeSelect.addEventListener('change', () => { updateModePresentation(); invalidateComparison() })
   packSelect.addEventListener('change', async () => {
     const generation = ++packGeneration
+    takeoverGuide.hidden = true
+    takeoverGuide.querySelector('details').open = false
     clearComparison()
     if (await refreshFields(packSelect.value) && generation === packGeneration) {
       updateModePresentation()
