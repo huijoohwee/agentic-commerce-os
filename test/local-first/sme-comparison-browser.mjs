@@ -179,6 +179,10 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   await expect(gantt.getByRole('button', { name: 'Select 1. Frame the review', exact: true })).toBeVisible()
   await expect(gantt).toContainText('Dependency order; dates are optional')
   assert.equal(await gantt.locator('.timeline-transport-track-clip').count(), 3)
+  for (let i = 0; i < 3; i++) {
+    const [label, lane] = await Promise.all([gantt.locator('.timeline-video-sequence-lane-select').nth(i).boundingBox(), gantt.locator('[data-kg-video-sequence-display-lane-row]').nth(i).boundingBox()])
+    assert(label.height <= lane.height, 'Activity labels must fit within their native lane height')
+  }
   assert.equal(await gantt.locator('time[datetime]').count(), 0, 'Dependency order must not invent clock durations')
   await gantt.getByRole('button', { name: 'Seek to Step 2', exact: true }).click()
   await expect(planPage.locator('#compare-a-transaction_structure')).toBeFocused()

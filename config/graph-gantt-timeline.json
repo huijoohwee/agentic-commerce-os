@@ -331,7 +331,7 @@
     },
     {
       "path": "scripts/sme-review/graph-gantt-host.css",
-      "sha256": "67a44b592e437825eb5a68fc06a4b02d5a3868e881c5bbef78785604d77c970d"
+      "sha256": "b99e99427f60a181951b77063eaba4729b81779f5043a96ae5d1ba577f73fb8a"
     },
     {
       "path": "public/local-first/sme-review-workflow.js",
@@ -350,8 +350,8 @@
     },
     {
       "path": "graph-gantt-timeline.css",
-      "bytes": 76384,
-      "sha256": "3ab012c506b7a477d4ca83c0b9d3bfb31847f98da525b907fab233929094afd3"
+      "bytes": 76602,
+      "sha256": "fd012cc39e4531df7570bafb07f03e3ca6d16b4d5409ca1ceb5a9b03649f6b1b"
     }
   ]
 }
