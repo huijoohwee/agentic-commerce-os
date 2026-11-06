@@ -31,13 +31,12 @@ export function reviewTimingState(rows) {
       ? Math.max(0, (Math.min(dateNumber(predecessor.end), dateNumber(row.end)) - Math.max(dateNumber(predecessor.start), dateNumber(row.start))) / 86400000) : null
     return { id: row.id, gapDays, overlapDays }
   })
-  const complete = rows.filter(row => row.start && row.end && validReviewDates(row)).length
-  if (!rows.length || complete !== rows.length) return { dated: false, observations,
-    reason: `Dependency order; dates are optional. ${complete} of ${rows.length} date pairs entered. Equal bar widths show suggested order, not elapsed time. Recorded dates remain below.` }
-  if (observations.some(item => item.gapDays !== null && item.gapDays < 0)) return { dated: false, observations,
-    reason: 'Entered dates do not follow the suggested links. Showing dependency order; recorded dates and boundary observations remain below. No date is moved automatically.' }
-  return { dated: true, observations,
-    reason: 'Entered dates; calendar days, exclusive ends. Equal dates are milestones. This review outline is not a completion forecast.' }
+  const placedIds = rows.filter(row => row.start && row.end && validReviewDates(row)).map(row => row.id)
+  if (!placedIds.length) return { dated: false, observations, placedIds,
+    reason: `Dependency order; dates are optional. 0 of ${rows.length} complete date pairs entered. Equal bar widths show suggested order, not elapsed time. Recorded dates remain below.` }
+  return { dated: true, observations, placedIds,
+    reason: `Entered dates; ${placedIds.length} of ${rows.length} activities placed on separate lanes. Only complete date pairs are placed; other activities remain below. Calendar days and exclusive ends; equal dates are milestones. This is not a completion forecast.` }
+
 }
 export function readSmeReviewDates(text, currentRows, protocol) {
   const exchange = protocol.review_workflow.exchange
@@ -108,7 +107,8 @@ export function createSmeReviewWorkflow({ root, getState, renderTable, createTab
     }
     await ready
     if (!current()) return
-    const projection = { rows: data, selected, columns: getState().protocol.workflow_columns.filter(field => field.kind === 'review_view'), onSelect: id => choose(id) }
+    const projection = { rows: data, selected, columns: getState().protocol.workflow_columns.filter(field => field.kind === 'review_view'), onSelect: id => choose(id),
+      onEditDates: id => { choose(id); start.focus({ preventScroll: true }); editor.scrollIntoView({ block: 'nearest' }) } }
     nativeHandle ? nativeHandle.update(projection) : nativeHandle = nativeModule.mountGanttTimeline(target, projection)
   }
   async function render() {

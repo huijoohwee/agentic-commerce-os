@@ -20,13 +20,18 @@ test('one canonical dependency chain per option, with no inferred timing', () =>
   assert(rows.every(row => row.start === '' && row.end === ''))
   assert.equal(reviewTimingState(rows).dated, false)
 })
-test('dates remain optional; invalid dates and predecessor overlap never become a calendar schedule', () => {
+test('only complete entered pairs are placed, including overlapping and reverse-ordered intervals', () => {
   assert.equal(validReviewDates({ start: '2026-02-30', end: '' }), false)
   assert.equal(validReviewDates({ start: '2026-11-06', end: '2026-11-05' }), false)
+  const partial = project(['A']); partial[1].start = '2026-11-06'; partial[1].end = '2026-11-06'
+  assert.equal(reviewTimingState(partial).dated, true)
+  assert.deepEqual(reviewTimingState(partial).placedIds, ['A:transfer'])
+  assert.equal(partial[0].start, ''); assert.equal(partial[2].end, '')
   const rows = project(['A']).map((row, i) => ({ ...row, start: `2026-11-0${i + 1}`, end: `2026-11-0${i + 2}` }))
   assert.equal(reviewTimingState(rows).dated, true)
-  rows[1].start = '2026-11-01'; assert.equal(reviewTimingState(rows).dated, false)
-  rows[1].start = ''; assert.equal(reviewTimingState(rows).dated, false)
+  rows[1].start = '2026-11-01'; assert.equal(reviewTimingState(rows).dated, true)
+  rows[1].start = ''; assert.deepEqual(reviewTimingState(rows).placedIds, ['A:limits', 'A:questions'])
+  rows[0].end = ''; rows[2].start = ''; assert.equal(reviewTimingState(rows).dated, false)
 })
 test('timing observations preserve unknowns and expose calendar gaps or overlaps only within each option', () => {
   const rows = project(['A', 'B']).map(row => ({ ...row }))
