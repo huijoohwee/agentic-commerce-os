@@ -136,7 +136,7 @@ async function responsiveGuide(page, output) {
     await selectStep(page, 'review');
     await checkGuideChrome(page, false);
     await step(page, 'review').scrollIntoViewIfNeeded();
-    const panel = guide(page).locator('[data-kg-floating-panel-root="true"]');
+    const panel = guide(page).locator('[data-agentic-base-floating-panel="true"]');
     const geometry = await panel.evaluate(section => {
       const bounds = element => {
         const rect = element.getBoundingClientRect();
