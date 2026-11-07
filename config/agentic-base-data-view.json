@@ -2,13 +2,13 @@
   "schema": "agentic-base/consumer-artifact/v1",
   "source": {
     "repository": "github.com/huijoohwee/agentic-base",
-    "revision": "21e04e35a2954025013fc9f23c9712fe5fc55366",
+    "revision": "e7564e085d363777c1e220194538b8f6f8d21208",
     "sourceDirty": false,
     "package": "@agentic-base/views-react",
     "packageVersion": "0.1.0",
     "packagePath": "packages/views-react",
     "buildManifest": "packages/views-react/dist/browser-data-view.manifest.json",
-    "buildManifestSha256": "c50b2eb59c94333493b5e3858e438b0f39af6dc86ffd5dbf8a4d2a3ee1875d7b"
+    "buildManifestSha256": "14394585de38ed755658f39c12bf0a265afa055745ba79edb2eb8f5cc64a32ad"
   },
   "contract": {
     "source": "agentic-base/browser-data-view/v1",
@@ -57,13 +57,13 @@
     },
     {
       "path": "packages/views-react/src/browser/shared-ui-profile.css",
-      "bytes": 1076,
-      "sha256": "d3436f0f11cf6b014733f7c2681902df5e12052076b0aafba91ccdaf5668a77e"
+      "bytes": 1299,
+      "sha256": "98495571917799edf4432bffbf5992ffc89ac9068d975f95c887b16ecc41cfbc"
     },
     {
       "path": "packages/views-react/src/browser/shared-ui-profile.pin.json",
-      "bytes": 717,
-      "sha256": "416cd95d38cd21b9d0b0b6aead559382551cb6936f1d607a8ac591d1bb979356"
+      "bytes": 743,
+      "sha256": "3877c855136294094227e86f749f32612285507085b6dccd0112e0de93145220"
     },
     {
       "path": "packages/views-react/src/table/BaseColumnHeaderMenu.tsx",
@@ -130,14 +130,14 @@
     {
       "path": "agentic-base-data-view.js",
       "sourcePath": "browser-data-view.js",
-      "bytes": 219205,
-      "sha256": "d889fcd825cd0d73a44c25e501f6afb545ff30d9600672d9f9923c013fa795c9"
+      "bytes": 219223,
+      "sha256": "5a4bd24f536db41d9cca7ce4d8e04554a40c919fa6bd8b1db42eaf37405a6625"
     },
     {
       "path": "agentic-base-data-view.css",
       "sourcePath": "browser-data-view.css",
-      "bytes": 19602,
-      "sha256": "ddc08b75ddeb74ef74bba229849bd21f14638b06cb2d70684a5b6bc2d2e06713"
+      "bytes": 19825,
+      "sha256": "c08f93bef8cc789ad924f4c8e34a7b96d3c95a74780234b2dff9d03989385952"
     }
   ]
 }
