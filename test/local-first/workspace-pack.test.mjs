@@ -30,7 +30,7 @@ test('public profile binds the pinned Graph artifact, exact assets and source wi
   assert.equal(descriptor.marketplaceListed, false); assert.equal(descriptor.price.amount, '0');
   assert.equal(response.headers.get('x-commerce-source'), revision);
   assert.equal((await worker.fetch(new Request(base), env)).headers.get('location'), base + '/');
-  for (const [route, asset] of [['/', '/workspace-pack.html'], ['/workspace-pack.js', '/workspace-pack.js'], ['/workspace-pack.css', '/workspace-pack.css'], ['/workspace-pack.simulation.js', '/workspace-pack.simulation.js'], ['/workspace-pack.console.js', '/workspace-pack.console.js']]) {
+  for (const [route, asset] of [['/', '/workspace-pack.html'], ['/workspace-pack.js', '/workspace-pack.js'], ['/workspace-pack.css', '/workspace-pack.css'], ['/shared-ui-profile.css', '/shared-ui-profile.css'], ['/dropdown-menus.js', '/dropdown-menus.js'], ['/workspace-pack.simulation.js', '/workspace-pack.simulation.js'], ['/workspace-pack.console.js', '/workspace-pack.console.js']]) {
     const result = await worker.fetch(new Request(base + route, { headers: { cookie: 'not-forwarded=1' } }), env);
     assert.equal(await result.text(), asset); assert.equal(result.headers.get('cache-control'), 'no-store, no-transform');
   }
