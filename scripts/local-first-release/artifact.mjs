@@ -94,9 +94,9 @@ export function verifyGraphDataView() {
       || input.path.startsWith('canvas/src/') && /(?:\/hooks\/|useGraphStore|useSequenceDocument|\/(?:stores?|storage|three|mermaid|rich-media)\/)/.test(input.path)) throw Error('Graph data view input invalid');
     paths.add(input.path); previousPath = input.path; totalInputBytes += input.bytes;
   }
-  const owners = [pin.entry, 'canvas/scripts/build-data-view-adapter.mjs', 'canvas/src/features/markdown/ui/MarkdownDataViewTableCore.tsx',
+  const owners = [pin.entry, 'canvas/scripts/build-data-view-adapter.mjs', 'node_modules/@agentic-base/views-react/packages/views-react/src/table/TableCore.tsx', 'node_modules/@agentic-base/views-react/packages/views-react/src/browser/DataViewBrowserAdapter.tsx',
     'canvas/src/features/sequence/sequenceGuideBrowserAdapter.tsx', 'canvas/src/features/sequence/SequenceInspectorView.tsx',
-    'canvas/src/features/sequence/SequenceFlow.css', 'canvas/src/components/ui/FloatingPanel.tsx', 'canvas/src/lib/ui/floatingPanelGeometry.ts',
+    'canvas/src/features/sequence/SequenceFlow.css', 'node_modules/@agentic-base/views-react/packages/views-react/src/panels/FloatingPanelShell.tsx', 'node_modules/@agentic-base/views-react/packages/views-react/src/panels/FloatingPanelCloseButton.tsx', 'canvas/src/lib/ui/floatingPanelTheme.ts', 'canvas/src/lib/ui/floatingPanelGeometry.ts',
     'canvas/src/index.css', 'canvas/src/styles/responsive-toolbar.css', 'grph-shared/src/ui/themeTokens.ts',
     'grph-shared/src/ui/kgTokens.ts', 'grph-shared/src/ui/typography.ts'];
   if (totalInputBytes > 8000000 || owners.some(owner => !paths.has(owner))) throw Error('Graph data view native owner missing or over budget');

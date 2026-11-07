@@ -1,6 +1,6 @@
 {
   "schema": "agentic-graph/data-view-artifact/v1",
-  "sourceRevision": "dd44601f5ff330a3f150a990775fb49567a84a58",
+  "sourceRevision": "267fae928e5b84f06bd6f6ddf76f865f9f539f05",
   "sourceDirty": false,
   "entry": "canvas/src/features/markdown/ui/dataViewBrowserAdapter.tsx",
   "browserExport": "mountDataView",
@@ -49,88 +49,8 @@
       "license": "MIT"
     }
   ],
-  "inputDigest": "b4c597a16c63b3ec1e8851e9e1f1974a31a4e7ae88d0fcf8ed7124ea4077cfcc",
+  "inputDigest": "371519b47ec74a75e1c77a4e589da8db814bfc592ad69469f2a883d364f510d0",
   "inputs": [
-    {
-      "path": "canvas/node_modules/@agentic-base/views-react/packages/views-react/src/browser/DataViewBrowserAdapter.tsx",
-      "bytes": 11050,
-      "sha256": "a63ce11cd206c9c9e79af023f02975afebf2822e93d901ac895629d1e440c24d"
-    },
-    {
-      "path": "canvas/node_modules/@agentic-base/views-react/packages/views-react/src/browser/shared-ui-profile.pin.json",
-      "bytes": 717,
-      "sha256": "416cd95d38cd21b9d0b0b6aead559382551cb6936f1d607a8ac591d1bb979356"
-    },
-    {
-      "path": "canvas/node_modules/@agentic-base/views-react/packages/views-react/src/panels/FloatingPanelCloseButton.tsx",
-      "bytes": 778,
-      "sha256": "f936944882592ab0618a69ffea9a1e2e706da11ee0f9537c9603a0940398a7cd"
-    },
-    {
-      "path": "canvas/node_modules/@agentic-base/views-react/packages/views-react/src/panels/FloatingPanelShell.tsx",
-      "bytes": 1999,
-      "sha256": "801c65a8a4f52da39214d72a53b602fbd7aa2174e48f867036cbe98003de30fa"
-    },
-    {
-      "path": "canvas/node_modules/@agentic-base/views-react/packages/views-react/src/table/BaseColumnHeaderMenu.tsx",
-      "bytes": 9772,
-      "sha256": "64312a61963e36bf10f3d1ed9f300c9bcc8f36441afb8f0bab6b97a9b970d604"
-    },
-    {
-      "path": "canvas/node_modules/@agentic-base/views-react/packages/views-react/src/table/BaseTableHost.tsx",
-      "bytes": 29875,
-      "sha256": "e7d8e52d412fd3a547768be0dd7decc375c320b34688dd713c770a4b47020bce"
-    },
-    {
-      "path": "canvas/node_modules/@agentic-base/views-react/packages/views-react/src/table/ColumnsTableView.tsx",
-      "bytes": 13595,
-      "sha256": "a6943cce203c14a380921610396fdc8a65eb19fa80244eda95cfee5ef2b3788e"
-    },
-    {
-      "path": "canvas/node_modules/@agentic-base/views-react/packages/views-react/src/table/MultiDimTableView.tsx",
-      "bytes": 1758,
-      "sha256": "0d85945f485afbb28fd3b1be83f4f0e2c7fbe173e259f24c753ea2943584201c"
-    },
-    {
-      "path": "canvas/node_modules/@agentic-base/views-react/packages/views-react/src/table/TableCore.tsx",
-      "bytes": 1604,
-      "sha256": "ee79998df19f75757d54d22ec8aa5c168904b0955b079aa4e7ec0105bd77af22"
-    },
-    {
-      "path": "canvas/node_modules/@agentic-base/views-react/packages/views-react/src/table/TableHostContext.tsx",
-      "bytes": 1370,
-      "sha256": "6db07011e56ba2d5091ed010791e49b77c78a883f13bd0be623e9f0781cc24f9"
-    },
-    {
-      "path": "canvas/node_modules/@agentic-base/views-react/packages/views-react/src/table/TableView.tsx",
-      "bytes": 30369,
-      "sha256": "b6c74e1d1038007b14590957e1b366bb81e7033977661a15a913a7cde3da5740"
-    },
-    {
-      "path": "canvas/node_modules/@agentic-base/views-react/packages/views-react/src/table/TableViewHeader.tsx",
-      "bytes": 7531,
-      "sha256": "25f2bc13321b8172ed0a60d58fa48784d1b427ee1029e4b008d0ad0fb5a81cac"
-    },
-    {
-      "path": "canvas/node_modules/@agentic-base/views-react/packages/views-react/src/table/ViewColumnType.ts",
-      "bytes": 1543,
-      "sha256": "3971e7e50ddf1fc5c3cbcdfe752e04b8421901d4394851f1fbe3cf1334e0e463"
-    },
-    {
-      "path": "canvas/node_modules/@agentic-base/views-react/packages/views-react/src/table/dataViewDensity.ts",
-      "bytes": 1183,
-      "sha256": "75d33565efdafad586e1c1b0822be9fec1fc2925b1b26e134c1dda471580c8fd"
-    },
-    {
-      "path": "canvas/node_modules/@agentic-base/views-react/packages/views-react/src/table/rowSelection.ts",
-      "bytes": 4724,
-      "sha256": "cf124567da7bbbe7f7d225d7ebe50a0c8d0cefd7f09ed3db1bd306cddff63e4a"
-    },
-    {
-      "path": "canvas/node_modules/@agentic-base/views-react/packages/views-react/src/table/stickyHierarchy.ts",
-      "bytes": 7950,
-      "sha256": "69a2d79dfa288b8084a437f3862e04a7ae1dfcdcb83749a1f4df1c3021bc36c7"
-    },
     {
       "path": "canvas/package.json",
       "bytes": 13920,
@@ -138,8 +58,13 @@
     },
     {
       "path": "canvas/scripts/build-data-view-adapter.mjs",
-      "bytes": 15977,
-      "sha256": "75ae906e63d68d4bcd8bc20561ebdc1314edf4a6bfab0f3785dd76be0e125bd4"
+      "bytes": 16068,
+      "sha256": "924615cd88f51b9aabd60b099b3fcb3721f508b4e763c4f2d80aeaec91278fa6"
+    },
+    {
+      "path": "canvas/src/features/markdown/ui/dataViewBrowserAdapter.tsx",
+      "bytes": 364,
+      "sha256": "1183d2fba70dd51667a193af866aa492622874791c488d29aa427c92a203aaec"
     },
     {
       "path": "canvas/src/features/sequence/SequenceFlow.css",
@@ -252,14 +177,94 @@
       "sha256": "ddc08b75ddeb74ef74bba229849bd21f14638b06cb2d70684a5b6bc2d2e06713"
     },
     {
+      "path": "node_modules/@agentic-base/views-react/packages/views-react/src/browser/DataViewBrowserAdapter.tsx",
+      "bytes": 11050,
+      "sha256": "a63ce11cd206c9c9e79af023f02975afebf2822e93d901ac895629d1e440c24d"
+    },
+    {
       "path": "node_modules/@agentic-base/views-react/packages/views-react/src/browser/shared-ui-profile.css",
       "bytes": 1076,
       "sha256": "d3436f0f11cf6b014733f7c2681902df5e12052076b0aafba91ccdaf5668a77e"
     },
     {
+      "path": "node_modules/@agentic-base/views-react/packages/views-react/src/browser/shared-ui-profile.pin.json",
+      "bytes": 717,
+      "sha256": "416cd95d38cd21b9d0b0b6aead559382551cb6936f1d607a8ac591d1bb979356"
+    },
+    {
+      "path": "node_modules/@agentic-base/views-react/packages/views-react/src/panels/FloatingPanelCloseButton.tsx",
+      "bytes": 778,
+      "sha256": "f936944882592ab0618a69ffea9a1e2e706da11ee0f9537c9603a0940398a7cd"
+    },
+    {
+      "path": "node_modules/@agentic-base/views-react/packages/views-react/src/panels/FloatingPanelShell.tsx",
+      "bytes": 1999,
+      "sha256": "801c65a8a4f52da39214d72a53b602fbd7aa2174e48f867036cbe98003de30fa"
+    },
+    {
       "path": "node_modules/@agentic-base/views-react/packages/views-react/src/panels/floatingPanelShell.css",
       "bytes": 2124,
       "sha256": "0b0e93b3c20f47c07dea43f0df99bbd70f257c0de5d9cf5bbe6f2c6dd7ec63a2"
+    },
+    {
+      "path": "node_modules/@agentic-base/views-react/packages/views-react/src/table/BaseColumnHeaderMenu.tsx",
+      "bytes": 9772,
+      "sha256": "64312a61963e36bf10f3d1ed9f300c9bcc8f36441afb8f0bab6b97a9b970d604"
+    },
+    {
+      "path": "node_modules/@agentic-base/views-react/packages/views-react/src/table/BaseTableHost.tsx",
+      "bytes": 29875,
+      "sha256": "e7d8e52d412fd3a547768be0dd7decc375c320b34688dd713c770a4b47020bce"
+    },
+    {
+      "path": "node_modules/@agentic-base/views-react/packages/views-react/src/table/ColumnsTableView.tsx",
+      "bytes": 13595,
+      "sha256": "a6943cce203c14a380921610396fdc8a65eb19fa80244eda95cfee5ef2b3788e"
+    },
+    {
+      "path": "node_modules/@agentic-base/views-react/packages/views-react/src/table/MultiDimTableView.tsx",
+      "bytes": 1758,
+      "sha256": "0d85945f485afbb28fd3b1be83f4f0e2c7fbe173e259f24c753ea2943584201c"
+    },
+    {
+      "path": "node_modules/@agentic-base/views-react/packages/views-react/src/table/TableCore.tsx",
+      "bytes": 1604,
+      "sha256": "ee79998df19f75757d54d22ec8aa5c168904b0955b079aa4e7ec0105bd77af22"
+    },
+    {
+      "path": "node_modules/@agentic-base/views-react/packages/views-react/src/table/TableHostContext.tsx",
+      "bytes": 1370,
+      "sha256": "6db07011e56ba2d5091ed010791e49b77c78a883f13bd0be623e9f0781cc24f9"
+    },
+    {
+      "path": "node_modules/@agentic-base/views-react/packages/views-react/src/table/TableView.tsx",
+      "bytes": 30369,
+      "sha256": "b6c74e1d1038007b14590957e1b366bb81e7033977661a15a913a7cde3da5740"
+    },
+    {
+      "path": "node_modules/@agentic-base/views-react/packages/views-react/src/table/TableViewHeader.tsx",
+      "bytes": 7531,
+      "sha256": "25f2bc13321b8172ed0a60d58fa48784d1b427ee1029e4b008d0ad0fb5a81cac"
+    },
+    {
+      "path": "node_modules/@agentic-base/views-react/packages/views-react/src/table/ViewColumnType.ts",
+      "bytes": 1543,
+      "sha256": "3971e7e50ddf1fc5c3cbcdfe752e04b8421901d4394851f1fbe3cf1334e0e463"
+    },
+    {
+      "path": "node_modules/@agentic-base/views-react/packages/views-react/src/table/dataViewDensity.ts",
+      "bytes": 1183,
+      "sha256": "75d33565efdafad586e1c1b0822be9fec1fc2925b1b26e134c1dda471580c8fd"
+    },
+    {
+      "path": "node_modules/@agentic-base/views-react/packages/views-react/src/table/rowSelection.ts",
+      "bytes": 4724,
+      "sha256": "cf124567da7bbbe7f7d225d7ebe50a0c8d0cefd7f09ed3db1bd306cddff63e4a"
+    },
+    {
+      "path": "node_modules/@agentic-base/views-react/packages/views-react/src/table/stickyHierarchy.ts",
+      "bytes": 7950,
+      "sha256": "69a2d79dfa288b8084a437f3862e04a7ae1dfcdcb83749a1f4df1c3021bc36c7"
     },
     {
       "path": "node_modules/@tailwindcss/node/package.json",
@@ -575,8 +580,8 @@
     },
     {
       "path": "graph-data-view.css",
-      "bytes": 74973,
-      "sha256": "76bdb9d65aef48b1b2b69eaff8bab64350716161f2c5bfd0b8df57aea8ded92a"
+      "bytes": 70781,
+      "sha256": "d02eb542eb7d2d6e949ba463496f275424ac92cfce26810be4b1a486578c5792"
     },
     {
       "path": "graph-ui-tokens.css",

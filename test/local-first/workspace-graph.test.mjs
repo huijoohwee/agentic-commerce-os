@@ -88,9 +88,9 @@ test('generated Graph assets match their bounded native manifest and remain self
     assert.match(input.sha256, /^[0-9a-f]{64}$/);
   }
   for (const required of [pin.entry, 'canvas/scripts/build-data-view-adapter.mjs',
-    'canvas/src/features/markdown/ui/MarkdownDataViewTableCore.tsx', 'grph-shared/src/ui/themeTokens.ts',
+    'node_modules/@agentic-base/views-react/packages/views-react/src/table/TableCore.tsx', 'node_modules/@agentic-base/views-react/packages/views-react/src/browser/DataViewBrowserAdapter.tsx', 'grph-shared/src/ui/themeTokens.ts',
     'grph-shared/src/ui/kgTokens.ts', 'grph-shared/src/ui/typography.ts',
-    'canvas/src/components/ui/FloatingPanel.tsx', 'canvas/src/lib/ui/floatingPanelGeometry.ts',
+    'node_modules/@agentic-base/views-react/packages/views-react/src/panels/FloatingPanelShell.tsx', 'node_modules/@agentic-base/views-react/packages/views-react/src/panels/FloatingPanelCloseButton.tsx', 'canvas/src/lib/ui/floatingPanelTheme.ts', 'canvas/src/lib/ui/floatingPanelGeometry.ts',
     'canvas/src/features/sequence/SequenceInspectorView.tsx',
     'canvas/src/features/sequence/sequenceGuideBrowserAdapter.tsx',
     'canvas/src/features/sequence/SequenceFlow.css']) assert(inputNames.includes(required), required);
