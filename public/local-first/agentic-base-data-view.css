@@ -1,4 +1,4 @@
-/* Generated from agentic-design-system@e7bdeb88762ee787872d96ae4a8fdfe0b7329934; profile sha256 8165a6d938440b4a9db217d200922868af769791fa9fdc0b9da54cc96eb3e81c. Do not edit. */
+/* Generated from agentic-design-system@949cfc9b10b53f2d2b3b11e112203a404453c26b; profile sha256 890786fd9a27a998ba873d0fec6079b174acdf225e075c6379f4bb5355318a74. Do not edit. */
 :root, :host {
   --agentic-icon-size-compact: 0.75rem;
   --agentic-icon-size-default: 1rem;
@@ -12,14 +12,36 @@
   --agentic-ktv-columns-narrow: minmax(0,1fr) 2rem;
   --agentic-ktv-stack-breakpoint: 22.25rem;
   --agentic-ktv-panel-width: 26.25rem;
+  --agentic-control-height: 28px;
+  --agentic-control-height-touch: 48px;
+  --agentic-control-padding-inline: 0.5rem;
+  --agentic-control-padding-block: 0.25rem;
+  --agentic-control-radius: 0.375rem;
+  --agentic-control-focus-width: 2px;
+  --agentic-control-focus-offset: 2px;
 }
 .agentic-ktv-container { min-inline-size: 0; inline-size: 100%; container: agentic-ktv / inline-size; }
 @container agentic-ktv (width < 22.25rem) {
   .agentic-ktv-row { grid-template-columns: var(--agentic-ktv-columns-narrow); }
   .agentic-ktv-row > :last-child { grid-column: 1 / -1; }
 }
+.agentic-form-control, :is(.agentic-form-controls :where(input:not([type="hidden"], [type="file"], [type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="button"], [type="submit"], [type="reset"], [type="image"], [hidden], .sr-only, .file-input), select, textarea), .agentic-input-controls :where(input:not([type="hidden"], [type="file"], [type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="button"], [type="submit"], [type="reset"], [type="image"], [hidden], .sr-only, .file-input), select)) {
+  box-sizing: border-box; min-inline-size: 0; max-inline-size: 100%;
+  block-size: var(--agentic-control-height); min-block-size: var(--agentic-control-height);
+  padding-block: 0; padding-inline: var(--agentic-control-padding-inline); border-radius: var(--agentic-control-radius);
+  font-family: var(--agentic-font-sans); font-size: var(--agentic-font-size-body); line-height: var(--agentic-line-height-body);
+}
+textarea.agentic-form-control, .agentic-form-controls :where(textarea) {
+  block-size: auto; padding-block: var(--agentic-control-padding-block); resize: vertical;
+}
+.agentic-form-control:focus-visible, :is(.agentic-form-controls :where(input:not([type="hidden"], [type="file"], [type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="button"], [type="submit"], [type="reset"], [type="image"], [hidden], .sr-only, .file-input), select, textarea), .agentic-input-controls :where(input:not([type="hidden"], [type="file"], [type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="button"], [type="submit"], [type="reset"], [type="image"], [hidden], .sr-only, .file-input), select)):focus-visible {
+  outline: var(--agentic-control-focus-width) solid var(--agentic-control-focus, Highlight); outline-offset: var(--agentic-control-focus-offset);
+}
+.agentic-form-control:disabled, .agentic-form-control[aria-disabled="true"], :is(.agentic-form-controls :where(input:not([type="hidden"], [type="file"], [type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="button"], [type="submit"], [type="reset"], [type="image"], [hidden], .sr-only, .file-input), select, textarea), .agentic-input-controls :where(input:not([type="hidden"], [type="file"], [type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="button"], [type="submit"], [type="reset"], [type="image"], [hidden], .sr-only, .file-input), select)):disabled {
+  opacity: .5; cursor: not-allowed;
+}
 @media (pointer: coarse), (max-width: 768px) {
-  :root, :host { --agentic-row-height: var(--agentic-row-height-touch); }
+  :root, :host { --agentic-row-height: var(--agentic-row-height-touch); --agentic-control-height: var(--agentic-control-height-touch); }
 }
 
 .agentic-base-data-view {
@@ -37,6 +59,7 @@
   --agentic-base-border: #e5e7eb;
   --agentic-base-row-hover: #fffbeb;
   --agentic-base-action-hover: #f3f4f6;
+  --agentic-control-focus: var(--agentic-base-focus, Highlight);
   color: var(--agentic-base-text-primary, #172033);
   background: var(--agentic-base-surface, #fff);
   font: var(--agentic-font-size-body)/var(--agentic-line-height-body) var(--agentic-font-sans);
@@ -109,15 +132,11 @@
   display: flex;
   width: 100%;
   min-width: 0;
-  min-height: 32px;
   align-items: center;
   gap: 10px;
-  padding: 5px 8px;
   border: 0;
-  border-radius: 3px;
   color: inherit;
   background: transparent;
-  font: inherit;
   text-align: left;
   text-decoration: none;
   cursor: pointer;
@@ -129,16 +148,14 @@
   background: var(--agentic-base-menu-hover, color-mix(in srgb, CanvasText 7%, Canvas));
 }
 .agentic-base-column-menu-row:focus-visible,
-.agentic-base-column-icon-action:focus-visible,
-.agentic-base-column-filter-field input:focus-visible,
-.agentic-base-column-filter-field select:focus-visible {
-  outline: 2px solid Highlight;
-  outline-offset: 1px;
+.agentic-base-column-icon-action:focus-visible {
+  outline: var(--agentic-control-focus-width) solid var(--agentic-control-focus, Highlight);
+  outline-offset: var(--agentic-control-focus-offset);
 }
 .agentic-base-column-menu-row:disabled,
 .agentic-base-column-menu-row[aria-disabled="true"] {
   color: var(--agentic-base-menu-muted, color-mix(in srgb, CanvasText 52%, Canvas));
-  cursor: default;
+  cursor: not-allowed;
 }
 .agentic-base-column-menu-row svg { flex: 0 0 auto; color: currentColor; }
 .agentic-base-column-menu-value { min-width: 0; margin-left: auto; overflow: hidden; color: var(--agentic-base-menu-muted, color-mix(in srgb, CanvasText 68%, Canvas)); text-overflow: ellipsis; white-space: nowrap; }
@@ -192,10 +209,7 @@
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  min-height: 32px;
-  padding: 4px 7px;
   border: 1px solid var(--agentic-base-menu-border, color-mix(in srgb, CanvasText 24%, Canvas));
-  border-radius: 4px;
   color: var(--agentic-base-menu-text, CanvasText);
   background: var(--agentic-base-menu-surface, Canvas);
   font: inherit;
