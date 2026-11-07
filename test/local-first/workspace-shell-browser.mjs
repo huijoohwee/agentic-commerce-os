@@ -98,7 +98,7 @@ export async function checkSharedWorkspaceShell({ page, url, output }) {
       if (role === 'vendor' && await query.isHidden()) {
         await expect(page.locator('#vendor-table')).toContainText('Your first offer starts with three clear details.');
       } else {
-        await expect(page.locator('#workspace-role-switcher')).toBeVisible(); await page.keyboard.press('ControlOrMeta+k');
+        await expect(page.getByRole('button', { name: 'Workspace', exact: true })).toBeVisible(); await page.keyboard.press('ControlOrMeta+k');
         await expect(query).toBeFocused(); await query.fill('absent offer');
         await expect(page.locator(role === 'shop' ? '#shop-empty' : '#vendor-table')).toContainText(role === 'shop' ? /No (?:example )?offers match/ : 'No matching offers');
         await query.fill('');
