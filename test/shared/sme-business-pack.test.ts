@@ -69,6 +69,7 @@ describe('SME business plan contract', () => {
     expect(protocol.workflow_columns.map((column: any) => column.id)).toEqual([
       'plan-completeness', 'data-validation', 'evidence-values', 'evidence-provenance', 'evidence-observer',
       'evidence-date', 'evidence-status', 'model-coverage', 'next-checks',
+      'review-step-id', 'review-predecessor', 'review-successor', 'review-instructions', 'review-field-keys', 'review-start', 'review-end',
     ])
     expect(protocol.input_fields.map((field: any) => field.name)).toEqual([
       'currency_code', 'transaction_structure', 'purchase_price', 'included_items', 'excluded_items', 'transition_costs',

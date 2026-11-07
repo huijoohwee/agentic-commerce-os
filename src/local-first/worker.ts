@@ -16,7 +16,7 @@ export type LocalFirstEnv = Readonly<CheckoutEnv & ListingRelayEnv & {
 const ASSET_PATHS = new Map([
   ...[
     '/', '/app.js', '/drafts.js', '/checkout.js', '/launch.js', '/workspace.js',
-    ...['workspace-graph.js', 'agentic-base-data-view.js', 'agentic-base-data-view.css', 'graph-data-view.js', 'graph-data-view.css', 'graph-ui-tokens.css'].map(file => '/' + file),
+    ...['workspace-graph.js', 'agentic-base-data-view.js', 'dropdown-menus.js', 'agentic-base-data-view.css', 'graph-data-view.js', 'graph-data-view.css', 'graph-ui-tokens.css'].map(file => '/' + file),
     '/style.css', '/sw.js', '/workflow.js', '/workspace-capabilities.js', '/workspace-tools.js',
   ].map(path => [path, path] as [string, string]),
   ...(import.meta.commerceLiveCheckout === false ? [] : [
@@ -27,10 +27,9 @@ const ASSET_PATHS = new Map([
     '/shared-ui-profile.css', '/sme-review-workflow.js', '/graph-gantt-timeline.js', '/graph-gantt-timeline.css',
   ].map(path => [path, path] as [string, string])),
   ['/services/workspace-pack/', '/workspace-pack.html'],
-  ['/services/workspace-pack/workspace-pack.js', '/workspace-pack.js'],
-  ['/services/workspace-pack/workspace-pack.simulation.js', '/workspace-pack.simulation.js'],
-  ['/services/workspace-pack/workspace-pack.console.js', '/workspace-pack.console.js'],
-  ['/services/workspace-pack/workspace-pack.css', '/workspace-pack.css'],
+  ...['workspace-pack.js', 'dropdown-menus.js', 'workspace-pack.simulation.js',
+    'workspace-pack.console.js', 'workspace-pack.css']
+    .map(file => ['/services/workspace-pack/' + file, '/' + file] as [string, string]),
 ])
 function secured(response: Response, source: string, head: boolean): Response {
   const headers = new Headers(response.headers)

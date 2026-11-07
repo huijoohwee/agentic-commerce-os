@@ -6,8 +6,8 @@ import { verifySharedUiIconProfile } from '../../scripts/local-first-release/art
 test('Commerce consumes the pinned Design System icon size from its offline shell assets', () => {
   const pin = verifySharedUiIconProfile();
   assert.equal(pin.owner, 'github.com/huijoohwee/agentic-design-system');
-  assert.equal(pin.sourceRevision, '949cfc9b10b53f2d2b3b11e112203a404453c26b');
-  assert.equal(pin.registryRevision, '082483d8829aed723ab31ff607944b54fa3ed5f3');
+  assert.equal(pin.sourceRevision, '66c35a12465d9d9b53f83b39474ad514bee23946');
+  assert.equal(pin.registryRevision, '754b9d79dbbb7e6e82a0acd9fd64877d187e150c');
   const profile = fs.readFileSync('public/local-first/shared-ui-profile.css', 'utf8');
   assert.match(profile, /--agentic-font-size-body: 0\.875rem;/);
   assert.match(profile, /--agentic-line-height-body: 1\.25rem;/);

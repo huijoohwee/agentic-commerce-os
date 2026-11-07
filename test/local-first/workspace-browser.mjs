@@ -1,3 +1,4 @@
+import { chooseDropdown } from './dropdown-menu-browser.mjs';
 import path from 'node:path';
 import assert from 'node:assert/strict';
 import { expect } from '@playwright/test';
@@ -28,7 +29,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   const css = await page.locator('link[href*="/style.css"]').getAttribute('href'), bootstrap = await page.locator('script[type=module]').getAttribute('src');
   assert.match(css, /^\.\/assets\/[a-f0-9]{40}\/style\.css\?v=[a-z0-9-]+$/); assert.match(bootstrap, /^\.\/assets\/[a-f0-9]{40}\/workspace\.js\?v=[a-z0-9-]+$/);
   assert.equal((await page.request.get(new URL(css, url).href)).status(), 200); await page.getByText('Offline access is ready.', { exact: false }).waitFor(); await page.screenshot({ path: path.join(output, 'shopper-empty-desktop.png'), fullPage: true });
-  await page.locator('#workspace-role-switcher').selectOption('admin');
+  await chooseDropdown(page.locator('#workspace-role-switcher'), 'admin');
   await page.locator('#admin-navigation').getByRole('link', { name: 'Environment overview', exact: true }).click();
   await expect(page.locator('#environment-badge')).toHaveText('Not checked');
   await context.setOffline(true); await context.setOffline(false);
@@ -96,27 +97,27 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await expect(page.locator('#import')).toBeEnabled();
   await page.locator('#import').setInputFiles({ name: 'offers.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ schema: 'commerce.local-drafts/v2', drafts })) });
   await expect(page.locator('#status')).toContainText('Imported 13 drafts.');
-  await page.locator('#workspace-role-switcher').selectOption('vendor');
+  await chooseDropdown(page.locator('#workspace-role-switcher'), 'vendor');
   await expect(page.locator('#vendor-total')).toHaveText('13');
   await expect(page.locator('#vendor-table .vendor-offer-card-grid > li')).toHaveCount(10);
   await page.getByRole('navigation', { name: 'vendor pagination' }).getByRole('button', { name: 'Next' }).click();
   await expect(page.locator('#vendor-table .vendor-offer-card-grid > li')).toHaveCount(3);
-  await page.locator('#vendor-state').selectOption('revise');
+  await chooseDropdown(page.locator('#vendor-state'), 'revise');
   await expect(page.locator('#vendor-table .vendor-offer-card-grid > li')).toHaveCount(1);
-  await page.locator('#vendor-state').selectOption('');
+  await chooseDropdown(page.locator('#vendor-state'), '');
   await page.screenshot({ path: path.join(output, 'vendor-desktop.png'), fullPage: true });
-  await page.locator('#workspace-role-switcher').selectOption('shop');
+  await chooseDropdown(page.locator('#workspace-role-switcher'), 'shop');
   await expect(page.locator('#shop-grid article')).toHaveCount(12);
   await page.locator('#shop-next').click(); await expect(page.locator('#shop-grid article')).toHaveCount(1);
-  await page.locator('#shop-store').selectOption('studio-north'); await expect(page.locator('#shop-grid article')).toHaveCount(6);
+  await chooseDropdown(page.locator('#shop-store'), 'studio-north'); await expect(page.locator('#shop-grid article')).toHaveCount(6);
   await page.locator('#shop-query').fill('offer 03'); await expect(page.locator('#shop-grid article')).toHaveCount(1);
   await page.locator('#shop-grid button').click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await expect(page.locator('#detail-content')).toContainText('$125.00');
   await expect(page.locator('#detail-content')).not.toContainText('PRIVATE');
   await page.keyboard.press('Escape'); await expect(page.locator('#shop-grid button')).toBeFocused();
-  await page.locator('#shop-query').fill(''); await page.locator('#shop-store').selectOption('');
-  await page.locator('#shop-sort').selectOption('name');
+  await page.locator('#shop-query').fill(''); await chooseDropdown(page.locator('#shop-store'), '');
+  await chooseDropdown(page.locator('#shop-sort'), 'name');
   assert.equal(await page.locator('#shop-grid img').count(), 0);
   assert.equal(await page.evaluate(() => window.injected), undefined);
   await page.screenshot({ path: path.join(output, 'shopper-desktop.png'), fullPage: true });
@@ -127,7 +128,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   };
   page.on('request', observeSmeService);
   await page.evaluate(() => { window.__smeShellAtEntry = document.querySelector('#workspace-shell'); });
-  await page.locator('#workspace-role-switcher').selectOption('sme');
+  await chooseDropdown(page.locator('#workspace-role-switcher'), 'sme');
   await expect(page.locator('#sme')).toBeVisible();
   await expect(page.locator('#webmcp-status')).toContainText('optional pack tools registered');
   await context.setOffline(true);
@@ -150,7 +151,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await page.goto(url + '#shop-sandbox');
   await expect(page.locator('#live-offer-heading')).toBeInViewport();
 
-  await page.locator('#workspace-role-switcher').selectOption('admin');
+  await chooseDropdown(page.locator('#workspace-role-switcher'), 'admin');
   await expect(page.locator('#admin-reviewable')).toHaveText('12');
   await expect(page.locator('#admin-attention')).toHaveText('1');
   await expect(page.locator('#admin-stores')).toHaveText('2');
@@ -206,13 +207,13 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await page.keyboard.press('Escape'); await expect(firstCheck).toBeFocused();
   await page.route('**/readyz', route => route.abort());
   await page.locator('#environment-refresh').click(); await expect(page.locator('#environment-badge')).toHaveText('Unknown');
-  await page.getByLabel('Filter check result', { exact: true }).selectOption('unknown');
+  await chooseDropdown(page.getByLabel('Filter check result', { exact: true }), 'unknown');
   await expect(page.locator('#environment-history-count')).toHaveText('1 check · Page 1 of 1');
   await page.locator('#environment-history').getByRole('button', { name: 'Inspect environment check 2', exact: true }).click();
   await expect(page.locator('#environment-check-evidence')).toHaveText('No verified response was retained.');
   await expect(page.locator('#environment-check-facts')).toContainText('No response');
   await page.keyboard.press('Escape'); await page.unroute('**/readyz');
-  await page.getByLabel('Filter check result', { exact: true }).selectOption('');
+  await chooseDropdown(page.getByLabel('Filter check result', { exact: true }), '');
   for (let i = 0; i < 19; i++) {
     await page.locator('#environment-refresh').click();
     await expect(page.locator('#environment-refresh')).toBeEnabled();
@@ -225,9 +226,9 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await page.locator('#environment-history-query').fill('check 21');
   await expect(page.locator('#environment-history-count')).toHaveText('1 check · Page 1 of 1');
   await page.locator('#environment-history-query').fill('');
-  await page.getByLabel('Filter check result', { exact: true }).selectOption('unavailable');
+  await chooseDropdown(page.getByLabel('Filter check result', { exact: true }), 'unavailable');
   await expect(page.locator('#environment-history')).toContainText('No checks match these filters.');
-  await page.getByLabel('Filter check result', { exact: true }).selectOption('');
+  await chooseDropdown(page.getByLabel('Filter check result', { exact: true }), '');
   await page.getByRole('link', { name: 'Check history', exact: true }).click();
   await expect(page.locator('#environment-history-heading')).toBeInViewport();
   await expect(page.locator('#admin-environment-history-link')).toHaveAttribute('aria-current', 'location');
@@ -271,12 +272,12 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await expect(page.locator('#project-heading')).toHaveText('studio-north');
   await page.keyboard.press('ControlOrMeta+k');
   await expect(page.locator('#project-query')).toBeFocused();
-  await page.getByLabel('Project', { exact: true }).selectOption('store:solo-studio');
+  await chooseDropdown(page.getByLabel('Project', { exact: true }), 'store:solo-studio');
   await expect(page.locator('#project-heading')).toHaveText('solo-studio');
   for (const section of ['', 'checks']) {
     await page.goto(url + '#admin-runtime?project=store%3Astudio-north' + (section ? '&section=' + section : ''));
     for (const [project, name] of [['store:solo-studio', 'solo-studio'], ['', 'All projects']]) {
-      await page.locator('#admin-project-select').selectOption(project);
+      await chooseDropdown(page.locator('#admin-project-select'), project);
       await expect(page.locator('#environment-scope')).toHaveText(name);
       const [view, query] = new URL(page.url()).hash.slice(1).split('?'), params = new URLSearchParams(query);
       assert.equal(view, 'admin-runtime');
@@ -362,7 +363,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await expect(page.locator('#workspace-agent-content')).toBeEmpty(); await page.keyboard.press('Escape');
   await page.goto(url + '#admin');
   await page.locator('#admin-navigation').getByRole('link', { name: 'Tools & commands', exact: true }).click();
-  await page.locator('#workspace-tool').selectOption('commerce.workspace.projects.list');
+  await chooseDropdown(page.locator('#workspace-tool'), 'commerce.workspace.projects.list');
   await page.locator('#workspace-run').click();
   await expect(page.locator('#workspace-result')).toContainText('browser-local');
   await expect(page.locator('#workspace-result')).toContainText('studio-north');
@@ -380,7 +381,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
       { snapshot: { schema: 'commerce.workspace-snapshot/v1', offers: [] } });
   });
   assert.equal(explicit.provenance, 'provided-snapshot'); assert.equal(explicit.value.projects[0].offerCount, 0);
-  await page.locator('#workspace-tool').selectOption('commerce.workspace.offer.review');
+  await chooseDropdown(page.locator('#workspace-tool'), 'commerce.workspace.offer.review');
   await page.locator('#workspace-advanced').evaluate(element => { element.open = true; });
   await page.locator('#workspace-arguments').fill(JSON.stringify({ offerId: drafts[1].id, expectedRevision: 999 }));
   await page.locator('#workspace-run').click();
@@ -393,7 +394,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await expect(page.locator('#workspace-tool-status')).toContainText('Nothing was sent.');
   await expect(page.locator('#workspace-result')).toContainText('commerce.workspace-snapshot/v1');
   await expect(page.locator('#workspace-result')).not.toContainText('PRIVATE');
-  await page.locator('#workspace-tool').selectOption('commerce.workspace.projects.list');
+  await chooseDropdown(page.locator('#workspace-tool'), 'commerce.workspace.projects.list');
   await page.locator('#workspace-invocation').fill('/tool.route @wrong #mcp commerce.workspace.projects.list');
   await page.locator('#workspace-run').click();
   await expect(page.locator('#workspace-tool-status')).toContainText('workspace_invocation_invalid');
@@ -420,7 +421,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await context.setOffline(true); await page.reload();
   await page.locator('#workspace-run').click();
   await expect(page.locator('#workspace-result')).toContainText('studio-north');
-  await page.locator('#workspace-tool').selectOption('commerce.workspace.environment.read');
+  await chooseDropdown(page.locator('#workspace-tool'), 'commerce.workspace.environment.read');
   await page.locator('#workspace-run').click();
   await expect(page.locator('#workspace-tool-status')).toContainText(/workspace_environment_(busy_or_offline|unverified)/);
   await context.setOffline(false);
@@ -438,7 +439,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await page.getByRole('button', { name: 'Review launch', exact: true }).click();
   await expect(page.locator('#launch-review')).toBeVisible();
   await expect(page.locator('#export-launch')).toBeDisabled();
-  await page.locator('#workspace-role-switcher').selectOption('admin');
+  await chooseDropdown(page.locator('#workspace-role-switcher'), 'admin');
   await page.getByRole('link', { name: 'Create offer', exact: true }).click();
   await expect(page.getByLabel('What are you creating?')).toHaveValue('');
   await context.setOffline(true);
@@ -499,10 +500,10 @@ async function verifyWorkspaceFidelity({ page, context, url, drafts }) {
     await page.reload();
     await expect(page.locator('#draft-storage-status')).toContainText('Saved offers are unavailable');
     await expect(page.locator('#vendor-total')).toHaveText('—');
-    await page.locator('#workspace-role-switcher').selectOption('shop');
+    await chooseDropdown(page.locator('#workspace-role-switcher'), 'shop');
     await expect(page.locator('#shop-empty')).toBeHidden();
     await expect(page.locator('#shop-count')).toContainText('unknown');
-    await page.locator('#workspace-role-switcher').selectOption('admin');
+    await chooseDropdown(page.locator('#workspace-role-switcher'), 'admin');
     await expect(page.locator('#project-list')).toContainText('unavailable');
     await page.goto(url + '#vendor-editor');
     await expect(page.locator('#draft-list button')).toHaveCount(0);
@@ -514,7 +515,7 @@ async function verifyWorkspaceFidelity({ page, context, url, drafts }) {
     await expect(page.locator('#draft-storage-state')).toBeHidden();
     await expect(page.locator('#admin-reviewable')).toHaveText('12');
   } finally { await store(drafts[1]); }
-  await page.goto(url + '#vendor'); await page.locator('#vendor-state').selectOption('revise');
+  await page.goto(url + '#vendor'); await chooseDropdown(page.locator('#vendor-state'), 'revise');
   await page.locator('#vendor-table .vendor-offer-card-grid > li').first().click();
   await expect(page.locator('.graph-record-fields')).toContainText('Increase price');
   await page.getByRole('link', { name: 'Edit offer ↗', exact: true }).click();

@@ -1,3 +1,5 @@
+import { enhanceSelects } from './dropdown-menus.js';
+enhanceSelects(document);
 const $ = id => document.getElementById(id)
 const sample = '# Add up a small order\ndef order_total(quantity, unit_price):\n    return quantity * unit_price\n\ntotal = 0\nfor quantity in range(1, 4):\n    total = total + order_total(quantity, 5)\n\nprint(total)\n'
 const endpoint = new URL('./api', location.href), toolName = 'commerce.workspace.program-pack.create'

@@ -1,19 +1,19 @@
 ---
 title: "Commerce Shared Design Token Adoption"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.1.6"
-revision: "0.1.6"
+version: "0.1.9"
+revision: "0.1.9"
 date: "2026-10-31"
-updated_date: "2026-10-31"
+updated_date: "2026-11-07"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Commerce product function"
 continuity_id: "COMMERCE-DESIGN-SYSTEM-TOKENS-001"
-prd_revision: "0.1.6"
-tad_revision: "0.1.6"
-adr_revision: "0.1.6"
-mvp_revision: "0.1.6"
-gtm_revision: "0.1.6"
+prd_revision: "0.1.9"
+tad_revision: "0.1.9"
+adr_revision: "0.1.9"
+mvp_revision: "0.1.9"
+gtm_revision: "0.1.9"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -34,7 +34,7 @@ runtime_readiness_policy: "fail-closed"
 
 # Commerce Shared Design Token Adoption
 
-**Join:** `COMMERCE-DESIGN-SYSTEM-TOKENS-001@0.1.6`, superseding `0.1.4`, `0.1.3`, `0.1.2`, and `0.1.1` under
+**Join:** `COMMERCE-DESIGN-SYSTEM-TOKENS-001@0.1.9`, superseding `0.1.4`, `0.1.3`, `0.1.2`, and `0.1.1` under
 `COMMERCE-CONTROL-PLANE-001@0.1.0`. This plan covers Commerce's generated presentation
 projections. It does not move product component behavior, commerce capabilities, or deployment
 authority into the token registry.
@@ -318,7 +318,7 @@ readiness.
 
 ## ADLC and release boundary
 
-Revision 0.1.6 supersedes 0.1.4 and refreshes the protected-main and Graph rights evidence. It keeps
+Revision 0.1.9 supersedes 0.1.4 and refreshes the protected-main and Graph rights evidence. It keeps
 the observed non-ancestor Commerce profile pin and plans a provenance-only rebind to the current
 protected-main central profile without changing its 36 values. This revision changes only this
 planning document. It does not change the application, generated CSS, Graph sources, CSP work,
@@ -366,4 +366,10 @@ closeout or production claim is made.
 
 ## Shared dropdown and textbox adoption
 
-This source increment consumes shared-ui v0.5.0 from the existing Design System owner, with exact profile/projection pins. All native Commerce dropdowns and textboxes opt into its generated geometry through the HTML scope; SME, shell, search and Program Pack styles retain only local paint/flow instead of competing heights, padding or radii. Fields and Graph menu options share 28px desktop / 48px touch height, 8px inline padding, 6px radius and 14px/20px text; native selects retain platform choice behavior and textareas retain multiline layout. Base/Graph artifacts are rebuilt by their native producers and adopted with exact manifests. Existing form labels, values, validation, events, offline drafts and keyboard behavior remain owned locally. Run native local-first/browser checks and canonical desktop/mobile verification. Rollback restores exact prior pins/assets; this increment selects no Production activation.
+Commerce consumes generated shared-ui v0.6.0 geometry from Design System. Fields and menu options share 28px desktop / 48px touch height, 8px inline padding, 6px radius and 14px/20px text. SME, shell, search and Program Pack styles retain local paint/flow; textareas retain multiline layout. Exact Base/Graph manifests bind generated browser assets to their producer sources. Rollback restores prior pins/assets while retaining origin data.
+
+## Shared opened dropdown menus
+
+The existing native form values remain the input/event/validation owner while the Base native adapter replaces visible dropdowns with the same menu core and Design System shared-ui v0.6.0 surface/option/hover/selected/focus tokens used by Graph toolbar and field menus. The standalone offline dropdown module avoids loading the React/table bundle for form menus. Newly rendered fields retain focus through enhancement, and shared menu surfaces cap their height to the dynamic viewport and scroll longer choices. Shared SVG indicators keep chevrons centered, and cancelled inspection gestures/clicks preserve menu targets and values. Existing labels, required errors, values, input/change handlers, reset, disabled/grouped options and offline drafts remain local. Browser journeys choose from visible DOM menus; exact Base/Graph producer manifests and projection hashes remain mandatory. No native-popup branch is retained for adopted single-choice controls. No new dependency, model/provider execution, storage migration or Production activation is selected. Rollback restores the exact prior pins/assets and retains origin data.
+
+Visible menu indicators are named SVG image targets using the shared icon geometry. Native options render a check only when selected; no hidden decorative icon or generic div wrapper is added. The browser helper verifies these semantics for every exercised dropdown. Graph retains the identical React adapter at its verified Base pin; the native-only follow-up changes no React module or table bundle.
