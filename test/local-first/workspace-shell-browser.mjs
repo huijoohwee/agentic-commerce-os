@@ -1,3 +1,4 @@
+import { chooseDropdown } from './dropdown-menu-browser.mjs';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { expect } from '@playwright/test';
@@ -73,7 +74,7 @@ export async function checkSharedWorkspaceShell({ page, url, output }) {
     if (collapsed) { await toggle.click(); await expect(toggle).toHaveAttribute('aria-expanded', 'false'); await expect(page.locator('#admin-navigation')).toBeHidden(); }
     for (const role of ['shop', 'vendor', 'admin']) {
       await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }));
-      await page.locator('#workspace-role-switcher').selectOption(role); await expect(page.locator('#' + role)).toBeVisible();
+      await chooseDropdown(page.locator('#workspace-role-switcher'), role); await expect(page.locator('#' + role)).toBeVisible();
       await expect.poll(() => page.evaluate(() => Math.abs(window.scrollY) <= 1)).toBe(true);
       await expect(toggle).toHaveAttribute('aria-controls', role + '-navigation'); await expect(toggle).toHaveAttribute('aria-expanded', 'false');
       await expect(page.locator('#' + role + '-navigation')).toBeHidden();
@@ -83,7 +84,7 @@ export async function checkSharedWorkspaceShell({ page, url, output }) {
     const reference = await page.locator('#admin .workspace-content').boundingBox();
     await captureSharedShell(page); await assertSharedShell(page);
     for (const role of ['shop', 'vendor']) {
-      await page.locator('#workspace-role-switcher').selectOption(role); await expect(page.locator('#' + role)).toBeVisible();
+      await chooseDropdown(page.locator('#workspace-role-switcher'), role); await expect(page.locator('#' + role)).toBeVisible();
       await expect(toggle).toHaveAttribute('aria-controls', role + '-navigation'); await expect(toggle).toHaveAttribute('aria-expanded', 'true');
       const sidebar = page.locator('#' + role + '-navigation'); await expect(sidebar).toBeVisible(); await assertSharedShell(page);
       if (width <= 680) {
@@ -105,7 +106,7 @@ export async function checkSharedWorkspaceShell({ page, url, output }) {
       await page.screenshot({ path: path.join(output, `aligned-${role}-${width}.png`) });
     }
     const navigationCount = await page.evaluate(() => performance.getEntriesByType('navigation').length);
-    await page.locator('#workspace-role-switcher').selectOption('sme'); await expect(page.locator('#sme')).toBeVisible();
+    await chooseDropdown(page.locator('#workspace-role-switcher'), 'sme'); await expect(page.locator('#sme')).toBeVisible();
     await expect(page.locator('#sme-navigation')).toBeVisible();
     if (width <= 680) await expect(page.locator('#console-breadcrumb')).toBeHidden(); else await expect(page.locator('#console-breadcrumb')).toBeVisible();
     await expect(page.locator('#console-root')).toHaveAttribute('href', '#sme'); await expect(page.locator('#console-root')).toHaveText('SME pack');
@@ -113,7 +114,7 @@ export async function checkSharedWorkspaceShell({ page, url, output }) {
     assert.equal(await page.evaluate(() => performance.getEntriesByType('navigation').length), navigationCount);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await page.evaluate(() => { location.hash = 'checkout'; }); await expect(page.locator('#checkout')).toBeVisible(); await assertSharedShell(page);
-    await page.locator('#workspace-role-switcher').selectOption('vendor'); await expect(page.locator('#vendor')).toBeVisible();
+    await chooseDropdown(page.locator('#workspace-role-switcher'), 'vendor'); await expect(page.locator('#vendor')).toBeVisible();
   }
   await page.locator('#workspace-navigation-toggle').click();
   await expect(page.locator('#workspace-navigation-toggle')).toHaveAttribute('aria-expanded', 'false'); await page.reload();

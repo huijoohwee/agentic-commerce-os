@@ -1,3 +1,4 @@
+import { chooseDropdown } from './dropdown-menu-browser.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -47,11 +48,11 @@ export async function checkWorkspacePack({ browser, url, output, revision }) {
     await page.route('**/workspace-pack.simulation.js', async route => { await moduleGate; await route.continue(); });
     const loading = page.waitForRequest(request => request.url().endsWith('/workspace-pack.simulation.js'));
     await runSimulation.click(); await loading;
-    await scenario.selectOption('checkout'); releaseModule();
+    await chooseDropdown(scenario, 'checkout'); releaseModule();
     await expect(page.locator('#simulation-report')).toBeHidden();
     for (const [value, label, status] of [['calm', 'Calm', 200], ['checkout', 'Checkout', 403],
       ['timeout', 'Timeout', 504], ['payment', 'Payment', 409], ['backlog', 'Backlog', 503]]) {
-      await scenario.selectOption(value); await runSimulation.click();
+      await chooseDropdown(scenario, value); await runSimulation.click();
       await expect(page.locator('#simulation-status')).toHaveText(`${label} · Simulated condition loaded`);
       await expect(stages.getByRole('button', { name: 'Triage', exact: true })).toHaveAttribute('aria-pressed', 'true');
       await expect(page.locator('#simulation-signal')).toContainText(`Fixture HTTP ${status}`);
@@ -65,7 +66,7 @@ export async function checkWorkspacePack({ browser, url, output, revision }) {
       await expect(page.locator('#simulation-recover')).toBeDisabled();
     }
     await page.screenshot({ path: path.join(output, 'workspace-pack-simulation-desktop.jpg'), quality: 75 });
-    await scenario.selectOption('timeout');
+    await chooseDropdown(scenario, 'timeout');
     await expect(page.locator('#simulation-report')).toBeHidden();
     await expect(stages.getByRole('button', { name: 'Recovery', exact: true })).toBeDisabled();
     await context.setOffline(true); await runSimulation.click();
@@ -99,7 +100,7 @@ export async function checkWorkspacePack({ browser, url, output, revision }) {
     await page.locator('#service-heading').click();
     await page.keyboard.press('Control+j'); await expect(page.locator('#console-panel')).toBeHidden();
     await page.keyboard.press('Control+j'); await expect(page.locator('#console-panel')).toBeVisible();
-    await scenario.selectOption('payment');
+    await chooseDropdown(scenario, 'payment');
     await page.getByRole('button', { name: 'Step through', exact: true }).click();
     await expect(page.locator('#customer-banner')).toContainText('verified test payment');
     await page.getByRole('button', { name: 'Next stage', exact: true }).click();
@@ -112,7 +113,7 @@ export async function checkWorkspacePack({ browser, url, output, revision }) {
     await expect(page.locator('#simulation-recover')).toBeDisabled();
     await expect(page.locator('#preview-decision')).toContainText('unchanged');
     await expect(page.locator('#capability-count')).toHaveText('5 available · 6 registered');
-    await scenario.selectOption('timeout');
+    await chooseDropdown(scenario, 'timeout');
     await page.getByRole('button', { name: 'Play guide', exact: true }).click();
     await page.getByRole('button', { name: 'Pause', exact: true }).click();
     await page.waitForTimeout(1600);

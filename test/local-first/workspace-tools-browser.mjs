@@ -1,3 +1,4 @@
+import { chooseDropdown } from './dropdown-menu-browser.mjs';
 import assert from 'node:assert/strict';
 import { expect } from '@playwright/test';
 
@@ -18,7 +19,7 @@ export async function verifyWorkspaceToolRefinements({ page, context, url, draft
     await expect(output).toBeEmpty(); await run.click();
     await expect(summary).toContainText('studio-north');
     await expect(summary).not.toContainText('PRIVATE');
-    await tool.selectOption('commerce.workspace.project.read');
+    await chooseDropdown(tool, 'commerce.workspace.project.read');
     await page.locator('#workspace-field-projectId').fill('store:studio-north');
     await expect(page.locator('#workspace-field-projectId')).toHaveAttribute('required', '');
     await run.click(); await expect(summary).toContainText('Saved offers');
@@ -28,7 +29,7 @@ export async function verifyWorkspaceToolRefinements({ page, context, url, draft
     await expect(page.locator('#workspace-privacy')).toContainText('Nothing was sent');
     await expect(summary).toContainText('Request ready to inspect');
 
-    await tool.selectOption('commerce.workspace.offer.review');
+    await chooseDropdown(tool, 'commerce.workspace.offer.review');
     await page.locator('#workspace-field-offerId').fill(drafts[1].id);
     await page.locator('#workspace-field-expectedRevision').fill('1');
     await run.click(); await expect(summary).toContainText(drafts[1].title);
@@ -57,14 +58,14 @@ export async function verifyWorkspaceToolRefinements({ page, context, url, draft
     assert.equal(JSON.parse(await args.inputValue()).publish, true);
     await run.click(); await expect(page.locator('#workspace-tool-status')).toHaveText('workspace_arguments_invalid');
 
-    await tool.selectOption('commerce.workspace.projects.list');
+    await chooseDropdown(tool, 'commerce.workspace.projects.list');
     await args.fill(JSON.stringify({ snapshot: { schema: 'commerce.workspace-snapshot/v1', offers: [] } }));
     await expect(page.locator('#workspace-provenance')).toContainText('Supplied snapshot');
     await run.click(); await expect(summary).toContainText('Supplied snapshot');
     await expect(summary).toContainText('Personal workspace');
     await expect(output).toContainText('provided-snapshot');
 
-    await tool.selectOption('commerce.workspace.environment.read');
+    await chooseDropdown(tool, 'commerce.workspace.environment.read');
     await expect(page.locator('#workspace-fields input')).toHaveCount(0);
     await expect(page.locator('#workspace-provenance')).toContainText('Current runtime observation');
     await expect(output).toBeEmpty();

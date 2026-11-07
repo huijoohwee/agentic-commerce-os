@@ -142,7 +142,7 @@ body.console-mode main { max-width: none; margin: 0; padding: 0; }
   .workspace-shell>.sidebar:has(>.project-selector){grid-template-columns:minmax(112px,25%) minmax(0,1fr)}
   .workspace-shell>.sidebar:has(>.project-selector)>.project-selector{grid-column:1;grid-row:1;align-self:center;width:100%;min-width:0;margin:0}
   .workspace-shell>.sidebar:has(>.project-selector)>.project-selector label{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
-  .workspace-shell>.sidebar:has(>.project-selector)>.project-selector select{width:100%;min-width:0;margin:0}
+  .workspace-shell>.sidebar:has(>.project-selector)>.project-selector :is(select, .agentic-select-trigger){width:100%;min-width:0;margin:0}
   .workspace-shell>.sidebar:has(>.project-selector)>.service-nav{grid-column:2/-1;grid-row:1;min-width:0}
   .workspace-shell>.sidebar .service-nav>.sidebar-label{margin:4px 2px 0}
   /* Wrap the shared rail and ellipsize labels so every role fits without horizontal scrolling. */

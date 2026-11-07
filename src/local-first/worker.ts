@@ -16,7 +16,7 @@ export type LocalFirstEnv = Readonly<CheckoutEnv & ListingRelayEnv & {
 const ASSET_PATHS = new Map([
   ...[
     '/', '/app.js', '/drafts.js', '/checkout.js', '/launch.js', '/workspace.js',
-    ...['workspace-graph.js', 'agentic-base-data-view.js', 'agentic-base-data-view.css', 'graph-data-view.js', 'graph-data-view.css', 'graph-ui-tokens.css'].map(file => '/' + file),
+    ...['workspace-graph.js', 'agentic-base-data-view.js', 'dropdown-menus.js', 'agentic-base-data-view.css', 'graph-data-view.js', 'graph-data-view.css', 'graph-ui-tokens.css'].map(file => '/' + file),
     '/style.css', '/sw.js', '/workflow.js', '/workspace-capabilities.js', '/workspace-tools.js',
   ].map(path => [path, path] as [string, string]),
   ...(import.meta.commerceLiveCheckout === false ? [] : [
@@ -28,6 +28,7 @@ const ASSET_PATHS = new Map([
   ].map(path => [path, path] as [string, string])),
   ['/services/workspace-pack/', '/workspace-pack.html'],
   ['/services/workspace-pack/workspace-pack.js', '/workspace-pack.js'],
+  ['/services/workspace-pack/dropdown-menus.js', '/dropdown-menus.js'],
   ['/services/workspace-pack/workspace-pack.simulation.js', '/workspace-pack.simulation.js'],
   ['/services/workspace-pack/workspace-pack.console.js', '/workspace-pack.console.js'],
   ['/services/workspace-pack/workspace-pack.css', '/workspace-pack.css'],

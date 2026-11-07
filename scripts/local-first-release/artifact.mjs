@@ -10,7 +10,7 @@ import { readCheckoutRelease, liveAuthorizationScope } from './live-profile.mjs'
 
 export const CONFIG = 'wrangler.local-first.jsonc';
 export const WORKER = 'agentic-commerce-edge-production';
-export const FILES = Object.freeze(['index.html', 'favicon.svg', 'workspace.js', 'workspace-navigation.js', 'workspace-singleton.js', 'shopper-demo-detail.js', 'workspace-tour.js', 'workspace-capabilities.js', 'workspace-tools.js', 'workspace-graph.js', 'agentic-base-data-view.js', 'agentic-base-data-view.css', 'graph-data-view.js', 'graph-data-view.css', 'graph-ui-tokens.css', 'commerce-theme.css', 'workspace-shell.css', 'shared-ui-profile.css', 'app.js', 'drafts.js', 'checkout.js', 'launch.js', 'workflow.js', 'style.css', 'sw.js', 'workspace-pack.html', 'workspace-pack.js', 'workspace-pack.css', 'workspace-pack.simulation.js', 'workspace-pack.console.js', 'sme-business-pack.js', 'sme-business-pack.css', 'sme-business-pack-core.js', 'sme-workflow-editor.js', 'sme-review-workflow.js', 'graph-gantt-timeline.js', 'graph-gantt-timeline.css', 'sme-pack-business-plan.js', 'sme-pack-dictionary.js', 'housing-comparison.js', 'housing-engine.js', 'housing-sample.js', 'housing-comparison.css']);
+export const FILES = Object.freeze(['index.html', 'favicon.svg', 'workspace.js', 'workspace-navigation.js', 'workspace-singleton.js', 'shopper-demo-detail.js', 'workspace-tour.js', 'workspace-capabilities.js', 'workspace-tools.js', 'workspace-graph.js', 'agentic-base-data-view.js', 'dropdown-menus.js', 'agentic-base-data-view.css', 'graph-data-view.js', 'graph-data-view.css', 'graph-ui-tokens.css', 'commerce-theme.css', 'workspace-shell.css', 'shared-ui-profile.css', 'app.js', 'drafts.js', 'checkout.js', 'launch.js', 'workflow.js', 'style.css', 'sw.js', 'workspace-pack.html', 'workspace-pack.js', 'workspace-pack.css', 'workspace-pack.simulation.js', 'workspace-pack.console.js', 'sme-business-pack.js', 'sme-business-pack.css', 'sme-business-pack-core.js', 'sme-workflow-editor.js', 'sme-review-workflow.js', 'graph-gantt-timeline.js', 'graph-gantt-timeline.css', 'sme-pack-business-plan.js', 'sme-pack-dictionary.js', 'housing-comparison.js', 'housing-engine.js', 'housing-sample.js', 'housing-comparison.css']);
 export const PRIVATE_FILES = Object.freeze(['education-materials.md']);
 export const digest = value => createHash('sha256').update(value).digest('hex');
 const COMMERCE_THEME_PIN = Object.freeze({
@@ -20,10 +20,10 @@ const COMMERCE_THEME_PIN = Object.freeze({
 });
 const SHARED_UI_ICON_PIN = Object.freeze({
   owner: 'github.com/huijoohwee/agentic-design-system',
-  sourceRevision: '949cfc9b10b53f2d2b3b11e112203a404453c26b',
-  registryRevision: '082483d8829aed723ab31ff607944b54fa3ed5f3',
-  profileSha256: '890786fd9a27a998ba873d0fec6079b174acdf225e075c6379f4bb5355318a74',
-  projectionSha256: '450e07dca0142ba4ab400efa54cb370b0cc88831636def9b78d6517ff7747308',
+  sourceRevision: '66c35a12465d9d9b53f83b39474ad514bee23946',
+  registryRevision: 'ad9fa7b29289a52600249711cd652ea8f1d51d39',
+  profileSha256: '4830e6c273f8ab2f562c92caf919a169c09126ea0125b65fe852f7050f928c39',
+  projectionSha256: 'f688f8f0ed6b110055a54cb953957964cdf5753c39ad54cab6002b662b82a650',
 });
 export const git = (...args) => execFileSync('git', args, { encoding: 'utf8', timeout: 20000 }).trim();
 export function assertLocalFirstConfig(config) {
@@ -63,10 +63,10 @@ export function verifyAgenticBaseDataView() {
     || !inputPaths.has('packages/views-react/src/table/TableView.tsx') || !inputPaths.has('packages/views-react/src/table/TableCore.tsx')) {
     throw Error('Agentic Base data view native owner missing or over budget');
   }
-  const outputs = ['agentic-base-data-view.js', 'agentic-base-data-view.css'];
+  const outputs = ['agentic-base-data-view.js', 'dropdown-menus.js', 'agentic-base-data-view.css'];
   if (!Array.isArray(pin.outputs) || pin.outputs.length !== outputs.length || outputs.some(name => !pin.outputs.some(row => row.path === name))) throw Error('Agentic Base data view inventory invalid');
   for (const output of pin.outputs) {
-    if (output.sourcePath !== (output.path.endsWith('.js') ? 'browser-data-view.js' : 'browser-data-view.css')) throw Error('Agentic Base output source invalid');
+    if (output.sourcePath !== (output.path === 'dropdown-menus.js' ? 'dropdown-menus.js' : output.path.endsWith('.js') ? 'browser-data-view.js' : 'browser-data-view.css')) throw Error('Agentic Base output source invalid');
     const file = 'public/local-first/' + output.path, stat = fs.lstatSync(file);
     if (!stat.isFile() || stat.isSymbolicLink() || stat.size < 1 || stat.size >= 500000) throw Error('Agentic Base data view asset invalid');
     const bytes = fs.readFileSync(file);
@@ -74,8 +74,7 @@ export function verifyAgenticBaseDataView() {
     const text = bytes.toString('utf8');
     if (output.path.endsWith('.css') ? /@import\b|url\(\s*['"]?(?:https?:|\/\/)/i.test(text)
       : /\bimport\s*(?:\(|['"]|[^;\n]*?\bfrom\s*['"])|\b(?:fetch|XMLHttpRequest|WebSocket|EventSource)\s*\(/.test(text)
-        || !text.includes('mountDataView') || !text.includes('multiDimensional')
-        || !text.includes('DATA_VIEW_BROWSER_LIMITS')) throw Error('Agentic Base data view asset must remain self-contained and offline');
+        || (output.path === 'dropdown-menus.js' ? !text.includes('enhanceSelects') || !text.includes('agentic-menu') : !text.includes('mountDataView') || !text.includes('multiDimensional') || !text.includes('DATA_VIEW_BROWSER_LIMITS'))) throw Error('Agentic Base data view asset must remain self-contained and offline');
   }
   return pin;
 }
@@ -86,7 +85,7 @@ export function verifyGraphDataView() {
   if (pin.schema !== 'agentic-graph/data-view-artifact/v1' || pin.sourceDirty !== false || !/^[0-9a-f]{40}$/.test(pin.sourceRevision)) throw Error('Graph data view provenance invalid');
   if (pin.entry !== 'canvas/src/features/markdown/ui/dataViewBrowserAdapter.tsx' || pin.browserExport !== 'mountDataView' || pin.cssScope !== 'shadow-root' || pin.hostTokens !== 'graph-ui-tokens.css'
     || JSON.stringify(pin.browserExports) !== JSON.stringify(['mountDataView', 'mountSequenceGuide'])
-    || !Array.isArray(pin.inputs) || !pin.inputs.length || pin.inputs.length > 108 || digest(JSON.stringify(pin.inputs)) !== pin.inputDigest) throw Error('Graph data view source contract invalid');
+    || !Array.isArray(pin.inputs) || !pin.inputs.length || pin.inputs.length > 112 || digest(JSON.stringify(pin.inputs)) !== pin.inputDigest) throw Error('Graph data view source contract invalid');
   const paths = new Set(); let totalInputBytes = 0, previousPath = '';
   for (const input of pin.inputs) {
     if (!input || typeof input.path !== 'string' || input.path.startsWith('/') || input.path.includes('..') || input.path.includes('\\') || input.path <= previousPath

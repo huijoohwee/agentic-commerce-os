@@ -6,7 +6,7 @@ import worker from '../../src/local-first/worker.ts';
 import { OFFER_COLUMNS, projectOfferRows, projectOfferDetail } from '../../public/local-first/workspace-graph.js';
 import { FILES, verifyAgenticBaseDataView, verifyGraphDataView } from '../../scripts/local-first-release/artifact.mjs';
 
-const baseAssets = ['agentic-base-data-view.js', 'agentic-base-data-view.css'];
+const baseAssets = ['agentic-base-data-view.js', 'agentic-base-data-view.css', 'dropdown-menus.js'];
 const graphAssets = ['graph-data-view.js', 'graph-data-view.css', 'graph-ui-tokens.css'];
 const assets = [...baseAssets, ...graphAssets];
 const hash = value => createHash('sha256').update(value).digest('hex');
@@ -45,7 +45,7 @@ test('Commerce table uses the exact Agentic Base browser artifact candidate', ()
   const pin = JSON.parse(fs.readFileSync('config/agentic-base-data-view.json', 'utf8'));
   assert.equal(pin.schema, 'agentic-base/consumer-artifact/v1');
   assert.equal(pin.source.repository, 'github.com/huijoohwee/agentic-base');
-  assert.equal(pin.source.revision, '7e36db098d35fd096ee6406adfb67d58a00f9888');
+  assert.equal(pin.source.revision, '0eab2cb9161084578525be3e8688856d14abfa8f');
   assert.equal(pin.source.sourceDirty, false);
   assert.equal(pin.contract.browserExport, 'mountDataView');
   assert.equal(pin.contract.defaultLayout, 'table');
