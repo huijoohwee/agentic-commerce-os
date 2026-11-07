@@ -1,6 +1,6 @@
 {
   "schema": "agentic-graph/data-view-artifact/v1",
-  "sourceRevision": "2362f67351f60a127e0098c150e3d14038279327",
+  "sourceRevision": "3988448631c0b7044760fa8688ea3bbc6f29b032",
   "sourceDirty": false,
   "entry": "canvas/src/features/markdown/ui/dataViewBrowserAdapter.tsx",
   "browserExport": "mountDataView",
@@ -49,7 +49,7 @@
       "license": "MIT"
     }
   ],
-  "inputDigest": "589c6588f0a69e43e4756bd9735f93bafc15f83b79e34c93ce15db57dc7fc70c",
+  "inputDigest": "61d8b5c63b18405f5d82087b7f40d31e97c1a71a05be06c996a5e2f588b463da",
   "inputs": [
     {
       "path": "canvas/package.json",
@@ -58,8 +58,8 @@
     },
     {
       "path": "canvas/scripts/build-data-view-adapter.mjs",
-      "bytes": 16068,
-      "sha256": "924615cd88f51b9aabd60b099b3fcb3721f508b4e763c4f2d80aeaec91278fa6"
+      "bytes": 16103,
+      "sha256": "e2b1b1c9b597f73a96f51fbf1c84aa654be2b8264d56c461799dae0efe3ca59f"
     },
     {
       "path": "canvas/src/features/markdown/ui/dataViewBrowserAdapter.tsx",
@@ -68,18 +68,23 @@
     },
     {
       "path": "canvas/src/features/sequence/SequenceFlow.css",
-      "bytes": 6868,
-      "sha256": "5a1acb8d233b753678cf5f8e18bda4345c45131b05d162f4ea3160450108dded"
+      "bytes": 7181,
+      "sha256": "3b18db7d186efd3e7d8df12b945a1ebb8f70cad04e409c714b8a4402d1d3a132"
     },
     {
       "path": "canvas/src/features/sequence/SequenceInspectorView.tsx",
-      "bytes": 1609,
-      "sha256": "0fc7d224b7d15aaffa679d2c706364639d1fc17798cecdbd1ae3affbda55c667"
+      "bytes": 1730,
+      "sha256": "37bfd38ac8608cd17ea98189e37c0612e0ab99914544184bb8e8ad26fd9dfb26"
     },
     {
       "path": "canvas/src/features/sequence/sequenceGuideBrowserAdapter.tsx",
       "bytes": 7702,
       "sha256": "15ae8ba87ca59d1a4ae729abbf014d78dfd800f47d8a0486d5817d7cb7581325"
+    },
+    {
+      "path": "canvas/src/features/toolbar/ui/toolbarStyles.ts",
+      "bytes": 4012,
+      "sha256": "d6abd70c48c47b3334bf9951603d6b058e867860db4a3a5cb52162339c8cfb12"
     },
     {
       "path": "canvas/src/index.css",
@@ -580,13 +585,13 @@
   "outputs": [
     {
       "path": "graph-data-view.js",
-      "bytes": 251150,
-      "sha256": "d3228586451903acca31cefe4f3046f7a5f181773d5678146a7856daecc10454"
+      "bytes": 251906,
+      "sha256": "6c693bab5a11e85b1d9d83a297287c7d8b18b9f422e6615662ea8fd2b5f60fa0"
     },
     {
       "path": "graph-data-view.css",
-      "bytes": 72575,
-      "sha256": "a450253b11e637376b69ad15efb6b005610da09e386ab667f01f8adb68239c07"
+      "bytes": 73477,
+      "sha256": "ddf33bdc96052e8a0cfc34638de64197687006c22ac88876ced6dd4a1f111605"
     },
     {
       "path": "graph-ui-tokens.css",

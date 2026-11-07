@@ -85,13 +85,18 @@ async function checkGuideChrome(page, defaultGlyph = true) {
       return { width: rect.width, height: rect.height, left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
     };
     const icon = button.querySelector('svg');
-    return { button: bounds(button), icon: bounds(icon), header: bounds(button.closest('header')),
+    const panel = button.closest('[data-agentic-base-floating-panel="true"]');
+    const readTypography = element => { const style = getComputedStyle(element); return { size: style.fontSize, line: style.lineHeight, family: style.fontFamily }; };
+    const typography = { role: readTypography(panel), body: [...panel.querySelectorAll('.sequence-inspector p, .sequence-inspector li button, .sequence-inspector li button strong, .sequence-inspector li button span, .sequence-inspector small')].map(readTypography) };
+    return { typography, button: bounds(button), icon: bounds(icon), header: bounds(button.closest('header')),
       controlHeight: parseFloat(getComputedStyle(button).getPropertyValue('--kg-control-height')),
       panelControlHeight: parseFloat(getComputedStyle(button).getPropertyValue('--base-control-height')),
       verticalInsets: ['paddingTop', 'paddingBottom', 'borderTopWidth', 'borderBottomWidth'].reduce((sum, key) => sum + parseFloat(getComputedStyle(button)[key]), 0),
       touchTarget: matchMedia('(pointer: coarse), (max-width: 768px)').matches,
       strokeWidth: Number(icon.getAttribute('stroke-width')) };
   });
+  assert(geometry.typography.body.length > 0, 'The shared panel body must be measured');
+  for (const text of geometry.typography.body) assert.deepEqual(text, geometry.typography.role, 'Guide descriptions, status and controls must use the shared panel body role, including at 200% text');
   const target = geometry.touchTarget ? 44 : 28;
   assert.equal(geometry.controlHeight, target, 'The guide inherits the native fine/touch control-height token');
   const panelTarget = geometry.touchTarget ? 54 : 38;
