@@ -201,7 +201,7 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   assert(labelHeights.every(item => item.text <= item.lane), 'Activity text must not spill into another native lane')
   assert.equal(await gantt.locator('time[datetime]').count(), 0, 'Dependency order must not invent clock durations')
   await gantt.getByRole('button', { name: 'Seek to Step 2', exact: true }).click()
-  await expect(planPage.locator('#compare-a-transaction_structure')).toBeFocused()
+  await expect(planPage.locator('#compare-a-transaction_structure + .agentic-select-trigger')).toBeFocused()
   assert((await gantt.locator('[data-review-activity="A:transfer"] > summary').boundingBox()).height >= 44)
   assert((await gantt.locator('.timeline-transport-track-clip').first().boundingBox()).height >= 20)
   await planPage.setViewportSize({ width: 1440, height: 1000 })
