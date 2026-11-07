@@ -2,13 +2,13 @@
   "schema": "agentic-base/consumer-artifact/v1",
   "source": {
     "repository": "github.com/huijoohwee/agentic-base",
-    "revision": "98765d65721318b6d648f254d6a25e37c52b82a1",
+    "revision": "f2eb1353d98f1ff041208a8c6c922c61fbb13cb2",
     "sourceDirty": false,
     "package": "@agentic-base/views-react",
     "packageVersion": "0.1.0",
     "packagePath": "packages/views-react",
     "buildManifest": "packages/views-react/dist/browser-data-view.manifest.json",
-    "buildManifestSha256": "eca8c0fec2ae59f072e3f5d7eea4e36023bb234f2a5facba54c239ab58b1ec6b"
+    "buildManifestSha256": "c4f9e6fec4045de08e23c971cb9a42f0573e231ab9f177b71ac89afbb09a66d6"
   },
   "contract": {
     "source": "agentic-base/browser-data-view/v1",
@@ -67,18 +67,18 @@
     },
     {
       "path": "packages/views-react/src/controls/MenuControls.tsx",
-      "bytes": 8167,
-      "sha256": "76e8b78f11d0a88c7f3839a1551ca8614c9e7bdf31bc7802353884850250829a"
+      "bytes": 8465,
+      "sha256": "74b1df0659da917f0f64104b86d4cae709d68ec0f45b9af21d652140f18b90fc"
     },
     {
       "path": "packages/views-react/src/controls/dropdownMenu.ts",
-      "bytes": 6911,
-      "sha256": "1f6d97800a017631e12063073d13a0799cb5f0059cfb94b7853a8b3ccdb46d77"
+      "bytes": 8280,
+      "sha256": "a0a38b27cc2d7c4779e13f945085ba6eaa076f4999c6055867ca870c3570eb7e"
     },
     {
       "path": "packages/views-react/src/controls/nativeSelect.ts",
-      "bytes": 8981,
-      "sha256": "02f9885b431b096ed2d002c0b8d35974fbc6ee707805e0987e8f44a0fd3855f9"
+      "bytes": 8848,
+      "sha256": "c079b7db09ad80ac491e82d59bd3c0a4c2747eb77a6bef468ac9da7df2873003"
     },
     {
       "path": "packages/views-react/src/table/BaseColumnHeaderMenu.tsx",
@@ -144,14 +144,14 @@
   "outputs": [
     {
       "path": "agentic-base-data-view.js",
-      "bytes": 227644,
-      "sha256": "08e43f6cc9ceb5d69a0e50a50eb12567d0b6752a43c8bed3594fabe6450d74c5",
+      "bytes": 228020,
+      "sha256": "ebf4fa3f3a2a3d8cee3d5e7ecea5603c447388a5bcb6b0b263e3ef440ee752a4",
       "sourcePath": "browser-data-view.js"
     },
     {
       "path": "dropdown-menus.js",
-      "bytes": 8744,
-      "sha256": "25f4c217bbe58e44d089647717d58b5ff4e4ea8217776ac087b7934e8b75922e",
+      "bytes": 9365,
+      "sha256": "dae8abd8d13fc16bea4ba1c532372f7cc58910ea7ddd749129b212dda5a7b7d5",
       "sourcePath": "dropdown-menus.js"
     },
     {
