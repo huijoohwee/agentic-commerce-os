@@ -20,10 +20,10 @@ const COMMERCE_THEME_PIN = Object.freeze({
 });
 const SHARED_UI_ICON_PIN = Object.freeze({
   owner: 'github.com/huijoohwee/agentic-design-system',
-  sourceRevision: '3224afd19c086e511dcfd892d82d12b68460b971',
-  registryRevision: 'f5faa7887d22ffbd61121f30485a8d9ecca957e4',
-  profileSha256: 'f335bd273298f267eddffdf3b3f344a69e31e965223e527e6f599b2947ac9856',
-  projectionSha256: 'c1b166161b7d85ee3bfe8aa085e3427718086de4dfd1445225b52b747fbe475d',
+  sourceRevision: 'c62a67978f4df85ae5f5681522ff7ae44d530f49',
+  registryRevision: '5082cd5beaf29e8a5c7a027dd5359ed4074a4388',
+  profileSha256: '50f41445e4e4bd06a82e25818d3020b60c788e801c24347af4de2b48587bfa65',
+  projectionSha256: 'd3436f0f11cf6b014733f7c2681902df5e12052076b0aafba91ccdaf5668a77e',
 });
 export const git = (...args) => execFileSync('git', args, { encoding: 'utf8', timeout: 20000 }).trim();
 export function assertLocalFirstConfig(config) {
@@ -86,7 +86,7 @@ export function verifyGraphDataView() {
   if (pin.schema !== 'agentic-graph/data-view-artifact/v1' || pin.sourceDirty !== false || !/^[0-9a-f]{40}$/.test(pin.sourceRevision)) throw Error('Graph data view provenance invalid');
   if (pin.entry !== 'canvas/src/features/markdown/ui/dataViewBrowserAdapter.tsx' || pin.browserExport !== 'mountDataView' || pin.cssScope !== 'shadow-root' || pin.hostTokens !== 'graph-ui-tokens.css'
     || JSON.stringify(pin.browserExports) !== JSON.stringify(['mountDataView', 'mountSequenceGuide'])
-    || !Array.isArray(pin.inputs) || !pin.inputs.length || pin.inputs.length > 100 || digest(JSON.stringify(pin.inputs)) !== pin.inputDigest) throw Error('Graph data view source contract invalid');
+    || !Array.isArray(pin.inputs) || !pin.inputs.length || pin.inputs.length > 108 || digest(JSON.stringify(pin.inputs)) !== pin.inputDigest) throw Error('Graph data view source contract invalid');
   const paths = new Set(); let totalInputBytes = 0, previousPath = '';
   for (const input of pin.inputs) {
     if (!input || typeof input.path !== 'string' || input.path.startsWith('/') || input.path.includes('..') || input.path.includes('\\') || input.path <= previousPath
@@ -94,9 +94,9 @@ export function verifyGraphDataView() {
       || input.path.startsWith('canvas/src/') && /(?:\/hooks\/|useGraphStore|useSequenceDocument|\/(?:stores?|storage|three|mermaid|rich-media)\/)/.test(input.path)) throw Error('Graph data view input invalid');
     paths.add(input.path); previousPath = input.path; totalInputBytes += input.bytes;
   }
-  const owners = [pin.entry, 'canvas/scripts/build-data-view-adapter.mjs', 'canvas/src/features/markdown/ui/MarkdownDataViewTableCore.tsx',
+  const owners = [pin.entry, 'canvas/scripts/build-data-view-adapter.mjs', 'node_modules/@agentic-base/views-react/packages/views-react/src/table/TableCore.tsx', 'node_modules/@agentic-base/views-react/packages/views-react/src/browser/DataViewBrowserAdapter.tsx',
     'canvas/src/features/sequence/sequenceGuideBrowserAdapter.tsx', 'canvas/src/features/sequence/SequenceInspectorView.tsx',
-    'canvas/src/features/sequence/SequenceFlow.css', 'canvas/src/components/ui/FloatingPanel.tsx', 'canvas/src/lib/ui/floatingPanelGeometry.ts',
+    'canvas/src/features/sequence/SequenceFlow.css', 'node_modules/@agentic-base/views-react/packages/views-react/src/panels/FloatingPanelShell.tsx', 'node_modules/@agentic-base/views-react/packages/views-react/src/panels/FloatingPanelCloseButton.tsx', 'canvas/src/lib/ui/floatingPanelTheme.ts', 'canvas/src/lib/ui/floatingPanelGeometry.ts',
     'canvas/src/index.css', 'canvas/src/styles/responsive-toolbar.css', 'grph-shared/src/ui/themeTokens.ts',
     'grph-shared/src/ui/kgTokens.ts', 'grph-shared/src/ui/typography.ts'];
   if (totalInputBytes > 8000000 || owners.some(owner => !paths.has(owner))) throw Error('Graph data view native owner missing or over budget');

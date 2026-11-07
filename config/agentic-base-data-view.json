@@ -2,13 +2,13 @@
   "schema": "agentic-base/consumer-artifact/v1",
   "source": {
     "repository": "github.com/huijoohwee/agentic-base",
-    "revision": "e78b36ca624f1cbeacf0502d67a00e924615149a",
+    "revision": "21e04e35a2954025013fc9f23c9712fe5fc55366",
     "sourceDirty": false,
     "package": "@agentic-base/views-react",
     "packageVersion": "0.1.0",
     "packagePath": "packages/views-react",
     "buildManifest": "packages/views-react/dist/browser-data-view.manifest.json",
-    "buildManifestSha256": "bde078269853859623e736288b3ac9bf7195dc7c23a5f503219b32ca37137032"
+    "buildManifestSha256": "c50b2eb59c94333493b5e3858e438b0f39af6dc86ffd5dbf8a4d2a3ee1875d7b"
   },
   "contract": {
     "source": "agentic-base/browser-data-view/v1",
@@ -47,8 +47,8 @@
     },
     {
       "path": "packages/views-react/src/browser/browserDataView.css",
-      "bytes": 18239,
-      "sha256": "100932a8fe1062f97d3e7b040624b4e0ae1e7f032f30e9aef3a19fafad17bb06"
+      "bytes": 18525,
+      "sha256": "1299cb6f11e4bfe104ab5b8fe29cd231582416e175b0af14492cf84dd834027b"
     },
     {
       "path": "packages/views-react/src/browser/index.ts",
@@ -57,13 +57,13 @@
     },
     {
       "path": "packages/views-react/src/browser/shared-ui-profile.css",
-      "bytes": 462,
-      "sha256": "754ee45e1a07d46e68ab95cbf3c9b28257ad9c71ddec9cf825806c28dfaa4be9"
+      "bytes": 1076,
+      "sha256": "d3436f0f11cf6b014733f7c2681902df5e12052076b0aafba91ccdaf5668a77e"
     },
     {
       "path": "packages/views-react/src/browser/shared-ui-profile.pin.json",
-      "bytes": 667,
-      "sha256": "aeb969711bc04a8544d14d63d3f0ccc5fa88e9750c836378d1d23415cc130dda"
+      "bytes": 717,
+      "sha256": "416cd95d38cd21b9d0b0b6aead559382551cb6936f1d607a8ac591d1bb979356"
     },
     {
       "path": "packages/views-react/src/table/BaseColumnHeaderMenu.tsx",
@@ -130,14 +130,14 @@
     {
       "path": "agentic-base-data-view.js",
       "sourcePath": "browser-data-view.js",
-      "bytes": 219171,
-      "sha256": "e99c9d198cb589be3ade9cf3f90ced9e0e1d24d1f00ee85073ee7916c3d1c790"
+      "bytes": 219205,
+      "sha256": "d889fcd825cd0d73a44c25e501f6afb545ff30d9600672d9f9923c013fa795c9"
     },
     {
       "path": "agentic-base-data-view.css",
       "sourcePath": "browser-data-view.css",
-      "bytes": 18702,
-      "sha256": "466a59f578578794b1ddacf607bf99bdcccfcbd73e7add5aff95477c1f9aea1d"
+      "bytes": 19602,
+      "sha256": "ddc08b75ddeb74ef74bba229849bd21f14638b06cb2d70684a5b6bc2d2e06713"
     }
   ]
 }
