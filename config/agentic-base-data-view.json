@@ -2,13 +2,13 @@
   "schema": "agentic-base/consumer-artifact/v1",
   "source": {
     "repository": "github.com/huijoohwee/agentic-base",
-    "revision": "7ae2831f0f0fb9f3159a1bb6abad77400ed4b383",
+    "revision": "b8931a79945b4bbcf226d6f500d542ed7c929d15",
     "sourceDirty": false,
     "package": "@agentic-base/views-react",
     "packageVersion": "0.1.0",
     "packagePath": "packages/views-react",
     "buildManifest": "packages/views-react/dist/browser-data-view.manifest.json",
-    "buildManifestSha256": "3388c7b820b2994e743d5d4db970eb8bd38ebf21fbd1a27f4e0e120915650c80"
+    "buildManifestSha256": "c50b2eb59c94333493b5e3858e438b0f39af6dc86ffd5dbf8a4d2a3ee1875d7b"
   },
   "contract": {
     "source": "agentic-base/browser-data-view/v1",
@@ -57,13 +57,13 @@
     },
     {
       "path": "packages/views-react/src/browser/shared-ui-profile.css",
-      "bytes": 1069,
-      "sha256": "a523df2fee73e476d31088fedb457e58054203ffc4fdd1e713fd96f8d1ae47d6"
+      "bytes": 1076,
+      "sha256": "d3436f0f11cf6b014733f7c2681902df5e12052076b0aafba91ccdaf5668a77e"
     },
     {
       "path": "packages/views-react/src/browser/shared-ui-profile.pin.json",
       "bytes": 717,
-      "sha256": "2caf1b60391604c951bab8be0782128c93b87c821899a5cfb2d5e2f52178f4db"
+      "sha256": "416cd95d38cd21b9d0b0b6aead559382551cb6936f1d607a8ac591d1bb979356"
     },
     {
       "path": "packages/views-react/src/table/BaseColumnHeaderMenu.tsx",
@@ -131,13 +131,13 @@
       "path": "agentic-base-data-view.js",
       "sourcePath": "browser-data-view.js",
       "bytes": 219205,
-      "sha256": "41391559583e930112b67152f2b8b8328ee4f2968e856b9113a2914774ae3832"
+      "sha256": "d889fcd825cd0d73a44c25e501f6afb545ff30d9600672d9f9923c013fa795c9"
     },
     {
       "path": "agentic-base-data-view.css",
       "sourcePath": "browser-data-view.css",
-      "bytes": 19595,
-      "sha256": "9eb77c329de36159389a7992c1b9fcbdc99cbf915771067881c875162a4dbe2e"
+      "bytes": 19602,
+      "sha256": "ddc08b75ddeb74ef74bba229849bd21f14638b06cb2d70684a5b6bc2d2e06713"
     }
   ]
 }

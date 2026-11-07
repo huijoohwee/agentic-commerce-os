@@ -20,10 +20,10 @@ const COMMERCE_THEME_PIN = Object.freeze({
 });
 const SHARED_UI_ICON_PIN = Object.freeze({
   owner: 'github.com/huijoohwee/agentic-design-system',
-  sourceRevision: '250cb58c92abd8b8d024e881e329869fb69e8a9a',
-  registryRevision: '645687351a04f79585ce6bed200234a3222ab0bc',
-  profileSha256: '9d9e775371a2da55ac7f5e484677e82453e61d503d9494696a6068eb2afcc32e',
-  projectionSha256: 'a523df2fee73e476d31088fedb457e58054203ffc4fdd1e713fd96f8d1ae47d6',
+  sourceRevision: 'c62a67978f4df85ae5f5681522ff7ae44d530f49',
+  registryRevision: '5082cd5beaf29e8a5c7a027dd5359ed4074a4388',
+  profileSha256: '50f41445e4e4bd06a82e25818d3020b60c788e801c24347af4de2b48587bfa65',
+  projectionSha256: 'd3436f0f11cf6b014733f7c2681902df5e12052076b0aafba91ccdaf5668a77e',
 });
 export const git = (...args) => execFileSync('git', args, { encoding: 'utf8', timeout: 20000 }).trim();
 export function assertLocalFirstConfig(config) {
@@ -86,7 +86,7 @@ export function verifyGraphDataView() {
   if (pin.schema !== 'agentic-graph/data-view-artifact/v1' || pin.sourceDirty !== false || !/^[0-9a-f]{40}$/.test(pin.sourceRevision)) throw Error('Graph data view provenance invalid');
   if (pin.entry !== 'canvas/src/features/markdown/ui/dataViewBrowserAdapter.tsx' || pin.browserExport !== 'mountDataView' || pin.cssScope !== 'shadow-root' || pin.hostTokens !== 'graph-ui-tokens.css'
     || JSON.stringify(pin.browserExports) !== JSON.stringify(['mountDataView', 'mountSequenceGuide'])
-    || !Array.isArray(pin.inputs) || !pin.inputs.length || pin.inputs.length > 100 || digest(JSON.stringify(pin.inputs)) !== pin.inputDigest) throw Error('Graph data view source contract invalid');
+    || !Array.isArray(pin.inputs) || !pin.inputs.length || pin.inputs.length > 108 || digest(JSON.stringify(pin.inputs)) !== pin.inputDigest) throw Error('Graph data view source contract invalid');
   const paths = new Set(); let totalInputBytes = 0, previousPath = '';
   for (const input of pin.inputs) {
     if (!input || typeof input.path !== 'string' || input.path.startsWith('/') || input.path.includes('..') || input.path.includes('\\') || input.path <= previousPath
