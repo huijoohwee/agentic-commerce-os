@@ -22,7 +22,7 @@ a { color: inherit; text-underline-offset: 4px; }
 .topbar>.brand{grid-column:1;grid-row:1;display:flex;align-items:center;min-width:162px;min-height:44px;gap:10px;color:var(--commerce-ink);text-decoration:none}
 .topbar>.navigation-toggle{grid-column:2;grid-row:1}
 .topbar>.console-breadcrumb{grid-column:3;grid-row:1;display:flex;align-items:center;gap:16px;min-width:0;flex:1;color:var(--commerce-text-muted);font-size:.8125rem}
-.topbar>.workspace-role-switcher{grid-column:4;grid-row:1;width:100%;min-width:0;min-height:44px;padding:0 10px;border:1px solid var(--commerce-border-strong);border-radius:11px;background:var(--commerce-surface);color:var(--commerce-ink);font-size:.8rem;font-weight:600;text-overflow:ellipsis;white-space:nowrap}
+.topbar>.workspace-role-switcher{grid-column:4;grid-row:1;width:100%;min-width:0;border:1px solid var(--commerce-border-strong);background:var(--commerce-surface);color:var(--commerce-ink);text-overflow:ellipsis;white-space:nowrap}
 .topbar>.workspace-role-switcher:focus-visible{outline:2px solid var(--commerce-focus);outline-offset:2px}
 .topbar>.console-agent-button{grid-column:6;grid-row:1;display:inline-grid;place-items:center;width:44px;min-width:44px;min-height:44px;margin:0;padding:8px!important;flex-shrink:0;white-space:nowrap}
 .topbar>#connection{grid-column:7;grid-row:1}
@@ -95,7 +95,7 @@ body.console-mode main { max-width: none; margin: 0; padding: 0; }
   .topbar>.navigation-toggle{grid-column:2;grid-row:1}
   .topbar>.badge{min-width:88px;max-width:112px;padding:4px 7px;font-size:.64rem;line-height:1.15;text-align:center;white-space:normal}
   #connection{flex:0 1 132px;margin-left:0}
-  .topbar>.workspace-role-switcher{font-size:.74rem;padding-inline:8px}
+  .topbar>.workspace-role-switcher{}
 }
 @media(min-width:681px) and (max-width:950px){
   .workspace-shell{display:block}
@@ -114,7 +114,7 @@ body.console-mode main { max-width: none; margin: 0; padding: 0; }
   .topbar>.brand .brand-mark{width:34px;height:34px;flex-basis:34px}
   .topbar>.brand .brand-wordmark strong{font-size:1.35rem}
   .topbar>.brand .brand-wordmark small,.topbar>.console-breadcrumb{display:none}
-  .topbar>.workspace-role-switcher{grid-column:3;grid-row:1;min-height:44px;font-size:.7rem}
+  .topbar>.workspace-role-switcher{grid-column:3;grid-row:1;}
   .topbar>.console-agent-button{grid-column:4;grid-row:1;width:var(--commerce-touch-target);min-width:var(--commerce-touch-target);height:var(--commerce-touch-target);margin:0;padding:8px!important}
   .topbar>#connection{grid-column:5;grid-row:1;justify-self:end;justify-content:flex-start;max-width:104px;min-width:72px;min-height:40px;margin:0;padding:4px 6px;font-size:.6rem;line-height:1.1;text-align:left;white-space:nowrap;overflow:hidden}
   .workspace-status-label{display:block;width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -157,7 +157,7 @@ body.console-mode main { max-width: none; margin: 0; padding: 0; }
   .topbar>.brand .brand-mark{width:clamp(24px,7.7vw,30px);height:clamp(24px,7.7vw,30px);flex-basis:clamp(24px,7.7vw,30px)}
   .topbar>.brand .brand-wordmark strong{font-size:clamp(.9rem,4.1vw,1rem)}
   .topbar>.navigation-toggle{grid-column:2;grid-row:1}
-  .topbar>.workspace-role-switcher{grid-column:3;grid-row:1;padding-inline:6px;font-size:.66rem}
+  .topbar>.workspace-role-switcher{grid-column:3;grid-row:1;}
   .topbar>.console-agent-button{grid-column:4;grid-row:1;width:var(--commerce-touch-target);min-width:var(--commerce-touch-target);height:var(--commerce-touch-target)}
   .topbar>#connection{grid-column:5;grid-row:1;min-width:64px;max-width:64px;padding:4px 5px;font-size:.57rem}
   .workspace-shell>.sidebar{grid-template-columns:repeat(4,minmax(0,1fr));gap:2px 4px;padding:4px 10px}
@@ -184,7 +184,7 @@ body.console-mode main { max-width: none; margin: 0; padding: 0; }
   .topbar>.brand{grid-column:1;grid-row:1;gap:3px}
   .topbar>.brand .brand-mark{width:24px;height:24px;flex-basis:24px}
   .topbar>.brand .brand-wordmark strong{font-size:.9rem}
-  .topbar>.workspace-role-switcher{grid-column:3;grid-row:1;font-size:.62rem;padding-inline:6px}
+  .topbar>.workspace-role-switcher{grid-column:3;grid-row:1;}
   .topbar>#connection{grid-column:4;grid-row:1;justify-self:stretch;min-width:56px;max-width:56px;padding:4px;font-size:.56rem}
   .workspace-shell>.sidebar .sidebar-actions a{min-height:44px}
   .workspace-shell>.sidebar .sidebar-actions{grid-template-columns:repeat(2,minmax(0,1fr));gap:2px;padding:0}
