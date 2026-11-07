@@ -99,7 +99,8 @@ export function verifyGraphDataView() {
     'canvas/src/features/sequence/SequenceFlow.css', 'node_modules/@agentic-base/views-react/packages/views-react/src/panels/FloatingPanelShell.tsx', 'node_modules/@agentic-base/views-react/packages/views-react/src/panels/FloatingPanelCloseButton.tsx', 'canvas/src/lib/ui/floatingPanelTheme.ts', 'canvas/src/lib/ui/floatingPanelGeometry.ts',
     'canvas/src/index.css', 'canvas/src/styles/responsive-toolbar.css', 'grph-shared/src/ui/themeTokens.ts',
     'grph-shared/src/ui/kgTokens.ts', 'grph-shared/src/ui/typography.ts',
-    'grph-shared/src/ui/graph-profile.json', 'grph-shared/src/ui/graph-profile.pin.json', 'canvas/src/styles/kgTokens.generated.css'];
+    'grph-shared/src/ui/graph-profile.json', 'grph-shared/src/ui/graph-profile.pin.json', 'grph-shared/src/ui/design-runtime-profile.json',
+    'canvas/src/styles/shared-ui-profile.pin.json', 'canvas/src/styles/kgTokens.generated.css'];
   if (totalInputBytes > 8000000 || owners.some(owner => !paths.has(owner))) throw Error('Graph data view native owner missing or over budget');
   const names = ['graph-data-view.js', 'graph-data-view.css', 'graph-ui-tokens.css'];
   if (!Array.isArray(pin.outputs) || pin.outputs.length !== names.length || names.some(name => !pin.outputs.some(row => row.path === name))) throw Error('Graph data view inventory invalid');
