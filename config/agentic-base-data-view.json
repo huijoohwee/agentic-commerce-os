@@ -2,7 +2,7 @@
   "schema": "agentic-base/consumer-artifact/v1",
   "source": {
     "repository": "github.com/huijoohwee/agentic-base",
-    "revision": "b8931a79945b4bbcf226d6f500d542ed7c929d15",
+    "revision": "21e04e35a2954025013fc9f23c9712fe5fc55366",
     "sourceDirty": false,
     "package": "@agentic-base/views-react",
     "packageVersion": "0.1.0",

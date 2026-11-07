@@ -1,6 +1,6 @@
 {
   "schema": "agentic-graph/data-view-artifact/v1",
-  "sourceRevision": "267fae928e5b84f06bd6f6ddf76f865f9f539f05",
+  "sourceRevision": "2362f67351f60a127e0098c150e3d14038279327",
   "sourceDirty": false,
   "entry": "canvas/src/features/markdown/ui/dataViewBrowserAdapter.tsx",
   "browserExport": "mountDataView",
@@ -49,12 +49,12 @@
       "license": "MIT"
     }
   ],
-  "inputDigest": "371519b47ec74a75e1c77a4e589da8db814bfc592ad69469f2a883d364f510d0",
+  "inputDigest": "589c6588f0a69e43e4756bd9735f93bafc15f83b79e34c93ce15db57dc7fc70c",
   "inputs": [
     {
       "path": "canvas/package.json",
       "bytes": 13920,
-      "sha256": "1fd6e5409b47d147e9324f8841e415afb373ba6f063ba159240b11b987e12509"
+      "sha256": "37ff29966b01152095732ee3f71a36cca5e0e1e6e80ff6877d792178554818f5"
     },
     {
       "path": "canvas/scripts/build-data-view-adapter.mjs",
@@ -78,8 +78,8 @@
     },
     {
       "path": "canvas/src/features/sequence/sequenceGuideBrowserAdapter.tsx",
-      "bytes": 7388,
-      "sha256": "d152dce911e1292ab46fa07de92bf3cdbd740a613a2fbccf3917d6f2d4f9a547"
+      "bytes": 7702,
+      "sha256": "15ae8ba87ca59d1a4ae729abbf014d78dfd800f47d8a0486d5817d7cb7581325"
     },
     {
       "path": "canvas/src/index.css",
@@ -95,6 +95,11 @@
       "path": "canvas/src/lib/ui/floatingPanelTheme.ts",
       "bytes": 790,
       "sha256": "d872189817b0172086cee2ff7e43deee8361b1936de5e7f96d860a2ac09d0abb"
+    },
+    {
+      "path": "canvas/src/lib/ui/responsiveElementClasses.ts",
+      "bytes": 34575,
+      "sha256": "9587cf49e545c01ec05e5e5a75d1c33ea522074b0de1581d2df2799a1f59e031"
     },
     {
       "path": "canvas/src/styles/application-typography.css",
@@ -203,8 +208,8 @@
     },
     {
       "path": "node_modules/@agentic-base/views-react/packages/views-react/src/panels/floatingPanelShell.css",
-      "bytes": 2124,
-      "sha256": "0b0e93b3c20f47c07dea43f0df99bbd70f257c0de5d9cf5bbe6f2c6dd7ec63a2"
+      "bytes": 2254,
+      "sha256": "561226b08e1b59199322f609dec9f4e12eece178f08b07ac2b351b889a9138fb"
     },
     {
       "path": "node_modules/@agentic-base/views-react/packages/views-react/src/table/BaseColumnHeaderMenu.tsx",
@@ -564,7 +569,7 @@
     {
       "path": "package-lock.json",
       "bytes": 637363,
-      "sha256": "ce20e9de8c182987740cbf24264741b8396f70f9696c67874d7374d6d25954fb"
+      "sha256": "50aa8a4f10ee81a42b89be9cea2e6417b2ba4c666cebf31b6d3861bf4923dd76"
     },
     {
       "path": "package.json",
@@ -575,13 +580,13 @@
   "outputs": [
     {
       "path": "graph-data-view.js",
-      "bytes": 249975,
-      "sha256": "315db2480930af86f5cb5e9d06ccd7182ce893f9efd5ce5adf9580396683d989"
+      "bytes": 251150,
+      "sha256": "d3228586451903acca31cefe4f3046f7a5f181773d5678146a7856daecc10454"
     },
     {
       "path": "graph-data-view.css",
-      "bytes": 70781,
-      "sha256": "d02eb542eb7d2d6e949ba463496f275424ac92cfce26810be4b1a486578c5792"
+      "bytes": 72575,
+      "sha256": "a450253b11e637376b69ad15efb6b005610da09e386ab667f01f8adb68239c07"
     },
     {
       "path": "graph-ui-tokens.css",

@@ -87,13 +87,17 @@ async function checkGuideChrome(page, defaultGlyph = true) {
     const icon = button.querySelector('svg');
     return { button: bounds(button), icon: bounds(icon), header: bounds(button.closest('header')),
       controlHeight: parseFloat(getComputedStyle(button).getPropertyValue('--kg-control-height')),
+      panelControlHeight: parseFloat(getComputedStyle(button).getPropertyValue('--base-control-height')),
+      verticalInsets: ['paddingTop', 'paddingBottom', 'borderTopWidth', 'borderBottomWidth'].reduce((sum, key) => sum + parseFloat(getComputedStyle(button)[key]), 0),
       touchTarget: matchMedia('(pointer: coarse), (max-width: 768px)').matches,
       strokeWidth: Number(icon.getAttribute('stroke-width')) };
   });
   const target = geometry.touchTarget ? 44 : 28;
   assert.equal(geometry.controlHeight, target, 'The guide inherits the native fine/touch control-height token');
-  assert(Math.abs(geometry.button.height - Math.max(target, geometry.icon.height)) <= 1,
-    'Close uses the native control height and grows enough for an enlarged shared glyph');
+  const panelTarget = geometry.touchTarget ? 54 : 38;
+  assert.equal(geometry.panelControlHeight, panelTarget, 'Panel close and header share the current responsive panel/toolbar row owner');
+  assert(Math.abs(geometry.button.height - Math.max(panelTarget, geometry.icon.height + geometry.verticalInsets)) <= 1,
+    'Close uses the native panel height and includes its box insets around an enlarged shared glyph');
   assert(geometry.button.width >= target, 'Close preserves the native minimum target width');
   assert(Math.abs(geometry.header.height - geometry.button.height) <= 1, 'The floating header stays compact around its native control');
   assert.equal(geometry.strokeWidth, 1.5, 'The close glyph inherits the shared default stroke');
