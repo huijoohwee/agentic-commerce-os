@@ -27,11 +27,9 @@ const ASSET_PATHS = new Map([
     '/shared-ui-profile.css', '/sme-review-workflow.js', '/graph-gantt-timeline.js', '/graph-gantt-timeline.css',
   ].map(path => [path, path] as [string, string])),
   ['/services/workspace-pack/', '/workspace-pack.html'],
-  ['/services/workspace-pack/workspace-pack.js', '/workspace-pack.js'],
-  ['/services/workspace-pack/dropdown-menus.js', '/dropdown-menus.js'],
-  ['/services/workspace-pack/workspace-pack.simulation.js', '/workspace-pack.simulation.js'],
-  ['/services/workspace-pack/workspace-pack.console.js', '/workspace-pack.console.js'],
-  ['/services/workspace-pack/workspace-pack.css', '/workspace-pack.css'],
+  ...['workspace-pack.js', 'dropdown-menus.js', 'workspace-pack.simulation.js',
+    'workspace-pack.console.js', 'workspace-pack.css']
+    .map(file => ['/services/workspace-pack/' + file, '/' + file] as [string, string]),
 ])
 function secured(response: Response, source: string, head: boolean): Response {
   const headers = new Headers(response.headers)
