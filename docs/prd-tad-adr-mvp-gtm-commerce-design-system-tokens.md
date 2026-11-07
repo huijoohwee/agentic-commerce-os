@@ -1,19 +1,19 @@
 ---
 title: "Commerce Shared Design Token Adoption"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.1.5"
-revision: "0.1.5"
+version: "0.1.6"
+revision: "0.1.6"
 date: "2026-10-31"
 updated_date: "2026-10-31"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Commerce product function"
 continuity_id: "COMMERCE-DESIGN-SYSTEM-TOKENS-001"
-prd_revision: "0.1.5"
-tad_revision: "0.1.5"
-adr_revision: "0.1.5"
-mvp_revision: "0.1.5"
-gtm_revision: "0.1.5"
+prd_revision: "0.1.6"
+tad_revision: "0.1.6"
+adr_revision: "0.1.6"
+mvp_revision: "0.1.6"
+gtm_revision: "0.1.6"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -34,7 +34,7 @@ runtime_readiness_policy: "fail-closed"
 
 # Commerce Shared Design Token Adoption
 
-**Join:** `COMMERCE-DESIGN-SYSTEM-TOKENS-001@0.1.5`, superseding `0.1.4`, `0.1.3`, `0.1.2`, and `0.1.1` under
+**Join:** `COMMERCE-DESIGN-SYSTEM-TOKENS-001@0.1.6`, superseding `0.1.4`, `0.1.3`, `0.1.2`, and `0.1.1` under
 `COMMERCE-CONTROL-PLANE-001@0.1.0`. This plan covers Commerce's generated presentation
 projections. It does not move product component behavior, commerce capabilities, or deployment
 authority into the token registry.
@@ -318,7 +318,7 @@ readiness.
 
 ## ADLC and release boundary
 
-Revision 0.1.5 supersedes 0.1.4 and refreshes the protected-main and Graph rights evidence. It keeps
+Revision 0.1.6 supersedes 0.1.4 and refreshes the protected-main and Graph rights evidence. It keeps
 the observed non-ancestor Commerce profile pin and plans a provenance-only rebind to the current
 protected-main central profile without changing its 36 values. This revision changes only this
 planning document. It does not change the application, generated CSS, Graph sources, CSP work,
@@ -363,3 +363,7 @@ closeout or production claim is made.
   source commit is not an ancestor of that protected revision.
 - Graph data-view source revision and output digests are pinned by the Commerce manifest; the
   additional Graph values are not copied into this document or granted for central publication.
+
+## Shared dropdown and textbox adoption
+
+This source increment consumes shared-ui v0.5.0 from the existing Design System owner, with exact profile/projection pins. All native Commerce dropdowns and textboxes opt into its generated geometry through the HTML scope; SME, shell, search and Program Pack styles retain only local paint/flow instead of competing heights, padding or radii. Fields and Graph menu options share 28px desktop / 48px touch height, 8px inline padding, 6px radius and 14px/20px text; native selects retain platform choice behavior and textareas retain multiline layout. Base/Graph artifacts are rebuilt by their native producers and adopted with exact manifests. Existing form labels, values, validation, events, offline drafts and keyboard behavior remain owned locally. Run native local-first/browser checks and canonical desktop/mobile verification. Rollback restores exact prior pins/assets; this increment selects no Production activation.
