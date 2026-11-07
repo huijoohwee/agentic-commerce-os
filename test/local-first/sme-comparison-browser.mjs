@@ -470,7 +470,9 @@ async function checkTakeoverReview(page, output) {
   await page.locator('#sme-workflow').scrollIntoViewIfNeeded()
   await page.screenshot({ path: path.join(output, 'sme-review-desktop.png') })
   await page.setViewportSize({ width: 360, height: 780 })
-  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true)
+  const mobileLayout = await page.evaluate(() => ({ width: innerWidth, documentWidth: document.documentElement.scrollWidth,
+    overflow: [...document.querySelectorAll('#sme [id], #sme .agentic-select-trigger')].filter(el => el.getClientRects().length && el.getBoundingClientRect().right > innerWidth + 1).slice(0, 12).map(el => ({ id: el.id, tag: el.tagName, display: getComputedStyle(el).display, width: el.getBoundingClientRect().width, right: el.getBoundingClientRect().right })) }))
+  assert.equal(mobileLayout.documentWidth <= mobileLayout.width, true, JSON.stringify(mobileLayout))
   await host.scrollIntoViewIfNeeded()
   await page.screenshot({ path: path.join(output, 'sme-review-mobile.png') })
   await page.evaluate(() => {

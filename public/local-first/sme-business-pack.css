@@ -24,7 +24,7 @@
 #sme .workflow-toolbar { display: flex; align-items: end; flex-wrap: wrap; gap: 9px; margin: 13px 0; }
 #sme .workflow-control { flex: 1 1 210px; min-width: 0; }
 #sme .workflow-control label, #sme .sme-workflow-editor label { display: block; margin: 5px 0; color: var(--commerce-ink); font-size: .74rem; font-weight: 600; }
-#sme .workflow-toolbar :is(select, .agentic-select-trigger), #sme .sme-workflow-editor :is(select, .agentic-select-trigger), #sme .review-controls :is(select, .agentic-select-trigger), #sme .review-date-editor input { display: block; width: 100%; border: 1px solid var(--commerce-control-border); background: var(--commerce-surface); color: var(--commerce-ink); }
+#sme .workflow-toolbar :is(select, .agentic-select-trigger), #sme .sme-workflow-editor :is(select, .agentic-select-trigger), #sme .review-controls :is(select, .agentic-select-trigger), #sme .review-date-editor input { width: 100%; border: 1px solid var(--commerce-control-border); background: var(--commerce-surface); color: var(--commerce-ink); }
 #sme .workflow-toolbar button, #sme .actions button, #sme .button.secondary, #sme .sme-workflow-editor button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 9px 13px; border: 1px solid var(--commerce-action); border-radius: 9px; background: var(--commerce-action); color: var(--commerce-surface); font-size: .76rem; font-weight: 600; cursor: pointer; text-decoration: none; }
 #sme .workflow-toolbar button.secondary, #sme .actions button.secondary, #sme .button.secondary, #sme .sme-workflow-editor button.secondary { border-color: var(--commerce-border-strong); background: var(--commerce-surface); color: var(--commerce-action); }
 #sme .workflow-table-actions { display: flex; justify-content: flex-end; margin: 9px 0 6px; }
@@ -45,7 +45,7 @@
 #sme .field { min-width: 0; }
 #sme .field label { display: block; min-height: 0; margin: 9px 0 5px; color: var(--commerce-text-muted); font-size: .72rem; font-weight: 600; line-height: 1.35; }
 #sme .field .field-label { display: block; margin: 9px 0 5px; color: var(--commerce-text-muted); font-size: .72rem; font-weight: 600; line-height: 1.35; }
-#sme .field :is(select, .agentic-select-trigger), #sme .field input { display: block; width: 100%; min-width: 0; border: 1px solid var(--commerce-control-border); background: var(--commerce-surface); color: var(--commerce-ink); font-size: var(--agentic-font-size-body); }
+#sme .field :is(select, .agentic-select-trigger), #sme .field input { width: 100%; min-width: 0; border: 1px solid var(--commerce-control-border); background: var(--commerce-surface); color: var(--commerce-ink); font-size: var(--agentic-font-size-body); }
 #sme .cash-range-input { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
 #sme .field label.cash-bound { margin: 0; color: var(--commerce-text-muted); font-size: .64rem; }
 #sme .cash-bound input { margin-top: 4px; }

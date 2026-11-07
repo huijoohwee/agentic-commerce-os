@@ -168,7 +168,7 @@ dialog{border:1px solid var(--commerce-border-strong);border-radius:20px;width:m
 /* Project overview and environment details reuse the native card and record owners. */
 .project-selector{display:block;margin:20px 8px 0;color:var(--commerce-text-muted);font-size:var(--agentic-font-size-body)}
 .project-selector label{font:inherit;color:inherit;margin:0}
-.project-selector :is(select, .agentic-select-trigger){display:block;width:100%;min-width:0;margin-top:8px;font-size:var(--agentic-font-size-body);border-color:var(--commerce-control-border);background:var(--commerce-surface)}
+.project-selector :is(select, .agentic-select-trigger){width:100%;min-width:0;margin-top:8px;font-size:var(--agentic-font-size-body);border-color:var(--commerce-control-border);background:var(--commerce-surface)}
 .console-section-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:28px 0 16px;padding-top:22px;border-top:1px dashed var(--commerce-border)}
 .console-section-toolbar h2{margin:0;font-size:var(--agentic-font-size-body);font-weight:500}
 #admin .console-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0 0 16px}
