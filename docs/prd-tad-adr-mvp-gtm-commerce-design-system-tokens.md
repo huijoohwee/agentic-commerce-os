@@ -1,19 +1,19 @@
 ---
 title: "Commerce Shared Design Token Adoption"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.1.10"
-revision: "0.1.10"
+version: "0.1.11"
+revision: "0.1.11"
 date: "2026-10-31"
 updated_date: "2026-11-07"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Commerce product function"
 continuity_id: "COMMERCE-DESIGN-SYSTEM-TOKENS-001"
-prd_revision: "0.1.10"
-tad_revision: "0.1.10"
-adr_revision: "0.1.10"
-mvp_revision: "0.1.10"
-gtm_revision: "0.1.10"
+prd_revision: "0.1.11"
+tad_revision: "0.1.11"
+adr_revision: "0.1.11"
+mvp_revision: "0.1.11"
+gtm_revision: "0.1.11"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -34,7 +34,7 @@ runtime_readiness_policy: "fail-closed"
 
 # Commerce Shared Design Token Adoption
 
-**Join:** `COMMERCE-DESIGN-SYSTEM-TOKENS-001@0.1.10`, superseding `0.1.4`, `0.1.3`, `0.1.2`, and `0.1.1` under
+**Join:** `COMMERCE-DESIGN-SYSTEM-TOKENS-001@0.1.11`, superseding `0.1.4`, `0.1.3`, `0.1.2`, and `0.1.1` under
 `COMMERCE-CONTROL-PLANE-001@0.1.0`. This plan covers Commerce's generated presentation
 projections. It does not move product component behavior, commerce capabilities, or deployment
 authority into the token registry.
@@ -318,7 +318,7 @@ readiness.
 
 ## ADLC and release boundary
 
-Revision 0.1.10 supersedes 0.1.4 and refreshes the protected-main and Graph rights evidence. It keeps
+Revision 0.1.11 supersedes 0.1.4 and refreshes the protected-main and Graph rights evidence. It keeps
 the observed non-ancestor Commerce profile pin and plans a provenance-only rebind to the current
 protected-main central profile without changing its 36 values. This revision changes only this
 planning document. It does not change the application, generated CSS, Graph sources, CSP work,
@@ -377,3 +377,5 @@ Visible menu indicators are named SVG image targets using the shared icon geomet
 Legacy action-button geometry excludes shared form triggers, and the workspace switcher retains only its host grid/colors. The central Design System utility supplies control sizing, padding, radius and typography; the existing browser helper asserts token equality before every dropdown selection. This removes conflicting rules instead of overriding the shared owner.
 
 The standalone Program Pack service alias serves the existing shared-ui-profile.css used by its stylesheet import, alongside the same native dropdown module. This is a static route mapping only; browser geometry assertions refuse a missing central profile.
+
+Dropdown assets adopt Base’s shared mouse-dismiss lifecycle, allowing pointer interception before dismissal and honoring later cancellation. Exact Base and Graph pins bind regenerated assets; no schema, storage or Production effect. Desktop/mobile ordinary selection and outside-dismiss behavior remain required. Native app annotation-picker behavior remains unverified.

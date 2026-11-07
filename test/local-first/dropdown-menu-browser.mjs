@@ -30,6 +30,14 @@ export async function chooseDropdown(control, value) {
     && [...node.querySelectorAll('svg')].every(icon => icon.getAttribute('role') === 'img'
       && icon.getAttribute('aria-label') === 'Selected'
       && icon.closest('[aria-checked="true"]')))).toBe(true);
+  await page.evaluate(() => document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true })));
+  await expect(menu).toBeVisible();
+  await page.evaluate(() => {
+    const inspect = event => event.preventDefault();
+    document.body.addEventListener('mousedown', inspect, { once: true });
+    document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+  });
+  await expect(menu).toBeVisible();
   await menu.getByRole('menuitemradio', { name: selection.label, exact: true }).click();
   await expect(menu).toBeHidden();
   return [String(value)];
