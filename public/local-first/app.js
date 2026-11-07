@@ -1,4 +1,3 @@
-import { enhanceSelects } from './dropdown-menus.js';
 enhanceSelects(document);
 import { listDrafts, saveDraft, importDrafts, exportDrafts, LIMITS } from './drafts.js';
 import { inspectLaunchInput, parseLaunchInput, evaluateOfferSetup } from './launch.js';
