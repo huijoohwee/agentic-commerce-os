@@ -18,6 +18,11 @@ export async function chooseDropdown(control, value) {
   if (!id) throw Error('Shared dropdown did not open');
   const menu = page.locator(`#${id}`);
   await expect(menu).toHaveClass(/\bagentic-menu\b/);
+  await expect(trigger.getByRole('img', { name: 'Show choices', exact: true })).toBeVisible();
+  expect(await menu.evaluate(node => !node.querySelector('div, [aria-hidden="true"]')
+    && [...node.querySelectorAll('svg')].every(icon => icon.getAttribute('role') === 'img'
+      && icon.getAttribute('aria-label') === 'Selected'
+      && icon.closest('[aria-checked="true"]')))).toBe(true);
   await menu.getByRole('menuitemradio', { name: selection.label, exact: true }).click();
   await expect(menu).toBeHidden();
   return [String(value)];
