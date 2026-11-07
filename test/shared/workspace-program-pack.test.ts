@@ -118,14 +118,18 @@ describe('Workspace Pack browser tool lifecycle', () => {
       return { ok: true, json: async () => options?.method === 'POST'
         ? result(JSON.parse(options.body)) : { id: PACK_TOOL, price: { mode: 'free' } } }
     })
-    const source = await fs.readFile('public/local-first/workspace-pack.js', 'utf8')
+    const moduleSource = await fs.readFile('public/local-first/workspace-pack.js', 'utf8')
+    // This VM owns WebMCP lifecycle only; real menu loading is exercised in browser journeys.
+    const menuImport = "import { enhanceSelects } from './dropdown-menus.js';\n"
+    expect(moduleSource.startsWith(menuImport)).toBe(true)
+    const source = moduleSource.slice(menuImport.length), enhanceSelects = vi.fn()
     const pending = runInNewContext(`(async () => {${source}\n})()`, {
-      document: { getElementById: node, createElement: element, addEventListener() {}, querySelectorAll: () => [], modelContext: registerTool ? { registerTool } : undefined },
+      enhanceSelects, document: { getElementById: node, createElement: element, addEventListener() {}, querySelectorAll: () => [], modelContext: registerTool ? { registerTool } : undefined },
       matchMedia: () => ({ matches: false }), navigator: { modelContext: legacy }, location: { href: 'http://localhost/services/workspace-pack/' },
       addEventListener: (name: string, action: () => void) => events.set(name, action),
       URL, TextEncoder, crypto: webcrypto, AbortController, AbortSignal, setTimeout, clearTimeout, fetch: fetcher,
     })
-    return { pending, node, events, fetcher }
+    return { pending, node, events, fetcher, enhanceSelects }
   }
   it('awaits Document registration, prefers it to legacy hosts, shares verified API results and cancels on pagehide', async () => {
     let tool: any, signal: AbortSignal | undefined, complete: (() => void) | undefined
@@ -134,6 +138,7 @@ describe('Workspace Pack browser tool lifecycle', () => {
     const page = await browser((value, options) => { tool = value; signal = options.signal; return registered }, legacy)
     expect(page.node('webmcp-status').textContent).not.toContain('registered')
     complete!(); await page.pending
+    expect(page.enhanceSelects).toHaveBeenCalledTimes(1)
     expect(legacy.registerTool).not.toHaveBeenCalled()
     expect(page.node('webmcp-status').textContent).toBe('Browser WebMCP tool registered.')
     const output = await tool.execute(input(), {})
