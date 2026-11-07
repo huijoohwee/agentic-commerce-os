@@ -49,7 +49,7 @@ export function verifyAgenticBaseDataView() {
     || pin.contract?.cssScope !== 'shadow-root' || pin.contract?.defaultLayout !== 'table'
     || JSON.stringify(pin.contract?.layoutModes) !== JSON.stringify(['table', 'multiDimensional'])
     || JSON.stringify(pin.contract?.hostThemeSlots) !== JSON.stringify(['--agentic-base-text', '--agentic-base-surface', '--agentic-base-border', '--agentic-base-muted', '--agentic-base-header', '--agentic-base-selected', '--agentic-base-hover', '--agentic-base-focus'])
-    || !Array.isArray(pin.inputs) || !pin.inputs.length || pin.inputs.length > 20
+    || !Array.isArray(pin.inputs) || !pin.inputs.length || pin.inputs.length > 22
     || !/^\d+\.\d+\.\d+$/.test(pin.build?.esbuild ?? '')) throw Error('Agentic Base data view source contract invalid');
   const inputPaths = new Set(); let totalInputBytes = 0;
   for (const input of pin.inputs) {
@@ -60,6 +60,7 @@ export function verifyAgenticBaseDataView() {
   }
   if (totalInputBytes > 8000000 || !inputPaths.has('packages/views-react/src/browser/DataViewBrowserAdapter.tsx')
     || !inputPaths.has('packages/views-react/src/table/MultiDimTableView.tsx')
+    || !inputPaths.has('packages/views-react/src/browser/base-profile.css') || !inputPaths.has('packages/views-react/src/browser/base-profile.pin.json')
     || !inputPaths.has('packages/views-react/src/table/TableView.tsx') || !inputPaths.has('packages/views-react/src/table/TableCore.tsx')) {
     throw Error('Agentic Base data view native owner missing or over budget');
   }
@@ -85,7 +86,7 @@ export function verifyGraphDataView() {
   if (pin.schema !== 'agentic-graph/data-view-artifact/v1' || pin.sourceDirty !== false || !/^[0-9a-f]{40}$/.test(pin.sourceRevision)) throw Error('Graph data view provenance invalid');
   if (pin.entry !== 'canvas/src/features/markdown/ui/dataViewBrowserAdapter.tsx' || pin.browserExport !== 'mountDataView' || pin.cssScope !== 'shadow-root' || pin.hostTokens !== 'graph-ui-tokens.css'
     || JSON.stringify(pin.browserExports) !== JSON.stringify(['mountDataView', 'mountSequenceGuide'])
-    || !Array.isArray(pin.inputs) || !pin.inputs.length || pin.inputs.length > 112 || digest(JSON.stringify(pin.inputs)) !== pin.inputDigest) throw Error('Graph data view source contract invalid');
+    || !Array.isArray(pin.inputs) || !pin.inputs.length || pin.inputs.length > 128 || digest(JSON.stringify(pin.inputs)) !== pin.inputDigest) throw Error('Graph data view source contract invalid');
   const paths = new Set(); let totalInputBytes = 0, previousPath = '';
   for (const input of pin.inputs) {
     if (!input || typeof input.path !== 'string' || input.path.startsWith('/') || input.path.includes('..') || input.path.includes('\\') || input.path <= previousPath
@@ -97,7 +98,9 @@ export function verifyGraphDataView() {
     'canvas/src/features/sequence/sequenceGuideBrowserAdapter.tsx', 'canvas/src/features/sequence/SequenceInspectorView.tsx',
     'canvas/src/features/sequence/SequenceFlow.css', 'node_modules/@agentic-base/views-react/packages/views-react/src/panels/FloatingPanelShell.tsx', 'node_modules/@agentic-base/views-react/packages/views-react/src/panels/FloatingPanelCloseButton.tsx', 'canvas/src/lib/ui/floatingPanelTheme.ts', 'canvas/src/lib/ui/floatingPanelGeometry.ts',
     'canvas/src/index.css', 'canvas/src/styles/responsive-toolbar.css', 'grph-shared/src/ui/themeTokens.ts',
-    'grph-shared/src/ui/kgTokens.ts', 'grph-shared/src/ui/typography.ts'];
+    'grph-shared/src/ui/kgTokens.ts', 'grph-shared/src/ui/typography.ts',
+    'grph-shared/src/ui/graph-profile.json', 'grph-shared/src/ui/graph-profile.pin.json', 'grph-shared/src/ui/design-runtime-profile.json',
+    'canvas/src/styles/shared-ui-profile.pin.json', 'canvas/src/styles/kgTokens.generated.css'];
   if (totalInputBytes > 8000000 || owners.some(owner => !paths.has(owner))) throw Error('Graph data view native owner missing or over budget');
   const names = ['graph-data-view.js', 'graph-data-view.css', 'graph-ui-tokens.css'];
   if (!Array.isArray(pin.outputs) || pin.outputs.length !== names.length || names.some(name => !pin.outputs.some(row => row.path === name))) throw Error('Graph data view inventory invalid');
