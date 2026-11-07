@@ -1,19 +1,19 @@
 ---
 title: "Commerce Shared Design Token Adoption"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.1.11"
-revision: "0.1.11"
+version: "0.1.12"
+revision: "0.1.12"
 date: "2026-10-31"
 updated_date: "2026-11-07"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Commerce product function"
 continuity_id: "COMMERCE-DESIGN-SYSTEM-TOKENS-001"
-prd_revision: "0.1.11"
-tad_revision: "0.1.11"
-adr_revision: "0.1.11"
-mvp_revision: "0.1.11"
-gtm_revision: "0.1.11"
+prd_revision: "0.1.12"
+tad_revision: "0.1.12"
+adr_revision: "0.1.12"
+mvp_revision: "0.1.12"
+gtm_revision: "0.1.12"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -34,7 +34,7 @@ runtime_readiness_policy: "fail-closed"
 
 # Commerce Shared Design Token Adoption
 
-**Join:** `COMMERCE-DESIGN-SYSTEM-TOKENS-001@0.1.11`, superseding `0.1.4`, `0.1.3`, `0.1.2`, and `0.1.1` under
+**Join:** `COMMERCE-DESIGN-SYSTEM-TOKENS-001@0.1.12`, superseding `0.1.4`, `0.1.3`, `0.1.2`, and `0.1.1` under
 `COMMERCE-CONTROL-PLANE-001@0.1.0`. This plan covers Commerce's generated presentation
 projections. It does not move product component behavior, commerce capabilities, or deployment
 authority into the token registry.
@@ -318,7 +318,7 @@ readiness.
 
 ## ADLC and release boundary
 
-Revision 0.1.11 supersedes 0.1.4 and refreshes the protected-main and Graph rights evidence. It keeps
+Revision 0.1.12 supersedes 0.1.4 and refreshes the protected-main and Graph rights evidence. It keeps
 the observed non-ancestor Commerce profile pin and plans a provenance-only rebind to the current
 protected-main central profile without changing its 36 values. This revision changes only this
 planning document. It does not change the application, generated CSS, Graph sources, CSP work,
@@ -379,3 +379,5 @@ Legacy action-button geometry excludes shared form triggers, and the workspace s
 The standalone Program Pack service alias serves the existing shared-ui-profile.css used by its stylesheet import, alongside the same native dropdown module. This is a static route mapping only; browser geometry assertions refuse a missing central profile.
 
 Dropdown assets adopt Base’s shared mouse-dismiss lifecycle, allowing pointer interception before dismissal and honoring later cancellation. Exact Base and Graph pins bind regenerated assets; no schema, storage or Production effect. Desktop/mobile ordinary selection and outside-dismiss behavior remain required. Native app annotation-picker behavior remains unverified.
+
+The Base artifact now embeds the exact central nine-role profile and the Graph artifact embeds the central 137-role profile, with source/projection digests in producer inputs. Local registered overrides are removed in the producers; Commerce consumes those offline artifacts without a separate palette or form-control variant. Shared UI geometry remains 14px/20px with 28px desktop and 48px mobile controls. Input caps are 22 Base/128 Graph while each browser chunk remains below 500000 bytes. The Graph continuation retains PR #1239 history in #1240. Verify native source checks, required CI and bare npm run dev desktop/mobile before closure. Rollback pins/assets together without clearing origin data; no Production effect.

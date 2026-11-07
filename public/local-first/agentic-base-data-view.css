@@ -74,6 +74,18 @@ textarea.agentic-form-control, .agentic-form-controls :where(textarea) {
 @media (pointer: coarse), (max-width: 768px) {
   :root, :host { --agentic-row-height: var(--agentic-row-height-touch); --agentic-control-height: var(--agentic-control-height-touch); }
 }
+/* Generated from agentic-design-system Base profile; origin agentic-base@a5d0f2d87d8c6871e9639f8224f5eaee056c5b6e; profile sha256 3c231b5a57ae6acac862a4ede882d24657d93e45b1bc7ea32d1799ef4b32e361. Do not edit. */
+:root, :host {
+  --agentic-base-action-hover: #f3f4f6;
+  --agentic-base-border: #e5e7eb;
+  --agentic-base-data-table-sticky-header-bg: var(--agentic-base-table-header-bg);
+  --agentic-base-data-tree-cell-padding-inline: 0.75rem;
+  --agentic-base-row-hover: #fffbeb;
+  --agentic-base-table-header-bg: #f9fafb;
+  --agentic-base-text-primary: #111827;
+  --agentic-base-text-secondary: #4b5563;
+  --agentic-base-text-tertiary: #6b7280;
+}
 
 .agentic-base-data-view {
   box-sizing: border-box;
@@ -83,15 +95,8 @@ textarea.agentic-form-control, .agentic-form-controls :where(textarea) {
   max-width: 100%;
   height: 100%;
   overflow: auto;
-  --agentic-base-table-header-bg: #f9fafb;
-  --agentic-base-text-primary: #111827;
-  --agentic-base-text-secondary: #4b5563;
-  --agentic-base-text-tertiary: #6b7280;
-  --agentic-base-border: #e5e7eb;
-  --agentic-base-row-hover: #fffbeb;
-  --agentic-base-action-hover: #f3f4f6;
   --agentic-control-focus: var(--agentic-base-focus, Highlight);
-  color: var(--agentic-base-text-primary, #172033);
+  color: var(--agentic-base-text-primary);
   background: var(--agentic-base-surface, #fff);
   font: var(--agentic-font-size-body)/var(--agentic-line-height-body) var(--agentic-font-sans);
   -webkit-overflow-scrolling: touch;
@@ -118,20 +123,20 @@ textarea.agentic-form-control, .agentic-form-controls :where(textarea) {
 .agentic-base-data-view .font-semibold { font-weight: 600; }
 .agentic-base-data-view .align-top { vertical-align: top; }
 .agentic-base-data-view .align-middle { vertical-align: middle; }
-.agentic-base-data-view .agentic-base-table-header { background: var(--agentic-base-table-header-bg, #f9fafb); }
-.agentic-base-data-view .agentic-base-table-text { color: var(--agentic-base-text-primary, #111827); }
-.agentic-base-data-view .agentic-base-table-border { border-color: var(--agentic-base-border, #e5e7eb); }
-.agentic-base-data-view .agentic-base-table-row-hover:hover { background: var(--agentic-base-row-hover, #fffbeb); }
+.agentic-base-data-view .agentic-base-table-header { background: var(--agentic-base-table-header-bg); }
+.agentic-base-data-view .agentic-base-table-text { color: var(--agentic-base-text-primary); }
+.agentic-base-data-view .agentic-base-table-border { border-color: var(--agentic-base-border); }
+.agentic-base-data-view .agentic-base-table-row-hover:hover { background: var(--agentic-base-row-hover); }
 .agentic-base-data-view .agentic-base-data-row-selected { background: var(--agentic-base-selected, #eff6ff); }
-.agentic-base-data-view .agentic-base-text-primary { color: var(--agentic-base-text-primary, #111827); }
-.agentic-base-data-view .agentic-base-text-secondary { color: var(--agentic-base-text-secondary, #4b5563); }
-.agentic-base-data-view .agentic-base-text-tertiary { color: var(--agentic-base-text-tertiary, #6b7280); }
-.agentic-base-data-view .agentic-base-menu-panel { color: var(--agentic-base-text-primary, #111827); background: #fff; border: 1px solid var(--agentic-base-border, #e5e7eb); border-radius: 6px; box-shadow: 0 8px 24px #17203324; }
-.agentic-base-data-view .agentic-base-button-hover:hover { background: var(--agentic-base-action-hover, #f3f4f6); }
+.agentic-base-data-view .agentic-base-text-primary { color: var(--agentic-base-text-primary); }
+.agentic-base-data-view .agentic-base-text-secondary { color: var(--agentic-base-text-secondary); }
+.agentic-base-data-view .agentic-base-text-tertiary { color: var(--agentic-base-text-tertiary); }
+.agentic-base-data-view .agentic-base-menu-panel { color: var(--agentic-base-text-primary); background: #fff; border: 1px solid var(--agentic-base-border); border-radius: 6px; box-shadow: 0 8px 24px #17203324; }
+.agentic-base-data-view .agentic-base-button-hover:hover { background: var(--agentic-base-action-hover); }
 .base-multi-dimensional-table { box-sizing: border-box; min-width: 0; }
 .base-multi-dimensional-table-toolbar { display: flex; justify-content: flex-end; min-width: 0; margin-bottom: 0.5rem; }
-.base-multi-dimensional-table-pivot { box-sizing: border-box; min-height: 44px; padding: 0.55rem 0.8rem; border: 1px solid var(--agentic-base-border, #d1d5db); border-radius: 0.65rem; color: var(--agentic-base-text-primary, #111827); background: var(--agentic-base-surface, #fff); font: inherit; font-size: var(--agentic-font-size-body); font-weight: 600; cursor: pointer; }
-.base-multi-dimensional-table-pivot:hover { background: var(--agentic-base-action-hover, #f3f4f6); }
+.base-multi-dimensional-table-pivot { box-sizing: border-box; min-height: 44px; padding: 0.55rem 0.8rem; border: 1px solid var(--agentic-base-border); border-radius: 0.65rem; color: var(--agentic-base-text-primary); background: var(--agentic-base-surface, #fff); font: inherit; font-size: var(--agentic-font-size-body); font-weight: 600; cursor: pointer; }
+.base-multi-dimensional-table-pivot:hover { background: var(--agentic-base-action-hover); }
 .base-multi-dimensional-table-pivot:focus-visible { outline: 3px solid var(--agentic-base-focus, #2563eb); outline-offset: 2px; }
 
 /* Column menus stay in their host tree so isolated hosts retain these styles. */
@@ -217,8 +222,8 @@ textarea.agentic-form-control, .agentic-form-controls :where(textarea) {
   overflow-wrap: anywhere;
   text-align: left;
   vertical-align: top;
-  border-right: 1px solid var(--agentic-base-border, #d9dee8);
-  border-bottom: 1px solid var(--agentic-base-border, #d9dee8);
+  border-right: 1px solid var(--agentic-base-border);
+  border-bottom: 1px solid var(--agentic-base-border);
 }
 .agentic-base-data-table .agentic-base-data-density-compact,
 .agentic-base-data-table .agentic-base-data-density-comfortable {
@@ -241,11 +246,10 @@ textarea.agentic-form-control, .agentic-form-controls :where(textarea) {
   position: sticky;
   z-index: 1;
   top: 0;
-  color: var(--agentic-base-text-secondary, #4b5563);
-  background: var(--agentic-base-table-header-bg, #f9fafb);
+  color: var(--agentic-base-text-secondary);
+  background: var(--agentic-base-table-header-bg);
 }
 .agentic-base-data-table-sticky-header {
-  --agentic-base-data-table-sticky-header-bg: var(--agentic-base-table-header-bg, #f9fafb);
   background-color: var(--agentic-base-data-table-sticky-header-bg);
 }
 .agentic-base-data-table-sticky-header::before {
@@ -254,7 +258,7 @@ textarea.agentic-form-control, .agentic-form-controls :where(textarea) {
   inset: 0;
   z-index: 0;
   background-color: var(--agentic-base-data-table-sticky-header-bg);
-  box-shadow: inset 0 -1px 0 var(--agentic-base-border, #e5e7eb);
+  box-shadow: inset 0 -1px 0 var(--agentic-base-border);
   pointer-events: none;
 }
 .agentic-base-data-table-sticky-header > tr > th {
@@ -264,8 +268,7 @@ textarea.agentic-form-control, .agentic-form-controls :where(textarea) {
   background-clip: padding-box;
 }
 .agentic-base-data-tree-cell {
-  --agentic-base-data-tree-cell-padding-inline: 0.75rem;
-  color: var(--agentic-base-text-secondary, #4b5563);
+  color: var(--agentic-base-text-secondary);
   width: var(--agentic-base-data-tree-cell-width, 5.5rem);
   min-width: var(--agentic-base-data-tree-cell-width, 5.5rem);
   text-align: center;
@@ -292,14 +295,14 @@ textarea.agentic-form-control, .agentic-form-controls :where(textarea) {
 }
 .agentic-base-data-tree-cell:hover .agentic-base-data-tree-control,
 .agentic-base-data-tree-cell:focus-within .agentic-base-data-tree-control {
-  color: var(--agentic-base-text-primary, #111827);
+  color: var(--agentic-base-text-primary);
 }
 .agentic-base-row-drag-handle {
   grid-column: 1;
   justify-self: start;
   width: var(--agentic-icon-size-default);
   height: var(--agentic-icon-size-default);
-  color: var(--agentic-base-text-tertiary, #6b7280);
+  color: var(--agentic-base-text-tertiary);
   opacity: 0;
 }
 .agentic-base-data-row:hover .agentic-base-row-drag-handle,
@@ -369,7 +372,7 @@ textarea.agentic-form-control, .agentic-form-controls :where(textarea) {
   padding: 3px;
   border: 0;
   border-radius: 4px;
-  color: var(--agentic-base-text-tertiary, #6b7280);
+  color: var(--agentic-base-text-tertiary);
   background: transparent;
   cursor: pointer;
 }
@@ -381,7 +384,7 @@ textarea.agentic-form-control, .agentic-form-controls :where(textarea) {
   min-height: 1.5rem;
   align-items: center;
   justify-content: center;
-  color: var(--agentic-base-text-tertiary, #6b7280);
+  color: var(--agentic-base-text-tertiary);
 }
 .agentic-base-row-select {
   position: absolute;
@@ -430,12 +433,12 @@ textarea.agentic-form-control, .agentic-form-controls :where(textarea) {
 }
 .agentic-base-data-row[aria-selected="true"] { background: var(--agentic-base-selected, #edf4ff); }
 .agentic-base-data-row-activatable { cursor: pointer; }
-.agentic-base-data-row-activatable:hover { background: var(--agentic-base-row-hover, #fffbeb); }
+.agentic-base-data-row-activatable:hover { background: var(--agentic-base-row-hover); }
 .agentic-base-data-row-activatable[aria-selected="true"],
 .agentic-base-data-row-activatable[aria-selected="true"]:hover { background: var(--agentic-base-selected, #edf4ff); }
-.agentic-base-data-row[data-agentic-base-row-parent="true"] { background: var(--agentic-base-table-header-bg, #f9fafb); }
+.agentic-base-data-row[data-agentic-base-row-parent="true"] { background: var(--agentic-base-table-header-bg); }
 .agentic-base-data-row[data-agentic-base-row-parent="true"] > td:nth-child(2) { font-weight: 600; }
-.agentic-base-data-row[data-agentic-base-row-parent="true"]:hover { background: var(--agentic-base-row-hover, #fffbeb); }
+.agentic-base-data-row[data-agentic-base-row-parent="true"]:hover { background: var(--agentic-base-row-hover); }
 .agentic-base-data-row[data-agentic-base-row-parent="true"][aria-selected="true"],
 .agentic-base-data-row[data-agentic-base-row-parent="true"][aria-selected="true"]:hover { background: var(--agentic-base-selected, #edf4ff); }
 .agentic-base-data-row-activatable:focus-visible,
@@ -456,7 +459,7 @@ textarea.agentic-form-control, .agentic-form-controls :where(textarea) {
   padding: 8px 12px;
   color: inherit;
   background: transparent;
-  border: 1px solid var(--agentic-base-border, #d9dee8);
+  border: 1px solid var(--agentic-base-border);
   border-radius: 6px;
   cursor: pointer;
   font: inherit;
