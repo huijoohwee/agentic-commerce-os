@@ -375,3 +375,5 @@ The existing native form values remain the input/event/validation owner while th
 Visible menu indicators are named SVG image targets using the shared icon geometry. Native options render a check only when selected; no hidden decorative icon or generic div wrapper is added. The browser helper verifies these semantics for every exercised dropdown. Graph retains the identical React adapter at its verified Base pin; the native-only follow-up changes no React module or table bundle.
 
 Legacy action-button geometry excludes shared form triggers, and the workspace switcher retains only its host grid/colors. The central Design System utility supplies control sizing, padding, radius and typography; the existing browser helper asserts token equality before every dropdown selection. This removes conflicting rules instead of overriding the shared owner.
+
+The standalone Program Pack service alias serves the existing shared-ui-profile.css used by its stylesheet import, alongside the same native dropdown module. This is a static route mapping only; browser geometry assertions refuse a missing central profile.
