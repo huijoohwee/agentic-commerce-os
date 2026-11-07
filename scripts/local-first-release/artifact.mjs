@@ -21,9 +21,9 @@ const COMMERCE_THEME_PIN = Object.freeze({
 const SHARED_UI_ICON_PIN = Object.freeze({
   owner: 'github.com/huijoohwee/agentic-design-system',
   sourceRevision: '66c35a12465d9d9b53f83b39474ad514bee23946',
-  registryRevision: 'ad9fa7b29289a52600249711cd652ea8f1d51d39',
+  registryRevision: '754b9d79dbbb7e6e82a0acd9fd64877d187e150c',
   profileSha256: '4830e6c273f8ab2f562c92caf919a169c09126ea0125b65fe852f7050f928c39',
-  projectionSha256: 'f688f8f0ed6b110055a54cb953957964cdf5753c39ad54cab6002b662b82a650',
+  projectionSha256: 'c5f812ba8ffe32927004bb4ed790e6382ac3d6ff77f7d378279eca7e854c2d8f',
 });
 export const git = (...args) => execFileSync('git', args, { encoding: 'utf8', timeout: 20000 }).trim();
 export function assertLocalFirstConfig(config) {

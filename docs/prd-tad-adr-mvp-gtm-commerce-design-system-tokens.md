@@ -1,19 +1,19 @@
 ---
 title: "Commerce Shared Design Token Adoption"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.1.7"
-revision: "0.1.7"
+version: "0.1.8"
+revision: "0.1.8"
 date: "2026-10-31"
 updated_date: "2026-11-07"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Commerce product function"
 continuity_id: "COMMERCE-DESIGN-SYSTEM-TOKENS-001"
-prd_revision: "0.1.7"
-tad_revision: "0.1.7"
-adr_revision: "0.1.7"
-mvp_revision: "0.1.7"
-gtm_revision: "0.1.7"
+prd_revision: "0.1.8"
+tad_revision: "0.1.8"
+adr_revision: "0.1.8"
+mvp_revision: "0.1.8"
+gtm_revision: "0.1.8"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -34,7 +34,7 @@ runtime_readiness_policy: "fail-closed"
 
 # Commerce Shared Design Token Adoption
 
-**Join:** `COMMERCE-DESIGN-SYSTEM-TOKENS-001@0.1.7`, superseding `0.1.4`, `0.1.3`, `0.1.2`, and `0.1.1` under
+**Join:** `COMMERCE-DESIGN-SYSTEM-TOKENS-001@0.1.8`, superseding `0.1.4`, `0.1.3`, `0.1.2`, and `0.1.1` under
 `COMMERCE-CONTROL-PLANE-001@0.1.0`. This plan covers Commerce's generated presentation
 projections. It does not move product component behavior, commerce capabilities, or deployment
 authority into the token registry.
@@ -318,7 +318,7 @@ readiness.
 
 ## ADLC and release boundary
 
-Revision 0.1.7 supersedes 0.1.4 and refreshes the protected-main and Graph rights evidence. It keeps
+Revision 0.1.8 supersedes 0.1.4 and refreshes the protected-main and Graph rights evidence. It keeps
 the observed non-ancestor Commerce profile pin and plans a provenance-only rebind to the current
 protected-main central profile without changing its 36 values. This revision changes only this
 planning document. It does not change the application, generated CSS, Graph sources, CSP work,
@@ -370,4 +370,4 @@ Commerce consumes generated shared-ui v0.6.0 geometry from Design System. Fields
 
 ## Shared opened dropdown menus
 
-The existing native form values remain the input/event/validation owner while the Base native adapter replaces visible dropdowns with the same menu core and Design System shared-ui v0.6.0 surface/option/hover/selected/focus tokens used by Graph toolbar and field menus. The standalone offline dropdown module avoids loading the React/table bundle for form menus. Existing labels, required errors, values, input/change handlers, reset, disabled/grouped options and offline drafts remain local. Browser journeys choose from visible DOM menus; exact Base/Graph producer manifests and projection hashes remain mandatory. No native-popup branch is retained for adopted single-choice controls. No new dependency, model/provider execution, storage migration or Production activation is selected. Rollback restores the exact prior pins/assets and retains origin data.
+The existing native form values remain the input/event/validation owner while the Base native adapter replaces visible dropdowns with the same menu core and Design System shared-ui v0.6.0 surface/option/hover/selected/focus tokens used by Graph toolbar and field menus. The standalone offline dropdown module avoids loading the React/table bundle for form menus. Newly rendered fields retain focus through enhancement, and shared menu surfaces cap their height to the dynamic viewport and scroll longer choices. Existing labels, required errors, values, input/change handlers, reset, disabled/grouped options and offline drafts remain local. Browser journeys choose from visible DOM menus; exact Base/Graph producer manifests and projection hashes remain mandatory. No native-popup branch is retained for adopted single-choice controls. No new dependency, model/provider execution, storage migration or Production activation is selected. Rollback restores the exact prior pins/assets and retains origin data.

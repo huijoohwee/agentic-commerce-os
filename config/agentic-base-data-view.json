@@ -2,13 +2,13 @@
   "schema": "agentic-base/consumer-artifact/v1",
   "source": {
     "repository": "github.com/huijoohwee/agentic-base",
-    "revision": "0eab2cb9161084578525be3e8688856d14abfa8f",
+    "revision": "98765d65721318b6d648f254d6a25e37c52b82a1",
     "sourceDirty": false,
     "package": "@agentic-base/views-react",
     "packageVersion": "0.1.0",
     "packagePath": "packages/views-react",
     "buildManifest": "packages/views-react/dist/browser-data-view.manifest.json",
-    "buildManifestSha256": "880f3eefa4455295b05c95cec0cf848dec1d2cef8b74afd1d09fab86adb49481"
+    "buildManifestSha256": "eca8c0fec2ae59f072e3f5d7eea4e36023bb234f2a5facba54c239ab58b1ec6b"
   },
   "contract": {
     "source": "agentic-base/browser-data-view/v1",
@@ -57,13 +57,13 @@
     },
     {
       "path": "packages/views-react/src/browser/shared-ui-profile.css",
-      "bytes": 6408,
-      "sha256": "f688f8f0ed6b110055a54cb953957964cdf5753c39ad54cab6002b662b82a650"
+      "bytes": 6502,
+      "sha256": "c5f812ba8ffe32927004bb4ed790e6382ac3d6ff77f7d378279eca7e854c2d8f"
     },
     {
       "path": "packages/views-react/src/browser/shared-ui-profile.pin.json",
       "bytes": 798,
-      "sha256": "7253e628884751a2355e8e082eeb3dce413595cec102f641c2faf70c2e978627"
+      "sha256": "d55f9f005f6798c0dfcd6b69db2db49c1a91415f15b19b1f6094f0fddbeaa516"
     },
     {
       "path": "packages/views-react/src/controls/MenuControls.tsx",
@@ -77,8 +77,8 @@
     },
     {
       "path": "packages/views-react/src/controls/nativeSelect.ts",
-      "bytes": 8844,
-      "sha256": "7e1a4a5a8621ec9a8b3d8f14acf67b33bf0b2b900a9efa8c91a4384c0df30341"
+      "bytes": 8981,
+      "sha256": "02f9885b431b096ed2d002c0b8d35974fbc6ee707805e0987e8f44a0fd3855f9"
     },
     {
       "path": "packages/views-react/src/table/BaseColumnHeaderMenu.tsx",
@@ -145,19 +145,19 @@
     {
       "path": "agentic-base-data-view.js",
       "bytes": 227644,
-      "sha256": "7bb835dc3374639e98e3a58a1e55e061c396dcf1c738c93608044f9a448b79f0",
+      "sha256": "08e43f6cc9ceb5d69a0e50a50eb12567d0b6752a43c8bed3594fabe6450d74c5",
       "sourcePath": "browser-data-view.js"
     },
     {
       "path": "dropdown-menus.js",
-      "bytes": 8660,
-      "sha256": "4d721dbd21a68af3e475a5a141af43e70de8d802e368d14b52db726a0b0726d8",
+      "bytes": 8744,
+      "sha256": "25f4c217bbe58e44d089647717d58b5ff4e4ea8217776ac087b7934e8b75922e",
       "sourcePath": "dropdown-menus.js"
     },
     {
       "path": "agentic-base-data-view.css",
-      "bytes": 23641,
-      "sha256": "e606226a6cf79485b2611edc804f6a1c00b8bdceb250f2400f7272c1792e8408",
+      "bytes": 23735,
+      "sha256": "7a7c3aa03667716c9ca2fd9680bb3d026b6d7195b35488bd0f6c5919440168f2",
       "sourcePath": "browser-data-view.css"
     }
   ]
