@@ -7,7 +7,7 @@
 .agentic-toolbar-dock {
   position: sticky;
   inset-block-start: 0;
-  z-index: 5;
+  z-index: calc(var(--agentic-floating-panel-layer, 4) - 1);
   display: grid;
   justify-items: center;
   min-inline-size: 0;
@@ -30,7 +30,7 @@
   background: var(--kg-panel-bg, var(--agentic-base-surface, Canvas));
   border: 1px solid var(--kg-border, var(--agentic-base-border, ButtonBorder));
   border-radius: var(--island-radius, .5rem);
-  box-shadow: var(--island-shadow, 0 1px 4px rgb(0 0 0 / .1));
+  box-shadow: var(--island-shadow, 0 1px 2px rgb(0 0 0 / .04));
   pointer-events: auto;
 }
 .agentic-toolbar[data-scroll] {
