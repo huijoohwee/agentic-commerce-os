@@ -224,7 +224,10 @@ async function route() {
   renderCurrent(); if (role === 'sme' && requested !== 'sme') document.getElementById(requested)?.scrollIntoView({ block: 'start' });
   if (view === 'admin-runtime' && new URLSearchParams(hash.split('?')[1]).get('section') === 'checks') $('#environment-checks').scrollIntoView({ block: 'start' });
   else if (['collection', 'shop-sandbox'].includes(hash)) document.getElementById(hash)?.scrollIntoView({ block: 'start' });
-  if (searchRequested) { const target = searchRequested; searchRequested = null; if (view === role && target.startsWith('#' + (role === 'admin' ? 'project' : role) + '-')) { $(target).focus(); return; } }
+  if (searchRequested && hash === location.hash.slice(1)) {
+    const target = searchRequested; searchRequested = null;
+    if (view === role && target.startsWith('#' + (role === 'admin' ? 'project' : role) + '-')) { $(target).focus(); return; }
+  }
   if (hash !== 'collection' && hash !== 'main' && !(role === 'sme' && requested !== 'sme') && !(role === 'housing' && requested !== 'housing')) {
     const heading = view === 'admin-runtime' && new URLSearchParams(hash.split('?')[1]).get('section') === 'checks' ? $('#environment-history-heading') : hash === 'shop-sandbox' ? $('#live-offer-heading') : document.querySelector(`#${role} [data-view-panel="${view}"] h1, #${role}-heading`);
     if (heading && !switchedWorkspace) { const x = window.scrollX, y = window.scrollY; heading.focus({ preventScroll: true }); const restore = () => revision === navigation && (window.scrollX !== x || window.scrollY !== y) && window.scrollTo({ left: x, top: y, behavior: 'instant' }); restore(); requestAnimationFrame(restore); }

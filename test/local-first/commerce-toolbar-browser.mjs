@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test';
+import { checkDashboardEditor } from './dashboard-props-browser.mjs';
 
 export async function checkCommerceToolbar(browser, url, width) {
   const context = await browser.newContext({
@@ -20,6 +21,14 @@ export async function checkCommerceToolbar(browser, url, width) {
       await expect(link(name)).toHaveAttribute('aria-current', 'location');
       await expect(page.getByRole('note').filter({ hasText: 'Workspace Program Pack' })).toBeInViewport();
       await expect(nav).toBeInViewport();
+      const heading = page.locator('#'+hash+' [data-dashboard-primitive="heading"]').first();
+      await expect(heading).toBeVisible();
+      expect(await heading.evaluate(h => {
+        const css = getComputedStyle(h), reference = document.createElement('span');
+        reference.style.fontSize = 'var(--kg-text-3xl)'; h.after(reference);
+        const matches = css.fontSize === getComputedStyle(reference).fontSize; reference.remove();
+        return matches && !!h.closest('.agentic-dashboard-layout') && css.fontWeight === '600';
+      })).toBe(true);
       if (isPack) {
         await nav.click();
         await expect(page.getByRole('region', { name: 'Pack navigation' }).getByRole('link', { name: 'Included files' })).toBeVisible();
@@ -83,6 +92,7 @@ export async function checkCommerceToolbar(browser, url, width) {
       await context.setOffline(true);
       await context.setOffline(false);
       await expect(service).toHaveText('Service ready');
+      await checkDashboardEditor(page, url);
     }
   } finally {
     await context.close();

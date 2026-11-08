@@ -140,3 +140,8 @@ No repository was forked, cloned into the product, copied or added to the depend
 The 0.4.0 experience update adds native browse/filter/detail and role workspace navigation;
 see [Mercur UI/UX coverage](mercur-experience-parity.md) for source owners, behavior checks and
 backend gaps. Shopper and merchant browser modules are composed on their asset request.
+
+
+**Dashboard columns.** Start the Design System on its default loopback port with `DESIGN_LAYOUT_ADMIN=1 npm run dev`, then run Commerce with `npm run dev`. In Commerce open Admin → Tools and Console (top right) → Enter admin edit mode. Unlock with the scoped key from the Design System's owner-only `~/.local/state/agentic-design-system/dashboard/admin-token` file. Select a dashboard and one to four columns, or Dashboard default, and save. The change applies to every reader on the next visit or refresh; narrow containers still stack. Closing the panel, leaving Admin or reloading drops the credential. Admin navigation alone grants no access.
+
+The Design System owns the column control, validation and persisted layout revisions. Commerce uses its pinned module and renders each route's real data. Public readers may cache the last accepted layout offline; saving requires the authoring service. Production stays read-only unless the operator provides a trusted `DASHBOARD_LAYOUT_SERVICE` binding implementing the same authenticated contract. No production binding or credential is provisioned by the app.

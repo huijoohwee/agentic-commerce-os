@@ -1,3 +1,4 @@
+import { mountWorkspaceLayout } from './workspace-layout.js'
 import { createIconButton } from './toolbar-icons.js'
 
 export const PACK_TOOL = 'commerce.workspace.program-pack.create'
@@ -95,7 +96,7 @@ function attachPanel(button, label, ...items) {
   })
   items[0].autofocus = true
   popover.addEventListener('click', event => {
-    if (event.target.closest('a,button')) popover.hidePopover()
+    if (items.some(item => item.contains(event.target)) && event.target.closest('a,button')) popover.hidePopover()
   }, { capture: true })
   window.addEventListener('hashchange', () => popover.hidePopover())
   return popover
@@ -115,7 +116,9 @@ export function mountCommerceChrome(header, options = {}) {
   banner.setAttribute('role', 'note')
   banner.append(createElement('strong', 'Workspace Program Pack'), createElement('span', 'Free conversion · No account · No payment'))
   header.classList.add('commerce-chrome'); header.append(banner, dock)
-  dock.append(navigation, toolbar, launcher, attachPanel(launcher, 'Tools and Console', tools, consoleAction))
+  const panel = attachPanel(launcher, 'Tools and Console', tools, consoleAction)
+  dock.append(navigation, toolbar, launcher, panel)
+  mountWorkspaceLayout({panel, toolbar, create:createElement, roles:WORKSPACE_ROLES, packPage:!!options.packPage})
   const sections = [...toolbar.querySelectorAll('[data-pack-destination]')].map(link => toolbarLink(link.textContent, link.href))
   dock.append(attachPanel(navigation, 'Pack navigation', ...sections))
   setPackChrome(toolbar, !!options.packPage)

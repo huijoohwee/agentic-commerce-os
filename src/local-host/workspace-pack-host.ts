@@ -15,7 +15,7 @@ export async function startWorkspacePackHost(options: Options) {
   await options.adapter({ title: 'Service readiness', source: sample, sourceDigest: digest(sample) }, AbortSignal.timeout(5000))
   const assets = new Map(await Promise.all([
     ['/', 'workspace-pack.html', 'text/html; charset=utf-8'],
-    ...['dropdown-menus', 'commerce-toolbar', 'toolbar-icons', 'workspace-pack', 'workspace-pack.simulation', 'workspace-pack.console']
+    ...['dropdown-menus', 'commerce-toolbar', 'workspace-layout', 'dashboard-columns', 'toolbar-icons', 'workspace-pack', 'workspace-pack.simulation', 'workspace-pack.console']
       .map(name => ['/' + name + '.js', name + '.js', 'application/javascript; charset=utf-8']),
     ...['graph-ui-tokens', 'commerce-theme', 'commerce-shell', 'floating-panel', 'toolbar', 'shared-ui-profile', 'workspace-pack']
       .map(name => ['/' + name + '.css', name + '.css', 'text/css; charset=utf-8']),
@@ -38,6 +38,13 @@ export async function startWorkspacePackHost(options: Options) {
       || request.headers.authorization !== undefined || request.headers.cookie !== undefined
       || request.headers['content-encoding'] !== undefined) return failure(403, 'workspace_pack_credentials_or_origin_refused')
     if (request.method === 'GET') {
+      if (request.url === '/agentic-commerce-os/dashboard-layout') {
+        // Standalone Pack displays the same published layout; editing belongs to Commerce Admin.
+        void fetch('http://127.0.0.1:4173/dashboard-layout', {redirect:'error', signal:AbortSignal.timeout(2000)})
+          .then(async result => result.ok && result.headers.get('content-type')?.startsWith('application/json')
+            ? send(200, await result.text()) : failure(503,'layout_unavailable')).catch(() => failure(503,'layout_unavailable'))
+        return
+      }
       if (['/', '/agentic-commerce-os', '/agentic-commerce-os/', PACK_PATH].includes(request.url ?? '')) return send(302, '', 'text/plain', { location: PACK_PATH + '/' })
       if (request.url === `${PACK_PATH}/service.json`) return send(200, { schema: 'commerce.workspace-pack-service/v1',
         id: PACK_TOOL, owner: 'agentic-commerce-os', title: 'Workspace Program Pack', price: { amount: '0', mode: 'free' },

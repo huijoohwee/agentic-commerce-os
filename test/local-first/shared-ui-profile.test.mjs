@@ -1,19 +1,27 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
+import worker from '../../src/local-first/worker.ts';
 import { verifySharedUiIconProfile } from '../../scripts/local-first-release/artifact.mjs';
 
-test('Commerce consumes the pinned Design System icon size from its offline shell assets', () => {
+test('Commerce consumes the pinned Design System icon size from its offline shell assets', async () => {
   const pin = verifySharedUiIconProfile();
   assert.equal(pin.owner, 'github.com/huijoohwee/agentic-design-system');
   assert.equal(pin.sourceRevision, 'f73934c884a6ae8d1c7d0521408014dde20a6c2d');
-  assert.equal(pin.registryRevision, '25290dabc9cd50e4ab9baf14f2a8c2165aaa3c86');
+  assert.equal(pin.registryRevision, '4ef5bf3f2371574ae159a4d947691716d5904c63');
   const profile = fs.readFileSync('public/local-first/shared-ui-profile.css', 'utf8');
   assert.match(profile, /stroke-width: var\(--agentic-icon-stroke-width\)/);
   assert.match(profile, /--agentic-font-size-body: 0\.875rem;/);
   assert.match(profile, /--agentic-line-height-body: 1\.25rem;/);
-  const worker = fs.readFileSync('src/local-first/worker.ts', 'utf8');
-  assert.match(worker, /'\/shared-ui-profile\.css'/);
+  const revision = 'f'.repeat(40);
+  const env = {RELEASE_CANDIDATE_SHA:revision, ASSETS:{fetch(request) {
+    assert.equal(new URL(request.url).pathname, '/shared-ui-profile.css');
+    return new Response(profile);
+  }}};
+  for (const path of ['shared-ui-profile.css','services/workspace-pack/shared-ui-profile.css']) {
+    const response = await worker.fetch(new Request('https://store.example/agentic-commerce-os/assets/' + revision + '/' + path), env);
+    assert.equal(response.status, 200); assert.equal(await response.text(), profile);
+  }
 })
 
 test('housing priorities use the offline checkbox group with no local layout override', () => {
@@ -39,9 +47,9 @@ test('Workspace Pack takes panel geometry and colors from the pinned stylesheets
   assert.match(fs.readFileSync('public/local-first/commerce-shell.css', 'utf8'), /@import "\.\/floating-panel\.css";/);
   assert.deepEqual(owners, ['"./graph-ui-tokens.css"', '"./commerce-theme.css"', '"./shared-ui-profile.css"', '"./commerce-shell.css"', '"./toolbar.css"']);
   assert.match(html, /id="builder" class="agentic-dashboard-layout"/);
-  assert.match(html, /class="agentic-dashboard-region">\s*<div class="agentic-dashboard-grid" data-columns="2">/);
-  assert.match(html, /class="formats agentic-dashboard-region"/);
-  assert.match(html, /class="format-grid agentic-dashboard-grid" data-columns="4"/);
+  assert.match(html, /class="agentic-dashboard-region">\s*<div class="agentic-dashboard-grid" data-columns="2" data-dashboard-columns-for="builder">/);
+  assert.match(html, /id="formats" class="agentic-dashboard-layout"/);
+  assert.match(html, /class="format-grid" data-dashboard-primitive="container" data-columns="4"/);
   assert.doesNotMatch(css, /\.console-(?:panel|top)\b|#console-panel\s*\{/, 'do not recreate the shared FloatingPanel shell');
   assert.doesNotMatch(html, /\sstyle\s*=/i, 'local inline styles bypass the owner');
   assert.doesNotMatch(css, /(?:[;{]\s*--[\w-]+\s*:|\bcolor-scheme\s*:|\.agentic-[\w-]+|\.(?:workspace|panel|format-grid)\s*\{)/,
@@ -83,5 +91,12 @@ test('storefront and service navigation use the pinned Toolbar without a local s
     const source = fs.readFileSync('public/local-first/' + entry, 'utf8');
     assert.match(source, /mountCommerceChrome.*from '\.\/commerce-toolbar\.js'/);
     assert.doesNotMatch(source, /['"]agentic-toolbar-item['"]|workspace-role-switcher/);
+  }
+});
+
+test('Commerce leaves dashboard primitive and column styles to the pinned Design System', () => {
+  for (const file of ['style.css','workspace-shell.css','workspace-pack.css','sme-business-pack.css','housing-comparison.css']) {
+    const css = fs.readFileSync('public/local-first/' + file, 'utf8').replaceAll(':where(:not([data-dashboard-primitive]))', '');
+    assert.doesNotMatch(css, /\[data-dashboard-(?:primitive|columns-for)\b/, file);
   }
 });
