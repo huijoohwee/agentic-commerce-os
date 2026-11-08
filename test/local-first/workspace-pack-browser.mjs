@@ -35,8 +35,25 @@ export async function checkWorkspacePack({ browser, url, output, revision }) {
     await expect(page.getByRole('complementary', { name: 'Console' })).toBeVisible();
     await expect(consoleToggle).toHaveAttribute('aria-expanded', 'true');
     const dock = await page.locator('#console-panel').boundingBox();
-    const workspace = await page.locator('#builder').boundingBox();
-    assert(workspace.x + workspace.width <= dock.x);
+    const workspaceBounds = () => page.locator('#builder, .format-grid, .format-grid > *').evaluateAll(nodes =>
+      nodes.map(el => { const r = el.getBoundingClientRect(); return [r.x, r.y, r.width, r.height]; }));
+    const openBounds = await workspaceBounds();
+    await page.keyboard.press('Control+j');
+    await expect(consoleToggle).toHaveAttribute('aria-expanded', 'false');
+    assert.deepEqual(await workspaceBounds(), openBounds, 'closing the overlay must not move the document or resize its grid');
+    await page.keyboard.press('Control+j');
+    await expect(consoleToggle).toHaveAttribute('aria-expanded', 'true');
+    assert.deepEqual(await workspaceBounds(), openBounds, 'opening the overlay must not reserve a column');
+    assert(openBounds[0][0] + openBounds[0][2] > dock.x, 'the workspace extends behind the Console');
+    const shell = page.locator('#console-panel');
+    const shellHeader = shell.locator(':scope > .agentic-base-floating-panel-inner > .agentic-base-floating-panel-header');
+    const scrollBody = shell.locator('.agentic-floating-panel-body');
+    await expect(shellHeader.getByRole('button', { name: 'Close Console' })).toBeVisible();
+    assert(dock.y > 0 && dock.x + dock.width < page.viewportSize().width, 'Console must float inside the viewport');
+    const initialHeaderY = (await shellHeader.boundingBox()).y;
+    assert(await scrollBody.evaluate(el => { el.scrollTop = el.scrollHeight; return el.scrollTop > 0; }));
+    assert.equal((await shellHeader.boundingBox()).y, initialHeaderY, 'only the Console body scrolls');
+    await scrollBody.evaluate(el => { el.scrollTop = 0; });
     await verifyDashboardGrid(page.locator('#builder .agentic-dashboard-region > .agentic-dashboard-grid'), { columns: 2, count: 2 });
     await expect(page.locator('#console-tool-count')).toHaveText('1 browser tool');
     assert.equal(requests.some(request => request.url.endsWith('/workspace-pack.simulation.js')), false);
@@ -169,7 +186,7 @@ export async function checkWorkspacePack({ browser, url, output, revision }) {
     await page.keyboard.press('Escape');
     await expect(page.locator('#console-panel')).toBeHidden();
     await expect(consoleToggle).toBeFocused();
-    record('Console docks without overlap on desktop; its review action uses the existing form gate with no pre-confirmation POST');
+    record('Console overlays the desktop workspace without reflow; its review action uses the existing form gate with no pre-confirmation POST');
     await page.screenshot({ path: path.join(output, 'workspace-pack-desktop.jpg'), quality: 75, fullPage: true });
     await create.click();
     await expect(dialog).toBeVisible();

@@ -63,8 +63,8 @@ function setConsoleOpen(open, focus = true) {
   consolePanel.hidden = !open
   consoleToggle.setAttribute('aria-expanded', String(open))
   if (!focus) return
-  if (open) $('console-close').focus()
-  else consoleToggle.focus()
+  if (open) $('console-close').focus({ preventScroll: true })
+  else consoleToggle.focus({ preventScroll: true })
 }
 consoleToggle.addEventListener('click', () => setConsoleOpen(consolePanel.hidden))
 $('status-console').addEventListener('click', () => setConsoleOpen(consolePanel.hidden))
@@ -73,7 +73,10 @@ document.addEventListener('keydown', event => {
   if (event.key === 'Escape' && !consolePanel.hidden && !document.querySelector('dialog[open]')) { event.preventDefault(); setConsoleOpen(false) }
 })
 const statusBar = $('status-service').parentElement
-if (typeof ResizeObserver === 'function') new ResizeObserver(() => document.documentElement.style.setProperty('--status-height', `${statusBar.getBoundingClientRect().height}px`)).observe(statusBar)
+const syncStatusHeight = () => document.documentElement.style.setProperty('--agentic-floating-panel-bottom-offset', `${statusBar.getBoundingClientRect().height}px`)
+syncStatusHeight()
+if (typeof ResizeObserver === 'function') new ResizeObserver(syncStatusHeight).observe(statusBar)
+else window.addEventListener('resize', syncStatusHeight)
 setConsoleOpen(matchMedia('(min-width: 1100px)').matches, false)
 function setFormStage(stage, message) {
   $('console-form-state').textContent = message

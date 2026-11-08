@@ -18,6 +18,7 @@ export async function startWorkspacePackHost(options: Options) {
     ['/dropdown-menus.js', 'dropdown-menus.js', 'application/javascript; charset=utf-8'],
     ['/graph-ui-tokens.css', 'graph-ui-tokens.css', 'text/css; charset=utf-8'],
     ['/commerce-theme.css', 'commerce-theme.css', 'text/css; charset=utf-8'],
+    ['/floating-panel.css', 'floating-panel.css', 'text/css; charset=utf-8'],
     ['/shared-ui-profile.css', 'shared-ui-profile.css', 'text/css; charset=utf-8'],
     ['/workspace-pack.js', 'workspace-pack.js', 'application/javascript; charset=utf-8'],
     ['/workspace-pack.simulation.js', 'workspace-pack.simulation.js', 'application/javascript; charset=utf-8'],

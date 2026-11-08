@@ -36,11 +36,12 @@ test('Workspace Pack takes panel geometry and colors from the pinned stylesheets
   const html = fs.readFileSync('public/local-first/workspace-pack.html', 'utf8');
   const css = fs.readFileSync('public/local-first/workspace-pack.css', 'utf8');
   const owners = [...css.matchAll(/@import\s+([^;]+);/gi)].map(match => match[1].trim());
-  assert.deepEqual(owners, ['"./graph-ui-tokens.css"', '"./commerce-theme.css"', '"./shared-ui-profile.css"']);
+  assert.deepEqual(owners, ['"./graph-ui-tokens.css"', '"./commerce-theme.css"', '"./shared-ui-profile.css"', '"./floating-panel.css"']);
   assert.match(html, /id="builder" class="agentic-dashboard-layout"/);
   assert.match(html, /class="agentic-dashboard-region">\s*<div class="agentic-dashboard-grid" data-columns="2">/);
   assert.match(html, /class="formats agentic-dashboard-region"/);
   assert.match(html, /class="format-grid agentic-dashboard-grid" data-columns="4"/);
+  assert.doesNotMatch(css, /\.console-(?:panel|top)\b|#console-panel\s*\{/, 'do not recreate the shared FloatingPanel shell');
   assert.doesNotMatch(html, /\sstyle\s*=/i, 'local inline styles bypass the owner');
   assert.doesNotMatch(css, /(?:[;{]\s*--[\w-]+\s*:|\bcolor-scheme\s*:|\.agentic-[\w-]+|\.(?:workspace|panel|format-grid)\s*\{)/,
     'the consumer must not declare theme tokens or replace the shared layout');
