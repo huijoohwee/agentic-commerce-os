@@ -6,8 +6,8 @@ import { verifySharedUiIconProfile } from '../../scripts/local-first-release/art
 test('Commerce consumes the pinned Design System icon size from its offline shell assets', () => {
   const pin = verifySharedUiIconProfile();
   assert.equal(pin.owner, 'github.com/huijoohwee/agentic-design-system');
-  assert.equal(pin.sourceRevision, '431b9b60f3f8a85362ea5c99f6dbf502265a210a');
-  assert.equal(pin.registryRevision, '4f76b3c15b52c25a61f27039f6b437f67d91430a');
+  assert.equal(pin.sourceRevision, 'f73934c884a6ae8d1c7d0521408014dde20a6c2d');
+  assert.equal(pin.registryRevision, '25290dabc9cd50e4ab9baf14f2a8c2165aaa3c86');
   const profile = fs.readFileSync('public/local-first/shared-ui-profile.css', 'utf8');
   assert.match(profile, /stroke-width: var\(--agentic-icon-stroke-width\)/);
   assert.match(profile, /--agentic-font-size-body: 0\.875rem;/);
@@ -30,4 +30,12 @@ test('workspace pack pickers share the owner selection rule', () => {
   }
   const css = fs.readFileSync('public/local-first/workspace-pack.css', 'utf8');
   assert.doesNotMatch(css, /\.agentic-(?:toggle-group|control-selected)\b|--agentic-control-selected-[\w-]+\s*:|\[aria-pressed=true\]/);
+});
+
+test('the included file cards use the shared responsive dashboard grid', () => {
+  const html = fs.readFileSync('public/local-first/workspace-pack.html', 'utf8');
+  const css = fs.readFileSync('public/local-first/workspace-pack.css', 'utf8');
+  assert.match(html, /class="formats agentic-dashboard-region"/);
+  assert.match(html, /class="format-grid agentic-dashboard-grid" data-columns="4"/);
+  assert.doesNotMatch(css, /\.format-grid\s*\{|\.agentic-dashboard-[\w-]+/);
 });
