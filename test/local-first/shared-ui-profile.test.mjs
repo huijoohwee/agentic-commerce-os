@@ -36,7 +36,7 @@ test('Workspace Pack takes panel geometry and colors from the pinned stylesheets
   const html = fs.readFileSync('public/local-first/workspace-pack.html', 'utf8');
   const css = fs.readFileSync('public/local-first/workspace-pack.css', 'utf8');
   const owners = [...css.matchAll(/@import\s+([^;]+);/gi)].map(match => match[1].trim());
-  assert.deepEqual(owners, ['"./graph-ui-tokens.css"', '"./commerce-theme.css"', '"./shared-ui-profile.css"', '"./floating-panel.css"']);
+  assert.deepEqual(owners, ['"./graph-ui-tokens.css"', '"./commerce-theme.css"', '"./shared-ui-profile.css"', '"./floating-panel.css"', '"./toolbar.css"']);
   assert.match(html, /id="builder" class="agentic-dashboard-layout"/);
   assert.match(html, /class="agentic-dashboard-region">\s*<div class="agentic-dashboard-grid" data-columns="2">/);
   assert.match(html, /class="formats agentic-dashboard-region"/);
@@ -60,4 +60,17 @@ test('the storefront leaves the Mission grid, cards and selected colors to the s
     assert.doesNotMatch(css, /\.agentic-dashboard-(?:layout|header|grid|card)\b|--agentic-(?:dashboard-[\w-]+|control-selected-[\w-]+)\s*:/);
     assert.doesNotMatch(css, /\.(?:shopper-hero|shop-preview-card|product-grid|demo-type-filters)\b/);
   }
+});
+
+test('storefront and service navigation use the pinned Toolbar without a local surface', () => {
+  for (const file of ['workspace-pack.css', 'workspace-shell.css']) {
+    const css = fs.readFileSync('public/local-first/' + file, 'utf8');
+    assert.match(css, /@import "\.\/toolbar\.css";/);
+    assert.doesNotMatch(css, /\.agentic-toolbar(?:[-\w]*)\b|\.topbar\s*[{>]|body\s*>\s*header\s*\{/);
+  }
+  const pack = fs.readFileSync('public/local-first/workspace-pack.html', 'utf8');
+  assert.match(pack, /<nav class="agentic-toolbar"[^>]*>[\s\S]*?id="console-toggle"[^>]*>[\s\S]*?id="connection"[^>]*>[\s\S]*?<\/nav>/);
+  const workspace = fs.readFileSync('public/local-first/workspace-navigation.js', 'utf8');
+  assert.match(workspace, /createElement\('nav', undefined, 'agentic-toolbar'\)/);
+  assert.doesNotMatch(workspace, /workspace-role-switcher/);
 });

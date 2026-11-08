@@ -7,6 +7,15 @@ const sha = async text => [...new Uint8Array(await crypto.subtle.digest('SHA-256
 let generation = 0, controller = null, pack = null, urls = [], ready = false, review = null
 const reviewDialog = $('request-review')
 let reviewTrigger = $('create')
+function updateToolbarLocation() {
+  const current = location.hash || '#builder'
+  for (const link of document.querySelectorAll('header nav a[href^="#"]')) {
+    if (link.hash === current) link.setAttribute('aria-current', 'location')
+    else link.removeAttribute('aria-current')
+  }
+}
+window.addEventListener('hashchange', updateToolbarLocation)
+updateToolbarLocation()
 const consolePanel = $('console-panel'), consoleToggle = $('console-toggle')
 let consoleEventCount = 0, browserRegistered = false, toolCalls = 0, consoleApi = null, consoleLoad = null, consoleIntent = 0
 let extensionStats = { registered: 0, available: 0, stage: 'Idle', events: 0 }

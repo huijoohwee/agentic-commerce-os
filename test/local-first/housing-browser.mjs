@@ -1,4 +1,3 @@
-import { chooseDropdown } from './dropdown-menu-browser.mjs';
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -75,7 +74,7 @@ export async function checkHousingWorkspace({ browser, url, output, observeConte
   const tableBeforeHousing = await page.evaluate(() => performance.getEntriesByType('resource')
     .some(entry => entry.name.includes('agentic-base-data-view.js')))
   assert.equal(tableBeforeHousing, false, 'shared table adapter must stay unloaded outside Housing')
-  await chooseDropdown(page.locator('#workspace-role-switcher'), 'housing')
+  await page.locator('[data-workspace-destination="housing"]').click()
   await expect(page).toHaveURL(/#housing$/u)
   await expect(page.locator('#housing-root h1')).toHaveText('Multi-dimensional Table')
   await page.evaluate(() => {
@@ -258,10 +257,10 @@ export async function checkHousingWorkspace({ browser, url, output, observeConte
   assert(afterManualRemove.includes(blueId) && afterManualRemove.includes(secondRedId))
   assertionIds.push('HU-V15')
 
-  await chooseDropdown(page.locator('#workspace-role-switcher'), 'shop')
+  await page.locator('[data-workspace-destination="shop"]').click()
   await expect(page).toHaveURL(/#shop$/u)
   await expect(page.locator('#housing-root')).toBeEmpty()
-  await chooseDropdown(page.locator('#workspace-role-switcher'), 'housing')
+  await page.locator('[data-workspace-destination="housing"]').click()
   await expect(page).toHaveURL(/#housing$/u)
   await expect(page.locator('#housing-root h1')).toHaveText('Multi-dimensional Table')
   assert.equal(await page.evaluate(() => window.__housingShellIdentity.every((node, index) => node === [
@@ -347,7 +346,7 @@ export async function checkHousingWorkspace({ browser, url, output, observeConte
   await page.setViewportSize({ width: 390, height: 844 })
   await page.getByRole('link', { name: 'Airvio Commerce home' }).click()
   await expect(page).toHaveURL(/#shop$/u)
-  await chooseDropdown(page.locator('#workspace-role-switcher'), 'housing')
+  await page.locator('[data-workspace-destination="housing"]').click()
   await expect(page).toHaveURL(/#housing$/u)
   await page.evaluate(async () => { await navigator.serviceWorker.ready; return !!navigator.serviceWorker.controller })
   await page.waitForFunction(() => !!navigator.serviceWorker.controller)

@@ -52,15 +52,15 @@ export async function checkSandboxCheckout({ browser, url, output, record, remot
       for (const field of ['x', 'y', 'width']) assert(Math.abs(shop[part][field] - checkout[part][field]) < 1,
         'Checkout preserves the shop ' + part + ' ' + field);
     }
-    await expect(page.locator('#console-breadcrumb')).toBeVisible();
-    await expect(page.locator('#console-root')).toHaveAttribute('href', '#shop');
-    await expect(page.locator('#console-root')).toHaveText('Storefront');
+    await expect(page.getByRole('navigation', { name: 'Workspace Toolbar' })).toBeVisible();
+    await expect(page.locator('[data-workspace-destination][aria-current]')).toHaveAttribute('href', '#shop');
+    await expect(page.locator('[data-workspace-destination][aria-current]')).toHaveText('Shopper');
     await expect(page.locator('#shop-navigation [data-view="checkout"]')).toHaveAttribute('aria-current', 'page');
     const navigation = page.locator('#workspace-navigation-toggle');
     await expect(navigation).toHaveAttribute('aria-controls', 'shop-navigation');
     await navigation.click();
     for (const view of ['shop', 'checkout']) {
-      if (view === 'shop') await page.locator('#console-root').click();
+      if (view === 'shop') await page.locator('[data-workspace-destination][aria-current]').click();
       else await page.getByRole('link', { name: 'Try sandbox checkout' }).click();
       await expect(page.locator('#' + view)).toBeVisible();
       await expect(navigation).toHaveAttribute('aria-expanded', 'false');
@@ -75,7 +75,7 @@ export async function checkSandboxCheckout({ browser, url, output, record, remot
       await expect(page.locator('#shop-query')).toBeFocused();
     } else {
       await expect(shopSearch).toBeHidden();
-      await page.locator('#console-root').click();
+      await page.locator('[data-workspace-destination][aria-current]').click();
       await expect(page.locator('#shop')).toBeVisible();
     }
     await page.getByRole('link', { name: 'Try sandbox checkout' }).click();

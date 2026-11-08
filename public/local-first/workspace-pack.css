@@ -2,6 +2,7 @@
 @import "./commerce-theme.css";
 @import "./shared-ui-profile.css";
 @import "./floating-panel.css";
+@import "./toolbar.css";
 
 :root { color: var(--kg-text-primary); background: var(--commerce-canvas); }
 * { box-sizing: border-box; }
@@ -20,32 +21,26 @@ h1,h2,h3,p { margin-top: 0; }
 p { line-height: 1.65; }
 h2 { font-size: var(--kg-text-xl); font-weight: 600; }
 h3 { font-weight: 600; font-size: var(--kg-text-base); }
-button:where(:not([aria-pressed])),.button,nav a,summary { min-height: var(--commerce-touch-target); }
+button:where(:not([aria-pressed], nav button)),.button,summary { min-height: var(--commerce-touch-target); }
 .skip { position: absolute; left: 12px; top: -100px; padding: 12px; background: var(--commerce-surface); }
 .skip:focus { top: 12px; }
 [hidden] { display: none !important; }
 .service-note { background: var(--commerce-action); color: var(--commerce-surface); text-align: center; line-height: 1.5; }
 .service-note span { margin-left: 22px; }
-body>header {
-  display: flex; align-items: center; justify-content: space-between;
-  border-bottom: 1px solid var(--kg-border); background: var(--commerce-surface);
-}
+
 .brand {
   display: inline-flex; align-items: baseline; font-size: 30px; letter-spacing: -2px; font-weight: 750;
   text-decoration: none; color: var(--kg-text-primary); min-height: var(--commerce-touch-target);
 }
 .brand span { font-size: 11px; letter-spacing: 1px; font-weight: 450; margin-left: 12px; text-transform: uppercase; }
-nav { display: flex; margin-left: auto; }
-nav a {
-  display: inline-flex; align-items: center; gap: 20px; font-size: var(--kg-text-xs);
-  text-decoration: none; color: var(--kg-text-primary);
-}
+
 .pill {
   font-size: 11px; padding: 8px 11px; border: 1px solid var(--kg-border);
   border-radius: var(--agentic-control-radius); background: var(--commerce-surface-subtle);
   color: var(--commerce-action); overflow-wrap: anywhere;
 }
 .quiet { background: transparent; color: var(--kg-text-secondary); }
+#builder, #formats { scroll-margin-block-start: var(--agentic-toolbar-dock-height); }
 main { max-width: 1480px; margin: auto; }
 .eyebrow { font-size: 10px; font-weight: 650; letter-spacing: 1.5px; margin: 0 0 20px; color: var(--kg-text-secondary); }
 .intro { display: grid; align-items: center; }
@@ -167,11 +162,6 @@ main>footer p { margin: 0; }
 .drawer-actions { display: grid; gap: 12px; margin-top: 25px; }
 #confirm-request { justify-content: space-between; }
 #edit-request { border-color: var(--commerce-control-border); }
-nav button {
-  display: inline-flex; align-items: center; min-height: var(--commerce-touch-target); padding: 0;
-  border: 0; background: transparent; color: var(--kg-text-primary); font-size: var(--kg-text-xs);
-}
-nav button[aria-expanded=true] { color: var(--commerce-action); text-decoration: underline; text-underline-offset: 6px; }
 
 .console-body>section { border-top: 1px solid var(--kg-border); padding: var(--commerce-space-sm) 0; }
 .console-body>section:first-child { border: 0; }
@@ -272,8 +262,7 @@ nav button[aria-expanded=true] { color: var(--commerce-action); text-decoration:
 }
 
 /* Workspace comes first; supporting service information follows the work. */
-body>header { padding: 15px 28px; gap: 18px; }
-nav { gap: 20px; }
+
 .service-note { font-size: 9px; letter-spacing: 1px; padding: 8px 20px; }
 main { padding: 0 28px; }
 .intro { grid-template-columns: 1.1fr 1fr; gap: 24px; padding: 32px 0 26px; }
@@ -303,14 +292,10 @@ main { padding: 0 28px; }
 
 @media (max-width:680px) {
   .service-note span { display: none; }
-  body>header { padding: 12px 20px; flex-wrap: wrap; gap: 10px; }
+
   .brand { font-size: 27px; }
   .brand span { font-size: 10px; }
-  body>header>.pill { margin-left: auto; }
-  nav {
-    order: 3; border-top: 1px solid var(--kg-border); width: 100%; margin: 0;
-    justify-content: space-between; padding-top: 6px;
-  }
+
   main { padding: 0 20px; }
   .intro { grid-template-columns: 1fr; padding: 28px 0; gap: 18px; }
   .intro h1 { font-size: 42px; letter-spacing: -2px; }
