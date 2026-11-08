@@ -1,21 +1,11 @@
+import { prepareViewStylesheet } from './workspace-view-styles.js'
 import { invokeSmePackTool, PACK_INDEX, TOOL_SCHEMAS, readSmeWorksheets, serializeSmeWorksheets } from './sme-business-pack-core.js?v=business-plan-contract-v6'
 import { getOrCreateSingleton } from './workspace-singleton.js'
 import { createSmeWorkflowEditor } from './sme-workflow-editor.js'
 import { createSmeReviewWorkflow } from './sme-review-workflow.js'
 
-const style = document.createElement('link')
-style.rel = 'stylesheet'
-style.href = new URL('./sme-business-pack.css?v=business-plan-table-v2', import.meta.url).href
-let stylePromise
-const attachStyles = () => {
-  if (!stylePromise) stylePromise = new Promise((resolve, reject) => {
-    style.onload = resolve
-    style.onerror = () => { style.remove(); stylePromise = null; reject(Error('sme_business_pack_styles_unavailable')) }
-    document.head.append(style)
-  })
-  return stylePromise
-}
-export const prepareSmeBusinessPackStyles = attachStyles
+export const prepareSmeBusinessPackStyles = prepareViewStylesheet(new URL('./sme-business-pack.css?v=business-plan-table-v2', import.meta.url))
+
 
 export function mountSmeBusinessPack() {
   return getOrCreateSingleton('sme-business-pack-mount', createSmeBusinessPack)

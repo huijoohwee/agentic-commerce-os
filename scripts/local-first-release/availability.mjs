@@ -8,7 +8,10 @@ export function authoredAssets(revision, checkout = 'sandbox') {
   return FILES.map(file => {
     let bytes = fs.readFileSync('public/local-first/' + file);
     if (file === 'sw.js' || file === 'index.html') bytes = Buffer.from(renderStorefrontTemplate(bytes.toString(), revision, checkout));
-    return { path: file.startsWith('workspace-pack.') ? 'services/workspace-pack/' + (file.endsWith('.html') ? '' : file) : file === 'index.html' ? '' : file, bytes: bytes.length, digest: digest(bytes),
+    const packAsset = (file.startsWith('workspace-pack.') && file !== 'workspace-pack.route.js') || file === 'floating-panel.css';
+    let path = file === 'index.html' ? '' : file;
+    if (packAsset) path = file === 'workspace-pack.html' ? `assets/${revision}/services/workspace-pack/` : 'services/workspace-pack/' + file;
+    return { path, bytes: bytes.length, digest: digest(bytes),
       contentType: file.endsWith('.js') ? /(?:application|text)\/javascript/ : file.endsWith('.css') ? /text\/css/
         : file.endsWith('.svg') ? /image\/svg\+xml/ : /text\/html/ };
   });

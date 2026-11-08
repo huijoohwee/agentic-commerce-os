@@ -41,7 +41,7 @@ function bind({ dialog, onError }) {
     if (!(art instanceof HTMLElement) || !name || !outcome || !type) throw Error('shopper_demo_detail_data_invalid')
     namespaceArtworkIds(art)
     art.classList.remove('demo-product-art')
-    art.classList.add('detail-demo-art')
+    art.classList.add('product-art', 'detail-demo-art')
     const heading = element('h2', name)
     heading.id = 'detail-heading'
     heading.tabIndex = -1
@@ -88,4 +88,37 @@ function bind({ dialog, onError }) {
 
 export function bindDemoOfferDetails(options) {
   return getOrCreateSingleton('shopper-demo-details', () => bind(options))
+}
+
+export function bindExampleFilters(group, onChange) {
+  const buttons = [...group.querySelectorAll('button')]
+  function select(value) {
+    for (const button of buttons) button.setAttribute('aria-pressed', String(button.value === value))
+  }
+  group.addEventListener('click', event => {
+    const button = event.target.closest('button')
+    if (!buttons.includes(button)) return
+    select(button.value)
+    onChange()
+  })
+  return {
+    reset: () => select('all'),
+    filter(shelf, query) {
+      const type = buttons.find(button => button.getAttribute('aria-pressed') === 'true').value
+      const cards = [...shelf.querySelectorAll('[data-demo-type]')]
+      for (const card of cards) {
+        card.hidden = (type !== 'all' && card.dataset.demoType !== type) || !card.textContent.toLowerCase().includes(query)
+      }
+      return { total: cards.length, count: cards.filter(card => !card.hidden).length, filtered: Boolean(query) || type !== 'all' }
+    },
+  }
+}
+
+export function offerDetailsButton(title, open) {
+  const button = element('button', 'View offer')
+  button.type = 'button'
+  button.setAttribute('aria-label', 'View offer: ' + title)
+  button.dataset.selectionTarget = 'offer-art-action'
+  button.addEventListener('click', open)
+  return button
 }

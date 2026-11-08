@@ -1,3 +1,4 @@
+import { prepareViewStylesheet } from './workspace-view-styles.js'
 import { assessListing, parseComparison, SAMPLE_PROFILE, serializeComparison, validateListing, validatePhotoBatch, validateProfile, validateSelection } from './housing-engine.js'
 import { SAMPLE_LISTINGS } from './housing-sample.js'
 
@@ -44,19 +45,14 @@ if ('serviceWorker' in navigator) {
   warmHousingOfflineAssets()
 }
 const baseViewCss = new URL('./agentic-base-data-view.css?v=base-0cd7602-multi-dimensional-table-v1', import.meta.url).href
-let state, live = false, styleLink, saved = readSaved(), activeHash = 'housing', importTicket = 0, photoAssets = new Map(), photoIndexes = new Map(), tableAdapter, tableHandle, tableViewState, tableGeneration = 0
+let state, live = false, saved = readSaved(), activeHash = 'housing', importTicket = 0, photoAssets = new Map(), photoIndexes = new Map(), tableAdapter, tableHandle, tableViewState, tableGeneration = 0
 const freshState = () => ({ profile: null, listings: SAMPLE_LISTINGS.map(item => structuredClone(item)), selected: SAMPLE_LISTINGS.slice(0, 3).map(item => item.id), priorities: [], manualIds: new Set(), query: '', dimensionQuery: '', savedOnly: false, editingId: null, inputsOpen: false, orientation: 'columns' })
 const orientationStatus = orientation => orientation === 'columns'
   ? 'Each listing is a column. Scroll horizontally to compare all options.'
   : 'Each listing is a row. Scroll horizontally to compare every fact.'
 const statusLine = text => `<p class="housing-status" data-housing-global-status role="status" aria-live="polite">${escapeHtml(text)}</p>`
 function currentListing(id) { return state.listings.find(item => item.id === id) }
-function ensureStyles() {
-  styleLink = document.getElementById('housing-comparison-style')
-  if (styleLink) return
-  styleLink = document.createElement('link'); styleLink.id = 'housing-comparison-style'; styleLink.rel = 'stylesheet'
-  styleLink.href = new URL('./housing-comparison.css', import.meta.url).href; document.head.append(styleLink)
-}
+export const prepareHousingStyles = prepareViewStylesheet(new URL('./housing-comparison.css', import.meta.url))
 function loadTableAdapter() {
   tableAdapter ??= import('./agentic-base-data-view.js?v=base-0cd7602-multi-dimensional-table-v1').catch(error => { tableAdapter = null; throw error })
   return tableAdapter
@@ -203,7 +199,7 @@ function profilePanel() {
   const profile = state.profile || { start: '', end: '', budget: '', currency: 'SGD', application: 'student', credit: 'unknown', guarantor: 'unknown', transport: 'unknown', campus: '', priorities: state.priorities }
   const selected = new Set(profile.priorities || [])
   const summary = state.profile ? 'Set for this visit' : 'Not set'
-  return `<section class="housing-input-section housing-context" aria-labelledby="housing-context-title"><header><h3 id="housing-context-title">Stay &amp; application context</h3><p class="housing-context-summary">${escapeHtml(summary)} · used for every selected listing</p></header>
+  return `<section class="agentic-dashboard-card housing-context" aria-labelledby="housing-context-title"><header><h3 id="housing-context-title">Stay &amp; application context</h3><p class="housing-context-summary">${escapeHtml(summary)} · used for every selected listing</p></header>
     <form class="housing-form" data-form="profile"><div class="housing-field-grid">
       <label>Arrival date<input name="start" type="date" required value="${escapeHtml(profile.start)}"></label><label>Departure date<input name="end" type="date" required value="${escapeHtml(profile.end)}"></label>
       <label>Monthly budget<input name="budget" type="number" min="1" max="10000000" step="1" required value="${escapeHtml(profile.budget)}"></label><label>Currency<select name="currency">${['SGD', 'USD', 'MYR'].map(code => `<option${profile.currency === code ? ' selected' : ''}>${code}</option>`).join('')}</select></label>
@@ -212,7 +208,7 @@ function profilePanel() {
       <label>Guarantor available?<select name="guarantor"><option value="unknown"${profile.guarantor === 'unknown' ? ' selected' : ''}>Not sure</option><option value="yes"${profile.guarantor === 'yes' ? ' selected' : ''}>Yes</option><option value="no"${profile.guarantor === 'no' ? ' selected' : ''}>No</option></select></label>
       <label>Typical transport<select name="transport">${[['unknown','Not set'],['public','Public transit'],['walk','Walk'],['bike','Bike'],['car','Car']].map(([value,label]) => `<option value="${value}"${profile.transport === value ? ' selected' : ''}>${label}</option>`).join('')}</select></label>
       <label class="housing-field-wide">Optional campus label<input name="campus" maxlength="60" value="${escapeHtml(profile.campus)}" placeholder="Example: North campus"><small>Do not enter a street address.</small></label>
-      <fieldset class="housing-choice-list housing-field-wide"><legend>Priorities</legend>${[['quiet','Quiet hours'],['furnished','Furnished space'],['privacy','Private room']].map(([value,label]) => `<label><input type="checkbox" name="priority" value="${value}"${selected.has(value) ? ' checked' : ''}><span>${label}</span></label>`).join('')}</fieldset>
+      <fieldset class="agentic-checkbox-group housing-field-wide"><legend>Priorities</legend>${[['quiet','Quiet hours'],['furnished','Furnished space'],['privacy','Private room']].map(([value,label]) => `<label><input type="checkbox" name="priority" value="${value}"${selected.has(value) ? ' checked' : ''}><span>${label}</span></label>`).join('')}</fieldset>
     </div><div class="housing-actions"><button type="submit">Apply context</button><button type="button" class="secondary" data-action="sample-profile">Use sample profile</button>${state.profile ? '<button type="button" class="secondary" data-action="clear-context">Clear context</button>' : ''}</div><p>Context stays in memory for this visit. No name, exact address, or document is collected.</p></form>
   </section>`
 }
@@ -247,7 +243,7 @@ function portableTools(canExport) {
 }
 function listingPanel() {
   const selected = state.selected.filter(id => state.listings.some(item => item.id === id))
-  return `<section class="housing-input-section housing-listings-panel" aria-labelledby="housing-listings-title"><header><h3 id="housing-listings-title">Local listings</h3><p>Choose up to three options. Selection order matches the table.</p></header><div class="housing-listing-filter"><label>Find an option<input type="search" name="listing-query" value="${escapeHtml(state.query)}" placeholder="Search local labels"></label><label class="housing-filter-toggle"><input type="checkbox" name="saved-only"${state.savedOnly ? ' checked' : ''}>Saved only</label><p data-listing-count aria-live="polite"></p></div><div class="housing-listing-grid">${state.listings.map(listingChoice).join('')}</div><p>Selected ${selected.length} of 3 listings.</p>${listingForm()}${portableTools(selected.length > 0)}</section>`
+  return `<section class="agentic-dashboard-card housing-listings-panel" aria-labelledby="housing-listings-title"><header><h3 id="housing-listings-title">Local listings</h3><p>Choose up to three options. Selection order matches the table.</p></header><div class="housing-listing-filter"><label>Find an option<input type="search" name="listing-query" value="${escapeHtml(state.query)}" placeholder="Search local labels"></label><label class="housing-filter-toggle"><input type="checkbox" name="saved-only"${state.savedOnly ? ' checked' : ''}>Saved only</label><p data-listing-count aria-live="polite"></p></div><div class="housing-listing-grid">${state.listings.map(listingChoice).join('')}</div><p>Selected ${selected.length} of 3 listings.</p>${listingForm()}${portableTools(selected.length > 0)}</section>`
 }
 function filterChoices() {
   const query = state.query.trim().toLowerCase()
@@ -327,7 +323,7 @@ function comparisonPanel(reports) {
   const table = reports.length
     ? `<div class="housing-comparison-table-scroll" data-orientation="${state.orientation}" tabindex="0" role="region" aria-label="${regionLabel}"><div class="housing-comparison-table-host" data-housing-table-host></div></div><p class="housing-status" data-housing-table-status role="status" aria-live="polite">Loading the shared comparison table…</p>`
     : `<div class="housing-table-empty" role="status">Choose up to three options to add listings to the table.<button type="button" class="secondary" data-action="show-inputs">Choose listings</button></div>`
-  return `<section class="panel housing-table-panel" aria-labelledby="housing-table-title"><header><p class="eyebrow">HOUSING · LOCAL WORKSPACE</p><h1 id="housing-table-title" tabindex="-1">Multi-dimensional Table</h1><p>Stay context and listing facts share one matrix. Pivot to place each listing in rows or columns; shared facts stay the same. Samples are fictional and unverified.</p></header><details class="housing-workflow" data-housing-workflow${state.inputsOpen ? ' open' : ''}><summary>Workflow inputs &amp; listing actions <span>${selectedCount} of 3 listings selected</span></summary><div class="housing-controls">${profilePanel()}${listingPanel()}</div>${listingActions(reports)}</details>${dimensionControls}${table}${reports.map(planDialog).join('')}<p>No listing is contacted, submitted, or saved remotely.</p>${statusLine('Local only · no listing search or contact.')}</section>`
+  return `<section class="agentic-dashboard-region" aria-labelledby="housing-table-title"><header class="agentic-dashboard-header"><p class="agentic-dashboard-observation">HOUSING · LOCAL WORKSPACE</p><h1 data-dashboard-primitive="heading" id="housing-table-title" tabindex="-1">Multi-dimensional Table</h1><p data-dashboard-primitive="text">Stay context and listing facts share one matrix. Pivot to place each listing in rows or columns; shared facts stay the same. Samples are fictional and unverified.</p></header><details data-dashboard-primitive="disclosure" data-housing-workflow${state.inputsOpen ? ' open' : ''}><summary>Workflow inputs &amp; listing actions <span>${selectedCount} of 3 listings selected</span></summary><div data-dashboard-primitive="container" data-columns="2" data-dashboard-columns-for="housing">${profilePanel()}${listingPanel()}</div>${listingActions(reports)}</details>${dimensionControls}${table}${reports.map(planDialog).join('')}<p>No listing is contacted, submitted, or saved remotely.</p>${statusLine('Local only · no listing search or contact.')}</section>`
 }
 function syncComparisonOrientation() {
   const orientation = state.orientation
@@ -420,7 +416,7 @@ async function importComparison(input) {
 export function mountHousingWorkspace(target = root) {
   if (!(target instanceof HTMLElement)) throw Error('housing_workspace_root_missing')
   if (live) { activate('housing'); return { activate, deactivate } }
-  live = true; state = freshState(); photoAssets = new Map(); photoIndexes = new Map(); ensureStyles();
+  live = true; state = freshState(); photoAssets = new Map(); photoIndexes = new Map();
   target.addEventListener('submit', onSubmit); target.addEventListener('click', onClick); target.addEventListener('change', onChange); target.addEventListener('input', onInput); target.addEventListener('keydown', onKeyDown)
   function onSubmit(event) {
     const form = event.target.closest('form[data-form]'); if (!form) return
@@ -489,7 +485,7 @@ export function mountHousingWorkspace(target = root) {
     }
   }
   function activate() { if (!live) return; warmHousingOfflineAssets(); state ??= freshState(); render() }
-  function deactivate() { if (!live) return; live = false; importTicket++; disposeComparisonTable(); target.removeEventListener('submit', onSubmit); target.removeEventListener('click', onClick); target.removeEventListener('change', onChange); target.removeEventListener('input', onInput); target.removeEventListener('keydown', onKeyDown); target.replaceChildren(); styleLink?.remove(); styleLink = null; clearPhotos(); state = null; if (offlineStatus) { delete offlineStatus.dataset.housingOfflineState; offlineStatus.textContent = 'Offline access is ready. Core workspace is cached; open Housing to prepare its offline files.' } }
+  function deactivate() { if (!live) return; live = false; importTicket++; disposeComparisonTable(); target.removeEventListener('submit', onSubmit); target.removeEventListener('click', onClick); target.removeEventListener('change', onChange); target.removeEventListener('input', onInput); target.removeEventListener('keydown', onKeyDown); target.replaceChildren(); clearPhotos(); state = null; if (offlineStatus) { delete offlineStatus.dataset.housingOfflineState; offlineStatus.textContent = 'Offline access is ready. Core workspace is cached; open Housing to prepare its offline files.' } }
   activate('housing')
   return { activate, deactivate }
 }

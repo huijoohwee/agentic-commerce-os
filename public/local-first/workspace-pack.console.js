@@ -2,8 +2,9 @@ import { SCENARIOS, STAGES, CONSOLE_TOOLS, startSimulation, selectStage, applyRe
   rejectRecovery, inspectSimulation, customerPreview, toolGate, validateToolInput } from './workspace-pack.simulation.js'
 
 export function initConsole(bridge) {
-  const $ = id => document.getElementById(id)
-  const stages = [...document.querySelectorAll('[data-response-stage]')]
+  const root = bridge.root ?? document
+  const $ = id => root.getElementById(id)
+  const stages = [...root.querySelectorAll('[data-response-stage]')]
   const sheet = $('console-sheet'), registrations = new Map()
   let state = null, generation = 0, guide = null, timer = null, events = [], sequence = 0, closed = false
   let sheetMode = 'tools', sheetTrigger = null
@@ -109,7 +110,7 @@ export function initConsole(bridge) {
     if (sheetTrigger?.isConnected && !sheetTrigger.disabled) sheetTrigger.focus()
   }
   function openSheet(mode, trigger) {
-    if (document.querySelector('dialog[open]')) return
+    if (root.querySelector('dialog[open]')) return
     sheetMode = mode; sheetTrigger = trigger; $('console-filter').value = ''
     renderSheet(); sheet.showModal(); $('console-filter').focus()
   }
@@ -172,7 +173,7 @@ export function initConsole(bridge) {
   }
   function retire(key) {
     const registration = registrations.get(key)
-    if (!registration) return
+    if (!registration || registration.controller.signal.aborted) return
     registration.ready = false; registration.controller.abort()
     if (bridge.context !== document.modelContext) bridge.context?.unregisterTool?.(registration.name)
   }
@@ -192,7 +193,7 @@ export function initConsole(bridge) {
       })])
       if (closed || registration.controller.signal.aborted) throw Error('console_registration_retired')
       registration.ready = true; registration.status = 'Registered'
-    } catch { retire(tool.key); registration.status = 'Registration unavailable' }
+    } catch { if (registration.controller.signal.aborted) return; retire(tool.key); registration.status = 'Registration unavailable' }
     finally { clearTimeout(deadline); render() }
   }
   $('simulation-scenario').addEventListener('change', reset)
@@ -211,8 +212,8 @@ export function initConsole(bridge) {
     if (event.key !== 'Tab') return
     const controls = [...sheet.querySelectorAll('button,input')].filter(control => !control.disabled && !control.hidden)
     const first = controls[0], last = controls.at(-1)
-    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus() }
-    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus() }
+    if (event.shiftKey && root.activeElement === first) { event.preventDefault(); last.focus() }
+    else if (!event.shiftKey && root.activeElement === last) { event.preventDefault(); first.focus() }
   })
   sheet.addEventListener('click', event => {
     if (event.target !== sheet) return
@@ -220,8 +221,19 @@ export function initConsole(bridge) {
     if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) closeSheet()
   })
   document.addEventListener('visibilitychange', () => { if (document.hidden && guide) { guide.paused = true; render(); schedule() } })
-  addEventListener('pagehide', () => { closed = true; stopGuide(); for (const tool of CONSOLE_TOOLS) retire(tool.key) }, { once: true })
-  if (bridge.context?.registerTool) for (const tool of CONSOLE_TOOLS) void register(tool)
+  function setActive(active) {
+    if (active && bridge.context?.registerTool) {
+      for (const tool of CONSOLE_TOOLS) {
+        const current = registrations.get(tool.key)
+        if (!current || current.controller.signal.aborted) void register(tool)
+      }
+    } else if (!active) {
+      stopGuide()
+      for (const tool of CONSOLE_TOOLS) retire(tool.key)
+    }
+  }
+  addEventListener('pagehide', () => { closed = true; setActive(false) }, { once: true })
+  setActive(!closed && (bridge.active?.() ?? true))
   render()
-  return { action, refreshLive: () => { bridge.changed(counts()); if (sheet.open) renderSheet() } }
+  return { action, setActive, refreshLive: () => { bridge.changed(counts()); if (sheet.open) renderSheet() } }
 }

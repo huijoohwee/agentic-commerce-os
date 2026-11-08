@@ -3,6 +3,7 @@ import path from 'node:path';
 import assert from 'node:assert/strict';
 import { expect } from '@playwright/test';
 import { verifyWorkspaceToolRefinements } from './workspace-tools-browser.mjs';
+import { checkCommerceToolbar } from './commerce-toolbar-browser.mjs';
 import { checkSharedWorkspaceShell } from './workspace-shell-browser.mjs';
 import { checkSmeComparisonBrowser } from './sme-comparison-browser.mjs';
 import { BROWSER_CHECKS } from '../../scripts/local-first-release/browser-proof.mjs';
@@ -29,7 +30,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   const css = await page.locator('link[href*="/style.css"]').getAttribute('href'), bootstrap = await page.locator('script[type=module]').getAttribute('src');
   assert.match(css, /^\.\/assets\/[a-f0-9]{40}\/style\.css\?v=[a-z0-9-]+$/); assert.match(bootstrap, /^\.\/assets\/[a-f0-9]{40}\/workspace\.js\?v=[a-z0-9-]+$/);
   assert.equal((await page.request.get(new URL(css, url).href)).status(), 200); await page.getByText('Offline access is ready.', { exact: false }).waitFor(); await page.screenshot({ path: path.join(output, 'shopper-empty-desktop.png'), fullPage: true });
-  await chooseDropdown(page.locator('#workspace-role-switcher'), 'admin');
+  await page.locator('[data-workspace-destination="admin"]').click();
   await page.locator('#admin-navigation').getByRole('link', { name: 'Environment overview', exact: true }).click();
   await expect(page.locator('#environment-badge')).toHaveText('Not checked');
   await context.setOffline(true); await context.setOffline(false);
@@ -97,7 +98,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await expect(page.locator('#import')).toBeEnabled();
   await page.locator('#import').setInputFiles({ name: 'offers.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ schema: 'commerce.local-drafts/v2', drafts })) });
   await expect(page.locator('#status')).toContainText('Imported 13 drafts.');
-  await chooseDropdown(page.locator('#workspace-role-switcher'), 'vendor');
+  await page.locator('[data-workspace-destination="vendor"]').click();
   await expect(page.locator('#vendor-total')).toHaveText('13');
   await expect(page.locator('#vendor-table .vendor-offer-card-grid > li')).toHaveCount(10);
   await page.getByRole('navigation', { name: 'vendor pagination' }).getByRole('button', { name: 'Next' }).click();
@@ -106,7 +107,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await expect(page.locator('#vendor-table .vendor-offer-card-grid > li')).toHaveCount(1);
   await chooseDropdown(page.locator('#vendor-state'), '');
   await page.screenshot({ path: path.join(output, 'vendor-desktop.png'), fullPage: true });
-  await chooseDropdown(page.locator('#workspace-role-switcher'), 'shop');
+  await page.locator('[data-workspace-destination="shop"]').click();
   await expect(page.locator('#shop-grid article')).toHaveCount(12);
   await page.locator('#shop-next').click(); await expect(page.locator('#shop-grid article')).toHaveCount(1);
   await chooseDropdown(page.locator('#shop-store'), 'studio-north'); await expect(page.locator('#shop-grid article')).toHaveCount(6);
@@ -121,6 +122,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   assert.equal(await page.locator('#shop-grid img').count(), 0);
   assert.equal(await page.evaluate(() => window.injected), undefined);
   await page.screenshot({ path: path.join(output, 'shopper-desktop.png'), fullPage: true });
+  await checkCommerceToolbar(browser, url, 390);
   await checkSharedWorkspaceShell({ page, url, output });
   const smeServiceRequests = [];
   const observeSmeService = request => {
@@ -128,7 +130,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   };
   page.on('request', observeSmeService);
   await page.evaluate(() => { window.__smeShellAtEntry = document.querySelector('#workspace-shell'); });
-  await chooseDropdown(page.locator('#workspace-role-switcher'), 'sme');
+  await page.locator('[data-workspace-destination="sme"]').click();
   await expect(page.locator('#sme')).toBeVisible();
   await expect(page.locator('#webmcp-status')).toContainText('optional pack tools registered');
   await context.setOffline(true);
@@ -151,7 +153,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await page.goto(url + '#shop-sandbox');
   await expect(page.locator('#live-offer-heading')).toBeInViewport();
 
-  await chooseDropdown(page.locator('#workspace-role-switcher'), 'admin');
+  await page.locator('[data-workspace-destination="admin"]').click();
   await expect(page.locator('#admin-reviewable')).toHaveText('12');
   await expect(page.locator('#admin-attention')).toHaveText('1');
   await expect(page.locator('#admin-stores')).toHaveText('2');
@@ -177,7 +179,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await expect(page.getByRole('table', { name: 'Project offers', exact: true }).locator('tbody tr')).toHaveCount(6);
   await expect(page.locator('#project-detail')).not.toContainText('Independent offer 02');
   await expect(page.locator('#project-detail')).not.toContainText('PRIVATE');
-  await expect(page.locator('#console-breadcrumb')).toBeVisible(); await expect(page.locator('#console-root')).toHaveAttribute('href', '#admin'); await expect(page.locator('#console-root')).toHaveText('Projects');
+  await expect(page.getByRole('navigation', { name: 'Workspace Toolbar' })).toBeVisible(); await expect(page.locator('[data-workspace-destination][aria-current]')).toHaveAttribute('href', '#admin'); await expect(page.locator('[data-workspace-destination][aria-current]')).toHaveText('Admin');
   await expect(page.locator('#admin-project-select')).toHaveValue('store:studio-north');
   await page.getByRole('searchbox', { name: 'Search project offers', exact: true }).fill('offer 03');
   await expect(page.getByRole('table', { name: 'Project offers', exact: true }).locator('tbody tr')).toHaveCount(1);
@@ -186,7 +188,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await page.reload();
   await expect(page.locator('#environment-history-count')).toHaveText('0 checks · Page 1 of 1');
   await expect(page.locator('#environment-scope')).toHaveText('studio-north');
-  await expect(page.locator('#console-root')).toHaveAttribute('href', '#admin'); await expect(page.locator('#console-root')).toHaveText('Projects');
+  await expect(page.locator('[data-workspace-destination][aria-current]')).toHaveAttribute('href', '#admin'); await expect(page.locator('[data-workspace-destination][aria-current]')).toHaveText('Admin');
   await expect(page.locator('#environment-latest')).toHaveText('Independent offer 11');
   await expect(page.locator('#environment-preview')).not.toContainText('PRIVATE');
   await page.locator('#environment-refresh').click();
@@ -298,8 +300,9 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await expect(page.locator('#project-list .project-card')).toHaveCount(2);
   await page.goto(url + '#admin-project?project=store%3Astudio-north');
   const agentButton = page.getByRole('button', { name: 'Agent tools', exact: true });
+  const launcher = page.getByRole('button', { name: 'Tools and Console' });
   const drawer = page.getByRole('dialog', { name: 'Agent tools', exact: true });
-  await agentButton.click();
+  await launcher.click(); await agentButton.click();
   await expect(drawer).toBeVisible();
   await expect(page.locator('#workspace-agent-context')).toHaveText('Project · studio-north');
   await expect(page.locator('#workspace-tool')).toHaveValue('commerce.workspace.project.read');
@@ -324,7 +327,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   assert(prepared.params.arguments.snapshot.offers.every(offer => offer.launch.merchantId === 'studio-north'));
   assert(!JSON.stringify(prepared).includes('PRIVATE'));
   await page.getByRole('button', { name: 'Close agent tools', exact: true }).click();
-  await expect(agentButton).toBeFocused();
+  await expect(launcher).toBeFocused();
   await expect.poll(() => page.evaluate(async () => (await document.modelContext.getTools()).length)).toBe(0);
   assert.equal(await page.locator('#workspace-tool').count(), 1);
   await page.locator('.graph-record-grid tbody tr').filter({ hasText: 'Independent offer 03' }).click();
@@ -344,21 +347,21 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await page.keyboard.press('Escape'); await expect(inspectOffer).toBeFocused();
   for (const width of [390, 768, 1280]) {
     await page.setViewportSize({ width, height: 900 });
-    await page.goto(url + '#admin-runtime?project=store%3Astudio-north'); await agentButton.click();
+    await page.goto(url + '#admin-runtime?project=store%3Astudio-north'); await launcher.click(); await agentButton.click();
     await expect(page.locator('#workspace-tool')).toHaveValue('commerce.workspace.environment.read');
     await expect(page.locator('#workspace-arguments')).toHaveValue('{}');
     await expect(page.locator('#workspace-result')).toBeEmpty();
     assert.equal(await drawer.evaluate(element => element.scrollWidth <= element.clientWidth), true);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await page.screenshot({ path: path.join(output, `contextual-agent-${width}.png`) });
-    await page.keyboard.press('Escape'); await expect(agentButton).toBeFocused();
+    await page.keyboard.press('Escape'); await expect(launcher).toBeFocused();
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(url + '#admin-project?project=store%3Astudio-north');
-  await context.setOffline(true); await page.reload(); await agentButton.click();
+  await context.setOffline(true); await page.reload(); await launcher.click(); await agentButton.click();
   await page.locator('#workspace-run').click(); await expect(page.locator('#workspace-result')).toContainText('studio-north');
   await page.keyboard.press('Escape'); await context.setOffline(false);
-  await page.goto(url + '#admin-project?project=missing'); await agentButton.click();
+  await page.goto(url + '#admin-project?project=missing'); await launcher.click(); await agentButton.click();
   await expect(page.locator('#workspace-agent-status')).toContainText('project is unavailable');
   await expect(page.locator('#workspace-agent-content')).toBeEmpty(); await page.keyboard.press('Escape');
   await page.goto(url + '#admin');
@@ -439,7 +442,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await page.getByRole('button', { name: 'Review launch', exact: true }).click();
   await expect(page.locator('#launch-review')).toBeVisible();
   await expect(page.locator('#export-launch')).toBeDisabled();
-  await chooseDropdown(page.locator('#workspace-role-switcher'), 'admin');
+  await page.locator('[data-workspace-destination="admin"]').click();
   await page.getByRole('link', { name: 'Create offer', exact: true }).click();
   await expect(page.getByLabel('What are you creating?')).toHaveValue('');
   await context.setOffline(true);
@@ -500,10 +503,10 @@ async function verifyWorkspaceFidelity({ page, context, url, drafts }) {
     await page.reload();
     await expect(page.locator('#draft-storage-status')).toContainText('Saved offers are unavailable');
     await expect(page.locator('#vendor-total')).toHaveText('—');
-    await chooseDropdown(page.locator('#workspace-role-switcher'), 'shop');
+    await page.locator('[data-workspace-destination="shop"]').click();
     await expect(page.locator('#shop-empty')).toBeHidden();
     await expect(page.locator('#shop-count')).toContainText('unknown');
-    await chooseDropdown(page.locator('#workspace-role-switcher'), 'admin');
+    await page.locator('[data-workspace-destination="admin"]').click();
     await expect(page.locator('#project-list')).toContainText('unavailable');
     await page.goto(url + '#vendor-editor');
     await expect(page.locator('#draft-list button')).toHaveCount(0);

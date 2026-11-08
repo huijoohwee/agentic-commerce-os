@@ -1,3 +1,4 @@
+import { verifyDashboardGrid } from './dashboard-layout-browser.mjs';
 import { chooseDropdown } from './dropdown-menu-browser.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -11,7 +12,7 @@ export async function checkWorkspacePack({ browser, url, output, revision }) {
     reducedMotion: 'reduce' });
   const requests = [], errors = [], checks = [];
   let releaseModule = () => {};
-  context.on('request', request => requests.push({ url: request.url(), method: request.method() }));
+  context.on('request', request => requests.push({ url: request.url(), method: request.method(), worker: !!request.serviceWorker() }));
   const page = await context.newPage();
   page.on('pageerror', error => errors.push(error.message));
   const record = name => checks.push(name);
@@ -30,12 +31,31 @@ export async function checkWorkspacePack({ browser, url, output, revision }) {
     const source = page.locator('#source'), title = page.getByLabel('Pack name');
     await expect(create).toBeEnabled();
     const original = await source.inputValue();
+    const launcher = page.getByRole('button', { name: 'Tools and Console' });
     const consoleToggle = page.locator('#console-toggle');
     await expect(page.getByRole('complementary', { name: 'Console' })).toBeVisible();
     await expect(consoleToggle).toHaveAttribute('aria-expanded', 'true');
     const dock = await page.locator('#console-panel').boundingBox();
-    const workspace = await page.locator('#builder').boundingBox();
-    assert(workspace.x + workspace.width <= dock.x);
+    const workspaceBounds = () => page.locator('#builder, .format-grid, .format-grid > *').evaluateAll(nodes =>
+      nodes.map(el => { const r = el.getBoundingClientRect(); return [r.x, r.y, r.width, r.height]; }));
+    const openBounds = await workspaceBounds();
+    await page.keyboard.press('Control+j');
+    await expect(consoleToggle).toHaveAttribute('aria-expanded', 'false');
+    assert.deepEqual(await workspaceBounds(), openBounds, 'closing the overlay must not move the document or resize its grid');
+    await page.keyboard.press('Control+j');
+    await expect(consoleToggle).toHaveAttribute('aria-expanded', 'true');
+    assert.deepEqual(await workspaceBounds(), openBounds, 'opening the overlay must not reserve a column');
+    assert(openBounds[0][0] + openBounds[0][2] > dock.x, 'the workspace extends behind the Console');
+    const shell = page.locator('#console-panel');
+    const shellHeader = shell.locator(':scope > .agentic-base-floating-panel-inner > .agentic-base-floating-panel-header');
+    const scrollBody = shell.locator('.agentic-floating-panel-body');
+    await expect(shellHeader.getByRole('button', { name: 'Close Console' })).toBeVisible();
+    assert(dock.y > 0 && dock.x + dock.width < page.viewportSize().width, 'Console must float inside the viewport');
+    const initialHeaderY = (await shellHeader.boundingBox()).y;
+    assert(await scrollBody.evaluate(el => { el.scrollTop = el.scrollHeight; return el.scrollTop > 0; }));
+    assert.equal((await shellHeader.boundingBox()).y, initialHeaderY, 'only the Console body scrolls');
+    await scrollBody.evaluate(el => { el.scrollTop = 0; });
+    await verifyDashboardGrid(page.locator('#builder .agentic-dashboard-region > .agentic-dashboard-grid'), { columns: 2, count: 2 });
     await expect(page.locator('#console-tool-count')).toHaveText('1 browser tool');
     assert.equal(requests.some(request => request.url.endsWith('/workspace-pack.simulation.js')), false);
     const scenario = page.getByLabel('Scenario', { exact: true });
@@ -69,16 +89,23 @@ export async function checkWorkspacePack({ browser, url, output, revision }) {
     await chooseDropdown(scenario, 'timeout');
     await expect(page.locator('#simulation-report')).toBeHidden();
     await expect(stages.getByRole('button', { name: 'Recovery', exact: true })).toBeDisabled();
-    await context.setOffline(true); await runSimulation.click();
+    assert.equal(await page.locator('#console-events').innerText(), liveActivity);
+    await context.setOffline(true);
+    await expect(page.locator('[data-pack-status]')).toHaveText('Service unavailable');
+    const offlineActivity = await page.locator('#console-events').innerText();
+    await runSimulation.click();
     await expect(page.locator('#simulation-status')).toHaveText('Timeout · Simulated condition loaded');
+    assert.equal(await page.locator('#console-events').innerText(), offlineActivity);
     await context.setOffline(false);
+    await expect(page.locator('[data-pack-status]')).toHaveText('Service ready');
+    const reconnectedActivity = await page.locator('#console-events').innerText();
     await page.getByRole('button', { name: 'Reset', exact: true }).click();
     await expect(runSimulation).toBeFocused();
     await expect(source).toHaveValue(original);
     await expect(page.locator('#console-form-state')).toHaveText('Prepare your source');
-    assert.equal(await page.locator('#console-events').innerText(), liveActivity);
+    assert.equal(await page.locator('#console-events').innerText(), reconnectedActivity);
     assert.equal(requests.filter(request => request.method === 'POST').length, 0);
-    assert.equal(requests.filter(request => request.url.endsWith('/workspace-pack.simulation.js')).length, 1);
+    assert.equal(requests.filter(request => !request.worker && request.url.endsWith('/workspace-pack.simulation.js')).length, 1);
     record('five lazy-loaded scenario rehearsals, staged/reviewed recovery, stale-selection reset and offline replay leave live state and requests untouched');
     const sheet = page.locator('#console-sheet');
     const capabilities = page.locator('.capability-open');
@@ -166,8 +193,8 @@ export async function checkWorkspacePack({ browser, url, output, revision }) {
     assert.equal(requests.filter(request => request.method === 'POST').length, 0);
     await page.keyboard.press('Escape');
     await expect(page.locator('#console-panel')).toBeHidden();
-    await expect(consoleToggle).toBeFocused();
-    record('Console docks without overlap on desktop; its review action uses the existing form gate with no pre-confirmation POST');
+    await expect(launcher).toBeFocused();
+    record('Console overlays the desktop workspace without reflow; its review action uses the existing form gate with no pre-confirmation POST');
     await page.screenshot({ path: path.join(output, 'workspace-pack-desktop.jpg'), quality: 75, fullPage: true });
     await create.click();
     await expect(dialog).toBeVisible();
@@ -206,7 +233,7 @@ export async function checkWorkspacePack({ browser, url, output, revision }) {
     assert.equal(pack.title, 'Reviewed program');
     assert.equal(pack.files[0].content, original);
     assert.equal(pack.sourceDigest, sha(original));
-    await consoleToggle.click();
+    await launcher.click(); await consoleToggle.click();
     await expect(page.locator('#console-events')).toContainText('Form review opened. Source not sent.');
     await expect(page.locator('#console-events')).toContainText('Form conversion returned four verified files.');
     assert.equal((await page.locator('#console-events').innerText()).includes(original), false);
@@ -229,7 +256,7 @@ export async function checkWorkspacePack({ browser, url, output, revision }) {
     await source.fill('import os\n');
     await expect(page.locator('#result')).toBeHidden();
     await create.click(); await confirm.click();
-    await expect(page.locator('#status')).toContainText('Could not create this pack');
+    await expect(page.locator('#pack-view').locator('#status')).toContainText('Could not create this pack');
     await expect(page.locator('#console-form-state')).toHaveText('Review to try again');
     await expect(source).toHaveValue('import os\n');
     await expect(page.locator('#result')).toBeHidden();
@@ -237,7 +264,7 @@ export async function checkWorkspacePack({ browser, url, output, revision }) {
     await source.fill(original);
     await context.setOffline(true);
     await create.click(); await expect(dialog).toBeVisible(); await confirm.click();
-    await expect(page.locator('#status')).toContainText('Could not create this pack');
+    await expect(page.locator('#pack-view').locator('#status')).toContainText('Could not create this pack');
     await expect(source).toHaveValue(original);
     await expect(create).toBeEnabled();
     await context.setOffline(false);
@@ -245,31 +272,34 @@ export async function checkWorkspacePack({ browser, url, output, revision }) {
     await expect(page.locator('#result-badge')).toHaveText('4 files verified');
     record('offline conversion fails visibly; source remains and an explicit reviewed retry succeeds');
     await page.setViewportSize({ width: 390, height: 844 });
+    await verifyDashboardGrid(page.locator('#builder .agentic-dashboard-region > .agentic-dashboard-grid'), { columns: 1, count: 2 });
     await page.getByRole('button', { name: 'Canvas', exact: true }).click();
     await expect(page.locator('#preview')).toContainText('flowchart TD');
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await create.click(); await expect(dialog).toBeVisible();
-    const geometry = await page.evaluate(() => {
+    const geometry = await dialog.evaluate(dialog => {
+      const root = dialog.getRootNode();
       const selectors = ['#close-review', '#confirm-request', '#edit-request'];
-      return selectors.map(selector => { const rect = document.querySelector(selector).getBoundingClientRect();
+      return selectors.map(selector => { const rect = root.querySelector(selector).getBoundingClientRect();
         return { selector, width: rect.width, height: rect.height }; });
     });
     assert(geometry.every(rect => rect.width >= 44 && rect.height >= 44));
-    const appearance = await page.evaluate(() => {
+    const appearance = await dialog.evaluate(dialog => {
+      const root = dialog.getRootNode();
       const rgb = text => text.match(/[\d.]+/g).slice(0, 3).map(Number);
       const luminance = values => values.map(value => { const c = value / 255; return c <= .04045 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4; })
         .reduce((sum, value, index) => sum + value * [.2126, .7152, .0722][index], 0);
       const contrast = (a, b) => { const x = luminance(a), y = luminance(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
-      const surface = rgb(getComputedStyle(document.querySelector('#request-review')).backgroundColor);
-      const ink = rgb(getComputedStyle(document.querySelector('#review-heading')).color);
-      const muted = rgb(getComputedStyle(document.querySelector('#review-disclosure')).color);
-      const button = getComputedStyle(document.querySelector('#confirm-request'));
-      const focus = getComputedStyle(document.querySelector('#close-review'));
+      const surface = rgb(getComputedStyle(root.querySelector('#request-review')).backgroundColor);
+      const ink = rgb(getComputedStyle(root.querySelector('#review-heading')).color);
+      const muted = rgb(getComputedStyle(root.querySelector('#review-disclosure')).color);
+      const button = getComputedStyle(root.querySelector('#confirm-request'));
+      const focus = getComputedStyle(root.querySelector('#close-review'));
       return { primary: contrast(ink, surface), secondary: contrast(muted, surface),
         button: contrast(rgb(button.color), rgb(button.backgroundColor)),
         focus: contrast(rgb(focus.outlineColor), surface),
         typography: getComputedStyle(document.body).fontFamily,
-        codeTypography: getComputedStyle(document.querySelector('#source')).fontFamily,
+        codeTypography: getComputedStyle(root.querySelector('#source')).fontFamily,
         reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches };
     });
     assert(appearance.primary >= 4.5 && appearance.secondary >= 4.5 && appearance.button >= 4.5 && appearance.focus >= 3);
@@ -277,8 +307,8 @@ export async function checkWorkspacePack({ browser, url, output, revision }) {
     await page.screenshot({ path: path.join(output, 'workspace-pack-mobile-review.jpg'), quality: 75 });
     await page.keyboard.press('Escape');
     // Real computed-font enlargement checks text reflow; it does not claim browser zoom preference coverage.
-    await page.evaluate(() => {
-      const elements = [...document.querySelectorAll('body, body *')];
+    await dialog.evaluate(dialog => {
+      const elements = [...dialog.getRootNode().querySelectorAll('*')];
       const sizes = elements.map(element => getComputedStyle(element).fontSize);
       elements.forEach((element, index) => { element.style.fontSize = `${parseFloat(sizes[index]) * 2}px`; });
     });
@@ -292,7 +322,7 @@ export async function checkWorkspacePack({ browser, url, output, revision }) {
     const toolPack = JSON.parse(toolOutput.content[0].text);
     assert.equal(toolPack.sourceDigest, sha(original));
     assert.equal(toolPack.files.length, 4);
-    await consoleToggle.click();
+    await launcher.click(); await consoleToggle.click();
     await runSimulation.click();
     await stages.getByRole('button', { name: 'Diagnosis', exact: true }).click();
     await stages.getByRole('button', { name: 'Recovery', exact: true }).click();
@@ -310,7 +340,7 @@ export async function checkWorkspacePack({ browser, url, output, revision }) {
     const sheetBox = await sheet.boundingBox(), closeBox = await page.locator('#console-sheet-close').boundingBox();
     assert(closeBox.x >= sheetBox.x && closeBox.x + closeBox.width <= sheetBox.x + sheetBox.width);
     await page.keyboard.press('Escape');
-    assert.equal(await page.evaluate(() => document.querySelector('#console-panel').getBoundingClientRect().bottom <= document.querySelector('.workspace-status').getBoundingClientRect().top + 1), true);
+    assert.equal(await shell.evaluate(panel => panel.getBoundingClientRect().bottom <= panel.getRootNode().querySelector('.workspace-status').getBoundingClientRect().top + 1), true);
     await page.getByRole('button', { name: 'Close Console' }).click();
     await page.getByRole('button', { name: 'Inspect canvas.md', exact: true }).click();
     // A browser-tool result is not installed in the form's current result.
@@ -319,7 +349,7 @@ export async function checkWorkspacePack({ browser, url, output, revision }) {
     await page.reload();
     await expect(create).toBeEnabled();
     await expect(page.locator('#console-panel')).toBeHidden();
-    await consoleToggle.click();
+    await launcher.click(); await consoleToggle.click();
     await expect(page.locator('#console-panel')).toBeVisible();
     await page.screenshot({ path: path.join(output, 'workspace-pack-console-mobile.jpg'), quality: 75 });
     record('a fresh mobile visit keeps the Console closeable and reachable from navigation');

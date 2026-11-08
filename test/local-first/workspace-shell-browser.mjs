@@ -1,4 +1,3 @@
-import { chooseDropdown } from './dropdown-menu-browser.mjs';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { expect } from '@playwright/test';
@@ -65,6 +64,18 @@ export async function checkSharedWorkspaceShell({ page, url, output }) {
     await expect(toggle).toHaveAttribute('aria-expanded', String(!collapsed));
     if (collapsed) await expect(page.locator('#admin-navigation')).toBeHidden();
     else await expect(page.locator('#admin-navigation')).toBeVisible();
+    const toolbar = page.getByRole('navigation', { name: 'Workspace Toolbar' });
+    const agent = page.getByRole('button', { name: 'Tools and Console', exact: true });
+    for (const action of [toggle, agent]) {
+      await expect(action.locator('svg.agentic-icon')).toHaveCount(1);
+      assert.equal(await action.evaluate(button => button.parentElement.matches('header.commerce-chrome > .agentic-toolbar-dock')), true);
+    }
+    const [left, center, right] = await Promise.all([toggle, toolbar, agent].map(el => el.boundingBox()));
+    const current = await toolbar.locator('[aria-current]').boundingBox();
+    assert(current.x >= center.x - 1 && current.x + current.width <= center.x + center.width + 1);
+    assert(left.x + left.width < center.x && center.x + center.width < right.x);
+    assert(Math.abs(center.x + center.width / 2 - width / 2) <= 1);
+    for (const box of [left, right]) assert(Math.abs(box.y + box.height / 2 - center.y - center.height / 2) <= 1);
     const initial = await page.locator('#admin .workspace-content').boundingBox(); await toggle.click();
     await expect(toggle).toHaveAttribute('aria-expanded', String(collapsed));
     if (collapsed) await expect(page.locator('#admin-navigation')).toBeVisible();
@@ -74,7 +85,7 @@ export async function checkSharedWorkspaceShell({ page, url, output }) {
     if (collapsed) { await toggle.click(); await expect(toggle).toHaveAttribute('aria-expanded', 'false'); await expect(page.locator('#admin-navigation')).toBeHidden(); }
     for (const role of ['shop', 'vendor', 'admin']) {
       await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }));
-      await chooseDropdown(page.locator('#workspace-role-switcher'), role); await expect(page.locator('#' + role)).toBeVisible();
+      await page.locator(`[data-workspace-destination="${role}"]`).click(); await expect(page.locator('#' + role)).toBeVisible();
       await expect.poll(() => page.evaluate(() => Math.abs(window.scrollY) <= 1)).toBe(true);
       await expect(toggle).toHaveAttribute('aria-controls', role + '-navigation'); await expect(toggle).toHaveAttribute('aria-expanded', 'false');
       await expect(page.locator('#' + role + '-navigation')).toBeHidden();
@@ -84,7 +95,7 @@ export async function checkSharedWorkspaceShell({ page, url, output }) {
     const reference = await page.locator('#admin .workspace-content').boundingBox();
     await captureSharedShell(page); await assertSharedShell(page);
     for (const role of ['shop', 'vendor']) {
-      await chooseDropdown(page.locator('#workspace-role-switcher'), role); await expect(page.locator('#' + role)).toBeVisible();
+      await page.locator(`[data-workspace-destination="${role}"]`).click(); await expect(page.locator('#' + role)).toBeVisible();
       await expect(toggle).toHaveAttribute('aria-controls', role + '-navigation'); await expect(toggle).toHaveAttribute('aria-expanded', 'true');
       const sidebar = page.locator('#' + role + '-navigation'); await expect(sidebar).toBeVisible(); await assertSharedShell(page);
       if (width <= 680) {
@@ -98,7 +109,7 @@ export async function checkSharedWorkspaceShell({ page, url, output }) {
       if (role === 'vendor' && await query.isHidden()) {
         await expect(page.locator('#vendor-table')).toContainText('Your first offer starts with three clear details.');
       } else {
-        await expect(page.getByRole('button', { name: 'Choose workspace', exact: true })).toBeVisible(); await page.keyboard.press('ControlOrMeta+k');
+        await expect(page.getByRole('navigation', { name: 'Workspace Toolbar' })).toBeVisible(); await page.keyboard.press('ControlOrMeta+k');
         await expect(query).toBeFocused(); await query.fill('absent offer');
         await expect(page.locator(role === 'shop' ? '#shop-empty' : '#vendor-table')).toContainText(role === 'shop' ? /No (?:example )?offers match/ : 'No matching offers');
         await query.fill('');
@@ -106,15 +117,14 @@ export async function checkSharedWorkspaceShell({ page, url, output }) {
       await page.screenshot({ path: path.join(output, `aligned-${role}-${width}.png`) });
     }
     const navigationCount = await page.evaluate(() => performance.getEntriesByType('navigation').length);
-    await chooseDropdown(page.locator('#workspace-role-switcher'), 'sme'); await expect(page.locator('#sme')).toBeVisible();
+    await page.locator('[data-workspace-destination="sme"]').click(); await expect(page.locator('#sme')).toBeVisible();
     await expect(page.locator('#sme-navigation')).toBeVisible();
-    if (width <= 680) await expect(page.locator('#console-breadcrumb')).toBeHidden(); else await expect(page.locator('#console-breadcrumb')).toBeVisible();
-    await expect(page.locator('#console-root')).toHaveAttribute('href', '#sme'); await expect(page.locator('#console-root')).toHaveText('SME pack');
+    await expect(page.locator('[data-workspace-destination][aria-current]')).toHaveAttribute('href', '#sme'); await expect(page.locator('[data-workspace-destination][aria-current]')).toHaveText('SME pack');
     await expect(toggle).toHaveAttribute('aria-controls', 'sme-navigation'); await assertSharedShell(page);
     assert.equal(await page.evaluate(() => performance.getEntriesByType('navigation').length), navigationCount);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await page.evaluate(() => { location.hash = 'checkout'; }); await expect(page.locator('#checkout')).toBeVisible(); await assertSharedShell(page);
-    await chooseDropdown(page.locator('#workspace-role-switcher'), 'vendor'); await expect(page.locator('#vendor')).toBeVisible();
+    await page.locator('[data-workspace-destination="vendor"]').click(); await expect(page.locator('#vendor')).toBeVisible();
   }
   await page.locator('#workspace-navigation-toggle').click();
   await expect(page.locator('#workspace-navigation-toggle')).toHaveAttribute('aria-expanded', 'false'); await page.reload();

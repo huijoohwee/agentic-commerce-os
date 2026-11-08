@@ -1,3 +1,4 @@
+import { verifyDashboardGrid } from './dashboard-layout-browser.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -9,8 +10,31 @@ export async function checkSandboxCheckout({ browser, url, output, record, remot
   context.on('request', request => network.push({ url: request.url(), method: request.method() }));
   const page = await context.newPage(); page.on('pageerror', error => errors.push(error.message));
   try {
-    await page.setViewportSize({ width: 1280, height: 900 });
-    await page.goto(url + '#shop');
+    await page.goto(url);
+    const examples = page.locator('#shop-demo-shelf .agentic-dashboard-grid');
+    const filters = page.getByRole('group', { name: 'Filter example offers by type' });
+    await expect(examples).toBeVisible();
+    await verifyDashboardGrid(examples, { columns: 1, count: 3 });
+    const digital = filters.getByRole('button', { name: 'Digital', exact: true });
+    await digital.press('Enter');
+    await expect(digital).toHaveAttribute('aria-pressed', 'true');
+    const colors = await filters.evaluate(group => {
+      const reference = document.createElement('span');
+      reference.style.color = 'var(--agentic-control-selected-foreground)';
+      reference.style.backgroundColor = 'var(--agentic-control-selected-background)';
+      group.append(reference);
+      const { color, backgroundColor } = getComputedStyle(reference);
+      reference.remove();
+      return { color, backgroundColor };
+    });
+    await expect(digital).toHaveCSS('color', colors.color);
+    await expect(digital).toHaveCSS('background-color', colors.backgroundColor);
+    await expect(filters.getByRole('button', { name: 'All', exact: true })).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    await expect(examples.locator('[data-demo-type]:visible')).toHaveCount(1);
+    await expect(page.locator('#shop-count')).toHaveText('1 of 3 examples');
+    await filters.getByRole('button', { name: 'All', exact: true }).click();
+    await page.setViewportSize({ width: 1351, height: 900 });
+    await verifyDashboardGrid(examples, { columns: 3, count: 3 });
     const shell = async role => ({
       header: await page.locator('.topbar').boundingBox(),
       sidebar: await page.locator('#shop-navigation').boundingBox(),
@@ -28,15 +52,15 @@ export async function checkSandboxCheckout({ browser, url, output, record, remot
       for (const field of ['x', 'y', 'width']) assert(Math.abs(shop[part][field] - checkout[part][field]) < 1,
         'Checkout preserves the shop ' + part + ' ' + field);
     }
-    await expect(page.locator('#console-breadcrumb')).toBeVisible();
-    await expect(page.locator('#console-root')).toHaveAttribute('href', '#shop');
-    await expect(page.locator('#console-root')).toHaveText('Storefront');
+    await expect(page.getByRole('navigation', { name: 'Workspace Toolbar' })).toBeVisible();
+    await expect(page.locator('[data-workspace-destination][aria-current]')).toHaveAttribute('href', '#shop');
+    await expect(page.locator('[data-workspace-destination][aria-current]')).toHaveText('Shopper');
     await expect(page.locator('#shop-navigation [data-view="checkout"]')).toHaveAttribute('aria-current', 'page');
     const navigation = page.locator('#workspace-navigation-toggle');
     await expect(navigation).toHaveAttribute('aria-controls', 'shop-navigation');
     await navigation.click();
     for (const view of ['shop', 'checkout']) {
-      if (view === 'shop') await page.locator('#console-root').click();
+      if (view === 'shop') await page.locator('[data-workspace-destination][aria-current]').click();
       else await page.getByRole('link', { name: 'Try sandbox checkout' }).click();
       await expect(page.locator('#' + view)).toBeVisible();
       await expect(navigation).toHaveAttribute('aria-expanded', 'false');
@@ -51,7 +75,7 @@ export async function checkSandboxCheckout({ browser, url, output, record, remot
       await expect(page.locator('#shop-query')).toBeFocused();
     } else {
       await expect(shopSearch).toBeHidden();
-      await page.locator('#console-root').click();
+      await page.locator('[data-workspace-destination][aria-current]').click();
       await expect(page.locator('#shop')).toBeVisible();
     }
     await page.getByRole('link', { name: 'Try sandbox checkout' }).click();

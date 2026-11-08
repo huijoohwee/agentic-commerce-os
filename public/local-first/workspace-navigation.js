@@ -1,11 +1,6 @@
+import { mountCommerceChrome, createElement, observePackService, selectToolbarItem, WORKSPACE_ROLES } from './commerce-toolbar.js'
+export { WORKSPACE_ROLES } from './commerce-toolbar.js'
 import { getOrCreateSingleton, releaseSingleton } from './workspace-singleton.js'
-
-const createElement = (tag, text, className) => {
-  const element = document.createElement(tag)
-  if (text !== undefined) element.textContent = text
-  if (className) element.className = className
-  return element
-}
 
 function createIcon(symbolId) {
   if (!document.getElementById(symbolId)) throw Error(`workspace_shared_icon_missing:${symbolId}`)
@@ -32,13 +27,6 @@ function createWorkspaceSearch(variant) {
   return button
 }
 
-export const WORKSPACE_ROLES = Object.freeze({
-  shop: Object.freeze({ label: 'Shopper', helpLabel: 'shopper', breadcrumb: 'Storefront', title: 'Shopper' }),
-  vendor: Object.freeze({ label: 'Vendor', helpLabel: 'vendor', breadcrumb: 'Catalog', title: 'Vendor workspace' }),
-  admin: Object.freeze({ label: 'Admin', helpLabel: 'admin', breadcrumb: 'Projects', title: 'Admin workspace' }),
-  sme: Object.freeze({ label: 'SME pack', helpLabel: 'SME pack', breadcrumb: 'SME pack', title: 'SME business pack' }),
-  housing: Object.freeze({ label: 'Housing', helpLabel: 'housing comparison', breadcrumb: 'Housing', title: 'Housing comparison' })
-})
 function uniqueElement(selector, error) {
   const matches = document.querySelectorAll(selector)
   if (matches.length !== 1) throw Error(error)
@@ -90,39 +78,21 @@ function createWorkspaceHeader() {
   if (document.querySelectorAll('.topbar').length) throw Error('workspace_header_duplicate_rendered')
   const header = createElement('header', undefined, 'topbar')
   header.dataset.workspaceHeader = ''
-  const toggle = createElement('button', undefined, 'secondary navigation-toggle')
-  toggle.id = 'workspace-navigation-toggle'; toggle.type = 'button'
-  toggle.setAttribute('aria-label', 'Hide navigation'); toggle.setAttribute('aria-expanded', 'true')
-  toggle.setAttribute('aria-controls', 'shop-navigation')
-  toggle.title = 'Hide navigation'
-  toggle.append(createIcon('icon-navigation'))
-  const brand = createElement('a', undefined, 'brand')
-  brand.href = '#shop'; brand.setAttribute('aria-label', 'Airvio Commerce home')
-  const mark = createElement('img', undefined, 'brand-mark')
-  mark.src = './favicon.svg'; mark.alt = ''; mark.setAttribute('aria-hidden', 'true')
-  const wordmark = createElement('span', undefined, 'brand-wordmark')
-  wordmark.append(createElement('strong', 'airvio'), createElement('small', 'commerce'))
-  brand.append(mark, wordmark); header.append(brand, toggle)
-  const breadcrumb = createElement('nav', undefined, 'console-breadcrumb')
-  breadcrumb.id = 'console-breadcrumb'; breadcrumb.setAttribute('aria-label', 'Parent workspace'); breadcrumb.hidden = true
-  const root = createElement('a', 'Projects'); root.id = 'console-root'; root.href = '#admin'
-  breadcrumb.append(root); header.append(breadcrumb)
-  const workspace = createElement('select', undefined, 'workspace-role-switcher')
-  workspace.id = 'workspace-role-switcher'; workspace.setAttribute('aria-label', 'Choose workspace')
-  for (const [role, definition] of Object.entries(WORKSPACE_ROLES)) {
-    const option = createElement('option', definition.label); option.value = role; workspace.append(option)
-  }
-  header.append(workspace)
-  const agent = createElement('button', undefined, 'secondary console-agent-button')
-  agent.id = 'workspace-agent-open'; agent.type = 'button'; agent.setAttribute('aria-label', 'Agent tools')
-  agent.setAttribute('aria-haspopup', 'dialog'); agent.setAttribute('aria-expanded', 'false'); agent.hidden = true
-  agent.innerHTML = '<span role="img" aria-label="Command key icon">⌘</span>'
-  header.append(agent)
-  const status = createElement('span', undefined, 'badge'); status.id = 'connection'
+  mount.replaceWith(header)
+  const toolbar = mountCommerceChrome(header)
+  const status = createElement('span', undefined, 'agentic-toolbar-status'); status.id = 'connection'
   const statusLabel = createElement('span', 'Local workspace · Online', 'workspace-status-label')
   status.append(statusLabel); status.title = statusLabel.textContent
-  header.append(status); mount.replaceWith(header)
+  toolbar.append(status)
+  void observePackService(toolbar)
   return header
+}
+
+export function selectWorkspaceDestination(role) {
+  const link = document.querySelector(`[data-workspace-destination="${role}"]`)
+  if (!link) throw Error('workspace_destination_missing')
+  selectToolbarItem(link)
+  return link
 }
 
 export function mountWorkspaceShell() {
@@ -197,9 +167,9 @@ export function mountWorkspaceSidebar({ host, template, variant, id, label, clas
 
 export function bindWorkspaceNavigation({ onChange, onWorkspaceChange = () => {}, breakpoint = '(max-width: 950px)' } = {}) {
   const toggle = document.querySelector('#workspace-navigation-toggle')
-  const workspace = document.querySelector('#workspace-role-switcher')
+  const workspace = document.querySelector('[data-workspace-header] nav')
   const sidebar = document.querySelector('[data-workspace-sidebar]')
-  if (!(toggle instanceof HTMLButtonElement) || !(workspace instanceof HTMLSelectElement)
+  if (!(toggle instanceof HTMLButtonElement) || !(workspace instanceof HTMLElement)
     || !(sidebar instanceof HTMLElement) || typeof onChange !== 'function' || typeof onWorkspaceChange !== 'function') {
     throw Error('workspace_navigation_shell_invalid')
   }
@@ -213,16 +183,17 @@ export function bindWorkspaceNavigation({ onChange, onWorkspaceChange = () => {}
       render()
     }
     const onMobileNavigationChange = event => setCollapsed(event.matches)
-    const onClick = () => setCollapsed(!document.body.classList.contains('navigation-collapsed'))
+    const onClick = () => { if (!toggle.popoverTargetElement) setCollapsed(!document.body.classList.contains('navigation-collapsed')) }
     const onSidebarNavigation = event => {
       const link = event.target instanceof Element ? event.target.closest('a[href^="#"]') : null
       if (compact.matches && link && !link.matches('[data-workspace-tour], [data-workspace-intro]')) setCollapsed(true)
     }
-    const onWorkspaceSelect = () => {
-      if (!workspace.value || location.hash === `#${workspace.value}`) return
-      pendingWorkspaceRoute = workspace.value
-      onWorkspaceChange(workspace.value)
-      location.hash = workspace.value
+    const onWorkspaceSelect = event => {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+      const link = event.target instanceof Element && event.target.closest('a[data-workspace-destination]')
+      if (!link || location.hash === link.hash) return
+      pendingWorkspaceRoute = link.dataset.workspaceDestination
+      onWorkspaceChange(pendingWorkspaceRoute)
     }
     const correctTargetPosition = targetId => {
       if (!compact.matches || !targetId) return
@@ -252,7 +223,7 @@ export function bindWorkspaceNavigation({ onChange, onWorkspaceChange = () => {}
       dispose() {
         toggle.removeEventListener('click', onClick)
         sidebar.removeEventListener('click', onSidebarNavigation)
-        workspace.removeEventListener('change', onWorkspaceSelect)
+        workspace.removeEventListener('click', onWorkspaceSelect)
         window.removeEventListener('hashchange', onHashChange)
         mobileNavigation.removeEventListener('change', onMobileNavigationChange)
         releaseSingleton('workspace-navigation-binding', binding)
@@ -261,7 +232,7 @@ export function bindWorkspaceNavigation({ onChange, onWorkspaceChange = () => {}
     setCollapsed(mobileNavigation.matches)
     toggle.addEventListener('click', onClick)
     sidebar.addEventListener('click', onSidebarNavigation)
-    workspace.addEventListener('change', onWorkspaceSelect)
+    workspace.addEventListener('click', onWorkspaceSelect)
     window.addEventListener('hashchange', onHashChange)
     mobileNavigation.addEventListener('change', onMobileNavigationChange)
     if (location.hash) onHashChange()

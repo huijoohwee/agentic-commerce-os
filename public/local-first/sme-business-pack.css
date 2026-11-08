@@ -2,11 +2,7 @@
 #sme .workspace-content button, #sme .workspace-content a { -webkit-tap-highlight-color: transparent; }
 #sme .workspace-content :focus-visible:not(#sme-heading) { outline: 3px solid var(--commerce-focus); outline-offset: 3px; }
 #sme-overview, #sme-workflow, #sme-agent-tools { scroll-margin-top: 104px; }
-#sme .sme-table-panel { min-width: 0; padding: clamp(16px, 2.5vw, 28px); border: 1px solid var(--commerce-border); border-radius: var(--commerce-radius-panel); background: var(--commerce-surface); box-shadow: 0 5px 18px rgb(42 55 75 / .045); }
-#sme .sme-table-heading { max-width: 1100px; }
 #sme .eyebrow { margin: 0 0 9px; color: var(--commerce-action); font-size: .68rem; font-weight: 700; letter-spacing: .14em; }
-#sme .sme-table-heading h1 { margin: 0 0 10px; font-size: clamp(1.7rem, 3vw, 2.3rem); letter-spacing: -.04em; }
-#sme .lede { max-width: 760px; margin: 0 0 16px; color: var(--commerce-text-muted); font-size: .9rem; line-height: 1.55; }
 #sme .notice { max-width: 900px; min-width: 0; margin: 16px 0 20px; padding: 12px 15px; border: 1px solid var(--commerce-status-warning-border); border-left: 3px solid var(--commerce-status-warning-strong); border-radius: 10px; background: var(--commerce-status-warning-soft); }
 #sme .notice-heading { display: flex; align-items: center; gap: 9px; font-size: .82rem; }
 #sme .notice-mark { display: grid; width: 22px; height: 22px; place-items: center; border: 1px solid var(--commerce-status-warning-border); border-radius: 50%; color: var(--commerce-status-warning); font-size: .75rem; font-weight: 700; }
@@ -17,7 +13,6 @@
 #sme .comparison-table-scroll:focus-visible { outline: 3px solid var(--commerce-focus); outline-offset: 2px; }
 #sme .comparison-table-host { width: 100%; height: 100%; min-width: 0; min-height: 260px; }
 #sme .comparison-table-status { min-height: 1.4em; margin: 8px 0 0; color: var(--commerce-text-muted); font-size: .72rem; }
-#sme .sme-workflow { min-width: 0; margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--commerce-border); }
 #sme .sme-table-subheading { max-width: 900px; margin-bottom: 12px; }
 #sme .sme-table-subheading h2 { margin: 0 0 6px; }
 #sme .sme-table-subheading p:last-child { max-width: 720px; margin: 0; color: var(--commerce-text-muted); font-size: .75rem; line-height: 1.5; }
@@ -57,10 +52,9 @@
 #sme .sme-evidence-list li { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 8px; border-top: 1px solid var(--commerce-border); color: var(--commerce-text-muted); font-size: .7rem; overflow-wrap: anywhere; }
 #sme .actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 16px; }
 #sme .actions button:not(.agentic-form-control), #sme .button:not(.agentic-form-control).secondary { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 9px 13px; border: 1px solid var(--commerce-border-strong); border-radius: 9px; background: var(--commerce-surface); color: var(--commerce-action); font-size: .76rem; font-weight: 600; cursor: pointer; text-decoration: none; }
-#sme .worksheet-controls, #sme-agent-tools { margin-top: 18px; padding: 13px 0; border-top: 1px solid var(--commerce-border); }
+#sme .worksheet-controls { margin-top: 18px; padding: 13px 0; border-top: 1px solid var(--commerce-border); }
 #sme .worksheet-controls h3 { margin: 0 0 8px; font-size: .84rem; }
 #sme .worksheet-controls p, #sme-agent-tools p { color: var(--commerce-text-muted); font-size: .72rem; line-height: 1.45; }
-#sme-agent-tools > summary { color: var(--commerce-action); cursor: pointer; font-size: .8rem; font-weight: 650; }
 #sme .file-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
 #sme .agent-label { display: block; margin: 9px 0 6px; color: var(--commerce-text-muted); font-size: .72rem; font-weight: 600; }
 #sme .agent-details code, #sme-agent-tools code { display: block; max-width: 860px; padding: 10px 12px; border: 1px solid var(--commerce-border); border-radius: 8px; background: var(--commerce-surface-subtle); color: var(--commerce-text-muted); font: .72rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; }
