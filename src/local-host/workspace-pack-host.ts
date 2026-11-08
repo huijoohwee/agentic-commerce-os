@@ -21,6 +21,7 @@ export async function startWorkspacePackHost(options: Options) {
     ['/floating-panel.css', 'floating-panel.css', 'text/css; charset=utf-8'],
     ['/toolbar.css', 'toolbar.css', 'text/css; charset=utf-8'],
     ['/shared-ui-profile.css', 'shared-ui-profile.css', 'text/css; charset=utf-8'],
+    ['/commerce-toolbar.js', 'commerce-toolbar.js', 'application/javascript; charset=utf-8'],
     ['/workspace-pack.js', 'workspace-pack.js', 'application/javascript; charset=utf-8'],
     ['/workspace-pack.simulation.js', 'workspace-pack.simulation.js', 'application/javascript; charset=utf-8'],
     ['/workspace-pack.console.js', 'workspace-pack.console.js', 'application/javascript; charset=utf-8'],
@@ -50,7 +51,11 @@ export async function startWorkspacePackHost(options: Options) {
         availability: 'device-session', scope: 'loopback-only', marketplaceListed: false, registryAdmission: 'not-claimed',
         adapterDigest: options.adapterDigest, limits: PACK_LIMITS, api: PACK_PATH + '/api', mcp: PACK_PATH + '/mcp' })
       const asset = request.url?.startsWith(PACK_PATH) ? assets.get(request.url.slice(PACK_PATH.length)) : undefined
-      if (asset) return send(200, asset.text, asset.type)
+      if (asset) {
+        // The standalone host serves only the pack. Advertise workspace roles only on the full Commerce host.
+        const text = asset.type.startsWith('text/html') ? asset.text.replace(' data-workspace-home="../../"', '') : asset.text
+        return send(200, text, asset.type)
+      }
       return failure(404, 'not_found')
     }
     if (![`${PACK_PATH}/api`, `${PACK_PATH}/mcp`].includes(request.url ?? '')) return failure(404, 'not_found')

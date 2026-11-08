@@ -68,9 +68,11 @@ test('storefront and service navigation use the pinned Toolbar without a local s
     assert.match(css, /@import "\.\/toolbar\.css";/);
     assert.doesNotMatch(css, /\.agentic-toolbar(?:[-\w]*)\b|\.topbar\s*[{>]|body\s*>\s*header\s*\{/);
   }
-  const pack = fs.readFileSync('public/local-first/workspace-pack.html', 'utf8');
-  assert.match(pack, /<nav class="agentic-toolbar"[^>]*>[\s\S]*?id="console-toggle"[^>]*>[\s\S]*?id="connection"[^>]*>[\s\S]*?<\/nav>/);
-  const workspace = fs.readFileSync('public/local-first/workspace-navigation.js', 'utf8');
-  assert.match(workspace, /createElement\('nav', undefined, 'agentic-toolbar'\)/);
-  assert.doesNotMatch(workspace, /workspace-role-switcher/);
+  const html = fs.readFileSync('public/local-first/workspace-pack.html', 'utf8');
+  assert.doesNotMatch(html, /<nav class="agentic-toolbar"|id="console-toggle"/);
+  for (const entry of ['workspace-navigation.js', 'workspace-pack.js']) {
+    const source = fs.readFileSync('public/local-first/' + entry, 'utf8');
+    assert.match(source, /createCommerceToolbar.*from '\.\/commerce-toolbar\.js'/);
+    assert.doesNotMatch(source, /['"]agentic-toolbar-item['"]|workspace-role-switcher/);
+  }
 });

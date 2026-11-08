@@ -1,3 +1,4 @@
+import { checkCommerceToolbar } from './commerce-toolbar-browser.mjs';
 import { verifyDashboardGrid } from './dashboard-layout-browser.mjs';
 import { chooseDropdown } from './dropdown-menu-browser.mjs';
 import assert from 'node:assert/strict';
@@ -8,6 +9,7 @@ import { expect } from '@playwright/test';
 
 const sha = text => createHash('sha256').update(text).digest('hex');
 export async function checkWorkspacePack({ browser, url, output, revision }) {
+  await checkCommerceToolbar(browser, url, 390);
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, acceptDownloads: true,
     reducedMotion: 'reduce' });
   const requests = [], errors = [], checks = [];

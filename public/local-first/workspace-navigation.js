@@ -1,12 +1,7 @@
+import { createCommerceToolbar, createElement, observePackService, selectToolbarItem, WORKSPACE_ROLES } from './commerce-toolbar.js'
+export { WORKSPACE_ROLES } from './commerce-toolbar.js'
 import { createIconButton } from './toolbar-icons.js'
 import { getOrCreateSingleton, releaseSingleton } from './workspace-singleton.js'
-
-const createElement = (tag, text, className) => {
-  const element = document.createElement(tag)
-  if (text !== undefined) element.textContent = text
-  if (className) element.className = className
-  return element
-}
 
 function createIcon(symbolId) {
   if (!document.getElementById(symbolId)) throw Error(`workspace_shared_icon_missing:${symbolId}`)
@@ -33,13 +28,6 @@ function createWorkspaceSearch(variant) {
   return button
 }
 
-export const WORKSPACE_ROLES = Object.freeze({
-  shop: Object.freeze({ label: 'Shopper', helpLabel: 'shopper', title: 'Shopper' }),
-  vendor: Object.freeze({ label: 'Vendor', helpLabel: 'vendor', title: 'Vendor workspace' }),
-  admin: Object.freeze({ label: 'Admin', helpLabel: 'admin', title: 'Admin workspace' }),
-  sme: Object.freeze({ label: 'SME pack', helpLabel: 'SME pack', title: 'SME business pack' }),
-  housing: Object.freeze({ label: 'Housing', helpLabel: 'housing comparison', title: 'Housing comparison' })
-})
 function uniqueElement(selector, error) {
   const matches = document.querySelectorAll(selector)
   if (matches.length !== 1) throw Error(error)
@@ -91,26 +79,13 @@ function createWorkspaceHeader() {
   if (document.querySelectorAll('.topbar').length) throw Error('workspace_header_duplicate_rendered')
   const header = createElement('header', undefined, 'topbar agentic-toolbar-dock')
   header.dataset.workspaceHeader = ''
-  const toolbar = createElement('nav', undefined, 'agentic-toolbar')
-  toolbar.setAttribute('aria-label', 'Workspace Toolbar')
-  toolbar.dataset.scroll = ''
+  const toolbar = createCommerceToolbar()
   const toggle = createIconButton('Hide navigation', createIcon('icon-navigation'))
   toggle.id = 'workspace-navigation-toggle'
   toggle.dataset.dockEdge = 'start'
   toggle.setAttribute('aria-expanded', 'true')
   toggle.setAttribute('aria-controls', 'shop-navigation')
   toggle.title = 'Hide navigation'
-  const brand = createElement('a', undefined, 'agentic-toolbar-item')
-  brand.href = '#shop'
-  brand.setAttribute('aria-label', 'Airvio Commerce home')
-  brand.append(createElement('strong', 'airvio'), createElement('small', 'Commerce'))
-  toolbar.append(brand)
-  for (const [role, definition] of Object.entries(WORKSPACE_ROLES)) {
-    const link = createElement('a', definition.label, 'agentic-toolbar-item')
-    link.href = '#' + role
-    link.dataset.workspaceDestination = role
-    toolbar.append(link)
-  }
   const agent = createIconButton('Agent tools', createIcon('icon-command'))
   agent.id = 'workspace-agent-open'
   agent.dataset.dockEdge = 'end'
@@ -123,19 +98,14 @@ function createWorkspaceHeader() {
   const statusLabel = createElement('span', 'Local workspace · Online', 'workspace-status-label')
   status.append(statusLabel); status.title = statusLabel.textContent
   toolbar.append(status); header.append(toggle, toolbar, agent); mount.replaceWith(header)
+  void observePackService(toolbar)
   return header
 }
 
 export function selectWorkspaceDestination(role) {
   const link = document.querySelector(`[data-workspace-destination="${role}"]`)
   if (!link) throw Error('workspace_destination_missing')
-  const toolbar = link.parentElement
-  toolbar.querySelector('[aria-current]')?.removeAttribute('aria-current')
-  link.setAttribute('aria-current', 'location')
-  const bounds = toolbar.getBoundingClientRect()
-  const { left, right } = link.getBoundingClientRect()
-  if (left < bounds.left) toolbar.scrollLeft += left - bounds.left
-  else if (right > bounds.right) toolbar.scrollLeft += right - bounds.right
+  selectToolbarItem(link)
   return link
 }
 

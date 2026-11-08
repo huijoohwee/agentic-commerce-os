@@ -72,7 +72,10 @@ describe('Workspace Pack HTTP and MCP host', () => {
       adapter: async raw => { calls++; return result(readPackRequest(raw)) } })
     const client = new Client({ name: 'workspace-pack-test', version: '1' })
     try {
-      expect((await fetch(host.url)).status).toBe(200)
+      const html = await fetch(host.url)
+      expect(html.status).toBe(200)
+      expect(await html.text()).not.toContain('data-workspace-home')
+      expect((await fetch(host.url + 'commerce-toolbar.js')).status).toBe(200)
       for (const pathname of ['/agentic-commerce-os', '/agentic-commerce-os/']) {
         const response = await fetch(new URL(pathname, host.url), { redirect: 'manual' })
         expect(response.status).toBe(302)
@@ -119,11 +122,11 @@ describe('Workspace Pack browser tool lifecycle', () => {
         ? result(JSON.parse(options.body)) : { id: PACK_TOOL, price: { mode: 'free' } } }
     })
     const moduleSource = await fs.readFile('public/local-first/workspace-pack.js', 'utf8')
-    // This VM owns WebMCP lifecycle only; real menu loading is exercised in browser journeys.
-    const menuImport = "import { enhanceSelects } from './dropdown-menus.js';\n"
-    expect(moduleSource.startsWith(menuImport)).toBe(true)
-    const source = moduleSource.slice(menuImport.length), enhanceSelects = vi.fn()
+    // This VM exercises WebMCP registration. Cross-page toolbar and service checks run in the browser.
+    const source = moduleSource.replace(/^import .+ from '.+';$/gm, ''), enhanceSelects = vi.fn()
     const pending = runInNewContext(`(async () => {${source}\n})()`, {
+      PACK_TOOL, createCommerceToolbar: () => ({ querySelectorAll: () => [], querySelector: () => null }),
+      observePackService: async (_toolbar: unknown, changed: (available: boolean) => void) => changed(true),
       enhanceSelects, document: { getElementById: node, createElement: element, addEventListener() {}, querySelectorAll: () => [], modelContext: registerTool ? { registerTool } : undefined },
       matchMedia: () => ({ matches: false }), navigator: { modelContext: legacy }, location: { href: 'http://localhost/services/workspace-pack/' },
       addEventListener: (name: string, action: () => void) => events.set(name, action),
