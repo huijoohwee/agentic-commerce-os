@@ -13,23 +13,25 @@ export type LocalFirstEnv = Readonly<CheckoutEnv & ListingRelayEnv & {
   RELEASE_CANDIDATE_SHA: string
   CF_VERSION_METADATA?: { id?: string }
 }>
+const packDirectory = '/services/workspace-pack/'
 const ASSET_PATHS = new Map([
   ...[
     '/', '/app.js', '/drafts.js', '/checkout.js', '/launch.js', '/workspace.js',
-    ...['workspace-graph.js', 'agentic-base-data-view.js', 'dropdown-menus.js', 'agentic-base-data-view.css', 'graph-data-view.js', 'graph-data-view.css', 'graph-ui-tokens.css'].map(file => '/' + file),
+    '/workspace-graph.js', '/agentic-base-data-view.js', '/dropdown-menus.js', '/agentic-base-data-view.css',
+    '/graph-data-view.js', '/graph-data-view.css', '/graph-ui-tokens.css',
     '/style.css', '/sw.js', '/workflow.js', '/workspace-capabilities.js', '/workspace-tools.js',
+    ...(import.meta.commerceLiveCheckout === false ? [] : [
+      '/favicon.svg', '/workspace-tour.js', '/workspace-navigation.js', '/commerce-toolbar.js', '/toolbar-icons.js', '/workspace-singleton.js',
+      '/shopper-demo-detail.js', '/commerce-theme.css', '/workspace-shell.css', '/toolbar.css', '/sme-business-pack.js',
+      '/sme-business-pack.css', '/sme-business-pack-core.js', '/sme-workflow-editor.js', '/sme-pack-dictionary.js', '/sme-pack-business-plan.js',
+      '/housing-comparison.js', '/housing-engine.js', '/housing-sample.js', '/housing-comparison.css',
+      '/shared-ui-profile.css', '/sme-review-workflow.js', '/graph-gantt-timeline.js', '/graph-gantt-timeline.css',
+    ]),
   ].map(path => [path, path] as [string, string]),
-  ...(import.meta.commerceLiveCheckout === false ? [] : [
-    '/favicon.svg', '/workspace-tour.js', '/workspace-navigation.js', '/commerce-toolbar.js', '/toolbar-icons.js', '/workspace-singleton.js',
-    '/shopper-demo-detail.js', '/commerce-theme.css', '/workspace-shell.css', '/toolbar.css', '/sme-business-pack.js',
-    '/sme-business-pack.css', '/sme-business-pack-core.js', '/sme-workflow-editor.js', '/sme-pack-dictionary.js', '/sme-pack-business-plan.js',
-    '/housing-comparison.js', '/housing-engine.js', '/housing-sample.js', '/housing-comparison.css',
-    '/shared-ui-profile.css', '/sme-review-workflow.js', '/graph-gantt-timeline.js', '/graph-gantt-timeline.css',
-  ].map(path => [path, path] as [string, string])),
-  ['/services/workspace-pack/', '/workspace-pack.html'],
+  [packDirectory, '/workspace-pack.html'],
   ...['workspace-pack.js', 'commerce-toolbar.js', 'dropdown-menus.js', 'graph-ui-tokens.css', 'commerce-theme.css', 'shared-ui-profile.css', 'floating-panel.css', 'toolbar.css', 'workspace-pack.simulation.js',
     'workspace-pack.console.js', 'workspace-pack.css']
-    .map(file => ['/services/workspace-pack/' + file, '/' + file] as [string, string]),
+    .map(file => [packDirectory + file, '/' + file] as [string, string]),
 ])
 function secured(response: Response, source: string, head: boolean): Response {
   const headers = new Headers(response.headers)
