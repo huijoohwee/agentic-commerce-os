@@ -7,7 +7,7 @@ test('Commerce consumes the pinned Design System icon size from its offline shel
   const pin = verifySharedUiIconProfile();
   assert.equal(pin.owner, 'github.com/huijoohwee/agentic-design-system');
   assert.equal(pin.sourceRevision, '51bf1fcaa6b5610f174dd428363482114d888364');
-  assert.equal(pin.registryRevision, '61ae53bf71010b652d906fad3ad66648316bce2e');
+  assert.equal(pin.registryRevision, '7041182bf039ac880ebc1a25d98850f15fc58ff1');
   const profile = fs.readFileSync('public/local-first/shared-ui-profile.css', 'utf8');
   assert.match(profile, /stroke-width: var\(--agentic-icon-stroke-width\)/);
   assert.match(profile, /--agentic-font-size-body: 0\.875rem;/);
