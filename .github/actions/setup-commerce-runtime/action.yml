@@ -27,8 +27,9 @@ runs:
       run: |
         runtime="$RUNNER_TEMP/workerd-podman"
         mkdir "$runtime"
-        curl --fail --location --retry 2 --max-time 300 \
-          https://github.com/huijoohwee/workerd/releases/download/podman-649aa72a91e4/workerd-linux-x64.tar.gz \
+        # workerd-linux-x64.tar.gz from release podman-649aa72a91e4.
+        curl --fail --location --retry 2 --max-time 300 --header 'Accept: application/octet-stream' \
+          https://api.github.com/repos/huijoohwee/workerd/releases/assets/551812848 \
           --output "$runtime/runtime.tar.gz"
         echo "69980517bef8b81ae91c22b11a50194b853b99b684853d41f36bd7f5be874ce4  $runtime/runtime.tar.gz" | sha256sum --check
         tar -xzf "$runtime/runtime.tar.gz" -C "$runtime"
