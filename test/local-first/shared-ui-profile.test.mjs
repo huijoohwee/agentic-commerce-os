@@ -36,7 +36,8 @@ test('Workspace Pack takes panel geometry and colors from the pinned stylesheets
   const html = fs.readFileSync('public/local-first/workspace-pack.html', 'utf8');
   const css = fs.readFileSync('public/local-first/workspace-pack.css', 'utf8');
   const owners = [...css.matchAll(/@import\s+([^;]+);/gi)].map(match => match[1].trim());
-  assert.deepEqual(owners, ['"./graph-ui-tokens.css"', '"./commerce-theme.css"', '"./shared-ui-profile.css"', '"./floating-panel.css"', '"./toolbar.css"']);
+  assert.match(fs.readFileSync('public/local-first/commerce-shell.css', 'utf8'), /@import "\.\/floating-panel\.css";/);
+  assert.deepEqual(owners, ['"./graph-ui-tokens.css"', '"./commerce-theme.css"', '"./shared-ui-profile.css"', '"./commerce-shell.css"', '"./toolbar.css"']);
   assert.match(html, /id="builder" class="agentic-dashboard-layout"/);
   assert.match(html, /class="agentic-dashboard-region">\s*<div class="agentic-dashboard-grid" data-columns="2">/);
   assert.match(html, /class="formats agentic-dashboard-region"/);
@@ -66,13 +67,21 @@ test('storefront and service navigation use the pinned Toolbar without a local s
   for (const file of ['workspace-pack.css', 'workspace-shell.css']) {
     const css = fs.readFileSync('public/local-first/' + file, 'utf8');
     assert.match(css, /@import "\.\/toolbar\.css";/);
+    assert.match(css, /@import "\.\/commerce-shell\.css";/);
+    assert.doesNotMatch(css, /\.(?:commerce-chrome|commerce-flyout|commerce-banner|service-note)\b/);
     assert.doesNotMatch(css, /\.agentic-toolbar(?:[-\w]*)\b|\.topbar\s*[{>]|body\s*>\s*header\s*\{/);
+  }
+  const owner = fs.readFileSync('public/local-first/commerce-toolbar.js', 'utf8');
+  assert.match(owner, /import \{ createIconButton \} from '\.\/toolbar-icons\.js'/);
+  for (const file of ['workspace-pack.html', 'index.html', 'workspace-pack.js', 'workspace-navigation.js']) {
+    const consumer = fs.readFileSync('public/local-first/' + file, 'utf8');
+    assert.doesNotMatch(consumer, /class="service-note"|createIconButton\(|<symbol id="icon-(?:navigation|command)"/);
   }
   const html = fs.readFileSync('public/local-first/workspace-pack.html', 'utf8');
   assert.doesNotMatch(html, /<nav class="agentic-toolbar"|id="console-toggle"/);
   for (const entry of ['workspace-navigation.js', 'workspace-pack.js']) {
     const source = fs.readFileSync('public/local-first/' + entry, 'utf8');
-    assert.match(source, /createCommerceToolbar.*from '\.\/commerce-toolbar\.js'/);
+    assert.match(source, /mountCommerceChrome.*from '\.\/commerce-toolbar\.js'/);
     assert.doesNotMatch(source, /['"]agentic-toolbar-item['"]|workspace-role-switcher/);
   }
 });

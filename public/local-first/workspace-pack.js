@@ -1,5 +1,5 @@
 import { enhanceSelects } from './dropdown-menus.js';
-import { createCommerceToolbar, observePackService, selectToolbarItem, PACK_TOOL } from './commerce-toolbar.js';
+import { mountCommerceChrome, observePackService, selectToolbarItem, PACK_TOOL } from './commerce-toolbar.js';
 enhanceSelects(document);
 const $ = id => document.getElementById(id)
 const sample = '# Add up a small order\ndef order_total(quantity, unit_price):\n    return quantity * unit_price\n\ntotal = 0\nfor quantity in range(1, 4):\n    total = total + order_total(quantity, 5)\n\nprint(total)\n'
@@ -9,8 +9,7 @@ let generation = 0, controller = null, pack = null, urls = [], reviewEnabled = f
 const reviewDialog = $('request-review')
 let reviewTrigger = $('create')
 const dock = $('pack-toolbar-dock')
-const toolbar = createCommerceToolbar({ packPage: true, workspaceHome: dock.dataset.workspaceHome ?? null })
-dock.append(toolbar)
+const toolbar = mountCommerceChrome(dock, { packPage: true, workspaceHome: dock.dataset.workspaceHome ?? null })
 const consolePanel = $('console-panel'), consoleToggle = $('console-toggle')
 let consoleEventCount = 0, browserRegistered = false, toolCalls = 0, consoleApi = null, consoleLoad = null, consoleIntent = 0
 let extensionStats = { registered: 0, available: 0, stage: 'Idle', events: 0 }
@@ -72,8 +71,9 @@ function setConsoleOpen(open, focus = true) {
   consoleToggle.setAttribute('aria-expanded', String(open))
   if (!focus) return
   if (open) $('console-close').focus({ preventScroll: true })
-  else consoleToggle.focus({ preventScroll: true })
+  else $('commerce-panels-toggle').focus({ preventScroll: true })
 }
+$('workspace-agent-open').addEventListener('click', () => consoleAction('tools', $('commerce-panels-toggle')))
 consoleToggle.addEventListener('click', () => setConsoleOpen(consolePanel.hidden))
 $('status-console').addEventListener('click', () => setConsoleOpen(consolePanel.hidden))
 $('console-close').addEventListener('click', () => setConsoleOpen(false))

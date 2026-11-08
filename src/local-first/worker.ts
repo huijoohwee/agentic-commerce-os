@@ -22,15 +22,15 @@ const ASSET_PATHS = new Map([
     '/style.css', '/sw.js', '/workflow.js', '/workspace-capabilities.js', '/workspace-tools.js',
     ...(import.meta.commerceLiveCheckout === false ? [] : [
       '/favicon.svg', '/workspace-tour.js', '/workspace-navigation.js', '/commerce-toolbar.js', '/toolbar-icons.js', '/workspace-singleton.js',
-      '/shopper-demo-detail.js', '/commerce-theme.css', '/workspace-shell.css', '/toolbar.css', '/sme-business-pack.js',
+      '/shopper-demo-detail.js', '/commerce-theme.css', '/commerce-shell.css', '/floating-panel.css', '/workspace-shell.css', '/toolbar.css', '/sme-business-pack.js',
       '/sme-business-pack.css', '/sme-business-pack-core.js', '/sme-workflow-editor.js', '/sme-pack-dictionary.js', '/sme-pack-business-plan.js',
       '/housing-comparison.js', '/housing-engine.js', '/housing-sample.js', '/housing-comparison.css',
       '/shared-ui-profile.css', '/sme-review-workflow.js', '/graph-gantt-timeline.js', '/graph-gantt-timeline.css',
     ]),
   ].map(path => [path, path] as [string, string]),
   [packDirectory, '/workspace-pack.html'],
-  ...['workspace-pack.js', 'commerce-toolbar.js', 'dropdown-menus.js', 'graph-ui-tokens.css', 'commerce-theme.css', 'shared-ui-profile.css', 'floating-panel.css', 'toolbar.css', 'workspace-pack.simulation.js',
-    'workspace-pack.console.js', 'workspace-pack.css']
+  ...['commerce-shell.css', 'toolbar-icons.js', 'commerce-toolbar.js', 'dropdown-menus.js', 'graph-ui-tokens.css', 'commerce-theme.css', 'shared-ui-profile.css', 'floating-panel.css', 'toolbar.css',
+    ...['js', 'simulation.js', 'console.js', 'css'].map(ext => 'workspace-pack.' + ext)]
     .map(file => [packDirectory + file, '/' + file] as [string, string]),
 ])
 function secured(response: Response, source: string, head: boolean): Response {

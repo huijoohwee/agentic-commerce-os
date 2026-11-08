@@ -1,10 +1,11 @@
 @import "./shared-ui-profile.css";
 @import "./toolbar.css";
+@import "./commerce-shell.css";
 
 /* Shared workspace layout owner for Shopper, Vendor, Admin, and SME surfaces. */
 :root {
   --agentic-control-focus: var(--commerce-focus);
-  --workspace-header-height: var(--agentic-toolbar-dock-height);
+  --workspace-header-height: var(--workspace-chrome-height);
   --workspace-sidebar-width: clamp(184px,19.07vw,216px);
   --workspace-sidebar-compact-min-height: 212px;
   --workspace-scroll-offset: calc(var(--workspace-header-height) + 16px);

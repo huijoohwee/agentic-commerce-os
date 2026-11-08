@@ -1,0 +1,23 @@
+@import "./floating-panel.css";
+
+:root {
+  --workspace-banner-height: var(--agentic-control-height);
+  --workspace-chrome-height: calc(var(--workspace-banner-height) + var(--agentic-toolbar-dock-height));
+}
+.commerce-chrome { position: sticky; top: 0; z-index: calc(var(--agentic-floating-panel-layer, 4) - 1); pointer-events: none; }
+.commerce-banner {
+  display: flex; align-items: center; justify-content: center; flex-wrap: wrap; column-gap: var(--commerce-space-md);
+  min-height: var(--workspace-banner-height); padding-inline: var(--commerce-space-xs); text-align: center;
+  background: var(--commerce-action); color: var(--commerce-surface); pointer-events: auto;
+  font: 500 var(--agentic-font-size-body)/1.25 var(--commerce-font-family);
+}
+.commerce-banner strong { text-transform: uppercase; }
+.commerce-flyout {
+  position: fixed; inset: var(--workspace-chrome-height) var(--agentic-toolbar-inset) auto auto;
+  margin: 0; padding: 0; border: 0; background: transparent; overflow: visible; pointer-events: auto;
+}
+.commerce-flyout[data-edge=start] { inset-inline: var(--agentic-toolbar-inset) auto; }
+@media (max-width: 32rem) {
+  :root { --workspace-banner-height: calc(2 * var(--agentic-line-height-body)); }
+  .commerce-banner { flex-direction: column; }
+}

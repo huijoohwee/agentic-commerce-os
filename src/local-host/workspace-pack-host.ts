@@ -15,17 +15,10 @@ export async function startWorkspacePackHost(options: Options) {
   await options.adapter({ title: 'Service readiness', source: sample, sourceDigest: digest(sample) }, AbortSignal.timeout(5000))
   const assets = new Map(await Promise.all([
     ['/', 'workspace-pack.html', 'text/html; charset=utf-8'],
-    ['/dropdown-menus.js', 'dropdown-menus.js', 'application/javascript; charset=utf-8'],
-    ['/graph-ui-tokens.css', 'graph-ui-tokens.css', 'text/css; charset=utf-8'],
-    ['/commerce-theme.css', 'commerce-theme.css', 'text/css; charset=utf-8'],
-    ['/floating-panel.css', 'floating-panel.css', 'text/css; charset=utf-8'],
-    ['/toolbar.css', 'toolbar.css', 'text/css; charset=utf-8'],
-    ['/shared-ui-profile.css', 'shared-ui-profile.css', 'text/css; charset=utf-8'],
-    ['/commerce-toolbar.js', 'commerce-toolbar.js', 'application/javascript; charset=utf-8'],
-    ['/workspace-pack.js', 'workspace-pack.js', 'application/javascript; charset=utf-8'],
-    ['/workspace-pack.simulation.js', 'workspace-pack.simulation.js', 'application/javascript; charset=utf-8'],
-    ['/workspace-pack.console.js', 'workspace-pack.console.js', 'application/javascript; charset=utf-8'],
-    ['/workspace-pack.css', 'workspace-pack.css', 'text/css; charset=utf-8'],
+    ...['dropdown-menus', 'commerce-toolbar', 'toolbar-icons', 'workspace-pack', 'workspace-pack.simulation', 'workspace-pack.console']
+      .map(name => ['/' + name + '.js', name + '.js', 'application/javascript; charset=utf-8']),
+    ...['graph-ui-tokens', 'commerce-theme', 'commerce-shell', 'floating-panel', 'toolbar', 'shared-ui-profile', 'workspace-pack']
+      .map(name => ['/' + name + '.css', name + '.css', 'text/css; charset=utf-8']),
   ].map(async ([route, name, type]) => [route!, { text: await fs.readFile(path.join(options.assets, name!), 'utf8'), type: type! }] as const)))
   let port = 0, active = 0, closing = false
   const arrivals: number[] = [], controllers = new Set<AbortController>()

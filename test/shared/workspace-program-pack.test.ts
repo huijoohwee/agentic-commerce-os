@@ -125,7 +125,7 @@ describe('Workspace Pack browser tool lifecycle', () => {
     // This VM exercises WebMCP registration. Cross-page toolbar and service checks run in the browser.
     const source = moduleSource.replace(/^import .+ from '.+';$/gm, ''), enhanceSelects = vi.fn()
     const pending = runInNewContext(`(async () => {${source}\n})()`, {
-      PACK_TOOL, createCommerceToolbar: () => ({ querySelectorAll: () => [], querySelector: () => null }),
+      PACK_TOOL, mountCommerceChrome: () => ({ querySelectorAll: () => [], querySelector: () => null }),
       observePackService: async (_toolbar: unknown, changed: (available: boolean) => void) => changed(true),
       enhanceSelects, document: { getElementById: node, createElement: element, addEventListener() {}, querySelectorAll: () => [], modelContext: registerTool ? { registerTool } : undefined },
       matchMedia: () => ({ matches: false }), navigator: { modelContext: legacy }, location: { href: 'http://localhost/services/workspace-pack/' },

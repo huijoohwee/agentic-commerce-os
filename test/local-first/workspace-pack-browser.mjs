@@ -31,6 +31,7 @@ export async function checkWorkspacePack({ browser, url, output, revision }) {
     const source = page.locator('#source'), title = page.getByLabel('Pack name');
     await expect(create).toBeEnabled();
     const original = await source.inputValue();
+    const launcher = page.getByRole('button', { name: 'Tools and Console' });
     const consoleToggle = page.locator('#console-toggle');
     await expect(page.getByRole('complementary', { name: 'Console' })).toBeVisible();
     await expect(consoleToggle).toHaveAttribute('aria-expanded', 'true');
@@ -192,7 +193,7 @@ export async function checkWorkspacePack({ browser, url, output, revision }) {
     assert.equal(requests.filter(request => request.method === 'POST').length, 0);
     await page.keyboard.press('Escape');
     await expect(page.locator('#console-panel')).toBeHidden();
-    await expect(consoleToggle).toBeFocused();
+    await expect(launcher).toBeFocused();
     record('Console overlays the desktop workspace without reflow; its review action uses the existing form gate with no pre-confirmation POST');
     await page.screenshot({ path: path.join(output, 'workspace-pack-desktop.jpg'), quality: 75, fullPage: true });
     await create.click();
@@ -232,7 +233,7 @@ export async function checkWorkspacePack({ browser, url, output, revision }) {
     assert.equal(pack.title, 'Reviewed program');
     assert.equal(pack.files[0].content, original);
     assert.equal(pack.sourceDigest, sha(original));
-    await consoleToggle.click();
+    await launcher.click(); await consoleToggle.click();
     await expect(page.locator('#console-events')).toContainText('Form review opened. Source not sent.');
     await expect(page.locator('#console-events')).toContainText('Form conversion returned four verified files.');
     assert.equal((await page.locator('#console-events').innerText()).includes(original), false);
@@ -319,7 +320,7 @@ export async function checkWorkspacePack({ browser, url, output, revision }) {
     const toolPack = JSON.parse(toolOutput.content[0].text);
     assert.equal(toolPack.sourceDigest, sha(original));
     assert.equal(toolPack.files.length, 4);
-    await consoleToggle.click();
+    await launcher.click(); await consoleToggle.click();
     await runSimulation.click();
     await stages.getByRole('button', { name: 'Diagnosis', exact: true }).click();
     await stages.getByRole('button', { name: 'Recovery', exact: true }).click();
@@ -346,7 +347,7 @@ export async function checkWorkspacePack({ browser, url, output, revision }) {
     await page.reload();
     await expect(create).toBeEnabled();
     await expect(page.locator('#console-panel')).toBeHidden();
-    await consoleToggle.click();
+    await launcher.click(); await consoleToggle.click();
     await expect(page.locator('#console-panel')).toBeVisible();
     await page.screenshot({ path: path.join(output, 'workspace-pack-console-mobile.jpg'), quality: 75 });
     record('a fresh mobile visit keeps the Console closeable and reachable from navigation');

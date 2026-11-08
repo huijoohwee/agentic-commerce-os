@@ -202,7 +202,6 @@ async function route() {
   if (role === 'housing') try { const module = await import('./housing-comparison.js?v=housing-comparison-23'); if (revision !== navigation) return; if (!housingRoute) housingRoute = module.mountHousingWorkspace($('#housing-root')); if (revision !== navigation) { housingRoute?.deactivate(); housingRoute = null; return; } housingRoute.activate(requested); } catch (error) { if (revision === navigation) throw error; return; } else if (housingRoute) { housingRoute.deactivate(); housingRoute = null; }
   document.body.classList.add('console-mode'); document.body.dataset.workspaceRole = role;
   renderNavigation(role); if (role === 'sme') smeRoute?.updateSectionNavigation(); if (role !== 'sme') $('#' + role + ' .workspace-content').prepend($('#draft-storage-state'));
-  $('#workspace-agent-open').hidden = role !== 'admin';
   const workspaceRole = role === 'checkout' ? 'shop' : role;
   const activeDestination = selectWorkspaceDestination(workspaceRole);
   setRolePanels(role);
@@ -563,7 +562,7 @@ function agentContext() {
   return { name: 'commerce.workspace.projects.list', input: {}, label: 'Workspace · Projects on this device' };
 }
 async function openAgentTools(preset) {
-  const generation = ++agentGeneration, drawer = $('#workspace-agent-drawer'); agentTrigger = document.activeElement;
+  const generation = ++agentGeneration, drawer = $('#workspace-agent-drawer'); agentTrigger = preset ? document.activeElement : $('#commerce-panels-toggle');
   $('#workspace-agent-context').textContent = 'Native workspace capabilities';
   $('#workspace-agent-status').textContent = 'Loading tools…'; $('#workspace-agent-open').setAttribute('aria-expanded', 'true');
   drawer.showModal();
@@ -575,7 +574,7 @@ async function openAgentTools(preset) {
     if (!drawer.open || generation !== agentGeneration) return;
     $('#workspace-agent-context').textContent = current.label;
     $('#workspace-agent-content').append($('#workspace-tools-body'));
-    $('#workspace-agent-status').textContent = ''; $('#workspace-tool').focus();
+    enhanceSelects().refresh(); $('#workspace-agent-status').textContent = ''; $('#workspace-tool').focus();
   } catch (error) { if (drawer.open && generation === agentGeneration) $('#workspace-agent-status').textContent = error.message; }
 }
 $('#workspace-agent-open').addEventListener('click', () => void openAgentTools());

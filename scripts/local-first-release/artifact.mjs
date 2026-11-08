@@ -10,7 +10,7 @@ import { readCheckoutRelease, liveAuthorizationScope } from './live-profile.mjs'
 
 export const CONFIG = 'wrangler.local-first.jsonc';
 export const WORKER = 'agentic-commerce-edge-production';
-export const FILES = Object.freeze(['index.html', 'favicon.svg', 'workspace.js', 'workspace-navigation.js', 'commerce-toolbar.js', 'toolbar-icons.js', 'workspace-singleton.js', 'shopper-demo-detail.js', 'workspace-tour.js', 'workspace-capabilities.js', 'workspace-tools.js', 'workspace-graph.js', 'agentic-base-data-view.js', 'dropdown-menus.js', 'agentic-base-data-view.css', 'graph-data-view.js', 'graph-data-view.css', 'graph-ui-tokens.css', 'commerce-theme.css', 'workspace-shell.css', 'shared-ui-profile.css', 'app.js', 'drafts.js', 'checkout.js', 'launch.js', 'workflow.js', 'style.css', 'sw.js', 'workspace-pack.html', 'workspace-pack.js', 'workspace-pack.css', 'floating-panel.css', 'toolbar.css', 'workspace-pack.simulation.js', 'workspace-pack.console.js', 'sme-business-pack.js', 'sme-business-pack.css', 'sme-business-pack-core.js', 'sme-workflow-editor.js', 'sme-review-workflow.js', 'graph-gantt-timeline.js', 'graph-gantt-timeline.css', 'sme-pack-business-plan.js', 'sme-pack-dictionary.js', 'housing-comparison.js', 'housing-engine.js', 'housing-sample.js', 'housing-comparison.css']);
+export const FILES = Object.freeze(['index.html', 'favicon.svg', 'workspace.js', 'workspace-navigation.js', 'commerce-toolbar.js', 'commerce-shell.css', 'toolbar-icons.js', 'workspace-singleton.js', 'shopper-demo-detail.js', 'workspace-tour.js', 'workspace-capabilities.js', 'workspace-tools.js', 'workspace-graph.js', 'agentic-base-data-view.js', 'dropdown-menus.js', 'agentic-base-data-view.css', 'graph-data-view.js', 'graph-data-view.css', 'graph-ui-tokens.css', 'commerce-theme.css', 'workspace-shell.css', 'shared-ui-profile.css', 'app.js', 'drafts.js', 'checkout.js', 'launch.js', 'workflow.js', 'style.css', 'sw.js', 'workspace-pack.html', 'workspace-pack.js', 'workspace-pack.css', 'floating-panel.css', 'toolbar.css', 'workspace-pack.simulation.js', 'workspace-pack.console.js', 'sme-business-pack.js', 'sme-business-pack.css', 'sme-business-pack-core.js', 'sme-workflow-editor.js', 'sme-review-workflow.js', 'graph-gantt-timeline.js', 'graph-gantt-timeline.css', 'sme-pack-business-plan.js', 'sme-pack-dictionary.js', 'housing-comparison.js', 'housing-engine.js', 'housing-sample.js', 'housing-comparison.css']);
 export const PRIVATE_FILES = Object.freeze(['education-materials.md']);
 export const digest = value => createHash('sha256').update(value).digest('hex');
 const COMMERCE_THEME_PIN = Object.freeze({
@@ -187,7 +187,7 @@ export function verifySharedThemeOwner() {
   if (/(?:^|[;{])\s*--commerce-[\w-]+\s*:/i.test(html)) throw Error('Inline Commerce theme overrides are not allowed');
   const symbols = [...html.matchAll(/<symbol\b[^>]*\bid="([^"]+)"/g)].map(match => match[1]);
   if (new Set(symbols).size !== symbols.length) throw Error('Commerce icon symbol IDs must be unique');
-  for (const symbol of ['icon-navigation', 'icon-command', 'icon-search']) {
+  for (const symbol of ['icon-search']) {
     if (symbols.filter(id => id === symbol).length !== 1) throw Error(`Shared Commerce icon missing or duplicated: ${symbol}`);
   }
   const navigationTemplates = [...html.matchAll(/<template\s+id="(shop|vendor|admin|sme|housing)-navigation-content">([\s\S]*?)<\/template>/g)];
@@ -198,7 +198,7 @@ export function verifySharedThemeOwner() {
       throw Error(`Commerce ${role} navigation must reference shared icon symbols without duplicate path art`);
   }
   const navigation = fs.readFileSync(path.join(directory, 'workspace-navigation.js'), 'utf8');
-  if (!navigation.includes("createIcon('icon-navigation')") || !navigation.includes("createIcon('icon-search')")
+  if (!navigation.includes("createIcon('icon-search')")
     || /<(?:path|circle|rect)\b/.test(navigation)
     || !navigation.includes('export function assertSharedWorkspaceShell()')
     || !navigation.includes("document.querySelectorAll('.topbar').length !== 1")

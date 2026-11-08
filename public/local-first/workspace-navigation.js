@@ -1,6 +1,5 @@
-import { createCommerceToolbar, createElement, observePackService, selectToolbarItem, WORKSPACE_ROLES } from './commerce-toolbar.js'
+import { mountCommerceChrome, createElement, observePackService, selectToolbarItem, WORKSPACE_ROLES } from './commerce-toolbar.js'
 export { WORKSPACE_ROLES } from './commerce-toolbar.js'
-import { createIconButton } from './toolbar-icons.js'
 import { getOrCreateSingleton, releaseSingleton } from './workspace-singleton.js'
 
 function createIcon(symbolId) {
@@ -77,27 +76,14 @@ function createWorkspaceHeader() {
   if (!(mount instanceof HTMLElement)) throw Error('workspace_header_mount_missing')
   if (mount.matches('header.topbar')) return mount
   if (document.querySelectorAll('.topbar').length) throw Error('workspace_header_duplicate_rendered')
-  const header = createElement('header', undefined, 'topbar agentic-toolbar-dock')
+  const header = createElement('header', undefined, 'topbar')
   header.dataset.workspaceHeader = ''
-  const toolbar = createCommerceToolbar()
-  const toggle = createIconButton('Hide navigation', createIcon('icon-navigation'))
-  toggle.id = 'workspace-navigation-toggle'
-  toggle.dataset.dockEdge = 'start'
-  toggle.setAttribute('aria-expanded', 'true')
-  toggle.setAttribute('aria-controls', 'shop-navigation')
-  toggle.title = 'Hide navigation'
-  const agent = createIconButton('Agent tools', createIcon('icon-command'))
-  agent.id = 'workspace-agent-open'
-  agent.dataset.dockEdge = 'end'
-  agent.title = 'Agent tools'
-  agent.setAttribute('aria-controls', 'workspace-agent-drawer')
-  agent.setAttribute('aria-haspopup', 'dialog')
-  agent.setAttribute('aria-expanded', 'false')
-  agent.hidden = true
+  mount.replaceWith(header)
+  const toolbar = mountCommerceChrome(header)
   const status = createElement('span', undefined, 'agentic-toolbar-status'); status.id = 'connection'
   const statusLabel = createElement('span', 'Local workspace · Online', 'workspace-status-label')
   status.append(statusLabel); status.title = statusLabel.textContent
-  toolbar.append(status); header.append(toggle, toolbar, agent); mount.replaceWith(header)
+  toolbar.append(status)
   void observePackService(toolbar)
   return header
 }

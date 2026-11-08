@@ -1,7 +1,7 @@
 @import "./graph-ui-tokens.css";
 @import "./commerce-theme.css";
 @import "./shared-ui-profile.css";
-@import "./floating-panel.css";
+@import "./commerce-shell.css";
 @import "./toolbar.css";
 
 :root { color: var(--kg-text-primary); background: var(--commerce-canvas); }
@@ -25,8 +25,6 @@ button:where(:not([aria-pressed], nav button)),.button,summary { min-height: var
 .skip { position: absolute; left: 12px; top: -100px; padding: 12px; background: var(--commerce-surface); }
 .skip:focus { top: 12px; }
 [hidden] { display: none !important; }
-.service-note { background: var(--commerce-action); color: var(--commerce-surface); text-align: center; line-height: 1.5; }
-.service-note span { margin-left: 22px; }
 
 .brand {
   display: inline-flex; align-items: baseline; font-size: 30px; letter-spacing: -2px; font-weight: 750;
@@ -40,7 +38,7 @@ button:where(:not([aria-pressed], nav button)),.button,summary { min-height: var
   color: var(--commerce-action); overflow-wrap: anywhere;
 }
 .quiet { background: transparent; color: var(--kg-text-secondary); }
-#builder, #formats { scroll-margin-block-start: var(--agentic-toolbar-dock-height); }
+#builder, #formats { scroll-margin-block-start: var(--workspace-chrome-height); }
 main { max-width: 1480px; margin: auto; }
 .eyebrow { font-size: 10px; font-weight: 650; letter-spacing: 1.5px; margin: 0 0 20px; color: var(--kg-text-secondary); }
 .intro { display: grid; align-items: center; }
@@ -263,7 +261,6 @@ main>footer p { margin: 0; }
 
 /* Workspace comes first; supporting service information follows the work. */
 
-.service-note { font-size: 9px; letter-spacing: 1px; padding: 8px 20px; }
 main { padding: 0 28px; }
 .intro { grid-template-columns: 1.1fr 1fr; gap: 24px; padding: 32px 0 26px; }
 .intro .eyebrow { margin-bottom: 12px; }
@@ -291,7 +288,6 @@ main { padding: 0 28px; }
 .skip { z-index: 5; }
 
 @media (max-width:680px) {
-  .service-note span { display: none; }
 
   .brand { font-size: 27px; }
   .brand span { font-size: 10px; }

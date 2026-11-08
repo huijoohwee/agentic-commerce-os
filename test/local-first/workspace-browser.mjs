@@ -300,8 +300,9 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await expect(page.locator('#project-list .project-card')).toHaveCount(2);
   await page.goto(url + '#admin-project?project=store%3Astudio-north');
   const agentButton = page.getByRole('button', { name: 'Agent tools', exact: true });
+  const launcher = page.getByRole('button', { name: 'Tools and Console' });
   const drawer = page.getByRole('dialog', { name: 'Agent tools', exact: true });
-  await agentButton.click();
+  await launcher.click(); await agentButton.click();
   await expect(drawer).toBeVisible();
   await expect(page.locator('#workspace-agent-context')).toHaveText('Project · studio-north');
   await expect(page.locator('#workspace-tool')).toHaveValue('commerce.workspace.project.read');
@@ -326,7 +327,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   assert(prepared.params.arguments.snapshot.offers.every(offer => offer.launch.merchantId === 'studio-north'));
   assert(!JSON.stringify(prepared).includes('PRIVATE'));
   await page.getByRole('button', { name: 'Close agent tools', exact: true }).click();
-  await expect(agentButton).toBeFocused();
+  await expect(launcher).toBeFocused();
   await expect.poll(() => page.evaluate(async () => (await document.modelContext.getTools()).length)).toBe(0);
   assert.equal(await page.locator('#workspace-tool').count(), 1);
   await page.locator('.graph-record-grid tbody tr').filter({ hasText: 'Independent offer 03' }).click();
@@ -346,21 +347,21 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await page.keyboard.press('Escape'); await expect(inspectOffer).toBeFocused();
   for (const width of [390, 768, 1280]) {
     await page.setViewportSize({ width, height: 900 });
-    await page.goto(url + '#admin-runtime?project=store%3Astudio-north'); await agentButton.click();
+    await page.goto(url + '#admin-runtime?project=store%3Astudio-north'); await launcher.click(); await agentButton.click();
     await expect(page.locator('#workspace-tool')).toHaveValue('commerce.workspace.environment.read');
     await expect(page.locator('#workspace-arguments')).toHaveValue('{}');
     await expect(page.locator('#workspace-result')).toBeEmpty();
     assert.equal(await drawer.evaluate(element => element.scrollWidth <= element.clientWidth), true);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await page.screenshot({ path: path.join(output, `contextual-agent-${width}.png`) });
-    await page.keyboard.press('Escape'); await expect(agentButton).toBeFocused();
+    await page.keyboard.press('Escape'); await expect(launcher).toBeFocused();
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(url + '#admin-project?project=store%3Astudio-north');
-  await context.setOffline(true); await page.reload(); await agentButton.click();
+  await context.setOffline(true); await page.reload(); await launcher.click(); await agentButton.click();
   await page.locator('#workspace-run').click(); await expect(page.locator('#workspace-result')).toContainText('studio-north');
   await page.keyboard.press('Escape'); await context.setOffline(false);
-  await page.goto(url + '#admin-project?project=missing'); await agentButton.click();
+  await page.goto(url + '#admin-project?project=missing'); await launcher.click(); await agentButton.click();
   await expect(page.locator('#workspace-agent-status')).toContainText('project is unavailable');
   await expect(page.locator('#workspace-agent-content')).toBeEmpty(); await page.keyboard.press('Escape');
   await page.goto(url + '#admin');

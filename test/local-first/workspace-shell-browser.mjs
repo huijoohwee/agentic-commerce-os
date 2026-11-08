@@ -65,10 +65,10 @@ export async function checkSharedWorkspaceShell({ page, url, output }) {
     if (collapsed) await expect(page.locator('#admin-navigation')).toBeHidden();
     else await expect(page.locator('#admin-navigation')).toBeVisible();
     const toolbar = page.getByRole('navigation', { name: 'Workspace Toolbar' });
-    const agent = page.getByRole('button', { name: 'Agent tools', exact: true });
+    const agent = page.getByRole('button', { name: 'Tools and Console', exact: true });
     for (const action of [toggle, agent]) {
       await expect(action.locator('svg.agentic-icon')).toHaveCount(1);
-      assert.equal(await action.evaluate(button => button.parentElement.matches('header.agentic-toolbar-dock')), true);
+      assert.equal(await action.evaluate(button => button.parentElement.matches('header.commerce-chrome > .agentic-toolbar-dock')), true);
     }
     const [left, center, right] = await Promise.all([toggle, toolbar, agent].map(el => el.boundingBox()));
     const current = await toolbar.locator('[aria-current]').boundingBox();
