@@ -127,18 +127,16 @@ function createWorkspaceHeader() {
 }
 
 export function selectWorkspaceDestination(role) {
-  for (const link of document.querySelectorAll('[data-workspace-destination]')) {
-    if (link.dataset.workspaceDestination !== role) {
-      link.removeAttribute('aria-current')
-      continue
-    }
-    link.setAttribute('aria-current', 'location')
-    const toolbar = link.parentElement
-    const { left, right } = link.getBoundingClientRect()
-    const bounds = toolbar.getBoundingClientRect()
-    if (left < bounds.left) toolbar.scrollLeft += left - bounds.left
-    else if (right > bounds.right) toolbar.scrollLeft += right - bounds.right
-  }
+  const link = document.querySelector(`[data-workspace-destination="${role}"]`)
+  if (!link) throw Error('workspace_destination_missing')
+  const toolbar = link.parentElement
+  toolbar.querySelector('[aria-current]')?.removeAttribute('aria-current')
+  link.setAttribute('aria-current', 'location')
+  const bounds = toolbar.getBoundingClientRect()
+  const { left, right } = link.getBoundingClientRect()
+  if (left < bounds.left) toolbar.scrollLeft += left - bounds.left
+  else if (right > bounds.right) toolbar.scrollLeft += right - bounds.right
+  return link
 }
 
 export function mountWorkspaceShell() {

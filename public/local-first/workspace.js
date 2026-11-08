@@ -204,7 +204,7 @@ async function route() {
   renderNavigation(role); if (role === 'sme') smeRoute?.updateSectionNavigation(); if (role !== 'sme') $('#' + role + ' .workspace-content').prepend($('#draft-storage-state'));
   $('#workspace-agent-open').hidden = role !== 'admin';
   const workspaceRole = role === 'checkout' ? 'shop' : role;
-  selectWorkspaceDestination(workspaceRole);
+  const activeDestination = selectWorkspaceDestination(workspaceRole);
   setRolePanels(role);
   document.querySelectorAll('[data-view-panel]').forEach(panel => { panel.hidden = panel.dataset.viewPanel !== view; });
   if (!switchedWorkspace && !sectionRoute && hash !== 'main') window.scrollTo({ top: 0, behavior: 'instant' });
