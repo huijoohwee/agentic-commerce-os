@@ -126,6 +126,21 @@ function createWorkspaceHeader() {
   return header
 }
 
+export function selectWorkspaceDestination(role) {
+  for (const link of document.querySelectorAll('[data-workspace-destination]')) {
+    if (link.dataset.workspaceDestination !== role) {
+      link.removeAttribute('aria-current')
+      continue
+    }
+    link.setAttribute('aria-current', 'location')
+    const toolbar = link.parentElement
+    const { left, right } = link.getBoundingClientRect()
+    const bounds = toolbar.getBoundingClientRect()
+    if (left < bounds.left) toolbar.scrollLeft += left - bounds.left
+    else if (right > bounds.right) toolbar.scrollLeft += right - bounds.right
+  }
+}
+
 export function mountWorkspaceShell() {
   const mounted = getOrCreateSingleton('workspace-shared-shell-mount', () => {
     createWorkspaceHeader()

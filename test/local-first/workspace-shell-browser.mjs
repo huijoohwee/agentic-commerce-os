@@ -71,6 +71,8 @@ export async function checkSharedWorkspaceShell({ page, url, output }) {
       assert.equal(await action.evaluate(button => button.parentElement.matches('header.agentic-toolbar-dock')), true);
     }
     const [left, center, right] = await Promise.all([toggle, toolbar, agent].map(el => el.boundingBox()));
+    const current = await toolbar.locator('[aria-current]').boundingBox();
+    assert(current.x >= center.x - 1 && current.x + current.width <= center.x + center.width + 1);
     assert(left.x + left.width < center.x && center.x + center.width < right.x);
     assert(Math.abs(center.x + center.width / 2 - width / 2) <= 1);
     for (const box of [left, right]) assert(Math.abs(box.y + box.height / 2 - center.y - center.height / 2) <= 1);

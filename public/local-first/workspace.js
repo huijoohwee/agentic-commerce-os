@@ -1,6 +1,6 @@
 import { enhanceSelects } from './dropdown-menus.js';
 import { listDrafts, groupProjects } from './drafts.js'; import { getOrCreateSingleton } from './workspace-singleton.js'; import { bindDemoOfferDetails, bindExampleFilters, offerDetailsButton } from './shopper-demo-detail.js';
-import { WORKSPACE_ROLES, bindWorkspaceNavigation, mountWorkspaceShell, mountWorkspaceSidebar } from './workspace-navigation.js?v=workspace-navigation-mobile-51';
+import { WORKSPACE_ROLES, bindWorkspaceNavigation, selectWorkspaceDestination, mountWorkspaceShell, mountWorkspaceSidebar } from './workspace-navigation.js?v=workspace-navigation-mobile-51';
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; await getOrCreateSingleton('workspace-application', async () => { mountWorkspaceShell(); enhanceSelects();
 const displayLocale = document.documentElement.lang || 'en'; const $ = selector => document.querySelector(selector); const monogram = title => { const words = title.trim().split(/\s+/u); return (words.length > 1 ? words.slice(0, 2).map(word => [...word][0]).join('') : [...words[0]].slice(0, 2).join('')).toUpperCase(); }; const merchantName = id => String(id || '').replace(/[-._]+/gu, ' ').replace(/(^|\s)\p{L}/gu, initial => initial.toUpperCase());
 const checkoutMode = document.querySelector('meta[name="commerce-checkout-mode"]')?.content, shopCheckoutNav = document.querySelector('#shop-navigation-content')?.content.querySelector('#shop-checkout-nav');
@@ -204,11 +204,7 @@ async function route() {
   renderNavigation(role); if (role === 'sme') smeRoute?.updateSectionNavigation(); if (role !== 'sme') $('#' + role + ' .workspace-content').prepend($('#draft-storage-state'));
   $('#workspace-agent-open').hidden = role !== 'admin';
   const workspaceRole = role === 'checkout' ? 'shop' : role;
-  const activeDestination = document.querySelector(`[data-workspace-destination="${workspaceRole}"]`);
-  for (const link of document.querySelectorAll('[data-workspace-destination]')) {
-    if (link === activeDestination) link.setAttribute('aria-current', 'location');
-    else link.removeAttribute('aria-current');
-  }
+  selectWorkspaceDestination(workspaceRole);
   setRolePanels(role);
   document.querySelectorAll('[data-view-panel]').forEach(panel => { panel.hidden = panel.dataset.viewPanel !== view; });
   if (!switchedWorkspace && !sectionRoute && hash !== 'main') window.scrollTo({ top: 0, behavior: 'instant' });
