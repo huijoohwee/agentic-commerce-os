@@ -1,4 +1,3 @@
-import { checkCommerceToolbar } from './commerce-toolbar-browser.mjs';
 import { verifyDashboardGrid } from './dashboard-layout-browser.mjs';
 import { chooseDropdown } from './dropdown-menu-browser.mjs';
 import assert from 'node:assert/strict';
@@ -9,7 +8,6 @@ import { expect } from '@playwright/test';
 
 const sha = text => createHash('sha256').update(text).digest('hex');
 export async function checkWorkspacePack({ browser, url, output, revision }) {
-  await checkCommerceToolbar(browser, url, 390);
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, acceptDownloads: true,
     reducedMotion: 'reduce' });
   const requests = [], errors = [], checks = [];
@@ -90,14 +88,21 @@ export async function checkWorkspacePack({ browser, url, output, revision }) {
     await chooseDropdown(scenario, 'timeout');
     await expect(page.locator('#simulation-report')).toBeHidden();
     await expect(stages.getByRole('button', { name: 'Recovery', exact: true })).toBeDisabled();
-    await context.setOffline(true); await runSimulation.click();
+    assert.equal(await page.locator('#console-events').innerText(), liveActivity);
+    await context.setOffline(true);
+    await expect(page.locator('[data-pack-status]')).toHaveText('Service unavailable');
+    const offlineActivity = await page.locator('#console-events').innerText();
+    await runSimulation.click();
     await expect(page.locator('#simulation-status')).toHaveText('Timeout · Simulated condition loaded');
+    assert.equal(await page.locator('#console-events').innerText(), offlineActivity);
     await context.setOffline(false);
+    await expect(page.locator('[data-pack-status]')).toHaveText('Service ready');
+    const reconnectedActivity = await page.locator('#console-events').innerText();
     await page.getByRole('button', { name: 'Reset', exact: true }).click();
     await expect(runSimulation).toBeFocused();
     await expect(source).toHaveValue(original);
     await expect(page.locator('#console-form-state')).toHaveText('Prepare your source');
-    assert.equal(await page.locator('#console-events').innerText(), liveActivity);
+    assert.equal(await page.locator('#console-events').innerText(), reconnectedActivity);
     assert.equal(requests.filter(request => request.method === 'POST').length, 0);
     assert.equal(requests.filter(request => request.url.endsWith('/workspace-pack.simulation.js')).length, 1);
     record('five lazy-loaded scenario rehearsals, staged/reviewed recovery, stale-selection reset and offline replay leave live state and requests untouched');

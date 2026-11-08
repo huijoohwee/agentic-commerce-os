@@ -3,6 +3,7 @@ import path from 'node:path';
 import assert from 'node:assert/strict';
 import { expect } from '@playwright/test';
 import { verifyWorkspaceToolRefinements } from './workspace-tools-browser.mjs';
+import { checkCommerceToolbar } from './commerce-toolbar-browser.mjs';
 import { checkSharedWorkspaceShell } from './workspace-shell-browser.mjs';
 import { checkSmeComparisonBrowser } from './sme-comparison-browser.mjs';
 import { BROWSER_CHECKS } from '../../scripts/local-first-release/browser-proof.mjs';
@@ -121,6 +122,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   assert.equal(await page.locator('#shop-grid img').count(), 0);
   assert.equal(await page.evaluate(() => window.injected), undefined);
   await page.screenshot({ path: path.join(output, 'shopper-desktop.png'), fullPage: true });
+  await checkCommerceToolbar(browser, url, 390);
   await checkSharedWorkspaceShell({ page, url, output });
   const smeServiceRequests = [];
   const observeSmeService = request => {

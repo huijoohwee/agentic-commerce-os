@@ -5,7 +5,7 @@ const $ = id => document.getElementById(id)
 const sample = '# Add up a small order\ndef order_total(quantity, unit_price):\n    return quantity * unit_price\n\ntotal = 0\nfor quantity in range(1, 4):\n    total = total + order_total(quantity, 5)\n\nprint(total)\n'
 const endpoint = new URL('./api', location.href), toolName = PACK_TOOL
 const sha = async text => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)))].map(x => x.toString(16).padStart(2, '0')).join('')
-let generation = 0, controller = null, pack = null, urls = [], ready = false, review = null
+let generation = 0, controller = null, pack = null, urls = [], reviewEnabled = false, review = null
 const reviewDialog = $('request-review')
 let reviewTrigger = $('create')
 const dock = $('pack-toolbar-dock')
@@ -121,7 +121,7 @@ function invalidate() {
   urls.forEach(url => URL.revokeObjectURL(url)); urls = []
   $('result').hidden = true; $('empty').hidden = false; $('cancel').hidden = true
   $('result-heading').textContent = 'Ready when you are.'; $('result-badge').textContent = 'No current pack'
-  setReviewEnabled(ready); setFormStage('prepare', 'Prepare your source'); $('status').textContent = 'Review your source to create a fresh pack.'
+  setReviewEnabled(reviewEnabled); setFormStage('prepare', 'Prepare your source'); $('status').textContent = 'Review your source to create a fresh pack.'
   $('source-size').textContent = `${(new TextEncoder().encode($('source').value).length / 1024).toFixed(1)} / 32 KiB`
 }
 function showFile(index) {
@@ -163,7 +163,7 @@ reviewDialog.addEventListener('click', event => {
 })
 $('pack-form').addEventListener('submit', async event => {
   event.preventDefault()
-  if (!ready || controller) return
+  if (!reviewEnabled || controller) return
   const trigger = document.activeElement === $('console-review') ? $('console-review') : $('create')
   invalidate()
   const current = generation, source = $('source').value, title = $('title').value
@@ -172,7 +172,7 @@ $('pack-form').addEventListener('submit', async event => {
   setReviewEnabled(false)
   try {
     const input = { title, source, sourceDigest: await sha(source) }
-    if (current !== generation || !ready) return
+    if (current !== generation || !reviewEnabled) return
     review = { generation: current, input }
     reviewTrigger = trigger
     $('review-title').textContent = title
@@ -182,10 +182,10 @@ $('pack-form').addEventListener('submit', async event => {
     setFormStage('review', 'Waiting for your review')
     recordConsole('info', 'Form review opened. Source not sent.')
   } catch { $('status').textContent = 'Request review is unavailable. Your source has not been sent.' }
-  finally { if (current === generation) setReviewEnabled(ready) }
+  finally { if (current === generation) setReviewEnabled(reviewEnabled) }
 })
 $('confirm-request').addEventListener('click', async () => {
-  if (!review || !ready || controller) return
+  if (!review || !reviewEnabled || controller) return
   if (review.generation !== generation || review.input.source !== $('source').value || review.input.title !== $('title').value) {
     invalidate(); $('status').textContent = 'Your source changed. Review the updated request.'; return
   }
@@ -218,7 +218,7 @@ $('confirm-request').addEventListener('click', async () => {
     }
   } finally {
     clearTimeout(timeout)
-    if (current === generation) { controller = null; $('cancel').hidden = true; setReviewEnabled(ready) }
+    if (current === generation) { controller = null; $('cancel').hidden = true; setReviewEnabled(reviewEnabled) }
   }
 })
 document.querySelectorAll('[data-file]').forEach(button => button.addEventListener('click', () => showFile(Number(button.dataset.file))))
@@ -230,15 +230,16 @@ $('api-url').textContent = endpoint.href
 $('mcp-url').textContent = $('console-mcp-url').textContent = new URL('./mcp', location.href).href
 const unavailableMessage = 'The service is unavailable. Try again shortly.'
 await observePackService(toolbar, available => {
-  ready = available
-  $('console-service').textContent = ready ? 'Ready' : 'Unavailable'
-  setReviewEnabled(ready && !controller)
-  if (!ready) {
+  // Once verified, the local form can still review source during a network outage.
+  reviewEnabled = available || (reviewEnabled && navigator.onLine === false)
+  $('console-service').textContent = available ? 'Ready' : 'Unavailable'
+  setReviewEnabled(reviewEnabled && !controller)
+  if (!reviewEnabled) {
     closeReview()
     $('status').textContent = unavailableMessage
   }
   else if ($('status').textContent === unavailableMessage) $('status').textContent = 'Review your source to create a fresh pack.'
-  recordConsole(ready ? 'success' : 'failed', ready ? 'Service manifest verified.' : 'Service manifest unavailable.')
+  recordConsole(available ? 'success' : 'failed', available ? 'Service manifest verified.' : 'Service manifest unavailable.')
 })
 // Current WebMCP uses Document. Retain only a contract-level adapter for older hosts.
 if (modelContext?.registerTool) {
