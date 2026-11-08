@@ -73,10 +73,12 @@ document.addEventListener('keydown', event => {
   if (event.key === 'Escape' && !consolePanel.hidden && !document.querySelector('dialog[open]')) { event.preventDefault(); setConsoleOpen(false) }
 })
 const statusBar = $('status-service').parentElement
-const syncStatusHeight = () => document.documentElement.style.setProperty('--agentic-floating-panel-bottom-offset', `${statusBar.getBoundingClientRect().height}px`)
-syncStatusHeight()
-if (typeof ResizeObserver === 'function') new ResizeObserver(syncStatusHeight).observe(statusBar)
-else window.addEventListener('resize', syncStatusHeight)
+if (typeof statusBar?.getBoundingClientRect === 'function') {
+  const syncStatusHeight = () => document.documentElement.style.setProperty('--agentic-floating-panel-bottom-offset', `${statusBar.getBoundingClientRect().height}px`)
+  syncStatusHeight()
+  if (typeof ResizeObserver === 'function') new ResizeObserver(syncStatusHeight).observe(statusBar)
+  else window.addEventListener('resize', syncStatusHeight)
+}
 setConsoleOpen(matchMedia('(min-width: 1100px)').matches, false)
 function setFormStage(stage, message) {
   $('console-form-state').textContent = message

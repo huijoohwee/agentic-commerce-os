@@ -22,7 +22,7 @@
 .agentic-floating-panel-body { flex: 1 1 auto; min-height: 0; min-width: 0; overflow: auto; overscroll-behavior: contain; }
 .agentic-base-floating-panel-close {
   box-sizing: border-box; display: inline-flex; flex: none; align-items: center; justify-content: center;
-  width: var(--agentic-control-height); height: var(--agentic-control-height); padding: 0; cursor: pointer;
+  min-width: var(--base-control-height, var(--agentic-row-height)); min-height: var(--base-control-height, var(--agentic-row-height)); padding: 0; cursor: pointer;
   border: 0; border-radius: var(--agentic-control-radius); color: inherit; background: transparent;
 }
 .agentic-base-floating-panel-close:hover { background: var(--kg-panel-action-bg-hover, ButtonFace); }
