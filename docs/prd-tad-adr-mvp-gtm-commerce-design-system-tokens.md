@@ -1,19 +1,19 @@
 ---
 title: "Commerce Shared Design Token Adoption"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.1.12"
-revision: "0.1.12"
+version: "0.1.13"
+revision: "0.1.13"
 date: "2026-10-31"
 updated_date: "2026-11-07"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Commerce product function"
 continuity_id: "COMMERCE-DESIGN-SYSTEM-TOKENS-001"
-prd_revision: "0.1.12"
-tad_revision: "0.1.12"
-adr_revision: "0.1.12"
-mvp_revision: "0.1.12"
-gtm_revision: "0.1.12"
+prd_revision: "0.1.13"
+tad_revision: "0.1.13"
+adr_revision: "0.1.13"
+mvp_revision: "0.1.13"
+gtm_revision: "0.1.13"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -34,7 +34,7 @@ runtime_readiness_policy: "fail-closed"
 
 # Commerce Shared Design Token Adoption
 
-**Join:** `COMMERCE-DESIGN-SYSTEM-TOKENS-001@0.1.12`, superseding `0.1.4`, `0.1.3`, `0.1.2`, and `0.1.1` under
+**Join:** `COMMERCE-DESIGN-SYSTEM-TOKENS-001@0.1.13`, superseding `0.1.4`, `0.1.3`, `0.1.2`, and `0.1.1` under
 `COMMERCE-CONTROL-PLANE-001@0.1.0`. This plan covers Commerce's generated presentation
 projections. It does not move product component behavior, commerce capabilities, or deployment
 authority into the token registry.
@@ -318,7 +318,7 @@ readiness.
 
 ## ADLC and release boundary
 
-Revision 0.1.12 supersedes 0.1.4 and refreshes the protected-main and Graph rights evidence. It keeps
+Revision 0.1.13 supersedes 0.1.4 and refreshes the protected-main and Graph rights evidence. It keeps
 the observed non-ancestor Commerce profile pin and plans a provenance-only rebind to the current
 protected-main central profile without changing its 36 values. This revision changes only this
 planning document. It does not change the application, generated CSS, Graph sources, CSP work,
@@ -383,3 +383,7 @@ Dropdown assets adopt Base’s shared mouse-dismiss lifecycle, allowing pointer 
 The Base artifact now embeds the exact central nine-role profile and the Graph artifact embeds the central 137-role profile, with source/projection digests in producer inputs. Local registered overrides are removed in the producers; Commerce consumes those offline artifacts without a separate palette or form-control variant. Shared UI geometry remains 14px/20px with 28px desktop and 48px mobile controls. Input caps are 22 Base/128 Graph while each browser chunk remains below 500000 bytes. The Graph continuation retains PR #1239 history in #1240. Verify native source checks, required CI and bare npm run dev desktop/mobile before closure. Rollback pins/assets together without clearing origin data; no Production effect.
 
 Graph runtime values use a compact generated projection verified against both full central profiles and source pins; producer inputs retain the complete provenance. The consumer requires that projection in its manifest and reuses the resulting 266703-byte JavaScript artifact. This removes bundled metadata and repeated invariant modes without changing the value owner or raising a chunk budget.
+
+### Shared KTV and icon adoption (0.1.13)
+
+Existing artifacts consume Base’s central SVG library and semantic KTV renderer; Graph supplies native data/metadata adapters. The central owner pins 61 unique glyphs and the row layout; no local artwork or layout replacement is introduced. Base input count grows from 22 to 24 only for the central icon data/pin, while Graph retains its 128-input cap and portable chunks stay below 500000 bytes. Use the same desktop/mobile form sizing, accessible named Type icons and optional timing records. Restore pins/assets together for rollback; no state migration or Production activation is selected.
