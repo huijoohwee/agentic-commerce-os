@@ -94,6 +94,7 @@ function createWorkspaceHeader() {
   toolbar.setAttribute('aria-label', 'Workspace Toolbar')
   toolbar.dataset.scroll = ''
   const toggle = createElement('button', undefined, 'agentic-toolbar-item')
+  toggle.dataset.iconOnly = ''
   toggle.id = 'workspace-navigation-toggle'; toggle.type = 'button'
   toggle.setAttribute('aria-label', 'Hide navigation'); toggle.setAttribute('aria-expanded', 'true')
   toggle.setAttribute('aria-controls', 'shop-navigation')

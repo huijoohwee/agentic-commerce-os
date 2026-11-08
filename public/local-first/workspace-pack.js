@@ -14,7 +14,7 @@ function updateToolbarLocation() {
     else link.removeAttribute('aria-current')
   }
 }
-window.addEventListener('hashchange', updateToolbarLocation)
+addEventListener('hashchange', updateToolbarLocation)
 updateToolbarLocation()
 const consolePanel = $('console-panel'), consoleToggle = $('console-toggle')
 let consoleEventCount = 0, browserRegistered = false, toolCalls = 0, consoleApi = null, consoleLoad = null, consoleIntent = 0

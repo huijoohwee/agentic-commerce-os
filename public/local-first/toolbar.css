@@ -58,6 +58,12 @@
   text-decoration: none;
   cursor: pointer;
 }
+.agentic-toolbar-item[data-icon-only] {
+  flex: none;
+  inline-size: var(--agentic-control-height);
+  block-size: var(--agentic-control-height);
+  padding: 0;
+}
 .agentic-toolbar-item:hover { background: var(--kg-panel-bg-hover, var(--agentic-base-hover, ButtonFace)); }
 .agentic-toolbar-item:is([aria-current], [aria-expanded=true], [aria-pressed=true]) {
   color: var(--agentic-control-selected-foreground);
