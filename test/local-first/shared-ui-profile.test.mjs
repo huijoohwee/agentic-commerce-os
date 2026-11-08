@@ -7,11 +7,18 @@ test('Commerce consumes the pinned Design System icon size from its offline shel
   const pin = verifySharedUiIconProfile();
   assert.equal(pin.owner, 'github.com/huijoohwee/agentic-design-system');
   assert.equal(pin.sourceRevision, '51bf1fcaa6b5610f174dd428363482114d888364');
-  assert.equal(pin.registryRevision, 'a1c652263790453929311848fa512d72776de57e');
+  assert.equal(pin.registryRevision, '61ae53bf71010b652d906fad3ad66648316bce2e');
   const profile = fs.readFileSync('public/local-first/shared-ui-profile.css', 'utf8');
   assert.match(profile, /stroke-width: var\(--agentic-icon-stroke-width\)/);
   assert.match(profile, /--agentic-font-size-body: 0\.875rem;/);
   assert.match(profile, /--agentic-line-height-body: 1\.25rem;/);
   const worker = fs.readFileSync('src/local-first/worker.ts', 'utf8');
   assert.match(worker, /'\/shared-ui-profile\.css'/);
+})
+
+test('housing priorities use the offline checkbox group with no local layout override', () => {
+  const housing = fs.readFileSync('public/local-first/housing-comparison.js', 'utf8');
+  assert.match(housing, /<fieldset class="agentic-checkbox-group housing-field-wide"><legend>Priorities/);
+  const localCss = fs.readFileSync('public/local-first/housing-comparison.css', 'utf8');
+  assert.doesNotMatch(localCss, /[.]housing-choice-list|[.]agentic-checkbox-group/);
 })

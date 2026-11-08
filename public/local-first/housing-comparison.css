@@ -18,11 +18,10 @@
 .housing-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:var(--commerce-space-md) 0}
 .housing-form{display:grid;gap:var(--commerce-space-md)}
 .housing-field-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-.housing-form label{display:grid;gap:6px;margin:0;min-width:0;font-size:.88rem;font-weight:600}
+.housing-form :where(label:not(fieldset > label)){display:grid;gap:6px;margin:0;min-width:0;font-size:.88rem;font-weight:600}
 .housing-field-wide{grid-column:1/-1}
-.housing-choice-list{display:grid;gap:10px}
-.housing-choice-list label,.housing-option-select{display:flex!important;align-items:center;gap:12px;min-height:48px;margin:0;padding:10px;border:1px solid var(--commerce-border);border-radius:var(--commerce-radius-control)}
-.housing-choice-list input,.housing-option-select input{width:20px;min-width:20px;height:20px;min-height:20px;padding:0;accent-color:var(--commerce-action)}
+.housing-option-select{display:flex!important;align-items:center;gap:12px;min-height:48px;margin:0;padding:10px;border:1px solid var(--commerce-border);border-radius:var(--commerce-radius-control)}
+.housing-option-select input{width:20px;min-width:20px;height:20px;min-height:20px;padding:0;accent-color:var(--commerce-action)}
 .housing-option{display:grid;gap:10px;min-width:0}
 .housing-option-select span{display:grid;gap:3px;min-width:0}
 .housing-option-select small,.housing-fiction{color:var(--commerce-text-muted);font-size:.78rem}
