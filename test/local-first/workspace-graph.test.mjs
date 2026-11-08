@@ -45,7 +45,7 @@ test('Commerce table uses the exact Agentic Base browser artifact candidate', ()
   const pin = JSON.parse(fs.readFileSync('config/agentic-base-data-view.json', 'utf8'));
   assert.equal(pin.schema, 'agentic-base/consumer-artifact/v1');
   assert.equal(pin.source.repository, 'github.com/huijoohwee/agentic-base');
-  assert.equal(pin.source.revision, 'cfe3f1c4ef0e80b8fad0d4e5b84cd16d7f79ba77');
+  assert.equal(pin.source.revision, '7f0bf92b59ee825b28df3f491e750834cc98fdf3');
   assert.equal(pin.source.sourceDirty, false);
   assert.equal(pin.contract.browserExport, 'mountDataView');
   assert.equal(pin.contract.defaultLayout, 'table');

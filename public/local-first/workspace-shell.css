@@ -39,7 +39,7 @@ body.console-mode>main{flex:1 0 auto}
 .console-mode .workspace-content{background-image:radial-gradient(circle at 1px 1px,var(--workspace-canvas-grid-dot) 1px,transparent 1.1px);background-size:var(--workspace-canvas-grid-step) var(--workspace-canvas-grid-step);background-repeat:repeat}
 body.console-mode main { max-width: none; margin: 0; padding: 0; }
 .console-search { width: 100%; min-width: 0; justify-content: flex-start; overflow: hidden; padding: 8px 10px; gap: 8px; font-size: .8125rem; color: var(--commerce-text-muted); white-space: nowrap; box-shadow: 0 1px 2px #00000004; }
-.workspace-shell>.sidebar .console-search>svg { width: var(--agentic-icon-size-default); height: var(--agentic-icon-size-default); flex: 0 0 var(--agentic-icon-size-default); fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.5; }
+.workspace-shell>.sidebar .console-search>svg { width: var(--agentic-icon-size-default); height: var(--agentic-icon-size-default); flex: 0 0 var(--agentic-icon-size-default); fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: var(--agentic-icon-stroke-width); }
 .workspace-shell>.sidebar .console-search>.sidebar-search-label { min-width: 0; flex: 1 1 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .console-mode .workspace-content { width: 100%; max-width: 1200px; min-width: 0; margin: 0 auto; padding: 46px 32px 48px 48px; }
 /* Shared fragment targets clear the sticky shell. */
@@ -66,7 +66,7 @@ body.console-mode main { max-width: none; margin: 0; padding: 0; }
 .workspace-shell>.sidebar .sidebar-actions{display:grid;gap:4px;margin-top:12px;order:2}
 .workspace-shell>.sidebar .service-nav a:hover,.workspace-shell>.sidebar .sidebar-actions a:hover{background:var(--commerce-surface-subtle);color:var(--commerce-action)}
 .workspace-shell>.sidebar .service-nav a[aria-current=location],.workspace-shell>.sidebar .service-nav a[aria-current=page]{background:var(--commerce-active-nav);color:var(--commerce-action);font-weight:600}
-.workspace-shell>.sidebar .service-nav svg,.workspace-shell>.sidebar .sidebar-actions svg{width:18px;height:18px;flex:0 0 18px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.5;color:var(--commerce-text-muted)}
+.workspace-shell>.sidebar .service-nav svg,.workspace-shell>.sidebar .sidebar-actions svg{width:var(--agentic-icon-size-default);height:var(--agentic-icon-size-default);flex:0 0 var(--agentic-icon-size-default);fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:var(--agentic-icon-stroke-width);color:var(--commerce-text-muted)}
 .workspace-shell>.sidebar .service-nav a[aria-current=location] svg,.workspace-shell>.sidebar .service-nav a[aria-current=page] svg{color:var(--commerce-action)}
 .workspace-shell>.sidebar .service-nav a>span:not(.sidebar-item-label),.workspace-shell>.sidebar .sidebar-actions a>span:not(.sidebar-item-label){width:18px;text-align:center;font-size:.9rem;color:inherit}
 .workspace-shell>.sidebar .service-nav a>.sidebar-item-label,.workspace-shell>.sidebar .sidebar-actions a>.sidebar-item-label{display:block;min-width:0;max-width:100%;flex:1 1 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -192,4 +192,4 @@ body.console-mode main { max-width: none; margin: 0; padding: 0; }
   .workspace-shell>.sidebar .sidebar-actions a>.sidebar-item-label{min-width:0;flex:1 1 0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
 }
 /* Shared app frame and content region. */.brand{display:flex;align-items:baseline;gap:10px;text-decoration:none;font-size:1.7rem;font-weight:700;letter-spacing:-.06em}.brand span{font-size:.8125rem;font-weight:450;letter-spacing:.1em;text-transform:uppercase;color:var(--commerce-text-muted)}
-.topbar>.navigation-toggle>svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.5}
+.topbar>.navigation-toggle>svg{width:var(--agentic-icon-size-default);height:var(--agentic-icon-size-default);fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:var(--agentic-icon-stroke-width)}
