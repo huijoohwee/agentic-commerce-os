@@ -183,7 +183,7 @@ export function bindWorkspaceNavigation({ onChange, onWorkspaceChange = () => {}
       render()
     }
     const onMobileNavigationChange = event => setCollapsed(event.matches)
-    const onClick = () => setCollapsed(!document.body.classList.contains('navigation-collapsed'))
+    const onClick = () => { if (!toggle.popoverTargetElement) setCollapsed(!document.body.classList.contains('navigation-collapsed')) }
     const onSidebarNavigation = event => {
       const link = event.target instanceof Element ? event.target.closest('a[href^="#"]') : null
       if (compact.matches && link && !link.matches('[data-workspace-tour], [data-workspace-intro]')) setCollapsed(true)

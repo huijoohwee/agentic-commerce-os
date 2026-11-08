@@ -1,3 +1,4 @@
+import { prepareViewStylesheet } from './workspace-view-styles.js'
 import { assessListing, parseComparison, SAMPLE_PROFILE, serializeComparison, validateListing, validatePhotoBatch, validateProfile, validateSelection } from './housing-engine.js'
 import { SAMPLE_LISTINGS } from './housing-sample.js'
 
@@ -44,19 +45,14 @@ if ('serviceWorker' in navigator) {
   warmHousingOfflineAssets()
 }
 const baseViewCss = new URL('./agentic-base-data-view.css?v=base-0cd7602-multi-dimensional-table-v1', import.meta.url).href
-let state, live = false, styleLink, saved = readSaved(), activeHash = 'housing', importTicket = 0, photoAssets = new Map(), photoIndexes = new Map(), tableAdapter, tableHandle, tableViewState, tableGeneration = 0
+let state, live = false, saved = readSaved(), activeHash = 'housing', importTicket = 0, photoAssets = new Map(), photoIndexes = new Map(), tableAdapter, tableHandle, tableViewState, tableGeneration = 0
 const freshState = () => ({ profile: null, listings: SAMPLE_LISTINGS.map(item => structuredClone(item)), selected: SAMPLE_LISTINGS.slice(0, 3).map(item => item.id), priorities: [], manualIds: new Set(), query: '', dimensionQuery: '', savedOnly: false, editingId: null, inputsOpen: false, orientation: 'columns' })
 const orientationStatus = orientation => orientation === 'columns'
   ? 'Each listing is a column. Scroll horizontally to compare all options.'
   : 'Each listing is a row. Scroll horizontally to compare every fact.'
 const statusLine = text => `<p class="housing-status" data-housing-global-status role="status" aria-live="polite">${escapeHtml(text)}</p>`
 function currentListing(id) { return state.listings.find(item => item.id === id) }
-function ensureStyles() {
-  styleLink = document.getElementById('housing-comparison-style')
-  if (styleLink) return
-  styleLink = document.createElement('link'); styleLink.id = 'housing-comparison-style'; styleLink.rel = 'stylesheet'
-  styleLink.href = new URL('./housing-comparison.css', import.meta.url).href; document.head.append(styleLink)
-}
+export const prepareHousingStyles = prepareViewStylesheet(new URL('./housing-comparison.css', import.meta.url))
 function loadTableAdapter() {
   tableAdapter ??= import('./agentic-base-data-view.js?v=base-0cd7602-multi-dimensional-table-v1').catch(error => { tableAdapter = null; throw error })
   return tableAdapter
@@ -420,7 +416,7 @@ async function importComparison(input) {
 export function mountHousingWorkspace(target = root) {
   if (!(target instanceof HTMLElement)) throw Error('housing_workspace_root_missing')
   if (live) { activate('housing'); return { activate, deactivate } }
-  live = true; state = freshState(); photoAssets = new Map(); photoIndexes = new Map(); ensureStyles();
+  live = true; state = freshState(); photoAssets = new Map(); photoIndexes = new Map();
   target.addEventListener('submit', onSubmit); target.addEventListener('click', onClick); target.addEventListener('change', onChange); target.addEventListener('input', onInput); target.addEventListener('keydown', onKeyDown)
   function onSubmit(event) {
     const form = event.target.closest('form[data-form]'); if (!form) return
@@ -489,7 +485,7 @@ export function mountHousingWorkspace(target = root) {
     }
   }
   function activate() { if (!live) return; warmHousingOfflineAssets(); state ??= freshState(); render() }
-  function deactivate() { if (!live) return; live = false; importTicket++; disposeComparisonTable(); target.removeEventListener('submit', onSubmit); target.removeEventListener('click', onClick); target.removeEventListener('change', onChange); target.removeEventListener('input', onInput); target.removeEventListener('keydown', onKeyDown); target.replaceChildren(); styleLink?.remove(); styleLink = null; clearPhotos(); state = null; if (offlineStatus) { delete offlineStatus.dataset.housingOfflineState; offlineStatus.textContent = 'Offline access is ready. Core workspace is cached; open Housing to prepare its offline files.' } }
+  function deactivate() { if (!live) return; live = false; importTicket++; disposeComparisonTable(); target.removeEventListener('submit', onSubmit); target.removeEventListener('click', onClick); target.removeEventListener('change', onChange); target.removeEventListener('input', onInput); target.removeEventListener('keydown', onKeyDown); target.replaceChildren(); clearPhotos(); state = null; if (offlineStatus) { delete offlineStatus.dataset.housingOfflineState; offlineStatus.textContent = 'Offline access is ready. Core workspace is cached; open Housing to prepare its offline files.' } }
   activate('housing')
   return { activate, deactivate }
 }

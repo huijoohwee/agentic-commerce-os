@@ -7,7 +7,7 @@
 :root { color: var(--kg-text-primary); background: var(--commerce-canvas); }
 * { box-sizing: border-box; }
 figure { margin: 0; }
-body { margin: 0; min-width: 280px; }
+:where(body, .pack-content) { margin: 0; min-width: 280px; }
 body:has(dialog[open]) { overflow: hidden; }
 button,input,textarea { font: inherit; }
 a { color: var(--commerce-action); text-underline-offset: 5px; }
@@ -320,7 +320,7 @@ main { padding: 0 28px; }
 }
 
 /* Native capability, preview and guide surfaces. */
-body { padding-bottom: calc(var(--agentic-floating-panel-bottom-offset,56px) + 24px); }
+:where(body, .pack-content) { padding-bottom: calc(var(--agentic-floating-panel-bottom-offset,56px) + 24px); }
 
 .workspace-status {
   position: fixed; z-index: 5; bottom: 0; left: 0; right: 0; display: flex; align-items: center;
@@ -386,7 +386,7 @@ body { padding-bottom: calc(var(--agentic-floating-panel-bottom-offset,56px) + 2
 #console-sheet-empty { font-size: 13px; }
 
 @media (max-width:700px) {
-  body { padding-bottom: calc(var(--agentic-floating-panel-bottom-offset,112px) + 24px); }
+  :where(body, .pack-content) { padding-bottom: calc(var(--agentic-floating-panel-bottom-offset,112px) + 24px); }
   .workspace-status { gap: 4px 12px; font-size: 9px; padding: 6px 12px; max-height: 140px; overflow: auto; }
   .workspace-status>span { flex: 1 1 40%; }
   .workspace-status button:first-of-type { margin-left: 0; }

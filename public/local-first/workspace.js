@@ -1,7 +1,8 @@
+import { createPackRoute, isPackRoute } from './workspace-pack.route.js';
 import { enhanceSelects } from './dropdown-menus.js';
 import { listDrafts, groupProjects } from './drafts.js'; import { getOrCreateSingleton } from './workspace-singleton.js'; import { bindDemoOfferDetails, bindExampleFilters, offerDetailsButton } from './shopper-demo-detail.js';
 import { WORKSPACE_ROLES, bindWorkspaceNavigation, selectWorkspaceDestination, mountWorkspaceShell, mountWorkspaceSidebar } from './workspace-navigation.js?v=workspace-navigation-mobile-51';
-if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; await getOrCreateSingleton('workspace-application', async () => { mountWorkspaceShell(); enhanceSelects();
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; await getOrCreateSingleton('workspace-application', async () => { mountWorkspaceShell(); const packRoute = createPackRoute(); enhanceSelects();
 const displayLocale = document.documentElement.lang || 'en'; const $ = selector => document.querySelector(selector); const monogram = title => { const words = title.trim().split(/\s+/u); return (words.length > 1 ? words.slice(0, 2).map(word => [...word][0]).join('') : [...words[0]].slice(0, 2).join('')).toUpperCase(); }; const merchantName = id => String(id || '').replace(/[-._]+/gu, ' ').replace(/(^|\s)\p{L}/gu, initial => initial.toUpperCase());
 const checkoutMode = document.querySelector('meta[name="commerce-checkout-mode"]')?.content, shopCheckoutNav = document.querySelector('#shop-navigation-content')?.content.querySelector('#shop-checkout-nav');
 const liveCheckout = ['live', 'live-reader'].includes(checkoutMode);
@@ -195,12 +196,13 @@ function renderCurrent() {
 }
 async function route() {
   const revision = ++navigation, legacyHousingRoute = ['housing-needs', 'housing-priorities', 'housing-listings', 'housing-compare', 'housing-plan'].includes(location.hash.slice(1).split('?')[0]);
+  if (isPackRoute()) return packRoute.enter(() => revision === navigation, () => { housingRoute?.deactivate(); housingRoute = null; smeRoute?.deactivate(); });
   if (legacyHousingRoute) history.replaceState(history.state, '', `${location.pathname}${location.search}#housing`);
   const hash = location.hash.slice(1), { requested, view, role } = resolveRoute(hash), switchState = workspaceSwitchPending?.role === role ? workspaceSwitchPending : null, switchedWorkspace = !!switchState, sectionRoute = (role === 'sme' && requested !== 'sme') || (role === 'housing' && requested !== 'housing') || ['collection', 'shop-sandbox'].includes(requested); workspaceSwitchPending = null;
   $('#status').textContent = ''; $('#status').removeAttribute('data-error');
   if (role === 'sme') try { const module = await import('./sme-business-pack.js?v=workspace-singleton-4'); if (revision !== navigation) return; await module.prepareSmeBusinessPackStyles(); if (revision !== navigation) return; if (!smeRoute) smeRoute = await module.mountSmeBusinessPack(); if (revision !== navigation) { smeRoute?.deactivate(); return; } } catch (error) { if (revision === navigation) throw error; return; }
-  if (role === 'housing') try { const module = await import('./housing-comparison.js?v=housing-comparison-23'); if (revision !== navigation) return; if (!housingRoute) housingRoute = module.mountHousingWorkspace($('#housing-root')); if (revision !== navigation) { housingRoute?.deactivate(); housingRoute = null; return; } housingRoute.activate(requested); } catch (error) { if (revision === navigation) throw error; return; } else if (housingRoute) { housingRoute.deactivate(); housingRoute = null; }
-  document.body.classList.add('console-mode'); document.body.dataset.workspaceRole = role;
+  if (role === 'housing') try { const module = await import('./housing-comparison.js?v=housing-comparison-23'); if (revision !== navigation) return; await module.prepareHousingStyles(); if (revision !== navigation) return; if (!housingRoute) housingRoute = module.mountHousingWorkspace($('#housing-root')); if (revision !== navigation) { housingRoute?.deactivate(); housingRoute = null; return; } housingRoute.activate(requested); } catch (error) { if (revision === navigation) throw error; return; } else if (housingRoute) { housingRoute.deactivate(); housingRoute = null; }
+  packRoute.leave(); document.body.classList.add('console-mode'); document.body.dataset.workspaceRole = role;
   renderNavigation(role); if (role === 'sme') smeRoute?.updateSectionNavigation(); if (role !== 'sme') $('#' + role + ' .workspace-content').prepend($('#draft-storage-state'));
   const workspaceRole = role === 'checkout' ? 'shop' : role;
   const activeDestination = selectWorkspaceDestination(workspaceRole);
@@ -376,6 +378,7 @@ document.addEventListener('change', event => {
   location.hash = (environment ? 'admin-runtime' : event.target.value ? 'admin-project' : 'admin') + (params.size ? '?' + params : '');
 });
 function renderNavigation(role = document.body.dataset.workspaceRole || 'shop') {
+  if (role === 'pack') return;
   const activeRole = role === 'checkout' ? 'shop' : role, sidebarRole = role === 'sme' ? 'sme' : activeRole, sidebar = mountWorkspaceSidebar({ host: $('#workspace-shell'), template: $('#' + sidebarRole + '-navigation-content'), variant: sidebarRole, id: sidebarRole + '-navigation', className: 'sidebar console-sidebar', label: WORKSPACE_ROLES[sidebarRole].label + ' navigation' }), toggle = $('#workspace-navigation-toggle'), expanded = !document.body.classList.contains('navigation-collapsed');
   toggle.hidden = false;
   toggle.setAttribute('aria-controls', sidebar.id);
@@ -394,7 +397,7 @@ async function focusWorkspaceSearch() {
 }
 document.addEventListener('click', event => { if (event.target instanceof Element && event.target.closest('#project-search-shortcut, [data-workspace-search]')) void focusWorkspaceSearch().catch(message); });
 window.addEventListener('keydown', event => {
-  if (document.querySelector('dialog[open]')) return;
+  if (document.querySelector('dialog[open]') || isPackRoute()) return;
   if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k' && document.body.classList.contains('console-mode') && (!['shop', 'checkout'].includes(document.body.dataset.workspaceRole) || !$('#shop-search').hidden)) {
     event.preventDefault(); void focusWorkspaceSearch().catch(message);
   }
@@ -577,7 +580,7 @@ async function openAgentTools(preset) {
     enhanceSelects().refresh(); $('#workspace-agent-status').textContent = ''; $('#workspace-tool').focus();
   } catch (error) { if (drawer.open && generation === agentGeneration) $('#workspace-agent-status').textContent = error.message; }
 }
-$('#workspace-agent-open').addEventListener('click', () => void openAgentTools());
+$('#workspace-agent-open').addEventListener('click', () => { if (!isPackRoute()) void openAgentTools(); });
 $('#workspace-agent-close').addEventListener('click', () => $('#workspace-agent-drawer').close());
 $('#workspace-agent-drawer').addEventListener('close', () => {
   agentGeneration++; toolsApi?.deactivate(); $('#workspace-tools-home').append($('#workspace-tools-body'));

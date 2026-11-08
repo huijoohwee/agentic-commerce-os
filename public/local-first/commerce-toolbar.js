@@ -40,9 +40,10 @@ function createCommerceToolbar({ packPage = false, workspaceHome = '' } = {}) {
     }
   }
 
-  const pack = packPage ? '' : './services/workspace-pack/'
+  const service = new URL(packPage ? './' : './services/workspace-pack/', location.href)
+  toolbar.dataset.packService = service.href
   for (const [section, label] of [['builder', 'Workspace'], ['formats', 'Included files']]) {
-    const link = toolbarLink(label, pack + '#' + section)
+    const link = toolbarLink(label, '#' + section)
     link.dataset.packDestination = section
     toolbar.append(link)
   }
@@ -87,7 +88,7 @@ function attachPanel(button, label, ...items) {
   popover.addEventListener('beforetoggle', ({ newState }) => {
     const open = newState === 'open'
     button.setAttribute('aria-expanded', String(open))
-    if (button.dataset.dockEdge === 'start') {
+    if (button.dataset.dockEdge === 'start' && button.popoverTargetElement) {
       button.title = open ? 'Hide navigation' : 'Show navigation'
       button.setAttribute('aria-label', button.title)
     }
@@ -107,25 +108,36 @@ export function mountCommerceChrome(header, options = {}) {
   const tools = createElement('button', 'Agent tools', 'agentic-toolbar-item')
   tools.type = 'button'; tools.id = 'workspace-agent-open'
   tools.setAttribute('aria-haspopup', 'dialog')
-  tools.setAttribute('aria-controls', options.packPage ? 'console-sheet' : 'workspace-agent-drawer')
-  const builder = toolbar.querySelector('[data-pack-destination="builder"]')
-  const consoleAction = options.packPage ? createElement('button', 'Console', 'agentic-toolbar-item')
-    : toolbarLink('Console', new URL('#console', builder.href).href)
-  if (options.packPage) {
-    consoleAction.type = 'button'; consoleAction.id = 'console-toggle'
-    consoleAction.setAttribute('aria-controls', 'console-panel')
-  }
+  const consoleAction = createElement('button', 'Console', 'agentic-toolbar-item')
+  consoleAction.type = 'button'; consoleAction.id = 'console-toggle'
   const dock = createElement('div', undefined, 'agentic-toolbar-dock')
   const banner = createElement('div', undefined, 'commerce-banner')
   banner.setAttribute('role', 'note')
   banner.append(createElement('strong', 'Workspace Program Pack'), createElement('span', 'Free conversion · No account · No payment'))
   header.classList.add('commerce-chrome'); header.append(banner, dock)
   dock.append(navigation, toolbar, launcher, attachPanel(launcher, 'Tools and Console', tools, consoleAction))
-  if (options.packPage) {
-    const sections = [...toolbar.querySelectorAll('[data-pack-destination]')].map(link => toolbarLink(link.textContent, link.href))
-    dock.append(attachPanel(navigation, 'Pack navigation', ...sections))
-  }
+  const sections = [...toolbar.querySelectorAll('[data-pack-destination]')].map(link => toolbarLink(link.textContent, link.href))
+  dock.append(attachPanel(navigation, 'Pack navigation', ...sections))
+  setPackChrome(toolbar, !!options.packPage)
   return toolbar
+}
+
+export function setPackChrome(toolbar, pack) {
+  const header = toolbar.closest('header'), nav = header.querySelector('#workspace-navigation-toggle')
+  const menu = header.querySelector('#workspace-navigation-toggle-panel')
+  nav.popoverTargetElement = pack ? menu : null
+  menu.hidePopover()
+  const tools = header.querySelector('#workspace-agent-open'), consoleAction = header.querySelector('#console-toggle')
+  if (pack && !document.getElementById('console-sheet')) tools.removeAttribute('aria-controls')
+  else tools.setAttribute('aria-controls', pack ? 'console-sheet' : 'workspace-agent-drawer')
+  if (pack && document.getElementById('console-panel')) consoleAction.setAttribute('aria-controls', 'console-panel')
+  if (!pack) consoleAction.removeAttribute('aria-expanded')
+  if (pack) {
+    nav.setAttribute('aria-controls', menu.id)
+    nav.setAttribute('aria-expanded', 'false')
+    nav.setAttribute('aria-label', 'Show navigation')
+    nav.title = 'Show navigation'
+  }
 }
 
 export function selectToolbarItem(link) {
@@ -138,9 +150,17 @@ export function selectToolbarItem(link) {
   else if (right > bounds.right) toolbar.scrollLeft += right - bounds.right
 }
 
+const observations = new WeakMap()
 export function observePackService(toolbar, changed) {
+  const existing = observations.get(toolbar)
+  if (existing) {
+    if (changed) { existing.listeners.add(changed); if (existing.available !== undefined) changed(existing.available) }
+    return existing.ready
+  }
+  const observation = { listeners: new Set(changed ? [changed] : []), available: undefined }
+  observations.set(toolbar, observation)
   const status = toolbar.querySelector('[data-pack-status]')
-  const url = new URL('service.json', toolbar.querySelector('[data-pack-destination="builder"]').href)
+  const url = new URL('service.json', toolbar.dataset.packService)
   let latest = 0, previous
   async function refresh() {
     const request = ++latest
@@ -156,10 +176,12 @@ export function observePackService(toolbar, changed) {
     if (request !== latest || previous === ready) return
     previous = ready
     status.textContent = ready ? 'Service ready' : 'Service unavailable'
-    changed?.(ready)
+    observation.available = ready
+    for (const listener of observation.listeners) listener(ready)
   }
   addEventListener('online', refresh)
   addEventListener('offline', refresh)
   addEventListener('pageshow', event => { if (event.persisted) void refresh() })
-  return refresh()
+  observation.ready = refresh()
+  return observation.ready
 }

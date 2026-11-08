@@ -123,7 +123,7 @@ describe('Workspace Pack browser tool lifecycle', () => {
     })
     const moduleSource = await fs.readFile('public/local-first/workspace-pack.js', 'utf8')
     // This VM exercises WebMCP registration. Cross-page toolbar and service checks run in the browser.
-    const source = moduleSource.replace(/^import .+ from '.+';$/gm, ''), enhanceSelects = vi.fn()
+    const source = moduleSource.replace(/^import .+ from '.+';$/gm, '').replace('export function mountWorkspacePack', 'function mountWorkspacePack'), enhanceSelects = vi.fn()
     const pending = runInNewContext(`(async () => {${source}\n})()`, {
       PACK_TOOL, mountCommerceChrome: () => ({ querySelectorAll: () => [], querySelector: () => null }),
       observePackService: async (_toolbar: unknown, changed: (available: boolean) => void) => changed(true),

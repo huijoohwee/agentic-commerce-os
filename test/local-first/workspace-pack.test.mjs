@@ -29,13 +29,20 @@ test('public profile binds the pinned Graph artifact, exact assets and source wi
   assert.equal(descriptor.graphRevision, pin.revision); assert.equal(descriptor.sourceRevision, revision);
   assert.equal(descriptor.marketplaceListed, false); assert.equal(descriptor.price.amount, '0');
   assert.equal(response.headers.get('x-commerce-source'), revision);
-  assert.equal((await worker.fetch(new Request(base), env)).headers.get('location'), base + '/');
-  for (const [route, asset] of [['/', '/workspace-pack.html'], ['/workspace-pack.js', '/workspace-pack.js'], ['/commerce-toolbar.js', '/commerce-toolbar.js'], ['/workspace-pack.css', '/workspace-pack.css'], ['/floating-panel.css', '/floating-panel.css'], ['/shared-ui-profile.css', '/shared-ui-profile.css'], ['/graph-ui-tokens.css', '/graph-ui-tokens.css'], ['/commerce-theme.css', '/commerce-theme.css'], ['/dropdown-menus.js', '/dropdown-menus.js'], ['/workspace-pack.simulation.js', '/workspace-pack.simulation.js'], ['/workspace-pack.console.js', '/workspace-pack.console.js']]) {
+  const app = new URL('../../', base + '/');
+  for (const address of [base, base + '/']) {
+    const redirect = await worker.fetch(new Request(address), env);
+    assert.equal(redirect.status, 302); assert.equal(redirect.headers.get('location'), app.href + '?workspace-pack=');
+  }
+  const template = `assets/${revision}/services/workspace-pack/`;
+  assert(authoredAssets(revision).some(asset => asset.path === template));
+  assert.equal(await (await worker.fetch(new Request(new URL(template, app)), env)).text(), '/workspace-pack.html');
+  for (const [route, asset] of [['/workspace-pack.js', '/workspace-pack.js'], ['/commerce-toolbar.js', '/commerce-toolbar.js'], ['/workspace-pack.css', '/workspace-pack.css'], ['/floating-panel.css', '/floating-panel.css'], ['/shared-ui-profile.css', '/shared-ui-profile.css'], ['/graph-ui-tokens.css', '/graph-ui-tokens.css'], ['/commerce-theme.css', '/commerce-theme.css'], ['/dropdown-menus.js', '/dropdown-menus.js'], ['/workspace-pack.simulation.js', '/workspace-pack.simulation.js'], ['/workspace-pack.console.js', '/workspace-pack.console.js']]) {
     const result = await worker.fetch(new Request(base + route, { headers: { cookie: 'not-forwarded=1' } }), env);
     assert.equal(await result.text(), asset); assert.equal(result.headers.get('cache-control'), 'no-store, no-transform');
   }
   assert.deepEqual(authoredAssets(revision).filter(asset => asset.path.startsWith('services/')).map(asset => asset.path).sort(),
-    ['services/workspace-pack/', 'services/workspace-pack/floating-panel.css', 'services/workspace-pack/workspace-pack.console.js', 'services/workspace-pack/workspace-pack.css', 'services/workspace-pack/workspace-pack.js', 'services/workspace-pack/workspace-pack.simulation.js']);
+    ['services/workspace-pack/floating-panel.css', 'services/workspace-pack/workspace-pack.console.js', 'services/workspace-pack/workspace-pack.css', 'services/workspace-pack/workspace-pack.js', 'services/workspace-pack/workspace-pack.simulation.js']);
 });
 test('edge REST produces exact four-file output and refuses malformed, stale, executable and oversized input', async () => {
   const result = await worker.fetch(post(input), env); assert.equal(result.status, 200); verifyPack(await result.json());

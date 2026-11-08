@@ -21,7 +21,7 @@ const ASSET_PATHS = new Map([
     '/graph-data-view.js', '/graph-data-view.css', '/graph-ui-tokens.css',
     '/style.css', '/sw.js', '/workflow.js', '/workspace-capabilities.js', '/workspace-tools.js',
     ...(import.meta.commerceLiveCheckout === false ? [] : [
-      '/favicon.svg', '/workspace-tour.js', '/workspace-navigation.js', '/commerce-toolbar.js', '/toolbar-icons.js', '/workspace-singleton.js',
+      '/favicon.svg', '/workspace-tour.js', '/workspace-navigation.js', '/workspace-pack.route.js', '/workspace-view-styles.js', '/commerce-toolbar.js', '/toolbar-icons.js', '/workspace-singleton.js',
       '/shopper-demo-detail.js', '/commerce-theme.css', '/commerce-shell.css', '/floating-panel.css', '/workspace-shell.css', '/toolbar.css', '/sme-business-pack.js',
       '/sme-business-pack.css', '/sme-business-pack-core.js', '/sme-workflow-editor.js', '/sme-pack-dictionary.js', '/sme-pack-business-plan.js',
       '/housing-comparison.js', '/housing-engine.js', '/housing-sample.js', '/housing-comparison.css',
@@ -58,6 +58,10 @@ export async function fetchLocalFirst(request: Request, env: LocalFirstEnv, tran
     // The durable listing host shares this router but must omit the public SME service.
     // Its build sets import.meta.commerceLiveCheckout=false; Worker/dev builds leave it undefined.
     if (import.meta.commerceLiveCheckout !== false) {
+      if (['GET', 'HEAD'].includes(request.method) && [WORKSPACE_PACK_PATH, WORKSPACE_PACK_PATH + '/'].includes(url.pathname)) {
+        url.pathname = prefix + '/'; url.searchParams.set('workspace-pack', '')
+        return finish(Response.redirect(url.href, 302))
+      }
       const smePackRoute = `${prefix}/services/sme-business-pack`
       if ([smePackRoute, `${smePackRoute}/`].includes(url.pathname) && ['GET', 'HEAD'].includes(request.method)) {
         url.pathname = `${prefix}/`; url.hash = 'sme'; url.search = ''
