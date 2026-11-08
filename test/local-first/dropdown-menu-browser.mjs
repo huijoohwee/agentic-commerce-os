@@ -13,6 +13,7 @@ export async function chooseDropdown(control, value) {
     return { trigger: trigger.id, label: option.label };
   }, value); return selection; }, { message: 'Shared dropdown and requested option are ready' }).not.toBeNull();
   const page = control.page(), trigger = page.locator(`#${selection.trigger}`);
+  await expect(trigger).toBeVisible();
   const geometry = await trigger.evaluate(node => { const s = getComputedStyle(node), root = getComputedStyle(document.documentElement); return {
     height: node.getBoundingClientRect().height, token: parseFloat(s.getPropertyValue('--agentic-control-height')),
     font: parseFloat(s.fontSize), body: parseFloat(root.getPropertyValue('--agentic-font-size-body')) * parseFloat(root.fontSize),
