@@ -1,20 +1,14 @@
-const CACHE_NAME = "agentic-design-system-v0.3.34-draft-c104152";
+const CACHE_NAME = "agentic-design-system-v0.5.0-draft-registry-r20";
 const CORE_FILES = [
-  "./", "./app.js?v=c104152", "./catalog.json", "./catalog.schema.json",
-  "./vendor/agentic-base-browser-data-view.js?v=c104152", "./vendor/agentic-base-browser-data-view.css?v=c104152",
+  "./", "./registry.css", "./floating-panel.css", "./toolbar.css", "./toolbar-icons.js", "./dashboard-columns.js", "./app.js?v=registry-toolbar-1", "./registry-query.js?v=c104158", "./catalog.json", "./catalog.schema.json",
+  "./icons.json", "./tokens/commerce-profile.json", "./tokens/base-profile.json", "./tokens/graph-profile.json", "./tokens/shared-ui-profile.json",
+  "./vendor/commerce-theme.css", "./vendor/base-profile.css", "./vendor/graph-profile.css", "./vendor/shared-ui-profile.css", "./THIRD-PARTY-NOTICES.txt", "./favicon.svg",
 ];
-const REVIEW_INVENTORY = "./review-inventory.json";
-const CACHEABLE_FILES = [...CORE_FILES, REVIEW_INVENTORY];
+const CACHEABLE_FILES = CORE_FILES;
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then(async (cache) => {
     await cache.addAll(CORE_FILES);
-    try {
-      const response = await fetch(REVIEW_INVENTORY, { cache: "no-store" });
-      if (response.ok) await cache.put(REVIEW_INVENTORY, response);
-    } catch {
-      // The review inventory is optional in a release artifact.
-    }
     await self.skipWaiting();
   }));
 });

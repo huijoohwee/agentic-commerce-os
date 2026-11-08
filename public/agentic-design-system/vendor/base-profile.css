@@ -1,0 +1,12 @@
+/* Generated from agentic-design-system Base profile; origin agentic-base@a5d0f2d87d8c6871e9639f8224f5eaee056c5b6e; profile sha256 3c231b5a57ae6acac862a4ede882d24657d93e45b1bc7ea32d1799ef4b32e361. Do not edit. */
+:root, :host {
+  --agentic-base-action-hover: #f3f4f6;
+  --agentic-base-border: #e5e7eb;
+  --agentic-base-data-table-sticky-header-bg: var(--agentic-base-table-header-bg);
+  --agentic-base-data-tree-cell-padding-inline: 0.75rem;
+  --agentic-base-row-hover: #fffbeb;
+  --agentic-base-table-header-bg: #f9fafb;
+  --agentic-base-text-primary: #111827;
+  --agentic-base-text-secondary: #4b5563;
+  --agentic-base-text-tertiary: #6b7280;
+}

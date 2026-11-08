@@ -2,29 +2,49 @@
   "schema": "agentic-commerce-design-system-static-release/v1",
   "source": {
     "repository": "github.com/huijoohwee/agentic-design-system",
-    "revision": "9dd6c3a98621aaebdf2a36187d3aa9272c27fbee"
+    "revision": "e368338f563eaf8d15bc04a76054ad99c6171fbe"
   },
   "route": "https://airvio.co/agentic-design-system/",
   "files": [
     {
       "path": "app.js",
-      "bytes": 22894,
-      "sha256": "ac9a764f9617876e5010d149f94945bf75a1d7ee696100759fd56bf2ca91edc6"
+      "bytes": 14456,
+      "sha256": "e8540d7fad4d7fe950a1f1b8f0b8c5f380aaa37c879a8b6d9a5a256f0e69226e"
     },
     {
       "path": "catalog.json",
-      "bytes": 325,
-      "sha256": "2a72afaa502f7dfcdba5a6942d1a7e5dabdc18acb6ae3f0015f213a1ed4e2910"
+      "bytes": 13094,
+      "sha256": "e52a8e7c211930487ee06d224d8b589603f9ba3a0940f90ae2f2ee37a2d1a752"
     },
     {
       "path": "catalog.schema.json",
-      "bytes": 3643,
-      "sha256": "aac3b43167532c26e888175aace35e3cec2fb6c3d68c7e66f71ccb340fc59ac2"
+      "bytes": 13998,
+      "sha256": "0427eed7bcf299666a520ae43353942f9f4dcc6bc497574e0dd284fdb14eb9e1"
+    },
+    {
+      "path": "dashboard-columns.js",
+      "bytes": 3634,
+      "sha256": "cc82636c768ce5dc6244483e96ff1492aacf11e8eb129ded5b969e1d37500efc"
+    },
+    {
+      "path": "favicon.svg",
+      "bytes": 281,
+      "sha256": "12bb18e89a2c2c40b5c92ee8ce7b389988ceb56dad63f7de45d2ea030488b038"
+    },
+    {
+      "path": "floating-panel.css",
+      "bytes": 3711,
+      "sha256": "5fbbd56f792c789ef00fd490b50e6903d60d2072b8a3e56b8715ca585d5fe37c"
+    },
+    {
+      "path": "icons.json",
+      "bytes": 12805,
+      "sha256": "52ab0c590ab71329f16d101e493f8dc21c455c918d52431c790a1477fcb357a1"
     },
     {
       "path": "index.html",
-      "bytes": 27181,
-      "sha256": "4d0198a9600eed8ac9dd2ae4b217b749f71712032e2f98aa5f90ecd9988c794e"
+      "bytes": 6300,
+      "sha256": "01927addec692bd5d763eb79e258f3367cef8def807e88821497f41f4b32ee12"
     },
     {
       "path": "LICENSE",
@@ -32,28 +52,78 @@
       "sha256": "b2e476300173b31043c1222c840b5cd3a8c234d50ffc5f44f104fcbf66fc5ffe"
     },
     {
+      "path": "registry-query.js",
+      "bytes": 12463,
+      "sha256": "d1f721234ac221991d48f7d3199ed8f0d4bff0858573902671694d152a3deb28"
+    },
+    {
+      "path": "registry.css",
+      "bytes": 1824,
+      "sha256": "8408679122f6afb7e4facb12aa14e508dd703134d2bbb5c0865d3f11ee953b63"
+    },
+    {
       "path": "sw.js",
-      "bytes": 1915,
-      "sha256": "8f3bbcebdd078566b10a78180eafdf119c3fc3af19635a45b5243400ea5226bf"
+      "bytes": 1960,
+      "sha256": "7ad8b176a5a3b419d0972dbb36935f40ecea1ebbd207ee6d53b05122a98d817c"
     },
     {
       "path": "THIRD-PARTY-NOTICES.txt",
-      "bytes": 4595,
-      "sha256": "40b0896c3f130a9665cb42173c5f946f90073843cdc8c07a551ca9af49d6a1bd"
+      "bytes": 5218,
+      "sha256": "958f1ada45cbc5a245d8fb45fb955e39923e0b921658c8ac682e6f38e11e0954"
     },
     {
-      "path": "vendor/agentic-base-browser-data-view.css",
-      "bytes": 16270,
-      "sha256": "f00b3f4c88dfa81946fdc1577aa01ff49ea3e6f996f32607bc715a5d93079b69"
+      "path": "tokens/base-profile.json",
+      "bytes": 1758,
+      "sha256": "3c231b5a57ae6acac862a4ede882d24657d93e45b1bc7ea32d1799ef4b32e361"
     },
     {
-      "path": "vendor/agentic-base-browser-data-view.js",
-      "bytes": 212169,
-      "sha256": "2cab75c008f14d3cce8b235f7efe93bc560cd0575a6bfbee23699671e955ad0d"
+      "path": "tokens/commerce-profile.json",
+      "bytes": 4764,
+      "sha256": "000adeb267d0d0ff9527e1227faefcd5fd2c15faee463fa70173204783ea7c9e"
+    },
+    {
+      "path": "tokens/graph-profile.json",
+      "bytes": 26070,
+      "sha256": "aae4fd536724e9f81783e3f580f2613f447e2fad25c09dfa60a01c5cc995674c"
+    },
+    {
+      "path": "tokens/shared-ui-profile.json",
+      "bytes": 6286,
+      "sha256": "535938ec2d0ee316adab606bb888348a491d5d860a2b9ca4ffd7d88c4310f822"
+    },
+    {
+      "path": "toolbar-icons.js",
+      "bytes": 966,
+      "sha256": "aae52a4abcdf20186e08cab4533419295000013c3482709f004782c3fa093f05"
+    },
+    {
+      "path": "toolbar.css",
+      "bytes": 3933,
+      "sha256": "0bfb089e0f717c8bde20a5db76ce0a42c85502561aef24a067cd4787f2e127c8"
+    },
+    {
+      "path": "vendor/base-profile.css",
+      "bytes": 647,
+      "sha256": "9fb7da765d4f597f7e130faa51c10faff9dd977b943818904e4d474236f28758"
+    },
+    {
+      "path": "vendor/commerce-theme.css",
+      "bytes": 1708,
+      "sha256": "c512ee76dc6160ff41e8bac9706b8e8d0b9e56f42b6c4b128594605e19c93474"
+    },
+    {
+      "path": "vendor/graph-profile.css",
+      "bytes": 9015,
+      "sha256": "e7927753addf721a633416c6055c5aa52ff5c294f0a00d9c8fd44061233dae06"
+    },
+    {
+      "path": "vendor/shared-ui-profile.css",
+      "bytes": 19683,
+      "sha256": "ae12d3e40d91c926e5d522e35f3254d97c030596524e861b31b72835ab21f424"
     }
   ],
-  "totalBytes": 290264,
-  "payloadDigest": "81fb732e0c4d8b40bb1580d5307da73e89a68cc1975e5fcfa2060f13104928a9",
+  "totalBytes": 165846,
+  "payloadDigest": "182d5c2108b29084fbd25e56321d64b0ff14eeb2204e3e532a77af7843eafc6e",
   "excluded": [
     "registry/",
     "site/review-inventory.json",

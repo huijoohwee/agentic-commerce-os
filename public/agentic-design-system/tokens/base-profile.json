@@ -1,0 +1,31 @@
+{
+  "schema": "agentic-design-system/base-profile/v1",
+  "id": "base",
+  "version": "0.1.0",
+  "status": "candidate",
+  "scope": {
+    "repository": "github.com/huijoohwee/agentic-base",
+    "surfaces": ["shared-data-view"]
+  },
+  "source": {
+    "revision": "a5d0f2d87d8c6871e9639f8224f5eaee056c5b6e",
+    "path": "packages/views-react/src/browser/browserDataView.css",
+    "digest": "sha256:f00b3f4c88dfa81946fdc1577aa01ff49ea3e6f996f32607bc715a5d93079b69"
+  },
+  "license": {
+    "id": "MIT",
+    "path": "LICENSE",
+    "digest": "sha256:939721e4008a40f28594af8bdd7c122e388d9b22534ef1e6799dc771023691a1"
+  },
+  "tokens": [
+    {"key": "data-view.action-hover", "cssVar": "--agentic-base-action-hover", "type": "color", "value": "#f3f4f6"},
+    {"key": "data-view.border", "cssVar": "--agentic-base-border", "type": "color", "value": "#e5e7eb"},
+    {"key": "data-view.row-hover", "cssVar": "--agentic-base-row-hover", "type": "color", "value": "#fffbeb"},
+    {"key": "data-view.table-header-bg", "cssVar": "--agentic-base-table-header-bg", "type": "color", "value": "#f9fafb"},
+    {"key": "data-view.table-sticky-header-bg", "cssVar": "--agentic-base-data-table-sticky-header-bg", "type": "alias", "targetKey": "data-view.table-header-bg"},
+    {"key": "data-view.text-primary", "cssVar": "--agentic-base-text-primary", "type": "color", "value": "#111827"},
+    {"key": "data-view.text-secondary", "cssVar": "--agentic-base-text-secondary", "type": "color", "value": "#4b5563"},
+    {"key": "data-view.text-tertiary", "cssVar": "--agentic-base-text-tertiary", "type": "color", "value": "#6b7280"},
+    {"key": "data-view.tree-cell-padding-inline", "cssVar": "--agentic-base-data-tree-cell-padding-inline", "type": "dimension", "value": "0.75rem"}
+  ]
+}
