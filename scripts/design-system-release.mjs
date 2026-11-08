@@ -11,14 +11,7 @@ const CONFIG = join(ROOT, 'config/design-system-static-release.json');
 const PREFIX = '/agentic-design-system';
 const FILES = Object.freeze([
   ['LICENSE', 'LICENSE'],
-  ['site/THIRD-PARTY-NOTICES.txt', 'THIRD-PARTY-NOTICES.txt'],
-  ['site/app.js', 'app.js'],
-  ['site/catalog.json', 'catalog.json'],
-  ['site/catalog.schema.json', 'catalog.schema.json'],
-  ['site/index.html', 'index.html'],
-  ['site/sw.js', 'sw.js'],
-  ['site/vendor/agentic-base-browser-data-view.css', 'vendor/agentic-base-browser-data-view.css'],
-  ['site/vendor/agentic-base-browser-data-view.js', 'vendor/agentic-base-browser-data-view.js'],
+  ...['THIRD-PARTY-NOTICES.txt', 'app.js', 'catalog.json', 'catalog.schema.json', 'dashboard-columns.js', 'favicon.svg', 'floating-panel.css', 'icons.json', 'index.html', 'registry-query.js', 'registry.css', 'sw.js', 'tokens/base-profile.json', 'tokens/commerce-profile.json', 'tokens/graph-profile.json', 'tokens/shared-ui-profile.json', 'toolbar-icons.js', 'toolbar.css', 'vendor/base-profile.css', 'vendor/commerce-theme.css', 'vendor/graph-profile.css', 'vendor/shared-ui-profile.css'].map(path => ['site/' + path, path]),
 ]);
 
 function fail(code) { throw new Error(`design_system_release:${code}`); }

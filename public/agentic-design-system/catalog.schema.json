@@ -4,81 +4,586 @@
   "title": "Agentic Design System public catalog",
   "type": "object",
   "additionalProperties": false,
-  "required": ["$schema", "catalogId", "schemaVersion", "release", "requestedPath", "records"],
+  "required": [
+    "$schema",
+    "catalogId",
+    "schemaVersion",
+    "release",
+    "requestedPath",
+    "records",
+    "registry",
+    "iconLibrary"
+  ],
   "properties": {
-    "$schema": { "const": "./catalog.schema.json" },
-    "catalogId": { "const": "agentic-design-system" },
-    "schemaVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "$schema": {
+      "const": "./catalog.schema.json"
+    },
+    "catalogId": {
+      "const": "agentic-design-system"
+    },
+    "schemaVersion": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
     "release": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["version", "status", "sourceRevision", "manifestDigest", "predecessor"],
+      "required": [
+        "version",
+        "status",
+        "sourceRevision",
+        "manifestDigest",
+        "predecessor"
+      ],
       "properties": {
-        "version": { "type": "string", "minLength": 1 },
-        "status": { "enum": ["draft", "released", "deprecated"] },
-        "sourceRevision": { "type": ["string", "null"], "pattern": "^[a-f0-9]{40}$" },
-        "manifestDigest": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
-        "predecessor": { "type": ["string", "null"] }
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "released",
+            "deprecated"
+          ]
+        },
+        "sourceRevision": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "manifestDigest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "predecessor": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
       }
     },
-    "requestedPath": { "const": "/agentic-design-system/" },
+    "requestedPath": {
+      "const": "/agentic-design-system/"
+    },
+    "registry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "registryId",
+        "revision",
+        "owner",
+        "coverage",
+        "keyContract",
+        "owners",
+        "profiles"
+      ],
+      "properties": {
+        "schema": {
+          "const": "agentic-design-system/owner-registry/v1"
+        },
+        "registryId": {
+          "const": "agentic-design-system"
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "owner": {
+          "const": "github.com/huijoohwee/agentic-design-system"
+        },
+        "coverage": {
+          "const": "Commerce, Base, Graph and shared UI token values have one Design System owner; source attribution is revision-pinned; generated consumer projections are verified separately and whole-repository parity is not claimed"
+        },
+        "keyContract": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "schema",
+            "canonicalKeyPattern",
+            "cssVariablePattern",
+            "uniqueBy",
+            "overridePolicy"
+          ],
+          "properties": {
+            "schema": {
+              "const": "agentic-design-system/design-key/v1"
+            },
+            "canonicalKeyPattern": {
+              "const": "^[a-z0-9][a-z0-9.-]*(?::[a-z0-9][a-z0-9.-]*)*$"
+            },
+            "cssVariablePattern": {
+              "const": "^--[a-z][a-z0-9-]*$"
+            },
+            "uniqueBy": {
+              "const": [
+                "canonicalKey",
+                "cssVariable"
+              ]
+            },
+            "overridePolicy": {
+              "const": "deny"
+            }
+          }
+        },
+        "owners": {
+          "type": "array",
+          "minItems": 5,
+          "maxItems": 5,
+          "items": {
+            "$ref": "#/$defs/owner"
+          }
+        },
+        "profiles": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": {
+            "$ref": "#/$defs/profile"
+          }
+        }
+      }
+    },
     "records": {
       "type": "array",
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "canonicalKey", "name", "concern", "status", "summary", "owner", "source", "rights", "evidence"],
+        "required": [
+          "id",
+          "canonicalKey",
+          "name",
+          "concern",
+          "status",
+          "summary",
+          "owner",
+          "source",
+          "rights",
+          "evidence"
+        ],
         "properties": {
-          "id": { "type": "string", "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
-          "canonicalKey": { "type": "string", "pattern": "^[a-z0-9][a-z0-9.-]*(?::[a-z0-9][a-z0-9.-]*)*$" },
-          "name": { "type": "string", "minLength": 1 },
-          "concern": { "enum": ["token", "brand-profile", "guideline", "accessibility", "component", "example"] },
-          "status": { "const": "cleared" },
-          "summary": { "type": "string", "minLength": 1 },
-          "owner": { "type": "string", "minLength": 1 },
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+          },
+          "canonicalKey": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9.-]*(?::[a-z0-9][a-z0-9.-]*)*$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "concern": {
+            "enum": [
+              "token",
+              "brand-profile",
+              "guideline",
+              "accessibility",
+              "component",
+              "example"
+            ]
+          },
+          "status": {
+            "const": "cleared"
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1
+          },
+          "owner": {
+            "type": "string",
+            "minLength": 1
+          },
           "source": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["repository", "revision", "path", "digest"],
+            "required": [
+              "repository",
+              "revision",
+              "path",
+              "digest"
+            ],
             "properties": {
-              "repository": { "type": "string", "minLength": 1 },
-              "revision": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
-              "path": { "type": "string", "minLength": 1 },
-              "digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+              "repository": {
+                "type": "string",
+                "minLength": 1
+              },
+              "revision": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{40}$"
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "digest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              }
             }
           },
           "rights": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["license", "attribution", "permissionEvidence"],
+            "required": [
+              "license",
+              "attribution",
+              "permissionEvidence"
+            ],
             "properties": {
-              "license": { "type": "string", "minLength": 1 },
-              "attribution": { "type": "string", "minLength": 1 },
-              "permissionEvidence": { "type": "string", "minLength": 1 }
+              "license": {
+                "type": "string",
+                "minLength": 1
+              },
+              "attribution": {
+                "type": "string",
+                "minLength": 1
+              },
+              "permissionEvidence": {
+                "type": "string",
+                "minLength": 1
+              }
             }
           },
-          "evidence": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } }
+          "evidence": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "iconLibrary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "path",
+        "version",
+        "digest"
+      ],
+      "properties": {
+        "schema": {
+          "const": "agentic-design-system/icon-library/v1"
+        },
+        "path": {
+          "const": "icons.json"
+        },
+        "version": {
+          "const": "1.0.0"
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "owner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "repository",
+        "revision",
+        "scopes",
+        "role",
+        "reuseGate",
+        "sources"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "repository": {
+          "type": "string",
+          "pattern": "^github\\.com/[a-z0-9-]+/[a-z0-9-]+$"
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "scopes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "role": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reuseGate": {
+          "enum": [
+            "reference-only",
+            "rights-review-required",
+            "mit-verified"
+          ]
+        },
+        "sources": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "kind",
+              "digest"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "enum": [
+                  "policy",
+                  "native",
+                  "generated"
+                ]
+              },
+              "digest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              }
+            }
+          }
+        }
+      }
+    },
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "owner",
+        "repository",
+        "revision",
+        "source",
+        "digest",
+        "scope",
+        "status",
+        "rights",
+        "permissionEvidence",
+        "licenseEvidence",
+        "consumerPins"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner": {
+          "type": "string",
+          "pattern": "^github\\.com/[a-z0-9-]+/[a-z0-9-]+$"
+        },
+        "repository": {
+          "type": "string",
+          "pattern": "^github\\.com/[a-z0-9-]+/[a-z0-9-]+$"
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "source": {
+          "type": "string",
+          "pattern": "^\\./[a-z0-9./-]+\\.json$"
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "scope": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "status": {
+          "enum": [
+            "candidate",
+            "adopted",
+            "blocked"
+          ]
+        },
+        "rights": {
+          "enum": [
+            "review-required",
+            "cleared",
+            "cleared-scoped",
+            "restricted"
+          ]
+        },
+        "permissionEvidence": {
+          "type": "string",
+          "minLength": 1
+        },
+        "licenseEvidence": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "repository",
+              "revision",
+              "path",
+              "digest"
+            ],
+            "properties": {
+              "repository": {
+                "type": "string",
+                "pattern": "^github\\.com/[a-z0-9-]+/[a-z0-9-]+$"
+              },
+              "revision": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{40}$"
+              },
+              "path": {
+                "const": "LICENSE"
+              },
+              "digest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              }
+            }
+          }
+        },
+        "consumerPins": {
+          "type": "array",
+          "minItems": 0,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "repository",
+              "revision",
+              "path",
+              "digest"
+            ],
+            "properties": {
+              "repository": {
+                "type": "string",
+                "pattern": "^github\\.com/[a-z0-9-]+/[a-z0-9-]+$"
+              },
+              "revision": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{40}$"
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "digest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              }
+            }
+          }
+        },
+        "projection": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "digest"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^\\./vendor/[a-z0-9.-]+\\.css$"
+            },
+            "digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            }
+          }
         }
       }
     }
   },
   "allOf": [
     {
-      "if": { "properties": { "release": { "properties": { "status": { "const": "released" } } } } },
+      "if": {
+        "properties": {
+          "release": {
+            "properties": {
+              "status": {
+                "const": "released"
+              }
+            }
+          }
+        }
+      },
       "then": {
         "properties": {
           "release": {
             "properties": {
-              "sourceRevision": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
-              "manifestDigest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+              "sourceRevision": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{40}$"
+              },
+              "manifestDigest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              }
             }
           }
         }
       }
     },
     {
-      "if": { "properties": { "release": { "properties": { "status": { "enum": ["draft", "deprecated"] } } } } },
-      "then": { "properties": { "records": { "maxItems": 0 } } }
+      "if": {
+        "properties": {
+          "release": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "draft",
+                  "deprecated"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "records": {
+            "maxItems": 0
+          }
+        }
+      }
     }
   ]
 }
