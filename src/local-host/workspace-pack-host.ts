@@ -15,6 +15,8 @@ export async function startWorkspacePackHost(options: Options) {
   await options.adapter({ title: 'Service readiness', source: sample, sourceDigest: digest(sample) }, AbortSignal.timeout(5000))
   const assets = new Map(await Promise.all([
     ['/', 'workspace-pack.html', 'text/html; charset=utf-8'],
+    ['/dropdown-menus.js', 'dropdown-menus.js', 'application/javascript; charset=utf-8'],
+    ['/shared-ui-profile.css', 'shared-ui-profile.css', 'text/css; charset=utf-8'],
     ['/workspace-pack.js', 'workspace-pack.js', 'application/javascript; charset=utf-8'],
     ['/workspace-pack.simulation.js', 'workspace-pack.simulation.js', 'application/javascript; charset=utf-8'],
     ['/workspace-pack.console.js', 'workspace-pack.console.js', 'application/javascript; charset=utf-8'],

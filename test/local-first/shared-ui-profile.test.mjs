@@ -6,8 +6,8 @@ import { verifySharedUiIconProfile } from '../../scripts/local-first-release/art
 test('Commerce consumes the pinned Design System icon size from its offline shell assets', () => {
   const pin = verifySharedUiIconProfile();
   assert.equal(pin.owner, 'github.com/huijoohwee/agentic-design-system');
-  assert.equal(pin.sourceRevision, '51bf1fcaa6b5610f174dd428363482114d888364');
-  assert.equal(pin.registryRevision, '7041182bf039ac880ebc1a25d98850f15fc58ff1');
+  assert.equal(pin.sourceRevision, '431b9b60f3f8a85362ea5c99f6dbf502265a210a');
+  assert.equal(pin.registryRevision, '4f76b3c15b52c25a61f27039f6b437f67d91430a');
   const profile = fs.readFileSync('public/local-first/shared-ui-profile.css', 'utf8');
   assert.match(profile, /stroke-width: var\(--agentic-icon-stroke-width\)/);
   assert.match(profile, /--agentic-font-size-body: 0\.875rem;/);
@@ -22,3 +22,12 @@ test('housing priorities use the offline checkbox group with no local layout ove
   const localCss = fs.readFileSync('public/local-first/housing-comparison.css', 'utf8');
   assert.doesNotMatch(localCss, /[.]housing-choice-list|[.]agentic-checkbox-group/);
 })
+
+test('workspace pack pickers share the owner selection rule', () => {
+  const html = fs.readFileSync('public/local-first/workspace-pack.html', 'utf8');
+  for (const name of ['Output format', 'Response stage']) {
+    assert.ok(html.includes(`class="agentic-toggle-group" role="group" aria-label="${name}"`));
+  }
+  const css = fs.readFileSync('public/local-first/workspace-pack.css', 'utf8');
+  assert.doesNotMatch(css, /\.agentic-(?:toggle-group|control-selected)\b|--agentic-control-selected-[\w-]+\s*:|\[aria-pressed=true\]/);
+});
