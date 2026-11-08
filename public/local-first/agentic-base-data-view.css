@@ -306,7 +306,7 @@ textarea.agentic-form-control, .agentic-form-controls :where(textarea) {
 .agentic-base-data-tree-control svg {
   color: inherit;
   stroke: currentColor;
-  stroke-width: 1.5;
+  stroke-width: var(--agentic-icon-stroke-width);
 }
 .agentic-base-data-tree-cell:hover .agentic-base-data-tree-control,
 .agentic-base-data-tree-cell:focus-within .agentic-base-data-tree-control {
