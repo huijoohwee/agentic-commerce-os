@@ -51,3 +51,12 @@ test('Workspace Pack takes panel geometry and colors from the pinned stylesheets
     assert.equal(remainder, '', 'use the owner palette for ' + value);
   }
 });
+
+test('the storefront leaves the Mission grid, cards and selected colors to the shared profile', () => {
+  for (const file of ['style.css', 'workspace-shell.css']) {
+    const css = fs.readFileSync('public/local-first/' + file, 'utf8')
+      .replaceAll(':where(:not(.agentic-dashboard-layout))', '');
+    assert.doesNotMatch(css, /\.agentic-dashboard-(?:layout|header|grid|card)\b|--agentic-(?:dashboard-[\w-]+|control-selected-[\w-]+)\s*:/);
+    assert.doesNotMatch(css, /\.(?:shopper-hero|shop-preview-card|product-grid|demo-type-filters)\b/);
+  }
+});

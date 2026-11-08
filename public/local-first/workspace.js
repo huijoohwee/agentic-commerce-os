@@ -1,5 +1,5 @@
 import { enhanceSelects } from './dropdown-menus.js';
-import { listDrafts, groupProjects } from './drafts.js'; import { getOrCreateSingleton } from './workspace-singleton.js'; import { bindDemoOfferDetails } from './shopper-demo-detail.js';
+import { listDrafts, groupProjects } from './drafts.js'; import { getOrCreateSingleton } from './workspace-singleton.js'; import { bindDemoOfferDetails, bindExampleFilters, offerDetailsButton } from './shopper-demo-detail.js';
 import { WORKSPACE_ROLES, bindWorkspaceNavigation, mountWorkspaceShell, mountWorkspaceSidebar } from './workspace-navigation.js?v=workspace-navigation-mobile-51';
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; await getOrCreateSingleton('workspace-application', async () => { mountWorkspaceShell(); enhanceSelects();
 const displayLocale = document.documentElement.lang || 'en'; const $ = selector => document.querySelector(selector); const monogram = title => { const words = title.trim().split(/\s+/u); return (words.length > 1 ? words.slice(0, 2).map(word => [...word][0]).join('') : [...words[0]].slice(0, 2).join('')).toUpperCase(); }; const merchantName = id => String(id || '').replace(/[-._]+/gu, ' ').replace(/(^|\s)\p{L}/gu, initial => initial.toUpperCase());
@@ -53,17 +53,12 @@ function unavailableDrafts(container) {
   clearNativeTable(container); container.replaceChildren(node('p', draftLoading ? 'Loading saved offers…' : 'Saved offers are unavailable. Use Retry loading offers above.', 'muted'));
   return true;
 }
-function art(draft, interactive = false) {
+function art(draft) {
   const visual = node('figure', undefined, 'product-art');
   visual.dataset.selectionTarget = 'offer-art'; visual.dataset.selectionLabel = 'Offer artwork: ' + draft.title;
   const image = node('span', monogram(draft.title), 'product-monogram');
   image.setAttribute('role', 'img'); image.setAttribute('aria-label', 'Offer artwork for ' + draft.title); image.dataset.coverTitle = draft.title;
-  if (!interactive) { visual.append(image); return visual; }
-  const action = node('button', undefined, 'product-art-action'); action.type = 'button';
-  action.setAttribute('aria-label', 'View offer: ' + draft.title); action.dataset.selectionTarget = 'offer-art-action';
-  action.addEventListener('click', () => showDetail(draft));
-  action.append(image, node('span', 'View offer ↗', 'product-art-action-label'));
-  visual.append(action); return visual;
+  visual.append(image); return visual;
 }
 function price(draft) { return draft.launch ? launch.formatMoney(draft.launch.priceMinor, draft.launch.currency) : 'Not set'; }
 function matches(draft, query) { return [draft.title, draft.launch?.merchantId, merchantName(draft.launch?.merchantId), draft.launch?.outcome, draft.launch?.audience].join(' ').toLowerCase().includes(query); }
@@ -82,22 +77,23 @@ function showDetail(draft) { if (draft === 'sandbox') { detailId = null; const d
 }
 $('#shop-offer-details').addEventListener('click', () => showDetail('sandbox')); $('#close-detail').addEventListener('click', () => $('#offer-detail').close()); bindDemoOfferDetails({ dialog: $('#offer-detail'), onError: message });
 $('#offer-detail').addEventListener('close', () => { detailId = null; $('#offer-detail').classList.remove('detail-split'); });
+const exampleFilters = bindExampleFilters($('#shop-demo-filters'), () => { shopPage = 0; renderShop(); });
 function renderShop() {
-  if (unavailableDrafts($('#shop-grid'))) { $('#collection').hidden = false; $('#shop-demo-shelf').hidden = true; $('#shop-grid').hidden = false; $('#shop-empty').hidden = true; $('#collection-heading').textContent = 'Your offers'; $('#shop-pagination').hidden = true; $('#shop-count-value').textContent = '?'; $('#shop-count-label').textContent = 'saved offers unknown'; $('#shop-search').hidden = true; $('#shop-navigation [data-workspace-search]').hidden = true; return; }
+  if (unavailableDrafts($('#shop-grid'))) { $('#shop-demo-filters').hidden = true; $('#collection').hidden = false; $('#shop-demo-shelf').hidden = true; $('#shop-grid').hidden = false; $('#shop-empty').hidden = true; $('#collection-heading').textContent = 'Your offers'; $('#shop-pagination').hidden = true; $('#shop-count-value').textContent = '?'; $('#shop-count-label').textContent = 'saved offers unknown'; $('#shop-search').hidden = true; $('#shop-navigation [data-workspace-search]').hidden = true; return; }
   const query = $('#shop-query').value.trim().toLowerCase(), store = $('#shop-store').value;
-  const offered = drafts.filter(draft => draft.launch), hasOffers = offered.length > 0; $('#collection').hidden = false; $('#shop-demo-shelf').hidden = hasOffers; $('#shop-grid').hidden = !hasOffers; $('#collection-heading').textContent = hasOffers ? 'Your offers' : 'Example offers';
+  const offered = drafts.filter(draft => draft.launch), hasOffers = offered.length > 0; $('#collection').hidden = false; $('#shop-demo-shelf').hidden = hasOffers; $('#shop-demo-filters').hidden = hasOffers; $('#shop-grid').hidden = !hasOffers; $('#collection-heading').textContent = hasOffers ? 'Your offers' : 'Example offers';
   $('#shop-search').hidden = false; $('#shop-navigation [data-workspace-search]').hidden = !hasOffers; $('#shop-store').closest('label').hidden = !hasOffers; $('#shop-sort').closest('label').hidden = !hasOffers; $('#shop-query').placeholder = hasOffers ? 'Search offers or stores' : 'Search example offers';
   const filtered = offered.filter(draft => matches(draft, query) && (!store || draft.launch.merchantId === store));
   if ($('#shop-sort').value === 'name') filtered.sort((a, b) => a.title.localeCompare(b.title) || a.id.localeCompare(b.id));
   const pages = Math.max(1, Math.ceil(filtered.length / 12)); shopPage = Math.min(shopPage, pages - 1);
   $('#shop-grid').replaceChildren();
   for (const draft of filtered.slice(shopPage * 12, shopPage * 12 + 12)) {
-    const card = node('article', undefined, 'product-card'); card.dataset.selectionTarget = 'offer-card'; card.dataset.selectionLabel = 'Offer: ' + draft.title;
-    card.append(art(draft, true), node('small', merchantName(draft.launch.merchantId)), node('h3', draft.title),
-      node('p', draft.launch.outcome, 'offer-outcome'), node('p', draft.launch.audience, 'offer-audience'), node('p', price(draft), 'preview-price'), Object.assign(node('time', `Updated ${new Intl.DateTimeFormat(displayLocale, { month: 'short', day: 'numeric' }).format(draft.updatedAt)}`, 'offer-updated'), { dateTime: new Date(draft.updatedAt).toISOString() }));
+    const card = node('article', undefined, 'agentic-dashboard-card'); card.dataset.accent = 'primary'; card.dataset.selectionTarget = 'offer-card'; card.dataset.selectionLabel = 'Offer: ' + draft.title;
+    card.append(node('small', merchantName(draft.launch.merchantId), 'agentic-dashboard-eyebrow'), node('h3', draft.title),
+      node('p', draft.launch.outcome, 'agentic-dashboard-description'), node('p', draft.launch.audience, 'offer-audience'), node('p', price(draft), 'preview-price'), Object.assign(node('time', `Updated ${new Intl.DateTimeFormat(displayLocale, { month: 'short', day: 'numeric' }).format(draft.updatedAt)}`, 'offer-updated'), { dateTime: new Date(draft.updatedAt).toISOString() }), offerDetailsButton(draft.title, () => showDetail(draft)));
     $('#shop-grid').append(card);
   }
-  const demoCards = [...$('#shop-demo-shelf').querySelectorAll('.demo-product-card')]; demoCards.forEach(card => { card.hidden = !card.textContent.toLowerCase().includes(query); }); const visibleDemoCards = demoCards.filter(card => !card.hidden && getComputedStyle(card).display !== 'none'); const demoFiltered = query || $('#shop-demo-filters input:checked').value !== 'all'; const demoCount = visibleDemoCards.length; $('#shop-count-value').textContent = hasOffers ? filtered.length : String(demoCount); $('#shop-count-label').textContent = hasOffers ? `preview offer${filtered.length === 1 ? '' : 's'}` : demoFiltered ? `of ${demoCards.length} examples` : 'demo offers'; const noMatches = hasOffers ? filtered.length === 0 : demoCount === 0;
+  const { count: demoCount, total, filtered: demoFiltered } = exampleFilters.filter($('#shop-demo-shelf'), query); $('#shop-count-value').textContent = hasOffers ? filtered.length : String(demoCount); $('#shop-count-label').textContent = hasOffers ? `preview offer${filtered.length === 1 ? '' : 's'}` : demoFiltered ? `of ${total} examples` : 'demo offers'; const noMatches = hasOffers ? filtered.length === 0 : demoCount === 0;
   $('#shop-demo-shelf .demo-shelf-note').hidden = !hasOffers && demoCount === 0; $('#shop-empty').hidden = !noMatches; $('#shop-empty').dataset.empty = 'filtered';
   $('#shop-empty h3').textContent = hasOffers ? 'No offers match your search.' : 'No example offers match your search.';
   $('#shop-empty p').textContent = hasOffers ? 'Try another search or choose a different store.' : 'Try another search or choose another type.';
@@ -235,8 +231,8 @@ async function route() {
   }
   if (switchedWorkspace) { $('#workspace-role-switcher').focus({ preventScroll: true }); window.scrollTo({ left: switchState.x, top: 0, behavior: 'instant' }); }
 }
-$('#shop-search').addEventListener('submit', event => event.preventDefault()); $('#shop-reset-filters').addEventListener('click', () => { $('#shop-query').value = ''; $('#shop-store').value = ''; $('#shop-sort').value = 'recent'; $('#shop-demo-filters input[value="all"]').checked = true; shopPage = 0; renderShop(); $('#shop-query').focus({ preventScroll: true }); });
-for (const id of ['shop-query', 'shop-store', 'shop-sort']) $('#' + id).addEventListener('input', () => { shopPage = 0; renderShop(); }); $('#shop-demo-filters').addEventListener('change', () => { shopPage = 0; renderShop(); });
+$('#shop-search').addEventListener('submit', event => event.preventDefault()); $('#shop-reset-filters').addEventListener('click', () => { $('#shop-query').value = ''; $('#shop-store').value = ''; $('#shop-sort').value = 'recent'; exampleFilters.reset(); shopPage = 0; renderShop(); $('#shop-query').focus({ preventScroll: true }); });
+for (const id of ['shop-query', 'shop-store', 'shop-sort']) $('#' + id).addEventListener('input', () => { shopPage = 0; renderShop(); });
 $('#shop-previous').addEventListener('click', () => { shopPage--; renderShop(); });
 $('#shop-next').addEventListener('click', () => { shopPage++; renderShop(); });
 for (const role of ['vendor', 'admin']) for (const field of ['query', 'state']) $('#' + role + '-' + field).addEventListener('input', () => { tablePages[role] = 0; renderTable(role); });

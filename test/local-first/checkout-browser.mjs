@@ -1,3 +1,4 @@
+import { verifyDashboardGrid } from './dashboard-layout-browser.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -9,8 +10,31 @@ export async function checkSandboxCheckout({ browser, url, output, record, remot
   context.on('request', request => network.push({ url: request.url(), method: request.method() }));
   const page = await context.newPage(); page.on('pageerror', error => errors.push(error.message));
   try {
-    await page.setViewportSize({ width: 1280, height: 900 });
-    await page.goto(url + '#shop');
+    await page.goto(url);
+    const examples = page.locator('#shop-demo-shelf .agentic-dashboard-grid');
+    const filters = page.getByRole('group', { name: 'Filter example offers by type' });
+    await expect(examples).toBeVisible();
+    await verifyDashboardGrid(examples, { columns: 1, count: 3 });
+    const digital = filters.getByRole('button', { name: 'Digital', exact: true });
+    await digital.press('Enter');
+    await expect(digital).toHaveAttribute('aria-pressed', 'true');
+    const colors = await filters.evaluate(group => {
+      const reference = document.createElement('span');
+      reference.style.color = 'var(--agentic-control-selected-foreground)';
+      reference.style.backgroundColor = 'var(--agentic-control-selected-background)';
+      group.append(reference);
+      const { color, backgroundColor } = getComputedStyle(reference);
+      reference.remove();
+      return { color, backgroundColor };
+    });
+    await expect(digital).toHaveCSS('color', colors.color);
+    await expect(digital).toHaveCSS('background-color', colors.backgroundColor);
+    await expect(filters.getByRole('button', { name: 'All', exact: true })).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    await expect(examples.locator('[data-demo-type]:visible')).toHaveCount(1);
+    await expect(page.locator('#shop-count')).toHaveText('1 of 3 examples');
+    await filters.getByRole('button', { name: 'All', exact: true }).click();
+    await page.setViewportSize({ width: 1351, height: 900 });
+    await verifyDashboardGrid(examples, { columns: 3, count: 3 });
     const shell = async role => ({
       header: await page.locator('.topbar').boundingBox(),
       sidebar: await page.locator('#shop-navigation').boundingBox(),
