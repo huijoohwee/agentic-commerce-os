@@ -1,3 +1,4 @@
+import { createIconButton } from './toolbar-icons.js'
 import { getOrCreateSingleton, releaseSingleton } from './workspace-singleton.js'
 
 const createElement = (tag, text, className) => {
@@ -93,37 +94,35 @@ function createWorkspaceHeader() {
   const toolbar = createElement('nav', undefined, 'agentic-toolbar')
   toolbar.setAttribute('aria-label', 'Workspace Toolbar')
   toolbar.dataset.scroll = ''
-  const toggle = createElement('button', undefined, 'agentic-toolbar-item')
-  toggle.dataset.iconOnly = ''
-  toggle.id = 'workspace-navigation-toggle'; toggle.type = 'button'
-  toggle.setAttribute('aria-label', 'Hide navigation'); toggle.setAttribute('aria-expanded', 'true')
+  const toggle = createIconButton('Hide navigation', createIcon('icon-navigation'))
+  toggle.id = 'workspace-navigation-toggle'
+  toggle.dataset.dockEdge = 'start'
+  toggle.setAttribute('aria-expanded', 'true')
   toggle.setAttribute('aria-controls', 'shop-navigation')
   toggle.title = 'Hide navigation'
-  const icon = createIcon('icon-navigation')
-  icon.classList.add('agentic-icon')
-  icon.setAttribute('fill', 'none')
-  icon.setAttribute('stroke', 'currentColor')
-  toggle.append(icon)
   const brand = createElement('a', undefined, 'agentic-toolbar-item')
   brand.href = '#shop'
   brand.setAttribute('aria-label', 'Airvio Commerce home')
   brand.append(createElement('strong', 'airvio'), createElement('small', 'Commerce'))
-  toolbar.append(brand, toggle)
+  toolbar.append(brand)
   for (const [role, definition] of Object.entries(WORKSPACE_ROLES)) {
     const link = createElement('a', definition.label, 'agentic-toolbar-item')
     link.href = '#' + role
     link.dataset.workspaceDestination = role
     toolbar.append(link)
   }
-  const agent = createElement('button', undefined, 'agentic-toolbar-item')
-  agent.id = 'workspace-agent-open'; agent.type = 'button'; agent.setAttribute('aria-label', 'Agent tools')
-  agent.setAttribute('aria-haspopup', 'dialog'); agent.setAttribute('aria-expanded', 'false'); agent.hidden = true
-  agent.innerHTML = '<span role="img" aria-label="Command key icon">⌘</span>'
-  toolbar.append(agent)
+  const agent = createIconButton('Agent tools', createIcon('icon-command'))
+  agent.id = 'workspace-agent-open'
+  agent.dataset.dockEdge = 'end'
+  agent.title = 'Agent tools'
+  agent.setAttribute('aria-controls', 'workspace-agent-drawer')
+  agent.setAttribute('aria-haspopup', 'dialog')
+  agent.setAttribute('aria-expanded', 'false')
+  agent.hidden = true
   const status = createElement('span', undefined, 'agentic-toolbar-status'); status.id = 'connection'
   const statusLabel = createElement('span', 'Local workspace · Online', 'workspace-status-label')
   status.append(statusLabel); status.title = statusLabel.textContent
-  toolbar.append(status); header.append(toolbar); mount.replaceWith(header)
+  toolbar.append(status); header.append(toggle, toolbar, agent); mount.replaceWith(header)
   return header
 }
 

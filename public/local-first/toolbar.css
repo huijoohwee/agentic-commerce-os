@@ -16,6 +16,22 @@
     var(--agentic-toolbar-inset) max(var(--agentic-toolbar-inset), env(safe-area-inset-left));
   pointer-events: none;
 }
+/* Equal side tracks keep the toolbar centered when one action is hidden. */
+.agentic-toolbar-dock:has(> [data-dock-edge]) {
+  grid-template-columns: var(--agentic-control-height) minmax(0, 1fr) var(--agentic-control-height);
+  align-items: center;
+  column-gap: var(--agentic-toolbar-inset);
+}
+.agentic-toolbar-dock:has(> [data-dock-edge]) > .agentic-toolbar { grid-area: 1 / 2; }
+.agentic-toolbar-dock > [data-dock-edge="start"] { grid-area: 1 / 1; }
+.agentic-toolbar-dock > [data-dock-edge="end"] { grid-area: 1 / 3; }
+.agentic-toolbar, .agentic-toolbar-dock > [data-dock-edge] {
+  background: var(--kg-panel-bg, var(--agentic-base-surface, Canvas));
+  border: 1px solid var(--kg-border, var(--agentic-base-border, ButtonBorder));
+  border-radius: var(--island-radius, .5rem);
+  box-shadow: var(--island-shadow, 0 1px 2px rgb(0 0 0 / .04));
+  pointer-events: auto;
+}
 .agentic-toolbar {
   box-sizing: border-box;
   display: flex;
@@ -27,11 +43,6 @@
   gap: var(--kg-workspace-toolbar-gap, .25rem);
   padding: 0 var(--kg-toolbar-compact-pad-x, .5rem);
   color: var(--kg-text-primary, var(--agentic-base-text, CanvasText));
-  background: var(--kg-panel-bg, var(--agentic-base-surface, Canvas));
-  border: 1px solid var(--kg-border, var(--agentic-base-border, ButtonBorder));
-  border-radius: var(--island-radius, .5rem);
-  box-shadow: var(--island-shadow, 0 1px 2px rgb(0 0 0 / .04));
-  pointer-events: auto;
 }
 .agentic-toolbar[data-scroll] {
   overflow-x: auto;
@@ -60,6 +71,7 @@
 }
 .agentic-toolbar-item[data-icon-only] {
   flex: none;
+  user-select: none;
   inline-size: var(--agentic-control-height);
   block-size: var(--agentic-control-height);
   padding: 0;

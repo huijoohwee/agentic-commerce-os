@@ -20,7 +20,7 @@ const ASSET_PATHS = new Map([
     '/style.css', '/sw.js', '/workflow.js', '/workspace-capabilities.js', '/workspace-tools.js',
   ].map(path => [path, path] as [string, string]),
   ...(import.meta.commerceLiveCheckout === false ? [] : [
-    '/favicon.svg', '/workspace-tour.js', '/workspace-navigation.js', '/workspace-singleton.js',
+    '/favicon.svg', '/workspace-tour.js', '/workspace-navigation.js', '/toolbar-icons.js', '/workspace-singleton.js',
     '/shopper-demo-detail.js', '/commerce-theme.css', '/workspace-shell.css', '/toolbar.css', '/sme-business-pack.js',
     '/sme-business-pack.css', '/sme-business-pack-core.js', '/sme-workflow-editor.js', '/sme-pack-dictionary.js', '/sme-pack-business-plan.js',
     '/housing-comparison.js', '/housing-engine.js', '/housing-sample.js', '/housing-comparison.css',
