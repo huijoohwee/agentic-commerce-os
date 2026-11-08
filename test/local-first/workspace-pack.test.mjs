@@ -35,7 +35,7 @@ test('public profile binds the pinned Graph artifact, exact assets and source wi
     assert.equal(await result.text(), asset); assert.equal(result.headers.get('cache-control'), 'no-store, no-transform');
   }
   assert.deepEqual(authoredAssets(revision).filter(asset => asset.path.startsWith('services/')).map(asset => asset.path).sort(),
-    ['services/workspace-pack/', 'services/workspace-pack/workspace-pack.console.js', 'services/workspace-pack/workspace-pack.css', 'services/workspace-pack/workspace-pack.js', 'services/workspace-pack/workspace-pack.simulation.js']);
+    ['services/workspace-pack/', 'services/workspace-pack/floating-panel.css', 'services/workspace-pack/workspace-pack.console.js', 'services/workspace-pack/workspace-pack.css', 'services/workspace-pack/workspace-pack.js', 'services/workspace-pack/workspace-pack.simulation.js']);
 });
 test('edge REST produces exact four-file output and refuses malformed, stale, executable and oversized input', async () => {
   const result = await worker.fetch(post(input), env); assert.equal(result.status, 200); verifyPack(await result.json());
