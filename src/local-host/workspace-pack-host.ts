@@ -16,6 +16,8 @@ export async function startWorkspacePackHost(options: Options) {
   const assets = new Map(await Promise.all([
     ['/', 'workspace-pack.html', 'text/html; charset=utf-8'],
     ['/dropdown-menus.js', 'dropdown-menus.js', 'application/javascript; charset=utf-8'],
+    ['/graph-ui-tokens.css', 'graph-ui-tokens.css', 'text/css; charset=utf-8'],
+    ['/commerce-theme.css', 'commerce-theme.css', 'text/css; charset=utf-8'],
     ['/shared-ui-profile.css', 'shared-ui-profile.css', 'text/css; charset=utf-8'],
     ['/workspace-pack.js', 'workspace-pack.js', 'application/javascript; charset=utf-8'],
     ['/workspace-pack.simulation.js', 'workspace-pack.simulation.js', 'application/javascript; charset=utf-8'],

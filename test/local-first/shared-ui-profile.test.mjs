@@ -32,10 +32,22 @@ test('workspace pack pickers share the owner selection rule', () => {
   assert.doesNotMatch(css, /\.agentic-(?:toggle-group|control-selected)\b|--agentic-control-selected-[\w-]+\s*:|\[aria-pressed=true\]/);
 });
 
-test('the included file cards use the shared responsive dashboard grid', () => {
+test('Workspace Pack takes panel geometry and colors from the pinned stylesheets', () => {
   const html = fs.readFileSync('public/local-first/workspace-pack.html', 'utf8');
   const css = fs.readFileSync('public/local-first/workspace-pack.css', 'utf8');
+  const owners = [...css.matchAll(/@import\s+([^;]+);/gi)].map(match => match[1].trim());
+  assert.deepEqual(owners, ['"./graph-ui-tokens.css"', '"./commerce-theme.css"', '"./shared-ui-profile.css"']);
+  assert.match(html, /id="builder" class="agentic-dashboard-layout"/);
+  assert.match(html, /class="agentic-dashboard-region">\s*<div class="agentic-dashboard-grid" data-columns="2">/);
   assert.match(html, /class="formats agentic-dashboard-region"/);
   assert.match(html, /class="format-grid agentic-dashboard-grid" data-columns="4"/);
-  assert.doesNotMatch(css, /\.format-grid\s*\{|\.agentic-dashboard-[\w-]+/);
+  assert.doesNotMatch(html, /\sstyle\s*=/i, 'local inline styles bypass the owner');
+  assert.doesNotMatch(css, /(?:[;{]\s*--[\w-]+\s*:|\bcolor-scheme\s*:|\.agentic-[\w-]+|\.(?:workspace|panel|format-grid)\s*\{)/,
+    'the consumer must not declare theme tokens or replace the shared layout');
+  for (const [, value] of css.matchAll(/(?:^|[;{])\s*(?:color|background(?:-color)?|border(?:-(?:top|bottom|left|right|(?:block|inline)(?:-(?:start|end))?))?(?:-color)?|outline(?:-color)?|box-shadow)\s*:\s*([^;}]+)/gm)) {
+    const remainder = value.replace(/var\(--(?:commerce|kg|agentic)-[\w-]+\)/g, '')
+      .replace(/color-mix\(in srgb,\s*\d+%, transparent\)/g, '')
+      .replace(/(?:\b(?:none|solid|transparent|currentColor)\b|[\d.]+(?:px|rem|%)?|\s)/g, '');
+    assert.equal(remainder, '', 'use the owner palette for ' + value);
+  }
 });
