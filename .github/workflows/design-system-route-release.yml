@@ -97,7 +97,7 @@ jobs:
           set -euo pipefail
           node scripts/design-system-release.mjs route-baseline agentic-design-system-edge-production \
             > "$EVIDENCE_DIR/route-baseline.json"
-          test "$(node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).state)' "$EVIDENCE_DIR/route-baseline.json")" = absent
+          node scripts/design-system-predecessor.mjs capture "$EVIDENCE_DIR"
 
       - name: Validate both Worker bundles before deployment
         run: |
@@ -232,6 +232,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           set -euo pipefail
+          node scripts/design-system-predecessor.mjs check-pages "$EVIDENCE_DIR"
           ./node_modules/.bin/wrangler pages deploy "$PAYLOAD_DIR" \
             --project-name=agentic-design-system --branch=main \
             --commit-hash="$CANDIDATE_SHA" --commit-message="Design System Production candidate $CANDIDATE_SHA" --commit-dirty=false \
@@ -254,6 +255,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           set -euo pipefail
+          node scripts/design-system-predecessor.mjs check-worker "$EVIDENCE_DIR"
           ./node_modules/.bin/wrangler deploy --config wrangler.design-system.jsonc --env production \
             --var "PAGES_ORIGIN:$PRODUCTION_PAGES_ORIGIN" \
             --var "DESIGN_SYSTEM_SOURCE_REVISION:$SOURCE_REVISION" \
@@ -320,6 +322,10 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           set -euo pipefail
+          if [[ -f "$EVIDENCE_DIR/prior-production.json" ]]; then
+            node scripts/design-system-predecessor.mjs restore "$EVIDENCE_DIR"
+            exit 0
+          fi
           node --input-type=module - "$EVIDENCE_DIR/route-baseline.json" "$EVIDENCE_DIR/route-rollback-receipt.json" <<'NODE'
           import fs from 'node:fs';
           const baseline = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
