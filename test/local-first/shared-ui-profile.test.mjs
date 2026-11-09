@@ -24,6 +24,17 @@ test('Commerce consumes the pinned Design System icon size from its offline shel
   }
 })
 
+test('SME workflow actions reuse the shared responsive control geometry', () => {
+  const css = fs.readFileSync('public/local-first/sme-business-pack.css', 'utf8');
+  const rule = css.match(/#sme \.workflow-toolbar button:not\(\.agentic-form-control\)\s*\{([^}]*)\}/u)?.[1];
+  assert.ok(rule, 'workflow actions must keep one owning rule');
+  assert.match(rule, /block-size:\s*var\(--agentic-control-height\)/u);
+  assert.match(rule, /min-block-size:\s*var\(--agentic-control-height\)/u);
+  assert.match(rule, /padding-block:\s*0/u);
+  assert.match(rule, /border-radius:\s*var\(--agentic-control-radius\)/u);
+  assert.doesNotMatch(rule, /(?:min-)?height:\s*44px|padding:\s*9px\s+13px/u);
+});
+
 test('housing priorities use the offline checkbox group with no local layout override', () => {
   const housing = fs.readFileSync('public/local-first/housing-comparison.js', 'utf8');
   assert.match(housing, /<fieldset class="agentic-checkbox-group housing-field-wide"><legend>Priorities/);
