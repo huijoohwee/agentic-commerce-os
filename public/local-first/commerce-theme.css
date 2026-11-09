@@ -37,7 +37,7 @@
   --commerce-surface: #ffffff;
   --commerce-surface-subtle: #eef3fb;
   --commerce-text-muted: #627391;
-  --commerce-touch-target: var(--agentic-control-height);
+  --commerce-touch-target: 44px;
   font-family: var(--commerce-font-family);
   font-synthesis: none;
 }

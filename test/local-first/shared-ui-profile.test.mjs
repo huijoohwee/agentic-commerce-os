@@ -52,7 +52,7 @@ test('Commerce actions and Workspace Pack reuse shared responsive control geomet
   assert.doesNotMatch(consoleOverride, /(?:block-size|height|padding|gap|border-radius)\s*:/u);
 
   const theme = fs.readFileSync('public/local-first/commerce-theme.css', 'utf8');
-  assert.match(theme, /--commerce-touch-target:\s*var\(--agentic-control-height\)/u);
+  assert.match(theme, /--commerce-touch-target:\s*44px/u);
   const pack = fs.readFileSync('public/local-first/workspace-pack.css', 'utf8');
   for (const [label, pattern] of [
     ['pack actions', /\.button,button\[type=submit\],#cancel,#confirm-request,#edit-request\s*\{([^}]*)\}/u],
