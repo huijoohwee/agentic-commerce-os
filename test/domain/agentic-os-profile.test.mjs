@@ -5,7 +5,7 @@ import { validateRepositoryProfile } from 'agentic-os';
 
 const root = new URL('../../', import.meta.url);
 
-test('repository profile pins protected ADLC and bounded worktree quarantine', async () => {
+test('repository profile pins protected ADLC and exact clean-worktree removal', async () => {
   const profile = JSON.parse(await readFile(new URL('.agentic-os.json', root), 'utf8'));
   const validated = validateRepositoryProfile(profile);
 
@@ -18,8 +18,8 @@ test('repository profile pins protected ADLC and bounded worktree quarantine', a
   assert.deepEqual(profile.requiredChecks, ['Integration Gate']);
   assert.deepEqual(profile.authority, { runtime: 'consumer', release: 'consumer' });
   assert.deepEqual(profile.cleanup, {
-    worktreeProjection: 'quarantine',
-    worktreeRegistration: 'quarantine',
+    worktreeProjection: 'remove-clean',
+    worktreeRegistration: 'remove-clean',
     remoteTrackingRef: 'retain',
     localBranch: 'retain',
     remoteBranch: 'retain',
@@ -27,7 +27,7 @@ test('repository profile pins protected ADLC and bounded worktree quarantine', a
   });
   assert.ok(profile.capabilities.includes('protected-integration:pull-request'));
   assert.ok(profile.capabilities.includes('integration-method:squash'));
-  assert.ok(profile.capabilities.includes('quarantine-worktree-cleanup-opt-in'));
+  assert.ok(profile.capabilities.includes('remove-clean-worktree-cleanup-opt-in'));
   assert.ok(!profile.capabilities.includes('retain-all-cleanup'));
 });
 
@@ -35,7 +35,7 @@ test('package scripts and dependency pin the exact governing runtime', async () 
   const pkg = JSON.parse(await readFile(new URL('package.json', root), 'utf8'));
 
   assert.equal(pkg.devDependencies['agentic-os'],
-    'https://codeload.github.com/huijoohwee/agentic-os/tar.gz/f758c135a4634ae25df9d82b41db6ed58c06955f');
+    'https://codeload.github.com/huijoohwee/agentic-os/tar.gz/f2bf51a73169dc6cf84a0d7b8769aca85e5c9722');
   const lock = JSON.parse(await readFile(new URL('package-lock.json', root), 'utf8'));
   assert.equal(lock.packages[''].devDependencies['agentic-os'], pkg.devDependencies['agentic-os']);
   assert.equal(lock.packages['node_modules/agentic-os'].resolved, pkg.devDependencies['agentic-os']);
