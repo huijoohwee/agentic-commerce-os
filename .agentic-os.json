@@ -24,9 +24,9 @@
     "host-qualified-repository-pin",
     "integration-method:squash",
     "protected-integration:pull-request",
-    "remove-clean-worktree-cleanup-opt-in",
     "read-only-repository-observation",
     "read-only-review-observation",
+    "remove-clean-worktree-cleanup-opt-in",
     "shallow-observation-default"
   ],
   "authority": {
@@ -34,12 +34,12 @@
     "release": "consumer"
   },
   "cleanup": {
-    "worktreeProjection": "remove-clean",
-    "worktreeRegistration": "remove-clean",
-    "remoteTrackingRef": "retain",
     "localBranch": "retain",
     "remoteBranch": "retain",
-    "unreachableObjects": "retain"
+    "remoteTrackingRef": "retain",
+    "unreachableObjects": "retain",
+    "worktreeProjection": "remove-clean",
+    "worktreeRegistration": "remove-clean"
   },
   "profileDigest": "59151929bd3a499837f236f65f33e099b1688fc8b5ca1e35618d567478e41433"
 }
