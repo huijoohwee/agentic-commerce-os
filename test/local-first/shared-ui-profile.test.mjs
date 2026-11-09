@@ -7,8 +7,8 @@ import { verifySharedUiIconProfile } from '../../scripts/local-first-release/art
 test('Commerce consumes the pinned Design System icon size from its offline shell assets', async () => {
   const pin = verifySharedUiIconProfile();
   assert.equal(pin.owner, 'github.com/huijoohwee/agentic-design-system');
-  assert.equal(pin.sourceRevision, 'f73934c884a6ae8d1c7d0521408014dde20a6c2d');
-  assert.equal(pin.registryRevision, '4ef5bf3f2371574ae159a4d947691716d5904c63');
+  assert.equal(pin.sourceRevision, '30e403a55bd9f5b6c7e58a7cc7de632e1b2714ae');
+  assert.equal(pin.registryRevision, '058c56f18f2dab16b46a20ac12cdc4243612bf28');
   const profile = fs.readFileSync('public/local-first/shared-ui-profile.css', 'utf8');
   assert.match(profile, /stroke-width: var\(--agentic-icon-stroke-width\)/);
   assert.match(profile, /--agentic-font-size-body: 0\.875rem;/);
@@ -147,5 +147,18 @@ test('Commerce leaves dashboard primitive and column styles to the pinned Design
   for (const file of ['style.css','workspace-shell.css','workspace-pack.css','sme-business-pack.css','housing-comparison.css']) {
     const css = fs.readFileSync('public/local-first/' + file, 'utf8').replaceAll(':where(:not([data-dashboard-primitive]))', '');
     assert.doesNotMatch(css, /\[data-dashboard-(?:primitive|columns-for)\b/, file);
+  }
+});
+
+test('all Commerce form borders come from the pinned shared control token', () => {
+  const style = fs.readFileSync('public/local-first/style.css', 'utf8');
+  const profile = fs.readFileSync('public/local-first/shared-ui-profile.css', 'utf8');
+  assert.match(profile, /--agentic-control-border:\s*1px solid var\(--agentic-base-border,[^;]+\);/u);
+  assert.match(profile, /\.agentic-form-control,[\s\S]+?\.agentic-select-trigger\s*\{[^}]*border:\s*var\(--agentic-control-border\)/u);
+  const controlRules = [...style.matchAll(/([^{}]+)\{([^{}]*)\}/gu)]
+    .filter(([, selector]) => /\b(?:input|textarea|select)\b|\.agentic-select-trigger/u.test(selector))
+    .filter(([, selector]) => !/\.file-input\b/u.test(selector));
+  for (const [, selector, declarations] of controlRules) {
+    assert.doesNotMatch(declarations, /\bborder(?:-color)?\s*:/u, `${selector.trim()} must inherit its border from the shared utility`);
   }
 });
