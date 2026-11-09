@@ -35,6 +35,44 @@ test('SME workflow actions reuse the shared responsive control geometry', () => 
   assert.doesNotMatch(rule, /(?:min-)?height:\s*44px|padding:\s*9px\s+13px/u);
 });
 
+test('Commerce actions and Workspace Pack reuse shared responsive control geometry', () => {
+  const style = fs.readFileSync('public/local-first/style.css', 'utf8');
+  const primary = style.match(/button:not\(\.agentic-form-control\):where\(:not\(\.agentic-toggle-group > button, \.agentic-toolbar-item\)\),\.button\{([^}]*)\}/u)?.[1];
+  assert.ok(primary, 'storefront actions must keep one owning rule');
+  for (const declaration of [
+    /block-size:\s*var\(--agentic-control-height\)/u,
+    /min-block-size:\s*var\(--agentic-control-height\)/u,
+    /padding-block:\s*0/u,
+    /padding-inline:\s*var\(--agentic-control-padding-inline\)/u,
+    /border-radius:\s*var\(--agentic-control-radius\)/u,
+  ]) assert.match(primary, declaration);
+  assert.doesNotMatch(primary, /44px|10px|11px\s+18px/u);
+  const consoleOverride = style.match(/\.console-mode \.button,\.console-mode button:not\(\.agentic-form-control\):where\(:not\(\.agentic-toggle-group > button, \.agentic-toolbar-item\)\)\{([^}]*)\}/u)?.[1];
+  assert.ok(consoleOverride, 'console typography must remain owned');
+  assert.doesNotMatch(consoleOverride, /(?:block-size|height|padding|gap|border-radius)\s*:/u);
+
+  const theme = fs.readFileSync('public/local-first/commerce-theme.css', 'utf8');
+  assert.match(theme, /--commerce-touch-target:\s*var\(--agentic-control-height\)/u);
+  const pack = fs.readFileSync('public/local-first/workspace-pack.css', 'utf8');
+  for (const [label, pattern] of [
+    ['pack actions', /\.button,button\[type=submit\],#cancel,#confirm-request,#edit-request\s*\{([^}]*)\}/u],
+    ['review action', /\.console-request button\s*\{([^}]*)\}/u],
+    ['simulation action', /\.simulation-run\s*\{([^}]*)\}/u],
+    ['format action', /\.format-open\s*\{([^}]*)\}/u],
+  ]) {
+    const rule = pack.match(pattern)?.[1];
+    assert.ok(rule, `${label} must keep one owning rule`);
+    assert.match(rule, /block-size:\s*var\(--agentic-control-height\)/u);
+    assert.match(rule, /min-block-size:\s*var\(--agentic-control-height\)/u);
+    assert.match(rule, /(?:padding-block:\s*0|padding:\s*0)/u);
+  }
+  const pill = pack.match(/\.pill\s*\{([^}]*)\}/u)?.[1];
+  assert.ok(pill, 'status pills must keep one owning rule');
+  assert.match(pill, /min-block-size:\s*var\(--agentic-control-height\)/u);
+  assert.match(pill, /padding-block:\s*0/u);
+  assert.match(pack, /button:where\(:not\(\[aria-pressed\], nav button\)\),\.button,summary\s*\{\s*min-block-size:\s*var\(--agentic-control-height\)/u);
+});
+
 test('housing priorities use the offline checkbox group with no local layout override', () => {
   const housing = fs.readFileSync('public/local-first/housing-comparison.js', 'utf8');
   assert.match(housing, /<fieldset class="agentic-checkbox-group housing-field-wide"><legend>Priorities/);
