@@ -29,3 +29,8 @@ footer a { display: inline-flex; min-block-size: var(--agentic-control-height); 
 .catalog-meta dt { margin-block-start: var(--commerce-space-xs); }
 .catalog-meta dd, .catalog-evidence { color: var(--kg-text-secondary); overflow-wrap: anywhere; }
 .catalog-evidence { margin-block: var(--commerce-space-xs); padding-inline-start: var(--commerce-space-lg); }
+
+/* Let grid gutters resolve to their named section while keeping each article clickable. */
+:is(.section-index, .icon-library) > ul,
+:is(.section-index, .icon-library) > ul > li { pointer-events: none; }
+:is(.section-index, .icon-library) > ul > li > article { pointer-events: auto; }

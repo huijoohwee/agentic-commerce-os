@@ -18,35 +18,35 @@
 <body class="agentic-form-controls">
   <main class="agentic-dashboard-layout">
     <header class="agentic-dashboard-header">
-      <div>
+      <hgroup>
         <p class="agentic-dashboard-observation">Ownership registry · Read only</p>
         <h1 id="top" data-dashboard-primitive="heading">Agentic Design System</h1>
         <p data-dashboard-primitive="text">Find the owner, source revision, and reuse terms for a design token.</p>
-      </div>
+      </hgroup>
     </header>
     <nav id="catalog-navigation" class="agentic-toolbar" data-scroll aria-label="Catalog sections"></nav>
     <section class="agentic-dashboard-region" aria-labelledby="records-heading">
       <h2 id="records-heading">Owners and candidate profiles</h2>
-      <div class="registry-search">
+      <search class="registry-search" aria-label="Search the registry">
         <label for="catalog-search">Search the registry</label>
         <input id="catalog-search" type="search" autocomplete="off" spellcheck="false" aria-controls="catalog-grid" aria-describedby="search-help" placeholder="Token key, section, owner, or scope">
         <p id="search-help" class="agentic-dashboard-observation">Use / for a section, @ for an owner, or # for a product scope.</p>
-      </div>
+      </search>
       <p id="search-status" class="agentic-dashboard-description" aria-live="polite">Loading the local registry…</p>
-      <ul id="catalog-grid" class="agentic-dashboard-grid" data-columns="2" role="list" aria-label="Native owners and candidate token profiles"></ul>
+      <ul id="catalog-grid" class="agentic-dashboard-grid" data-columns="2" aria-label="Native owners and candidate token profiles"></ul>
       <p id="catalog-empty" class="agentic-dashboard-card" hidden>No matching registry records.</p>
     </section>
     <section class="section-index agentic-dashboard-region" aria-labelledby="section-index-heading" aria-busy="true" hidden>
       <h2 id="section-index-heading">Registry sections</h2>
-      <div class="agentic-dashboard-grid" data-columns="3">
-        <article class="agentic-dashboard-card" id="tokens" tabindex="-1"><h3>Tokens</h3><p class="agentic-dashboard-description">Each key is pinned to its source revision.</p></article>
-        <article class="agentic-dashboard-card" id="profiles" tabindex="-1"><h3>Profiles</h3><p class="agentic-dashboard-description">Inspect profile identity, rights evidence, and consumer pins.</p></article>
-        <article class="agentic-dashboard-card" id="guidelines" tabindex="-1"><h3>Guidelines</h3><p class="agentic-dashboard-description">Each key has one owner. Duplicate definitions and overrides fail validation.</p></article>
-        <article class="agentic-dashboard-card" id="accessibility" tabindex="-1"><h3>Accessibility</h3><p class="agentic-dashboard-description">Use the keyboard to search, navigate sections, and expand token values.</p></article>
-        <article class="agentic-dashboard-card" id="components" tabindex="-1"><h3>Components</h3><p class="agentic-dashboard-description">Product repositories own their component behavior and APIs.</p><details data-dashboard-primitive="disclosure"><summary>Dashboard primitives</summary><hr data-dashboard-primitive="divider"><div data-dashboard-primitive="container" data-columns="2"><h4 data-dashboard-primitive="heading">Heading</h4><p data-dashboard-primitive="text">Text follows the available column width.</p></div></details><button type="button" class="agentic-icon-pill" popovertarget="panel-preview">Preview FloatingPanel</button></article>
-        <article class="agentic-dashboard-card" id="examples" tabindex="-1"><h3>Examples</h3><p class="agentic-dashboard-description">Search for dashboard.card-gap to inspect the spacing used by these cards.</p></article>
-        <article class="agentic-dashboard-card" id="releases" tabindex="-1"><h3>Releases</h3><p class="agentic-dashboard-description">Public records require an owner, grant, source digest, and review evidence.</p></article>
-      </div>
+      <ul class="agentic-dashboard-grid" data-columns="3" aria-label="Registry section previews">
+        <li><article class="agentic-dashboard-card" id="tokens" tabindex="-1"><h3>Tokens</h3><p class="agentic-dashboard-description">Each key is pinned to its source revision.</p></article></li>
+        <li><article class="agentic-dashboard-card" id="profiles" tabindex="-1"><h3>Profiles</h3><p class="agentic-dashboard-description">Inspect profile identity, rights evidence, and consumer pins.</p></article></li>
+        <li><article class="agentic-dashboard-card" id="guidelines" tabindex="-1"><h3>Guidelines</h3><p class="agentic-dashboard-description">Each key has one owner. Duplicate definitions and overrides fail validation.</p></article></li>
+        <li><article class="agentic-dashboard-card" id="accessibility" tabindex="-1"><h3>Accessibility</h3><p class="agentic-dashboard-description">Use the keyboard to search, navigate sections, and expand token values.</p></article></li>
+        <li><article class="agentic-dashboard-card" id="components" tabindex="-1"><h3>Components</h3><p class="agentic-dashboard-description">Product repositories own their component behavior and APIs.</p><details data-dashboard-primitive="disclosure"><summary>Dashboard primitives</summary><hr data-dashboard-primitive="divider"><section data-dashboard-primitive="container" data-columns="2" aria-label="Dashboard primitive example"><h4 data-dashboard-primitive="heading">Heading</h4><p data-dashboard-primitive="text">Text follows the available column width.</p></section></details><button type="button" class="agentic-icon-pill" popovertarget="panel-preview">Preview FloatingPanel</button></article></li>
+        <li><article class="agentic-dashboard-card" id="examples" tabindex="-1"><h3>Examples</h3><p class="agentic-dashboard-description">Search for dashboard.card-gap to inspect the spacing used by these cards.</p></article></li>
+        <li><article class="agentic-dashboard-card" id="releases" tabindex="-1"><h3>Releases</h3><p class="agentic-dashboard-description">Public records require an owner, grant, source digest, and review evidence.</p></article></li>
+      </ul>
     </section>
     <footer hidden>
       <p id="release-summary" class="agentic-dashboard-description" hidden>Loading registry identity and rights status…</p>
@@ -55,17 +55,17 @@
       <a href="./THIRD-PARTY-NOTICES.txt">Third-party notices</a>
     </footer>
   </main>
-  <div id="panel-preview" class="agentic-floating-panel-dock" popover>
-    <aside class="agentic-base-floating-panel" aria-labelledby="panel-title">
-      <div class="agentic-base-floating-panel-inner agentic-base-floating-panel-expanded">
+  <section id="panel-preview" class="agentic-floating-panel-dock" popover aria-labelledby="panel-title">
+    <article class="agentic-base-floating-panel">
+      <section class="agentic-base-floating-panel-inner agentic-base-floating-panel-expanded">
         <header class="agentic-base-floating-panel-header">
           <h2 class="agentic-floating-panel-title" id="panel-title">FloatingPanel</h2>
-          <button type="button" class="agentic-base-floating-panel-close" popovertarget="panel-preview" popovertargetaction="hide" aria-label="Close FloatingPanel" autofocus><svg class="agentic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+          <button type="button" class="agentic-base-floating-panel-close" popovertarget="panel-preview" popovertargetaction="hide" aria-label="Close FloatingPanel" autofocus><svg class="agentic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" role="img" aria-label="Close icon"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
         </header>
         <section class="agentic-floating-panel-body"><p>The header stays in place while the content scrolls. Graph’s tool panel and the Workspace Pack Console use this shell.</p></section>
-      </div>
-    </aside>
-  </div>
-  <script type="module" src="./app.js?v=registry-toolbar-1"></script>
+      </section>
+    </article>
+  </section>
+  <script type="module" src="./app.js?v=registry-semantic-cards-3"></script>
 </body>
 </html>

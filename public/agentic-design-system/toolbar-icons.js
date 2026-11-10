@@ -18,7 +18,8 @@ export function createIconButton(label, glyph) {
   button.className = className;
   for (const [name, value] of Object.entries(attributes)) button.setAttribute(name, value);
   glyph.setAttribute('class', getIconSizeClass());
-  glyph.setAttribute('aria-hidden', 'true');
+  glyph.setAttribute('role', 'img');
+  glyph.setAttribute('aria-label', `${label} icon`);
   glyph.setAttribute('focusable', 'false');
   glyph.setAttribute('stroke', 'currentColor');
   glyph.setAttribute('fill', 'none');

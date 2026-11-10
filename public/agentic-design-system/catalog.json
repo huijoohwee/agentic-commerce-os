@@ -158,7 +158,7 @@
         "id": "agentic-design-system",
         "name": "Agentic Design System",
         "repository": "github.com/huijoohwee/agentic-design-system",
-        "revision": "30e403a55bd9f5b6c7e58a7cc7de632e1b2714ae",
+        "revision": "267cdb31047b02d4f54ea6708fb2518a8a2a57f4",
         "scopes": [
           "shared-ui"
         ],
@@ -168,7 +168,7 @@
           {
             "path": "site/tokens/shared-ui-profile.json",
             "kind": "native",
-            "digest": "sha256:26e70f6d765e97d4dae02175d312c50b9038b1448d5710b8c78102ae4493bba3"
+            "digest": "sha256:6bc322f50d5c6cdfb82dc8b472e0ea3a440cb51d1379aadd0a204738c615d2c5"
           }
         ]
       }
@@ -287,15 +287,15 @@
         "name": "Shared UI profile",
         "owner": "github.com/huijoohwee/agentic-design-system",
         "repository": "github.com/huijoohwee/agentic-design-system",
-        "revision": "30e403a55bd9f5b6c7e58a7cc7de632e1b2714ae",
+        "revision": "267cdb31047b02d4f54ea6708fb2518a8a2a57f4",
         "source": "./tokens/shared-ui-profile.json",
-        "digest": "sha256:26e70f6d765e97d4dae02175d312c50b9038b1448d5710b8c78102ae4493bba3",
+        "digest": "sha256:6bc322f50d5c6cdfb82dc8b472e0ea3a440cb51d1379aadd0a204738c615d2c5",
         "scope": [
           "shared-interface"
         ],
         "status": "candidate",
         "rights": "cleared",
-        "permissionEvidence": "User instructions on 2026-11-03, 2026-11-06 and 2026-11-07: Agentic Design System owns shared icon sizes, responsive row/toolbar heights, body typography, font families, KTV tracks and responsive dropdown/textbox geometry for Base, Graph, Commerce, and related repositories. User instruction on 2026-11-08 covers the shared Mission dashboard layout. User instruction on 2026-11-10 grants the shared control border token and utility for Base, Graph, Commerce, and related repositories.",
+        "permissionEvidence": "User instructions on 2026-11-03, 2026-11-06 and 2026-11-07: Agentic Design System owns shared icon sizes, responsive row/toolbar heights, body typography, font families, KTV tracks and responsive dropdown/textbox geometry for Base, Graph, Commerce, and related repositories. User instruction on 2026-11-08 covers the shared Mission dashboard layout. User instruction on 2026-11-10 grants the shared control border token and utility for Base, Graph, Commerce, and related repositories. User instruction on 2026-11-10 grants one shared FloatingPanel radius and shell presentation across Base, Graph, Commerce, and related repositories, with consumer overrides and competing shell variants forbidden.",
         "licenseEvidence": [
           {
             "repository": "github.com/huijoohwee/agentic-design-system",
@@ -307,7 +307,7 @@
         "consumerPins": [],
         "projection": {
           "path": "./vendor/shared-ui-profile.css",
-          "digest": "sha256:57c7048f6d255b522763cc4e7efcc57b0d1248732f0047beeb1883285f5912aa"
+          "digest": "sha256:e9fce49e9dce6cde8afa4cde9dc0e8d77ee8642cc10d4d38f66d35d3f53361b0"
         }
       }
     ]

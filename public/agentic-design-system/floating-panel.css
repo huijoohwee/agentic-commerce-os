@@ -4,7 +4,7 @@
   position: relative; display: flex; box-sizing: border-box; min-width: 0; min-height: 0;
   max-width: calc(100vw - 2 * var(--agentic-menu-edge-gap)); max-height: calc(100dvh - 2 * var(--agentic-menu-edge-gap));
   overflow: hidden; pointer-events: auto; border: 1px solid var(--base-border, var(--kg-border, ButtonBorder));
-  border-radius: var(--island-radius, var(--agentic-control-radius)); box-shadow: var(--base-shadow-overlay, var(--kg-shadow-overlay, none));
+  border-radius: var(--agentic-floating-panel-radius); box-shadow: var(--base-shadow-overlay, var(--kg-shadow-overlay, none));
   color: var(--base-text-primary, var(--kg-text-primary, CanvasText)); background: var(--base-panel, var(--kg-panel-bg, Canvas));
   font: var(--agentic-font-size-body)/var(--agentic-line-height-body) var(--agentic-font-sans);
 }
@@ -27,7 +27,7 @@
 }
 .agentic-base-floating-panel-close:hover { background: var(--kg-panel-action-bg-hover, ButtonFace); }
 .agentic-base-floating-panel-close:focus-visible { outline: var(--agentic-control-focus-width) solid var(--base-accent, var(--kg-accent, Highlight)); outline-offset: var(--agentic-control-focus-offset); }
-.agentic-base-floating-panel :where(section, article, div, p, span, small, label, output, dl, dt, dd, summary, button, input, select, textarea, li, a):not(:where(h1 *, h2 *, h3 *, h4 *, h5 *, h6 *)) {
+.agentic-base-floating-panel :where(main, header, footer, nav, search, hgroup, section, article, aside, figure, figcaption, ul, ol, p, span, small, label, output, dl, dt, dd, summary, button, input, select, textarea, li, a):not(:where(h1 *, h2 *, h3 *, h4 *, h5 *, h6 *)) {
   font-size: var(--agentic-font-size-body); line-height: var(--agentic-line-height-body);
 }
 /* Optional fixed placement. A host may reserve space below it for persistent controls. */
