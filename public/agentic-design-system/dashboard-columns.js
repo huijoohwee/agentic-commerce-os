@@ -19,7 +19,7 @@ export function applyDashboardColumns(root, layout) {
   }
 }
 export function dashboardEditorActions(...buttons) {
-  const actions = document.createElement('div');
+  const actions = document.createElement('footer');
   actions.className = 'agentic-dashboard-actions';
   for (const button of buttons) button.classList.add('agentic-form-control');
   actions.append(...buttons);

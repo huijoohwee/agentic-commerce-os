@@ -12,7 +12,16 @@ let registryContext = null;
 
 const sectionIndex = document.querySelector(".section-index");
 const lateContent = [toolStatus, offlineStatus, document.querySelector("#release-summary"), document.querySelector("footer")];
-const revealLateContent = () => lateContent.forEach(element => { element.hidden = false; });
+function revealLateContent() {
+  lateContent.forEach(element => { element.hidden = false; });
+  const fragment = location.hash.slice(1);
+  if (!fragment) return;
+  let targetId = fragment;
+  try { targetId = decodeURIComponent(fragment); } catch { /* Keep the literal fragment. */ }
+  const target = document.getElementById(targetId);
+  if (!target || target.closest("[hidden]")) return;
+  requestAnimationFrame(() => target.scrollIntoView({ block: "start" }));
+}
 
 function exactKeys(value, keys, label) {
   if (!value || typeof value !== "object" || Array.isArray(value)
@@ -46,7 +55,6 @@ function addMetadata(container, fields) {
 function catalogCard(kind, name, accent, description) {
   const card = document.createElement("li");
   card.className = "agentic-dashboard-card";
-  card.setAttribute("role", "listitem");
   card.dataset.accent = accent;
   const eyebrow = document.createElement("p");
   eyebrow.className = "agentic-dashboard-eyebrow";
@@ -137,6 +145,68 @@ function renderSection(section) {
   return card;
 }
 
+function renderIconLibrary(library) {
+  const section = document.createElement("section");
+  section.className = "agentic-dashboard-card agentic-dashboard-region icon-library";
+  section.setAttribute("aria-labelledby", "shared-icons-heading");
+  const heading = document.createElement("h2");
+  heading.id = "shared-icons-heading";
+  heading.textContent = "Shared Icon Library";
+  const list = document.createElement("ul");
+  list.className = "agentic-dashboard-grid";
+  list.dataset.columns = "4";
+  list.setAttribute("aria-label", "Select a shared icon");
+  const status = document.createElement("p");
+  status.className = "icon-library-status";
+  status.setAttribute("role", "status");
+  status.textContent = "No icon selected.";
+
+  for (const [name, nodes] of Object.entries(library.icons)) {
+    const item = document.createElement("li");
+    const card = document.createElement("article");
+    card.className = "agentic-dashboard-card icon-library-item";
+    card.setAttribute("aria-label", `${name} icon example`);
+    const figure = document.createElement("figure");
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "agentic-toolbar-item agentic-icon-pill agentic-icon-hover";
+    button.setAttribute("aria-label", `Toggle ${name} icon`);
+    button.setAttribute("aria-pressed", "false");
+    const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    for (const [attribute, value] of Object.entries({
+      viewBox: library.viewBox, fill: "none", stroke: "currentColor",
+      "stroke-linecap": "round", "stroke-linejoin": "round",
+      role: "img", "aria-label": `${name} icon`, class: "agentic-icon",
+    })) icon.setAttribute(attribute, value);
+    const title = document.createElementNS(icon.namespaceURI, "title");
+    title.textContent = `${name} icon`;
+    icon.append(title);
+    for (const [tag, attributes] of nodes) {
+      const node = document.createElementNS(icon.namespaceURI, tag);
+      for (const [attribute, value] of Object.entries(attributes)) node.setAttribute(attribute, value);
+      icon.append(node);
+    }
+    const caption = document.createElement("figcaption");
+    caption.textContent = name;
+    button.append(icon);
+    figure.append(button, caption);
+    card.append(figure);
+    item.append(card);
+    list.append(item);
+    button.addEventListener("click", () => {
+      const selected = button.getAttribute("aria-pressed") !== "true";
+      for (const candidate of list.querySelectorAll("button")) {
+        candidate.setAttribute("aria-pressed", String(candidate === button && selected));
+      }
+      status.textContent = selected ? `${name} icon selected.` : "No icon selected.";
+    });
+  }
+  const divider = document.createElement("hr");
+  divider.setAttribute("data-dashboard-primitive", "divider");
+  section.append(heading, list, divider, status);
+  return section;
+}
+
 function renderCatalog(query = "") {
   if (!registryContext) return;
   let result;
@@ -218,19 +288,7 @@ async function loadRegistry() {
   const iconBytes = await iconResponse.arrayBuffer();
   if (await sha256(iconBytes) !== catalog.iconLibrary.digest) throw new Error("Central icon digest mismatch");
   const library = JSON.parse(new TextDecoder().decode(iconBytes));
-  const iconSection = document.createElement("section"); iconSection.setAttribute("aria-label", "Shared Icon Library"); iconSection.className = "agentic-dashboard-card";
-  const iconHeading = document.createElement("h2"); iconHeading.textContent = "Shared Icon Library"; iconSection.append(iconHeading);
-  for (const [name, nodes] of Object.entries(library.icons)) {
-    const row = document.createElement("dl"); row.className = "agentic-ktv-row";
-    const key = document.createElement("dt"); key.className = "agentic-ktv-key"; key.textContent = name;
-    const type = document.createElement("dd"); type.className = "agentic-ktv-type";
-    const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    for (const [attribute, value] of Object.entries({ viewBox: library.viewBox, fill: "none", stroke: "currentColor", "stroke-linecap": "round", "stroke-linejoin": "round", role: "img", "aria-label": name, class: "agentic-icon" })) icon.setAttribute(attribute, value);
-    for (const [tag, attributes] of nodes) { const node = document.createElementNS(icon.namespaceURI, tag); for (const [attribute, value] of Object.entries(attributes)) node.setAttribute(attribute, value); icon.append(node); }
-    type.append(icon); const value = document.createElement("dd"); value.className = "agentic-ktv-value"; value.textContent = "Shared SVG";
-    row.append(key, type, value); const container = document.createElement("section"); container.className = "agentic-ktv-container"; container.append(row); iconSection.append(container);
-  }
-  sectionIndex.after(iconSection);
+  sectionIndex.after(renderIconLibrary(library));
   sectionIndex.hidden = false;
   sectionIndex.removeAttribute("aria-busy");
   revealLateContent();
@@ -256,7 +314,7 @@ loadRegistry().catch(error => {
 });
 
 async function prepareOfflineRegistry() {
-  const registration = await navigator.serviceWorker.register("./sw.js?v=registry-toolbar-1", {
+  const registration = await navigator.serviceWorker.register("./sw.js?v=registry-semantic-cards-3", {
     scope: "./", updateViaCache: "none",
   });
   const worker = registration.installing ?? registration.waiting ?? registration.active;
