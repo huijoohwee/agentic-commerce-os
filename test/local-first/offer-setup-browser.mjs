@@ -92,7 +92,7 @@ async function checkGuideChrome(page, defaultGlyph = true) {
       controlHeight: parseFloat(getComputedStyle(button).getPropertyValue('--kg-control-height')),
       sharedControlHeight: parseFloat(getComputedStyle(button).getPropertyValue('--agentic-control-height')),
       sharedRowHeight: parseFloat(getComputedStyle(button).getPropertyValue('--agentic-row-height')),
-      panelControlHeight: parseFloat(getComputedStyle(button).getPropertyValue('--base-control-height')),
+      panelControlHeight: parseFloat(getComputedStyle(button).getPropertyValue('--agentic-row-height')),
       verticalInsets: ['paddingTop', 'paddingBottom', 'borderTopWidth', 'borderBottomWidth'].reduce((sum, key) => sum + parseFloat(getComputedStyle(button)[key]), 0),
       touchTarget: matchMedia('(pointer: coarse), (max-width: 768px)').matches,
       strokeWidth: Number(icon.getAttribute('stroke-width')) };
