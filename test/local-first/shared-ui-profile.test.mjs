@@ -2,17 +2,24 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
 import worker from '../../src/local-first/worker.ts';
-import { verifySharedUiIconProfile } from '../../scripts/local-first-release/artifact.mjs';
+import { digest, verifySharedUiIconProfile } from '../../scripts/local-first-release/artifact.mjs';
 
 test('Commerce consumes the pinned Design System icon size from its offline shell assets', async () => {
   const pin = verifySharedUiIconProfile();
   assert.equal(pin.owner, 'github.com/huijoohwee/agentic-design-system');
-  assert.equal(pin.sourceRevision, '30e403a55bd9f5b6c7e58a7cc7de632e1b2714ae');
-  assert.equal(pin.registryRevision, '058c56f18f2dab16b46a20ac12cdc4243612bf28');
+  assert.equal(pin.sourceRevision, '267cdb31047b02d4f54ea6708fb2518a8a2a57f4');
+  assert.equal(pin.registryRevision, 'f9e058d7b3be3acc411634ad84695d6d642f1cd2');
   const profile = fs.readFileSync('public/local-first/shared-ui-profile.css', 'utf8');
+  assert.equal(profile, fs.readFileSync('public/agentic-design-system/vendor/shared-ui-profile.css', 'utf8'));
   assert.match(profile, /stroke-width: var\(--agentic-icon-stroke-width\)/);
   assert.match(profile, /--agentic-font-size-body: 0\.875rem;/);
   assert.match(profile, /--agentic-line-height-body: 1\.25rem;/);
+  assert.match(profile, /--agentic-floating-panel-radius:\s*8px;/u);
+  assert.equal(fs.readFileSync('public/local-first/floating-panel.css', 'utf8'),
+    fs.readFileSync('public/agentic-design-system/floating-panel.css', 'utf8'));
+  const floatingPanelPin = JSON.parse(fs.readFileSync('config/floating-panel.pin.json', 'utf8'));
+  assert.equal(floatingPanelPin.revision, pin.registryRevision);
+  assert.equal(floatingPanelPin.sha256, digest(fs.readFileSync('public/agentic-design-system/floating-panel.css')));
   const revision = 'f'.repeat(40);
   const env = {RELEASE_CANDIDATE_SHA:revision, ASSETS:{fetch(request) {
     assert.equal(new URL(request.url).pathname, '/shared-ui-profile.css');
@@ -161,4 +168,16 @@ test('all Commerce form borders come from the pinned shared control token', () =
   for (const [, selector, declarations] of controlRules) {
     assert.doesNotMatch(declarations, /\bborder(?:-color)?\s*:/u, `${selector.trim()} must inherit its border from the shared utility`);
   }
+});
+
+test('Base browser controls reuse the central shared border utility', () => {
+  const pin = JSON.parse(fs.readFileSync('config/agentic-base-data-view.json', 'utf8'));
+  const profile = fs.readFileSync('public/agentic-design-system/vendor/shared-ui-profile.css', 'utf8');
+  const css = fs.readFileSync('public/local-first/agentic-base-data-view.css', 'utf8');
+  assert.equal(pin.source.revision, 'f966ce7f9551bd0afb3ea56b25bff029c4359efb');
+  assert.equal(pin.inputs.find(input => input.path === 'packages/views-react/src/browser/shared-ui-profile.css')?.sha256,
+    'e9fce49e9dce6cde8afa4cde9dc0e8d77ee8642cc10d4d38f66d35d3f53361b0');
+  assert.match(profile, /--agentic-control-border:\s*1px solid var\(--agentic-base-border,/u);
+  assert.match(css, /--agentic-control-border:\s*1px solid var\(--agentic-base-border,/u);
+  assert.match(css, /\.agentic-form-control,[\s\S]+?border:\s*var\(--agentic-control-border\)/u);
 });
