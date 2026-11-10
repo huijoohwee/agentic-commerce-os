@@ -16,6 +16,34 @@ const setupItems = [
 const textFields = { merchantId: '#merchant-id', agentId: '#agent-id', audience: '#audience', outcome: '#outcome', currency: '#currency' };
 const moneyFields = { priceMinor: '#sale-price', deliveryCostMinor: '#delivery-cost', providerFeeMinor: '#provider-fee',
   agentCostMinor: '#agent-cost', acquisitionCostMinor: '#acquisition-cost', fixedCostMinor: '#fixed-cost' };
+const audienceInput = $('#audience'), audienceSuggestions = document.createElement('label'), audienceSelect = document.createElement('select');
+audienceSuggestions.hidden = true;
+audienceSuggestions.textContent = 'Reuse an audience from a saved offer';
+audienceSelect.id = 'saved-audience';
+audienceSelect.setAttribute('aria-label', 'Reuse an audience from a saved offer');
+audienceInput.after(audienceSuggestions);
+audienceSuggestions.append(audienceSelect);
+audienceSelect.addEventListener('change', () => {
+  if (!audienceSelect.value) return;
+  audienceInput.value = audienceSelect.value;
+  audienceInput.dispatchEvent(new Event('input', { bubbles: true }));
+  audienceSelect.value = '';
+});
+function renderAudienceSuggestions(drafts) {
+  const seen = new Set(), values = [];
+  for (const draft of drafts) {
+    const value = draft.launch?.audience?.trim();
+    const key = value?.toLowerCase();
+    if (value && !seen.has(key)) { seen.add(key); values.push(value); }
+  }
+  const placeholder = document.createElement('option');
+  placeholder.value = ''; placeholder.textContent = 'Choose a saved audience'; placeholder.hidden = true;
+  audienceSelect.replaceChildren(placeholder, ...values.map(value => {
+    const option = document.createElement('option');
+    option.value = value; option.textContent = value; return option;
+  }));
+  audienceSuggestions.hidden = values.length === 0;
+}
 function changed() { document.dispatchEvent(new Event('commerce:drafts-updated')); }
 function message(text, error = false) { $('#status').textContent = text; $('#status').dataset.error = String(error); }
 function invalidateReview() { reviewed = null; $('#launch-review').hidden = true; $('#approve-launch').checked = false; $('#export-launch').disabled = true; }
@@ -68,6 +96,7 @@ function show(draft) {
 }
 async function refresh() {
   const drafts = await listDrafts();
+  renderAudienceSuggestions(drafts);
   $('#draft-count').textContent = String(drafts.length);
   const hasDrafts = drafts.length > 0;
   const layout = $('#vendor [data-view-panel="vendor-editor"] .editor-layout');
