@@ -1,6 +1,6 @@
-const CACHE_NAME = "agentic-design-system-v0.5.0-draft-registry-r25";
+const CACHE_NAME = "agentic-design-system-v0.5.0-draft-registry-r26";
 const CORE_FILES = [
-  "./", "./registry.css", "./floating-panel.css", "./toolbar.css", "./toolbar-icons.js", "./dashboard-columns.js", "./app.js?v=registry-semantic-cards-3", "./registry-query.js?v=c104158", "./catalog.json", "./catalog.schema.json",
+  "./", "./registry.css", "./floating-panel.css", "./toolbar.css", "./toolbar-icons.js", "./dashboard-columns.js", "./app.js?v=floating-panel-preview-4", "./registry-query.js?v=c104158", "./catalog.json", "./catalog.schema.json",
   "./icons.json", "./tokens/commerce-profile.json", "./tokens/base-profile.json", "./tokens/graph-profile.json", "./tokens/shared-ui-profile.json",
   "./vendor/commerce-theme.css", "./vendor/base-profile.css", "./vendor/graph-profile.css", "./vendor/shared-ui-profile.css", "./THIRD-PARTY-NOTICES.txt", "./favicon.svg",
 ];

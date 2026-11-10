@@ -14,24 +14,50 @@
 }
 .agentic-base-floating-panel-expanded { width: 100%; height: 100%; }
 .agentic-base-floating-panel-header {
-  display: flex; min-width: 0; width: 100%; min-height: var(--base-control-height, var(--agentic-row-height));
+  display: flex; min-width: 0; width: 100%; min-height: var(--agentic-control-height);
   flex: none; align-items: center; justify-content: space-between; gap: var(--agentic-control-padding-block); user-select: none;
 }
 .agentic-base-floating-panel-draggable { cursor: move; }
+.agentic-base-floating-panel-root[data-agentic-floating-panel-placement="viewport-overlay"] {
+  position: fixed; z-index: var(--agentic-floating-panel-layer, 4); inset: 0; pointer-events: none;
+}
+.agentic-base-floating-panel-root[data-agentic-floating-panel-placement="viewport-overlay"] > .agentic-base-floating-panel { pointer-events: auto; }
 .agentic-floating-panel-title { margin: 0; font: 600 var(--agentic-font-size-body)/var(--agentic-line-height-body) var(--agentic-font-sans); }
 .agentic-floating-panel-body { flex: 1 1 auto; min-height: 0; min-width: 0; overflow: auto; overscroll-behavior: contain; }
+.agentic-floating-panel-tabs {
+  display: flex; flex: 1 1 auto; align-items: center; min-width: 0; gap: var(--agentic-menu-gap);
+  overflow-x: auto; overflow-y: hidden; overscroll-behavior-inline: contain; scrollbar-width: none; touch-action: pan-x;
+}
+.agentic-floating-panel-tabs::-webkit-scrollbar { display: none; }
+.agentic-floating-panel-tab {
+  box-sizing: border-box; display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center;
+  min-width: var(--agentic-control-height); min-height: var(--agentic-control-height); gap: var(--agentic-menu-gap);
+  padding-inline: var(--agentic-control-padding-inline); border: 0; border-radius: var(--agentic-control-radius);
+  color: inherit; background: transparent; cursor: pointer; touch-action: manipulation; white-space: nowrap;
+}
+.agentic-floating-panel-tab:hover { background: var(--agentic-control-selected-background); }
+.agentic-floating-panel-tab[aria-selected="true"] {
+  color: var(--agentic-control-selected-foreground); background: var(--agentic-control-selected-background);
+}
+.agentic-floating-panel-tab:focus-visible,
+.agentic-base-floating-panel-close:focus-visible {
+  outline: var(--agentic-control-focus-width) solid var(--agentic-control-selected-foreground);
+  outline-offset: var(--agentic-control-focus-offset);
+}
 .agentic-base-floating-panel-close {
   box-sizing: border-box; display: inline-flex; flex: none; align-items: center; justify-content: center;
-  min-width: var(--base-control-height, var(--agentic-row-height)); min-height: var(--base-control-height, var(--agentic-row-height)); padding: 0; cursor: pointer;
+  min-width: var(--agentic-control-height); min-height: var(--agentic-control-height); padding: 0; cursor: pointer;
   border: 0; border-radius: var(--agentic-control-radius); color: inherit; background: transparent;
 }
-.agentic-base-floating-panel-close:hover { background: var(--kg-panel-action-bg-hover, ButtonFace); }
-.agentic-base-floating-panel-close:focus-visible { outline: var(--agentic-control-focus-width) solid var(--base-accent, var(--kg-accent, Highlight)); outline-offset: var(--agentic-control-focus-offset); }
+.agentic-base-floating-panel-close:hover { background: var(--agentic-control-selected-background); }
+.agentic-base-floating-panel-close .agentic-icon,
+.agentic-floating-panel-tab .agentic-icon { pointer-events: none; }
 .agentic-base-floating-panel :where(main, header, footer, nav, search, hgroup, section, article, aside, figure, figcaption, ul, ol, p, span, small, label, output, dl, dt, dd, summary, button, input, select, textarea, li, a):not(:where(h1 *, h2 *, h3 *, h4 *, h5 *, h6 *)) {
   font-size: var(--agentic-font-size-body); line-height: var(--agentic-line-height-body);
 }
 /* Optional fixed placement. A host may reserve space below it for persistent controls. */
-.agentic-floating-panel-dock {
+.agentic-floating-panel-dock,
+.agentic-base-floating-panel-root[data-agentic-floating-panel-placement="dock"] {
   position: fixed; z-index: var(--agentic-floating-panel-layer, 4); inset: auto;
   inset-block-start: max(var(--agentic-menu-edge-gap), env(safe-area-inset-top));
   inset-inline-end: max(var(--agentic-menu-edge-gap), env(safe-area-inset-right));
@@ -39,5 +65,7 @@
   width: min(var(--agentic-ktv-panel-width), calc(100% - 2 * var(--agentic-menu-edge-gap)));
   max-height: none; margin: 0; padding: 0; border: 0; background: transparent;
 }
-.agentic-floating-panel-dock > .agentic-base-floating-panel { height: 100%; }
-.agentic-floating-panel-dock:has(> [hidden]) { display: none; }
+.agentic-floating-panel-dock > .agentic-base-floating-panel,
+.agentic-base-floating-panel-root[data-agentic-floating-panel-placement="dock"] > .agentic-base-floating-panel { height: 100%; }
+.agentic-floating-panel-dock:has(> [hidden]),
+.agentic-base-floating-panel-root[data-agentic-floating-panel-placement="dock"]:has(> [hidden]) { display: none; }
