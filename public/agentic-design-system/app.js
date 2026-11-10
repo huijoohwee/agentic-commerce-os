@@ -259,6 +259,28 @@ function updateSectionSelection() {
 
 window.addEventListener("hashchange", updateSectionSelection);
 
+const floatingPanelTrigger = document.querySelector("#floating-panel-preview-trigger");
+const floatingPanelPreview = document.querySelector("#panel-preview");
+const floatingPanelClose = floatingPanelPreview?.querySelector("[data-panel-close]");
+
+function setFloatingPanelOpen(open) {
+  if (!floatingPanelTrigger || !floatingPanelPreview) return;
+  floatingPanelPreview.hidden = !open;
+  floatingPanelTrigger.setAttribute("aria-expanded", String(open));
+  if (open) floatingPanelClose?.focus({ preventScroll: true });
+  else floatingPanelTrigger.focus({ preventScroll: true });
+}
+
+floatingPanelTrigger?.addEventListener("click", () => {
+  if (floatingPanelPreview) setFloatingPanelOpen(floatingPanelPreview.hidden);
+});
+floatingPanelClose?.addEventListener("click", () => setFloatingPanelOpen(false));
+document.addEventListener("keydown", event => {
+  if (event.key !== "Escape" || !floatingPanelPreview || floatingPanelPreview.hidden) return;
+  event.preventDefault();
+  setFloatingPanelOpen(false);
+});
+
 async function sha256(bytes) {
   const digest = await crypto.subtle.digest("SHA-256", bytes);
   return `sha256:${[...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, "0")).join("")}`;
@@ -314,7 +336,7 @@ loadRegistry().catch(error => {
 });
 
 async function prepareOfflineRegistry() {
-  const registration = await navigator.serviceWorker.register("./sw.js?v=registry-semantic-cards-3", {
+  const registration = await navigator.serviceWorker.register("./sw.js?v=floating-panel-preview-4", {
     scope: "./", updateViaCache: "none",
   });
   const worker = registration.installing ?? registration.waiting ?? registration.active;

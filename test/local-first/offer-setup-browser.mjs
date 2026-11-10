@@ -92,10 +92,10 @@ async function checkGuideChrome(page, defaultGlyph = true) {
       controlHeight: parseFloat(getComputedStyle(button).getPropertyValue('--kg-control-height')),
       sharedControlHeight: parseFloat(getComputedStyle(button).getPropertyValue('--agentic-control-height')),
       sharedRowHeight: parseFloat(getComputedStyle(button).getPropertyValue('--agentic-row-height')),
-      panelControlHeight: parseFloat(getComputedStyle(button).getPropertyValue('--base-control-height')),
+      panelControlHeight: parseFloat(getComputedStyle(button).getPropertyValue('--agentic-row-height')),
       verticalInsets: ['paddingTop', 'paddingBottom', 'borderTopWidth', 'borderBottomWidth'].reduce((sum, key) => sum + parseFloat(getComputedStyle(button)[key]), 0),
       touchTarget: matchMedia('(pointer: coarse), (max-width: 768px)').matches,
-      strokeWidth: Number(icon.getAttribute('stroke-width')) };
+      strokeWidth: parseFloat(getComputedStyle(icon).strokeWidth) };
   });
   assert(geometry.typography.body.length > 0, 'The shared panel body must be measured');
   for (const text of geometry.typography.body) assert.deepEqual(text, geometry.typography.role, 'Guide descriptions, status and controls must use the shared panel body role, including at 200% text');
