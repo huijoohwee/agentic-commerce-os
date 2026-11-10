@@ -119,7 +119,7 @@ async function refresh() {
     $('#draft-list').append(button);
   }
 }
-function controls() { return document.querySelectorAll('[data-view-panel="vendor-editor"] button, [data-view-panel="vendor-editor"] input, [data-view-panel="vendor-editor"] textarea, [data-view-panel="admin-data"] button, [data-view-panel="admin-data"] input'); }
+function controls() { return document.querySelectorAll('[data-view-panel="vendor-editor"] button, [data-view-panel="vendor-editor"] input, [data-view-panel="vendor-editor"] select, [data-view-panel="vendor-editor"] textarea, [data-view-panel="admin-data"] button, [data-view-panel="admin-data"] input'); }
 async function run(operation) {
   if (busy) return;
   busy = true; actionFailed = false; renderSetup();
