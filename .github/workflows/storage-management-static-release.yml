@@ -102,7 +102,6 @@ jobs:
       CANDIDATE_SHA: ${{ inputs.candidate_sha }}
       OPERATION: ${{ inputs.operation }}
       ROLLBACK_RUN_ID: ${{ inputs.rollback_run_id }}
-      STORAGE_MANAGEMENT_EVIDENCE_DIR: ${{ runner.temp }}/commerce-storage-management-evidence
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -127,6 +126,8 @@ jobs:
           path: node_modules/.cache/storage-management-static
 
       - name: Verify the staged candidate bytes
+        env:
+          STORAGE_MANAGEMENT_EVIDENCE_DIR: ${{ runner.temp }}/commerce-storage-management-evidence
         run: |
           set -euo pipefail
           test "$GITHUB_RUN_ATTEMPT" = 1
@@ -152,6 +153,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          STORAGE_MANAGEMENT_EVIDENCE_DIR: ${{ runner.temp }}/commerce-storage-management-evidence
         run: node scripts/storage-management-release/deploy.mjs deploy "$CANDIDATE_SHA" "$STORAGE_MANAGEMENT_EVIDENCE_DIR"
 
       - name: Restore the selected retained static Worker version
@@ -161,11 +163,14 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           STORAGE_MANAGEMENT_ROLLBACK_RUN_ID: ${{ inputs.rollback_run_id }}
+          STORAGE_MANAGEMENT_EVIDENCE_DIR: ${{ runner.temp }}/commerce-storage-management-evidence
         run: node scripts/storage-management-release/rollback.mjs rollback "$CANDIDATE_SHA" \
           "$RUNNER_TEMP/commerce-storage-management-rollback-target" "$STORAGE_MANAGEMENT_EVIDENCE_DIR"
 
       - name: Retain typed release or rollback evidence
         if: ${{ always() }}
+        env:
+          STORAGE_MANAGEMENT_EVIDENCE_DIR: ${{ runner.temp }}/commerce-storage-management-evidence
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: commerce-storage-management-static-result-${{ github.run_id }}
