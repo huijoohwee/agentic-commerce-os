@@ -10,7 +10,7 @@ import { readCheckoutRelease, liveAuthorizationScope } from './live-profile.mjs'
 
 export const CONFIG = 'wrangler.local-first.jsonc';
 export const WORKER = 'agentic-commerce-edge-production';
-export const FILES = Object.freeze(['index.html', 'favicon.svg', 'workspace.js', 'workspace-navigation.js', 'workspace-pack.route.js', 'workspace-view-styles.js', 'commerce-toolbar.js', 'commerce-shell.css', 'workspace-layout.js', 'dashboard-columns.js', 'toolbar-icons.js', 'workspace-singleton.js', 'shopper-demo-detail.js', 'workspace-tour.js', 'workspace-capabilities.js', 'workspace-tools.js', 'workspace-graph.js', 'agentic-base-data-view.js', 'dropdown-menus.js', 'agentic-base-data-view.css', 'graph-data-view.js', 'graph-data-view.css', 'graph-ui-tokens.css', 'commerce-theme.css', 'workspace-shell.css', 'shared-ui-profile.css', 'app.js', 'drafts.js', 'checkout.js', 'launch.js', 'workflow.js', 'style.css', 'sw.js', 'workspace-pack.html', 'workspace-pack.js', 'workspace-pack.css', 'floating-panel.css', 'toolbar.css', 'workspace-pack.simulation.js', 'workspace-pack.console.js', 'sme-business-pack.js', 'sme-business-pack.css', 'sme-business-pack-core.js', 'sme-workflow-editor.js', 'sme-review-workflow.js', 'graph-gantt-timeline.js', 'graph-gantt-timeline.css', 'sme-pack-business-plan.js', 'sme-pack-dictionary.js', 'housing-comparison.js', 'housing-engine.js', 'housing-sample.js', 'housing-comparison.css']);
+export const FILES = Object.freeze(['index.html', 'favicon.svg', 'workspace.js', 'workspace-navigation.js', 'workspace-pack.route.js', 'workspace-view-styles.js', 'commerce-toolbar.js', 'commerce-shell.css', 'workspace-layout.js', 'dashboard-columns.js', 'toolbar-icons.js', 'workspace-singleton.js', 'shopper-demo-detail.js', 'workspace-tour.js', 'workspace-capabilities.js', 'workspace-tools.js', 'workspace-graph.js', 'agentic-base-data-view.js', 'dropdown-menus.js', 'agentic-base-data-view.css', 'graph-data-view.js', 'graph-data-view.css', 'graph-ui-tokens.css', 'commerce-theme.css', 'workspace-shell.css', 'shared-ui-profile.css', 'app.js', 'drafts.js', 'checkout.js', 'launch.js', 'workflow.js', 'style.css', 'sw.js', 'workspace-pack.html', 'workspace-pack.js', 'workspace-pack.css', 'floating-panel.css', 'toolbar.css', 'workspace-pack.simulation.js', 'workspace-pack.console.js', 'sme-business-pack.js', 'sme-business-pack.css', 'sme-business-pack-core.js', 'sme-workflow-editor.js', 'sme-review-workflow.js', 'graph-gantt-timeline.js', 'graph-gantt-timeline.css', 'sme-pack-business-plan.js', 'sme-pack-dictionary.js', 'housing-comparison.js', 'housing-engine.js', 'housing-sample.js', 'housing-comparison.css', 'storage-management/index.html', 'storage-management/style.css', 'storage-management/guide.js', 'storage-management/sources.json']);
 export const PRIVATE_FILES = Object.freeze(['education-materials.md']);
 export const digest = value => createHash('sha256').update(value).digest('hex');
 const COMMERCE_THEME_PIN = Object.freeze({
@@ -96,6 +96,50 @@ export function verifyAgenticBaseDataView() {
         || (output.path === 'dropdown-menus.js' ? !text.includes('enhanceSelects') || !text.includes('agentic-menu') : !text.includes('mountDataView') || !text.includes('multiDimensional') || !text.includes('DATA_VIEW_BROWSER_LIMITS'))) throw Error('Agentic Base data view asset must remain self-contained and offline');
   }
   return pin;
+}
+
+export function verifyStorageManagementSourceIndex() {
+  const filename = 'public/local-first/storage-management/sources.json'
+  const manifest = JSON.parse(fs.readFileSync(filename, 'utf8'))
+  const expected = new Map([
+    ['github.com/huijoohwee/agentic-os', 682],
+    ['github.com/huijoohwee/agentic-canvas-os', 969],
+    ['github.com/huijoohwee/agentic-commerce-os', 254],
+    ['github.com/huijoohwee/agentic-graph', 1954],
+    ['github.com/huijoohwee/agentic-base', 63],
+    ['github.com/huijoohwee/agentic-design-system', 37],
+  ])
+  if (manifest.schema !== 'commerce.storage-management-source-index/v1'
+    || manifest.route !== 'https://airvio.co/agentic-commerce-os/storage-management/'
+    || manifest.sources.length !== expected.size) throw Error('Storage management source index invalid')
+  const page = fs.readFileSync('public/local-first/storage-management/index.html', 'utf8')
+  const seen = new Set()
+  for (const source of manifest.sources) {
+    if (!expected.has(source.repository) || expected.get(source.repository) !== source.pullRequest
+      || seen.has(source.repository) || !/^[a-f0-9]{40}$/.test(source.revision)
+      || !Array.isArray(source.files) || !source.files.length) throw Error('Storage management source pin invalid')
+    seen.add(source.repository)
+    for (const file of source.files) {
+      if (typeof file.path !== 'string' || file.path.startsWith('/') || file.path.includes('..')
+        || !Number.isSafeInteger(file.bytes) || file.bytes < 1 || file.bytes >= 500000
+        || !/^[a-f0-9]{64}$/.test(file.sha256)
+        || !page.includes(`https://${source.repository}/blob/${source.revision}/${file.path}`))
+        throw Error('Storage management source file pin invalid')
+    }
+  }
+  const assetFiles = ['storage-management/index.html', 'storage-management/style.css',
+    'storage-management/guide.js', 'storage-management/sources.json']
+  const totalBytes = assetFiles.reduce((total, file) => total + fs.statSync('public/local-first/' + file).size, 0)
+  if (totalBytes >= 80000) throw Error('Storage management route exceeds its 80 kB payload cap')
+  return { sourceCount: seen.size, sourceFileCount: manifest.sources.reduce((total, source) => total + source.files.length, 0), totalBytes }
+}
+function listRegularFiles(directory, prefix = '') {
+  return fs.readdirSync(directory, { withFileTypes: true }).flatMap(entry => {
+    const relative = path.posix.join(prefix, entry.name)
+    if (entry.isDirectory()) return listRegularFiles(path.join(directory, entry.name), relative)
+    if (!entry.isFile()) throw Error('Unexpected non-regular static asset')
+    return [relative]
+  }).sort()
 }
 export function verifyGraphDataView() {
   const manifestFile = 'config/graph-data-view.json', manifestStat = fs.lstatSync(manifestFile);
@@ -274,8 +318,9 @@ export function sourceManifest(revision, selection = readCheckoutRelease()) {
   verifyTimelineBundle();
   verifySharedThemeOwner();
   verifySharedUiIconProfile();
+  verifyStorageManagementSourceIndex();
   assertLocalFirstConfig(JSON.parse(fs.readFileSync(CONFIG, 'utf8')));
-  if (fs.readdirSync('public/local-first').sort().join() !== [...FILES, ...PRIVATE_FILES].sort().join()) throw Error('Unexpected static asset inventory');
+  if (listRegularFiles('public/local-first').join() !== [...FILES, ...PRIVATE_FILES].sort().join()) throw Error('Unexpected static asset inventory');
   const paths = [CONFIG, 'src/local-first/worker.ts', 'src/local-first/workspace-pack.ts', 'src/local-first/workspace-service.ts', 'src/local-first/sme-business-pack.ts', 'public/local-first/sme-business-pack-core.js', 'config/capability-token-map.json', 'config/floating-panel.pin.json', 'config/toolbar.pin.json',
     'config/dashboard-columns.pin.json', 'config/agentic-base-data-view.json', 'config/graph-data-view.json', 'config/workspace-pack-graph.json', 'src/generated/graph-workspace-pack.js', 'src/generated/graph-workspace-pack.d.ts',
     'scripts/workspace-pack/build-graph.mjs', 'src/edge/production-prefix.ts', 'src/shared/http.ts',

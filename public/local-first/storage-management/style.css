@@ -1,0 +1,52 @@
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, sans-serif;
+  line-height: 1.55;
+  font-synthesis: none;
+}
+
+body {
+  margin: 0;
+  padding: 1rem;
+}
+
+main {
+  max-width: 52rem;
+  margin: 0 auto;
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.2;
+}
+
+article {
+  padding: 1rem 0;
+  border-top: 1px solid currentColor;
+}
+
+article ul {
+  padding-inline-start: 1.25rem;
+}
+
+a {
+  text-underline-offset: 0.18em;
+}
+
+.eyebrow {
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+footer {
+  margin-top: 2rem;
+}
+
+@media (min-width: 40rem) {
+  body {
+    padding: 2rem;
+  }
+}

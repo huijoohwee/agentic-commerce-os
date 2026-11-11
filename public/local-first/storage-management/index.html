@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>E2E Storage Management</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="guide.js" defer></script>
+</head>
+<body>
+  <main>
+    <p><a href="../">← Commerce</a></p>
+    <header>
+      <p class="eyebrow">Read-only source index</p>
+      <h1>E2E storage management</h1>
+      <p>Six merged updates covering repository storage, browser cache, validation, and offline
+        behavior. Each source repository remains authoritative; these links pin the exact merged
+        revisions.</p>
+      <p id="offline-status" role="status" aria-live="polite">Preparing this index for offline viewing…</p>
+      <p><a href="sources.json" download>Download the source and digest manifest</a></p>
+    </header>
+    <section aria-labelledby="source-updates">
+      <h2 id="source-updates">Source updates</h2>
+      <article>
+        <h3>Agentic OS</h3>
+        <p>Measure allocated bytes and elapsed verification or recovery time; preserve refs, reflogs,
+          and recovery copies when ownership or restoreability is uncertain.</p>
+        <a href="https://github.com/huijoohwee/agentic-os/blob/713ff747af4721566e116c17b5bb31f571506bef/guides/STORAGE.md">guides/STORAGE.md · PR #682</a>
+      </article>
+      <article>
+        <h3>Agentic Canvas OS</h3>
+        <p>This source is Dev-only. The Production index records its immutable source revision
+          without mirroring the document.</p>
+        <a href="https://github.com/huijoohwee/agentic-canvas-os/blob/df1e44bec631da9363d9c54d231b81d82b60ddb3/docs/CACHE-CONTEXT.md">docs/CACHE-CONTEXT.md · PR #969</a>
+      </article>
+      <article>
+        <h3>Agentic Commerce OS</h3>
+        <p>Validate affected implementation inputs, retain mandatory integration and evidence gates,
+          and use the existing full fallback for unknown or shared changes.</p>
+        <a href="https://github.com/huijoohwee/agentic-commerce-os/blob/3600723f92c97df2ca483f31e21879b8230b515c/docs/repository-validation.md">docs/repository-validation.md · PR #254</a>
+      </article>
+      <article>
+        <h3>Agentic Graph</h3>
+        <p>Use local mobile browser smoke tests for functional journeys; they do not claim storage or
+          latency benchmarks, production availability, or runtime readiness.</p>
+        <ul>
+          <li><a href="https://github.com/huijoohwee/agentic-graph/blob/6e85749a04f6228e2b09e0a92b4211922088b7a3/docs/TESTING.md">docs/TESTING.md</a></li>
+          <li><a href="https://github.com/huijoohwee/agentic-graph/blob/6e85749a04f6228e2b09e0a92b4211922088b7a3/canvas/scripts/verify_xr_v2_workspace_seed_browser_smoke.mjs">browser smoke selector</a></li>
+        </ul>
+        <p>Both files are pinned to PR #1954.</p>
+      </article>
+      <article>
+        <h3>Agentic Base</h3>
+        <p>Keep browser storage local and user-owned; distribute by exact Git commit, with no package
+          registry publication or hosted deployment in this increment.</p>
+        <ul>
+          <li><a href="https://github.com/huijoohwee/agentic-base/blob/8527c39363b01244d9d2586dbbb49ea2b1f2e2a7/docs/DEVELOPMENT.md">docs/DEVELOPMENT.md</a></li>
+          <li><a href="https://github.com/huijoohwee/agentic-base/blob/8527c39363b01244d9d2586dbbb49ea2b1f2e2a7/package.json">package.json</a></li>
+          <li><a href="https://github.com/huijoohwee/agentic-base/blob/8527c39363b01244d9d2586dbbb49ea2b1f2e2a7/package-lock.json">package-lock.json</a></li>
+        </ul>
+        <p>All three files are pinned to PR #63.</p>
+      </article>
+      <article>
+        <h3>Agentic Design System</h3>
+        <p>Keep the public catalog read-only and allowlisted; its service worker caches checked-in
+          site assets, not consumer records.</p>
+        <a href="https://github.com/huijoohwee/agentic-design-system/blob/b53e1bafdb36af186f6bcb420d979618b1714f51/README.md">README.md · PR #37</a>
+      </article>
+    </section>
+    <footer>
+      <p>Offline status applies to this index and its manifest after installation. Opening source
+        files on GitHub requires a network connection.</p>
+    </footer>
+  </main>
+</body>
+</html>

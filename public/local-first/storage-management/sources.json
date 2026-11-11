@@ -1,0 +1,57 @@
+{
+  "schema": "commerce.storage-management-source-index/v1",
+  "route": "https://airvio.co/agentic-commerce-os/storage-management/",
+  "sources": [
+    {
+      "repository": "github.com/huijoohwee/agentic-os",
+      "pullRequest": 682,
+      "revision": "713ff747af4721566e116c17b5bb31f571506bef",
+      "files": [
+        { "path": "guides/STORAGE.md", "bytes": 44819, "sha256": "5efefe2e9fcfbbddf28326c435eff2021ddbe53ff89be91d11370289c1764218" }
+      ]
+    },
+    {
+      "repository": "github.com/huijoohwee/agentic-canvas-os",
+      "pullRequest": 969,
+      "revision": "df1e44bec631da9363d9c54d231b81d82b60ddb3",
+      "files": [
+        { "path": "docs/CACHE-CONTEXT.md", "bytes": 3007, "sha256": "008a9509c9d35f72eb1e9c1d7fb158ba0f7965b9c3776e939ddfe901c7afa1a0" }
+      ]
+    },
+    {
+      "repository": "github.com/huijoohwee/agentic-commerce-os",
+      "pullRequest": 254,
+      "revision": "3600723f92c97df2ca483f31e21879b8230b515c",
+      "files": [
+        { "path": "docs/repository-validation.md", "bytes": 4164, "sha256": "7f262ddc6b38587258aa8d33be4efc146a86607fa379717d35f90299303f810f" }
+      ]
+    },
+    {
+      "repository": "github.com/huijoohwee/agentic-graph",
+      "pullRequest": 1954,
+      "revision": "6e85749a04f6228e2b09e0a92b4211922088b7a3",
+      "files": [
+        { "path": "docs/TESTING.md", "bytes": 7235, "sha256": "7177cdd3009ba1e64f2272b7e41ae83e87d3998eb8550edc2c5f0a321e09fc2a" },
+        { "path": "canvas/scripts/verify_xr_v2_workspace_seed_browser_smoke.mjs", "bytes": 30467, "sha256": "ea6e1bf98b457aa12193a77f61ba040436539f11aa28da2cecb47e751ad16c47" }
+      ]
+    },
+    {
+      "repository": "github.com/huijoohwee/agentic-base",
+      "pullRequest": 63,
+      "revision": "8527c39363b01244d9d2586dbbb49ea2b1f2e2a7",
+      "files": [
+        { "path": "docs/DEVELOPMENT.md", "bytes": 5436, "sha256": "ff7551df35c34c688d682d416409e48e6d8947aae771dffe128d29feaa024bc0" },
+        { "path": "package.json", "bytes": 2624, "sha256": "583a9aedb846c57a825cc81d608699d7ac5260a21e330b8393df90abb965ac37" },
+        { "path": "package-lock.json", "bytes": 37683, "sha256": "6de33b2e977d3943acdd85fecd0732a35250c1bdfd6802e6d5bf9d13093ede25" }
+      ]
+    },
+    {
+      "repository": "github.com/huijoohwee/agentic-design-system",
+      "pullRequest": 37,
+      "revision": "b53e1bafdb36af186f6bcb420d979618b1714f51",
+      "files": [
+        { "path": "README.md", "bytes": 7359, "sha256": "963c0c14314ccf133a1adf121bf67e87938119a7c55da5024f68295e0e7c10af" }
+      ]
+    }
+  ]
+}

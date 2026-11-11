@@ -65,3 +65,29 @@ test('release-scoped browser modules bypass old caches and role entry links stay
     assert.equal(response.headers.get('location'), 'https://airvio.co/agentic-commerce-os/#' + role);
   }
 });
+
+test('storage management route redirects canonically and serves only its pinned assets', async () => {
+  const seen = [];
+  const env = { RELEASE_CANDIDATE_SHA: revision, ASSETS: { async fetch(req) {
+    seen.push(new URL(req.url).pathname);
+    return new Response('asset', { headers: { 'content-type': 'text/html; charset=utf-8' } });
+  } } };
+  const slashless = await worker.fetch(request('/agentic-commerce-os/storage-management?source=route'), env);
+  assert.equal(slashless.status, 308);
+  assert.equal(slashless.headers.get('location'), 'https://airvio.co/agentic-commerce-os/storage-management/?source=route');
+  assert.deepEqual(seen, []);
+  const page = await worker.fetch(request('/agentic-commerce-os/storage-management/'), env);
+  assert.equal(page.status, 200);
+  assert.equal(seen.at(-1), '/storage-management/index.html');
+  for (const file of ['style.css', 'guide.js', 'sources.json']) {
+    assert.equal((await worker.fetch(request('/agentic-commerce-os/storage-management/' + file), env)).status, 200);
+    assert.equal(seen.at(-1), '/storage-management/' + file);
+  }
+  const count = seen.length;
+  assert.equal((await worker.fetch(request('/agentic-commerce-os/storage-management/private.json'), env)).status, 404);
+  assert.equal(seen.length, count);
+  assert.equal((await worker.fetch(request('/agentic-commerce-os/storage-management/', 'POST'), env)).status, 501);
+  const head = await worker.fetch(request('/agentic-commerce-os/storage-management/', 'HEAD'), env);
+  assert.equal(head.status, 200);
+  assert.equal(await head.text(), '');
+});
