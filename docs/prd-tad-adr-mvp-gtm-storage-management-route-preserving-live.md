@@ -1,17 +1,17 @@
 ---
 title: "Storage Management Static Route with Live Checkout Preserved"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.3.0"
-revision: "0.3.0"
+version: "0.4.0"
+revision: "0.4.0"
 date: "2026-11-11"
 updated_date: "2026-11-11"
 continuity_id: "COMMERCE-STORAGE-MANAGEMENT-ROUTE-001"
 supersedes_revision: "0.2.0"
-prd_revision: "0.3.0"
-tad_revision: "0.3.0"
-adr_revision: "0.3.0"
-mvp_revision: "0.3.0"
-gtm_revision: "0.3.0"
+prd_revision: "0.4.0"
+tad_revision: "0.4.0"
+adr_revision: "0.4.0"
+mvp_revision: "0.4.0"
+gtm_revision: "0.4.0"
 owner: "agentic-commerce-os"
 lifecycle_status: "active"
 verification_scope: "Serve the existing six-source storage index at its exact Commerce subpath without changing the active checkout Worker, profile, payment credentials, or application route."
@@ -110,4 +110,20 @@ Its value is immediate discovery; buyer demand and savings remain unmeasured. St
 new database, cache service, package, or dynamic Worker invocation. The Cloudflare Free-tier static
 asset request and storage policy, account limits, and zero-billable-resource preflight must be
 verified against current official documentation and provider state at release.
+
+## Release evidence and handover (revision 0.4.0)
+
+**Development:** the static storage index and its exact route owner are integrated at source revision `a87e7f8b4b97eac23b4c1f3e006af69bbe1a6395`. Commerce PRs #256–#261 are merged and their required Integration Gate runs are green. This repository has no separate feature inventory; this PRD remains the feature owner.
+
+**Production Release:** protected release run [43015411359](https://github.com/huijoohwee/agentic-commerce-os/actions/runs/43015411359) published `agentic-commerce-storage-management-static` version `f66757e4-1d65-4842-a1fa-9e065886cc7a` (deployment `1bf094de-4132-412a-9b15-fcc973f367b3`) to the exact browser URL `https://airvio.co/agentic-commerce-os/storage-management/`. Cloudflare route patterns are `airvio.co/agentic-commerce-os/storage-management` and `airvio.co/agentic-commerce-os/storage-management/*`; the wildcard belongs to route matching, not the public URL. The release used the Free Website plan at $0, with 9,687 published asset bytes and account usage of 11/100 Workers and 16/1,000 routes. The existing broad Commerce route and its Worker identity are unchanged.
+
+**Runtime:** release readback returned HTTP 200 with matching hashes and security headers for all five assets, 308 for the slashless address, 404 for an unknown path, and 405 for POST. A fresh public read at 2026-11-11 12:15:51 UTC returned HTTP 200 for the page with the released index hash. `/readyz` returned HTTP 200, `checkout=live`, `realMoney=true`, source `6f3a0685d6879ae422f311e387ac84c60efbc675`, and existing Commerce Worker version `ed40f09f-620a-47d1-90ed-4b9fac2974f5`, matching the pre-deployment baseline. The exact receipt set and digests are in [the release evidence report](reports/storage-management-static-route-release-43015411359.json).
+
+**Recovery and rollback:** initial release run [43006108454](https://github.com/huijoohwee/agentic-commerce-os/actions/runs/43006108454) failed after creating its bootstrap Worker/routes. Successful protected recovery [43014673231](https://github.com/huijoohwee/agentic-commerce-os/actions/runs/43014673231) removed only the exact Worker version and route patterns and reverified the unchanged live Commerce application. The successful release baseline had no static Worker or narrow route, so no predecessor existed; no rollback was needed after the verified release. Preserve the current static version as the rollback target.
+
+**Economics and limits:** deployment stayed on the $0 Free Website plan, used no database, persistent storage service, paid feature, or new package, and added 9,687 static asset bytes. Buyer demand, operator time saved, and financial savings remain unmeasured. No separate physical-device session is retained in the release evidence.
+
+**Remaining work / next action:** the private workspace TODO handover is unresolved because its available worktrees are attached to unrelated active branches. The workspace owner must open a clean native lane on protected main, append one immutable November Context under the existing TODO contract, and regenerate its Kanban projection. Recheck with the private owner’s planning check. The blocker and recovery locator are recorded in the release report; no workspace files were changed.
+
+**Follow-up delivery disposition:** this evidence-only follow-up changes exactly `docs/prd-tad-adr-mvp-gtm-storage-management-route-preserving-live.md` and `docs/reports/storage-management-static-route-release-43015411359.json`. Both are excluded from the Commerce Worker and static public product artifact; this source handover requires no further deployment. The shared delivery ledger is owned by a separate merged lane and is being left for its existing owner to update with the bound source, deployment, runtime, and no-deploy receipts.
 
