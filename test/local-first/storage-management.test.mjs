@@ -6,16 +6,20 @@ import http from 'node:http';
 import { once } from 'node:events';
 import { chromium } from '@playwright/test';
 import worker from '../../src/local-first/worker.ts';
-import { verifyStorageManagementSourceIndex } from '../../scripts/local-first-release/artifact.mjs';
+import { assertLocalFirstConfig, verifyStorageManagementSourceIndex } from '../../scripts/local-first-release/artifact.mjs';
 
 const revision = 'c'.repeat(40);
 const root = process.cwd();
+const routePrefix = '/agentic-commerce-os/storage-management';
+const guideDirectory = path.resolve(root, 'public/local-first/agentic-commerce-os/storage-management');
 const contentType = file => ({ html: 'text/html; charset=utf-8', css: 'text/css; charset=utf-8', js: 'text/javascript; charset=utf-8', json: 'application/json; charset=utf-8' }[path.extname(file).slice(1)] || 'application/octet-stream');
 
 test('storage management source index is pinned and works offline on mobile', { timeout: 45000 }, async t => {
   const index = verifyStorageManagementSourceIndex();
   assert.equal(index.sourceCount, 6);
   assert.equal(index.sourceFileCount, 9);
+  const config = JSON.parse(fs.readFileSync(path.join(root, 'wrangler.local-first.jsonc'), 'utf8'));
+  assertLocalFirstConfig(config);
   const evidenceRoot = path.resolve(root, 'node_modules/.cache/storage-management-browser');
   fs.mkdirSync(evidenceRoot, { recursive: true });
   const env = {
@@ -28,12 +32,30 @@ test('storage management source index is pinned and works offline on mobile', { 
       catch { return new Response('Not found', { status: 404 }); }
     } },
   };
+  const staticGuide = request => {
+    const url = new URL(request.url);
+    if (url.pathname !== routePrefix && !url.pathname.startsWith(routePrefix + '/')) return null;
+    if (url.pathname === routePrefix) {
+      url.pathname += '/';
+      return Response.redirect(url, 307);
+    }
+    if (!['GET', 'HEAD'].includes(request.method)) return null;
+    const relative = url.pathname.slice(routePrefix.length + 1) || 'index.html';
+    const filename = path.resolve(guideDirectory, relative);
+    if (!filename.startsWith(guideDirectory + path.sep)) return new Response('Not found', { status: 404 });
+    const headers = { 'content-type': contentType(filename), 'cache-control': 'public, max-age=0, must-revalidate, no-transform',
+      'content-security-policy': "default-src 'none'; base-uri 'self'; connect-src 'self'; form-action 'none'; frame-ancestors 'none'; object-src 'none'; script-src 'self'; style-src 'self'",
+      'permissions-policy': 'camera=(), microphone=(), geolocation=(), payment=()', 'referrer-policy': 'no-referrer',
+      'x-content-type-options': 'nosniff' };
+    try { return new Response(request.method === 'HEAD' ? null : fs.readFileSync(filename), { headers }); }
+    catch { return new Response('Not found', { status: 404 }); }
+  };
   const server = http.createServer(async (incoming, outgoing) => {
     try {
       const request = new Request(`http://127.0.0.1:${server.address().port}${incoming.url}`, {
         method: incoming.method, headers: incoming.headers,
       });
-      const response = await worker.fetch(request, env);
+      const response = staticGuide(request) ?? await worker.fetch(request, env);
       outgoing.writeHead(response.status, Object.fromEntries(response.headers));
       outgoing.end(Buffer.from(await response.arrayBuffer()));
     } catch {
@@ -45,6 +67,13 @@ test('storage management source index is pinned and works offline on mobile', { 
   await once(server, 'listening');
   t.after(() => new Promise(resolve => server.close(resolve)));
   const url = `http://127.0.0.1:${server.address().port}/agentic-commerce-os/storage-management/`;
+  assert.equal((await fetch(url)).status, 200);
+  const slashless = await fetch(url.slice(0, -1), { redirect: 'manual' });
+  assert.equal(slashless.status, 307);
+  assert.equal(slashless.headers.get('location'), url);
+  assert.equal((await fetch(url, { method: 'HEAD' })).status, 200);
+  assert.equal((await fetch(url, { method: 'POST', body: '{}' })).status, 501);
+  assert.equal((await fetch(url + 'private.json')).status, 404);
   const browser = await chromium.launch({ headless: true,
     ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {}) });
   t.after(() => browser.close());

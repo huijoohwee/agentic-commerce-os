@@ -18,7 +18,7 @@ const packDirectory = '/services/workspace-pack/'
 // A bounded, exact allowlist: shared files get the same asset at both route prefixes.
 const sharedPackFiles = 'commerce-shell.css workspace-layout.js dashboard-columns.js toolbar-icons.js commerce-toolbar.js dropdown-menus.js graph-ui-tokens.css commerce-theme.css shared-ui-profile.css floating-panel.css toolbar.css'.split(' ')
 const primaryFiles = [
-  'app.js drafts.js checkout.js launch.js workspace.js workspace-graph.js agentic-base-data-view.js agentic-base-data-view.css graph-data-view.js graph-data-view.css style.css sw.js workflow.js workspace-capabilities.js workspace-tools.js storage-management/index.html storage-management/style.css storage-management/guide.js storage-management/sources.json',
+  'app.js drafts.js checkout.js launch.js workspace.js workspace-graph.js agentic-base-data-view.js agentic-base-data-view.css graph-data-view.js graph-data-view.css style.css sw.js workflow.js workspace-capabilities.js workspace-tools.js',
   ...(import.meta.commerceLiveCheckout === false ? ['dropdown-menus.js graph-ui-tokens.css'] : [
     sharedPackFiles.join(' '),
     'favicon.svg workspace-tour.js workspace-navigation.js workspace-pack.route.js workspace-view-styles.js workspace-singleton.js shopper-demo-detail.js workspace-shell.css sme-business-pack.js sme-business-pack.css sme-business-pack-core.js sme-workflow-editor.js sme-pack-dictionary.js sme-pack-business-plan.js housing-comparison.js housing-engine.js housing-sample.js housing-comparison.css sme-review-workflow.js graph-gantt-timeline.js graph-gantt-timeline.css',
@@ -26,7 +26,6 @@ const primaryFiles = [
 ].join(' ').split(' ')
 const ASSET_PATHS = new Map<string,string>([['/', '/'], [packDirectory, '/workspace-pack.html']])
 for (const file of primaryFiles) ASSET_PATHS.set('/' + file, '/' + file)
-ASSET_PATHS.set('/storage-management/', '/storage-management/index.html')
 for (const file of [...sharedPackFiles, ...['js', 'simulation.js', 'console.js', 'css'].map(ext => 'workspace-pack.' + ext)]) {
   ASSET_PATHS.set(packDirectory + file, '/' + file)
 }
@@ -96,10 +95,6 @@ export async function fetchLocalFirst(request: Request, env: LocalFirstEnv, tran
         message: 'Agent writes are unavailable. Use the reviewed offer and human-operated sandbox checkout.' }, { status: 501 }))
     }
     const relative = url.pathname.slice(prefix.length)
-    if (relative === '/storage-management' && ['GET', 'HEAD'].includes(request.method)) {
-      url.pathname = `${prefix}/storage-management/`
-      return finish(Response.redirect(url.href, 308))
-    }
     if (['/vendor', '/admin'].includes(relative)) {
       url.pathname = `${prefix}/`; url.hash = relative.slice(1); url.search = '';
       return finish(Response.redirect(url.href, 308));
