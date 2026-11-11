@@ -2,8 +2,9 @@
   "schema": "commerce.floating-panel-delivery-handover/v1",
   "recordedAt": "2026-11-11T13:57:01Z",
   "requestedWorktrees": {
-    "source": "/Users/huijoohwee/Documents/GitHub/.worktrees/agentic-commerce-os/device-0232231d4a19--commerce-floating-panel",
-    "recoverableQuarantine": "/Users/huijoohwee/Documents/GitHub/.worktrees/quarantine/agentic-commerce-os-floating-panel-scratch"
+    "source": "device-0232231d4a19--commerce-floating-panel",
+    "recoverableQuarantine": "agentic-commerce-os-floating-panel-scratch",
+    "pathDisclosure": "Worktrees are identified by their final path components; absolute local paths are omitted from this public report."
   },
   "sourceIntegration": {
     "repository": "github.com/huijoohwee/agentic-commerce-os",
