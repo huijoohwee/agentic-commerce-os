@@ -9,11 +9,17 @@ export function authoredAssets(revision, checkout = 'sandbox') {
     let bytes = fs.readFileSync('public/local-first/' + file);
     if (file === 'sw.js' || file === 'index.html') bytes = Buffer.from(renderStorefrontTemplate(bytes.toString(), revision, checkout));
     const packAsset = (file.startsWith('workspace-pack.') && file !== 'workspace-pack.route.js') || file === 'floating-panel.css';
+    const staticGuide = file.startsWith('agentic-commerce-os/storage-management/');
     let path = file === 'index.html' ? '' : file;
+    if (staticGuide) {
+      path = file.slice('agentic-commerce-os/'.length);
+      if (path.endsWith('/index.html')) path = path.slice(0, -'index.html'.length);
+    }
     if (packAsset) path = file === 'workspace-pack.html' ? `assets/${revision}/services/workspace-pack/` : 'services/workspace-pack/' + file;
     return { path, bytes: bytes.length, digest: digest(bytes),
       contentType: file.endsWith('.js') ? /(?:application|text)\/javascript/ : file.endsWith('.css') ? /text\/css/
-        : file.endsWith('.svg') ? /image\/svg\+xml/ : /text\/html/ };
+        : file.endsWith('.json') ? /application\/json/ : file.endsWith('.svg') ? /image\/svg\+xml/ : /text\/html/,
+      sourceHeaderRequired: !staticGuide };
   });
 }
 async function readDigest(response) {
@@ -50,7 +56,10 @@ export async function waitForAssets({ baseUrl, revision, checkout = 'sandbox', a
           if (![404, 502, 503, 504].includes(response.status)) item.terminal = 'asset_terminal_http_' + response.status;
           await response.body?.cancel(); return item;
         }
-        if (item.sourceRevision !== revision) { item.error = 'asset_source_not_converged'; await response.body?.cancel(); return item; }
+        if (item.sourceRevision !== revision
+          && !(asset.sourceHeaderRequired === false && item.sourceRevision === null)) {
+          item.error = 'asset_source_not_converged'; await response.body?.cancel(); return item;
+        }
         Object.assign(item, await readDigest(response));
         const validHeaders = asset.contentType.test(item.contentType ?? '')
           && /(?:^|,\s*)no-transform(?:,|$)/.test(response.headers.get('cache-control') ?? '');

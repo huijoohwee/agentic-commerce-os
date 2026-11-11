@@ -11,7 +11,11 @@
   "assets": {
     "directory": "./public/local-first",
     "binding": "ASSETS",
-    "run_worker_first": true
+    "run_worker_first": [
+      "/agentic-commerce-os/*",
+      "!/agentic-commerce-os/storage-management",
+      "!/agentic-commerce-os/storage-management/*"
+    ]
   },
   "vars": {
     "RELEASE_CANDIDATE_SHA": "local-unreleased",
