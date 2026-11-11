@@ -4,16 +4,20 @@ on:
   workflow_dispatch:
     inputs:
       operation:
-        description: Publish the exact static page candidate or restore a retained successful release
+        description: Publish, restore a retained release, or recover an exact failed bootstrap
         required: true
         type: choice
-        options: [deploy, rollback]
+        options: [deploy, rollback, recover-bootstrap]
       candidate_sha:
         description: Exact current protected main commit
         required: true
         type: string
       rollback_run_id:
-        description: Successful run ID whose retained release receipt is the exact rollback target
+        description: Prior run ID whose retained result artifact is the exact rollback or recovery target
+        required: false
+        type: string
+      failed_worker_version_id:
+        description: Exact Worker version ID printed by the failed bootstrap deployment
         required: false
         type: string
 
@@ -35,6 +39,7 @@ jobs:
       CANDIDATE_SHA: ${{ inputs.candidate_sha }}
       OPERATION: ${{ inputs.operation }}
       ROLLBACK_RUN_ID: ${{ inputs.rollback_run_id }}
+      FAILED_WORKER_VERSION_ID: ${{ inputs.failed_worker_version_id }}
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -53,7 +58,7 @@ jobs:
         run: |
           set -euo pipefail
           [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
-          [[ "$OPERATION" == deploy || "$OPERATION" == rollback ]]
+          [[ "$OPERATION" == deploy || "$OPERATION" == rollback || "$OPERATION" == recover-bootstrap ]]
           test "$GITHUB_RUN_ATTEMPT" = 1
           test "$GITHUB_REF" = refs/heads/main
           test "$GITHUB_SHA" = "$CANDIDATE_SHA"
@@ -61,9 +66,31 @@ jobs:
           test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$CANDIDATE_SHA"
           if [[ "$OPERATION" == rollback ]]; then
             [[ "$ROLLBACK_RUN_ID" =~ ^[1-9][0-9]{0,17}$ ]]
+            test -z "$FAILED_WORKER_VERSION_ID"
+          elif [[ "$OPERATION" == recover-bootstrap ]]; then
+            [[ "$ROLLBACK_RUN_ID" =~ ^[1-9][0-9]{0,17}$ ]]
+            [[ "$FAILED_WORKER_VERSION_ID" =~ ^[0-9a-fA-F-]{36}$ ]]
           else
             test -z "$ROLLBACK_RUN_ID"
+            test -z "$FAILED_WORKER_VERSION_ID"
           fi
+
+      - name: Bind recovery version to the failed deployment log
+        if: ${{ inputs.operation == 'recover-bootstrap' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          gh run view "$ROLLBACK_RUN_ID" --repo "$GH_REPO" --log-failed > "$RUNNER_TEMP/failed-bootstrap.log"
+          node --input-type=module - "$RUNNER_TEMP/failed-bootstrap.log" "$FAILED_WORKER_VERSION_ID" <<'NODE'
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs';
+          const log = fs.readFileSync(process.argv[2], 'utf8');
+          const ids = [...log.matchAll(/Current Version ID:\s*([0-9a-f-]{36})/giu)].map(match => match[1]);
+          assert.equal(ids.length, 1, 'failed_bootstrap_version_id_not_unique_in_log');
+          assert.equal(ids[0].toLowerCase(), process.argv[3].toLowerCase(), 'failed_bootstrap_version_id_mismatch');
+          NODE
 
       - name: Install locked dependencies
         run: timeout --foreground --kill-after=30s 8m npm ci --ignore-scripts
@@ -102,6 +129,7 @@ jobs:
       CANDIDATE_SHA: ${{ inputs.candidate_sha }}
       OPERATION: ${{ inputs.operation }}
       ROLLBACK_RUN_ID: ${{ inputs.rollback_run_id }}
+      FAILED_WORKER_VERSION_ID: ${{ inputs.failed_worker_version_id }}
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -139,7 +167,7 @@ jobs:
           mkdir -p "$STORAGE_MANAGEMENT_EVIDENCE_DIR"
 
       - name: Download the exact retained release for rollback
-        if: ${{ inputs.operation == 'rollback' }}
+        if: ${{ inputs.operation == 'rollback' || inputs.operation == 'recover-bootstrap' }}
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v7
         with:
           github-token: ${{ github.token }}
@@ -165,6 +193,17 @@ jobs:
           STORAGE_MANAGEMENT_ROLLBACK_RUN_ID: ${{ inputs.rollback_run_id }}
           STORAGE_MANAGEMENT_EVIDENCE_DIR: ${{ runner.temp }}/commerce-storage-management-evidence
         run: node scripts/storage-management-release/rollback.mjs rollback "$CANDIDATE_SHA" \
+          "$RUNNER_TEMP/commerce-storage-management-rollback-target" "$STORAGE_MANAGEMENT_EVIDENCE_DIR"
+
+      - name: Remove the exact failed bootstrap Worker
+        if: ${{ inputs.operation == 'recover-bootstrap' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          STORAGE_MANAGEMENT_EVIDENCE_DIR: ${{ runner.temp }}/commerce-storage-management-evidence
+        run: node scripts/storage-management-release/rollback.mjs recover-bootstrap \
+          "$ROLLBACK_RUN_ID" "$FAILED_WORKER_VERSION_ID" \
           "$RUNNER_TEMP/commerce-storage-management-rollback-target" "$STORAGE_MANAGEMENT_EVIDENCE_DIR"
 
       - name: Retain typed release or rollback evidence

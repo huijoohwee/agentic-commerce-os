@@ -4,7 +4,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { CONFIG, WORKER, verifyCandidate } from './verify.mjs';
-import { captureBaseline, authorizeRun, assertCurrentBaseline, verifyDeployment } from './provider.mjs';
+import { captureBaseline, authorizeRun, assertCurrentBaseline, readDeployments, verifyDeployment } from './provider.mjs';
 import { restoreBaseline } from './rollback.mjs';
 
 const DEFAULT_EVIDENCE = 'node_modules/.cache/storage-management-evidence';
@@ -17,9 +17,9 @@ export async function deployRelease(candidateSha, directory = DEFAULT_EVIDENCE) 
   assert.match(candidateSha, /^[a-f0-9]{40}$/u);
   const evidence = path.resolve(directory);
   const candidate = verifyCandidate({ candidateSha });
-  let baseline = null, deploymentStarted = false;
+  let baseline = null, deploymentStarted = false, deployedVersion = null;
   const runId = process.env.GITHUB_RUN_ID ?? 'local';
-  const message = `Commerce storage-management static candidate ${candidateSha} run ${runId}`;
+  const message = `sm:${candidateSha.slice(0, 12)}:${runId}`;
 
   try {
     baseline = await captureBaseline(candidateSha, evidence);
@@ -34,7 +34,12 @@ export async function deployRelease(candidateSha, directory = DEFAULT_EVIDENCE) 
     execFileSync(process.execPath, ['node_modules/wrangler/bin/wrangler.js', 'deploy',
       '--config', CONFIG, '--message', message, '--strict'], { stdio: 'inherit', timeout: 120000 });
 
-    const verified = await verifyDeployment(candidateSha, evidence, message);
+    deployedVersion = await readDeployments();
+    assert.equal(deployedVersion.message, message, 'static_worker_candidate_message_mismatch');
+    writeOnce(evidence, 'deployment-attempt.json', { schema: 'commerce.storage-management-deployment-attempt/v1',
+      candidateSha, candidateDigest: candidate.assetDigest, runId, message,
+      versionId: deployedVersion.versionId, observedAt: new Date().toISOString() });
+    const verified = await verifyDeployment(candidateSha, evidence, message, deployedVersion.versionId);
     const receipt = { schema: 'commerce.storage-management-static-release/v1',
       candidate: verified.candidate, baseline: verified.baseline, authorization: verified.authorization,
       deploymentMessage: message, production: verified.production, readback: verified.readback,
@@ -45,7 +50,10 @@ export async function deployRelease(candidateSha, directory = DEFAULT_EVIDENCE) 
     let rollback = null;
     if (baseline && deploymentStarted) {
       try {
-        rollback = await restoreBaseline({ baseline, candidateSha, message, directory: evidence });
+        deployedVersion ??= await readDeployments();
+        assert.equal(deployedVersion.message, message, 'rollback_worker_is_not_this_candidate');
+        rollback = await restoreBaseline({ baseline, candidateSha, message,
+          expectedVersionId: deployedVersion.versionId, directory: evidence });
       } catch (rollbackError) {
         rollback = { error: rollbackError.message };
         try { writeOnce(evidence, 'rollback-failure.json', rollback); } catch { /* preserve the original release failure */ }
