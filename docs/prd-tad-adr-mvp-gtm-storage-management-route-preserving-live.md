@@ -1,17 +1,17 @@
 ---
 title: "Storage Management Static Route with Live Checkout Preserved"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.0"
-revision: "0.2.0"
+version: "0.3.0"
+revision: "0.3.0"
 date: "2026-11-11"
 updated_date: "2026-11-11"
 continuity_id: "COMMERCE-STORAGE-MANAGEMENT-ROUTE-001"
-supersedes_revision: "0.1.0"
-prd_revision: "0.2.0"
-tad_revision: "0.2.0"
-adr_revision: "0.2.0"
-mvp_revision: "0.2.0"
-gtm_revision: "0.2.0"
+supersedes_revision: "0.2.0"
+prd_revision: "0.3.0"
+tad_revision: "0.3.0"
+adr_revision: "0.3.0"
+mvp_revision: "0.3.0"
+gtm_revision: "0.3.0"
 owner: "agentic-commerce-os"
 lifecycle_status: "active"
 verification_scope: "Serve the existing six-source storage index at its exact Commerce subpath without changing the active checkout Worker, profile, payment credentials, or application route."
@@ -85,12 +85,19 @@ deployment record; no paid plan, add-on, or overage is permitted.
    source revision and live checkout state must match the pre-deploy observations.
 5. Retain a typed receipt with candidate source and asset digests, Worker version/deployment,
    exact route identity, baseline, free-tier preflight, Production approval and runtime readback.
+6. Read the Worker asset capability from the Worker Scripts API response, not the Beta Workers
+   inventory model. Bind verification and cleanup to the exact Cloudflare deployment version ID.
 
 ## Rollback
 
 - If the narrow routes are new and any post-deploy verification fails, remove only those exact routes
   and its newly created Worker, then verify the broad Commerce route and `/readyz` still resolve to
   the retained live Worker. Do not alter checkout or payment configuration.
+- If a first bootstrap leaves an unverified Worker behind, use the protected recovery operation with
+  the failed run's retained baseline, original Production approval, and exact `Current Version ID`
+  from that run's deployment log. Recheck the exact version and route ownership before deletion;
+  preserve state if the version or run evidence differs. The recovery must verify the broader
+  Commerce route and live `/readyz` identity afterward.
 - For a later page update, restore the exact retained static Worker version through the protected
   rollback path. Reverify the page assets and existing Commerce application identity.
 - If route ownership, Worker version, or write result is ambiguous, preserve provider state and

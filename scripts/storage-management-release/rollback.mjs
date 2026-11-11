@@ -8,7 +8,7 @@ import {
   captureBaseline, authorizeRun, assertCurrentBaseline,
 } from './provider.mjs';
 import { WORKER, ROUTES, verifyCandidate } from './verify.mjs';
-import { fetchGitHubJson } from '../production-release/human-authorization.ts';
+import { fetchGitHubJson, validateHumanAuthorization } from '../production-release/human-authorization.ts';
 
 const APP_ROUTE = 'airvio.co/agentic-commerce-os*';
 const APP_WORKER = 'agentic-commerce-edge-production';
@@ -36,11 +36,12 @@ function verifyPublic(previous, current) {
   assert.equal(canonical(identity(previous)), canonical(identity(current)), 'retained_static_assets_not_restored');
 }
 
-async function restoreInitialRoute({ baseline, candidateSha, message, directory }) {
+async function restoreInitialRoute({ baseline, candidateSha, expectedVersionId, directory }) {
   const zone = await readZone(), account = process.env.CLOUDFLARE_ACCOUNT_ID;
-  const [routes, workers, app] = await Promise.all([
+  const [routes, workers, scripts, app] = await Promise.all([
     pagedRows(`/zones/${zone.id}/workers/routes`),
-    pagedRows(`/accounts/${account}/workers/workers`), readReadiness(),
+    pagedRows(`/accounts/${account}/workers/workers`),
+    pagedRows(`/accounts/${account}/workers/scripts`), readReadiness(),
   ]);
   verifyApplication(app, baseline);
   const broad = routes.filter(row => row.pattern === APP_ROUTE);
@@ -52,6 +53,20 @@ async function restoreInitialRoute({ baseline, candidateSha, message, directory 
   assert.equal(collisions.length <= ROUTES.length, true, 'rollback_route_identity_ambiguous');
   assert.equal(collisions.every(route => ROUTES.includes(route.pattern) && route.script === WORKER), true,
     'rollback_route_identity_ambiguous');
+  const routesUsingWorker = routes.filter(route => route.script === WORKER);
+  assert.deepEqual(routesUsingWorker.map(route => route.id).sort(), collisions.map(route => route.id).sort(),
+    'rollback_worker_has_other_routes');
+  const workerRows = workers.filter(row => row.name === WORKER || row.id === WORKER);
+  const scriptRows = scripts.filter(row => row.name === WORKER || row.id === WORKER);
+  assert.equal(workerRows.length <= 1 && scriptRows.length <= 1, true, 'rollback_worker_identity_ambiguous');
+  assert.equal(workerRows.length, scriptRows.length, 'rollback_worker_script_identity_mismatch');
+  let activeVersionId = null;
+  if (workerRows.length === 1) {
+    assert.match(expectedVersionId ?? '', /^[0-9a-f-]{36}$/iu, 'rollback_expected_version_missing');
+    const active = await readDeployments();
+    assert.equal(active.versionId, expectedVersionId, 'rollback_worker_version_is_not_this_candidate');
+    activeVersionId = active.versionId;
+  }
   if (collisions.length) {
     for (const route of collisions) {
       await api(`/zones/${zone.id}/workers/routes/${encodeURIComponent(route.id)}`, { method: 'DELETE' });
@@ -66,30 +81,29 @@ async function restoreInitialRoute({ baseline, candidateSha, message, directory 
   assert.equal(afterBroad[0].id, baseline.state.commerceRoute.id);
   assert.equal(afterBroad[0].script, APP_WORKER);
 
-  const scriptRows = workers.filter(row => row.name === WORKER || row.id === WORKER);
-  assert.equal(scriptRows.length <= 1, true);
-  if (scriptRows.length === 1) {
-    const active = await readDeployments();
-    assert.equal(active.message, message, 'rollback_worker_is_not_this_candidate');
-    assert.equal((await pagedRows(`/zones/${zone.id}/workers/routes`)).some(row => row.script === WORKER), false,
+  if (workerRows.length === 1) {
+    assert.equal(afterRouteRows.some(row => row.script === WORKER), false,
       'rollback_worker_has_other_routes');
     await api(`/accounts/${account}/workers/scripts/${encodeURIComponent(WORKER)}`, { method: 'DELETE' });
   }
   const afterWorkers = await pagedRows(`/accounts/${account}/workers/workers`);
-  assert.equal(afterWorkers.some(row => row.name === WORKER || row.id === WORKER), false,
+  const afterScripts = await pagedRows(`/accounts/${account}/workers/scripts`);
+  assert.equal(afterWorkers.some(row => row.name === WORKER || row.id === WORKER)
+    || afterScripts.some(row => row.name === WORKER || row.id === WORKER), false,
     'rollback_worker_not_absent');
   const finalReadiness = await readReadiness();
   verifyApplication(finalReadiness, baseline);
   const receipt = { schema: 'commerce.storage-management-static-rollback/v1',
     candidateSha, action: collisions.length === 0 && scriptRows.length === 0 ? 'already-absent' : 'remove-new-route-and-worker',
     routePatterns: ROUTES, routeAbsent: true, workerAbsent: true,
+    expectedVersionId: activeVersionId,
     commerceRoute: { id: afterBroad[0].id, pattern: afterBroad[0].pattern, script: afterBroad[0].script },
     application: baseline.state.application, completedAt: new Date().toISOString() };
   writeOnce(path.resolve(directory, 'rollback-receipt.json'), receipt);
   return receipt;
 }
 
-async function restorePreviousVersion({ baseline, candidateSha, message, directory }) {
+async function restorePreviousVersion({ baseline, candidateSha, message, expectedVersionId, directory }) {
   const current = await captureState();
   verifyApplication(await readReadiness(), baseline);
   assert.deepEqual(current.commerceRoute, baseline.state.commerceRoute, 'commerce_route_changed_before_rollback');
@@ -104,7 +118,9 @@ async function restorePreviousVersion({ baseline, candidateSha, message, directo
     writeOnce(path.resolve(directory, 'rollback-receipt.json'), receipt);
     return receipt;
   }
-  assert.equal(current.staticWorker.deployment.message, message, 'rollback_refused_independent_worker_change');
+  if (expectedVersionId) assert.equal(current.staticWorker.deployment.versionId, expectedVersionId,
+    'rollback_refused_independent_worker_change');
+  else assert.equal(current.staticWorker.deployment.message, message, 'rollback_refused_independent_worker_change');
   const priorVersion = baseline.state.staticWorker?.deployment?.versionId;
   assert.match(priorVersion ?? '', /^[0-9a-f-]{36}$/iu, 'retained_worker_version_missing');
   execFileSync(process.execPath, ['node_modules/wrangler/bin/wrangler.js', 'rollback', priorVersion,
@@ -127,12 +143,12 @@ async function restorePreviousVersion({ baseline, candidateSha, message, directo
   return receipt;
 }
 
-export async function restoreBaseline({ baseline, candidateSha, message, directory }) {
+export async function restoreBaseline({ baseline, candidateSha, message, expectedVersionId, directory }) {
   assert.equal(baseline.candidateSha, candidateSha);
   assert.equal(baseline.state.application.checkout, 'live');
-  if (baseline.releaseMode === 'bootstrap') return restoreInitialRoute({ baseline, candidateSha, message, directory });
+  if (baseline.releaseMode === 'bootstrap') return restoreInitialRoute({ baseline, candidateSha, expectedVersionId, directory });
   assert.equal(baseline.releaseMode, 'steady-state');
-  return restorePreviousVersion({ baseline, candidateSha, message, directory });
+  return restorePreviousVersion({ baseline, candidateSha, message, expectedVersionId, directory });
 }
 
 async function validateReleaseRun(receipt, expectedRunId) {
@@ -188,18 +204,84 @@ export async function rollbackRelease({ releaseDirectory, evidenceDirectory, can
   assert.deepEqual(current.storageRoutes, receipt.production.storageRoutes, 'storage_routes_changed_after_release');
   assert.deepEqual(current.application, receipt.production.application, 'commerce_live_identity_changed_after_release');
   const rollbackReceipt = await restoreBaseline({ baseline: retainedBaseline, candidateSha: releaseCandidate,
-    message, directory: evidenceDirectory });
+    message, expectedVersionId: receipt.production.staticWorker.deployment.versionId, directory: evidenceDirectory });
   return { releaseRunId: receipt.authorization.runId, releaseCandidate, rollbackReceipt,
     rollbackAuthorization: authorization };
 }
 
+export async function recoverFailedBootstrap({ releaseDirectory, evidenceDirectory, failedRunId, expectedVersionId }) {
+  assert(Number.isSafeInteger(failedRunId) && failedRunId > 0);
+  assert.match(expectedVersionId ?? '', /^[0-9a-f-]{36}$/iu);
+  const baseline = read(path.join(releaseDirectory, 'baseline.json'));
+  const authorization = read(path.join(releaseDirectory, 'authorization.json'));
+  const rollbackFailure = read(path.join(releaseDirectory, 'rollback-failure.json'));
+  assert.equal(baseline.schema, 'commerce.storage-management-release-baseline/v1');
+  assert.equal(baseline.releaseMode, 'bootstrap');
+  assert.match(baseline.candidateSha ?? '', /^[a-f0-9]{40}$/u);
+  assert.equal(baseline.state?.storageRoutes?.length, 0);
+  assert.equal(baseline.state?.staticWorker, null);
+  assert.equal(baseline.state?.application?.checkout, 'live');
+  assert.equal(authorization.schema, 'commerce.storage-management-production-authorization/v1');
+  assert.equal(authorization.repository, REPOSITORY);
+  assert.equal(authorization.workflow, WORKFLOW_PATH);
+  assert.equal(authorization.candidateSha, baseline.candidateSha);
+  assert.equal(authorization.candidateDigest, baseline.candidateDigest);
+  assert.equal(authorization.baselineDigest, baseline.stateDigest);
+  assert.equal(authorization.releaseMode, 'bootstrap');
+  assert.equal(Number(authorization.runId), failedRunId);
+  assert.equal(authorization.approval?.decision, 'approved');
+  assert.deepEqual(Object.keys(rollbackFailure).sort(), ['error']);
+  assert.match(rollbackFailure.error ?? '', /^rollback_worker_is_not_this_candidate\n/u);
+
+  const token = process.env.GH_TOKEN ?? '';
+  const base = `https://api.github.com/repos/${REPOSITORY}`;
+  const run = await fetchGitHubJson(`${base}/actions/runs/${failedRunId}`, token);
+  assert.equal(run.id, failedRunId);
+  assert.equal(run.name, WORKFLOW);
+  assert.equal(run.path, WORKFLOW_PATH);
+  assert.equal(run.event, 'workflow_dispatch');
+  assert.equal(run.head_branch, 'main');
+  assert.equal(run.head_sha, baseline.candidateSha);
+  assert.equal(run.run_attempt, 1);
+  assert.equal(run.status, 'completed');
+  assert.equal(run.conclusion, 'failure');
+  assert.equal(run.repository?.full_name, REPOSITORY);
+  const [reviews, environment] = await Promise.all([
+    fetchGitHubJson(`${base}/actions/runs/${failedRunId}/approvals`, token),
+    fetchGitHubJson(`${base}/environments/production`, token),
+  ]);
+  const approval = validateHumanAuthorization(reviews, environment, { releaseMode: 'bootstrap',
+    candidateSha: baseline.candidateSha, runId: failedRunId, runAttempt: 1, allowOwnerSelfReview: true });
+  assert.equal(approval.approver.id, authorization.approval.approver?.id);
+  assert.equal(approval.approver.login, authorization.approval.approver?.login);
+
+  const rollbackReceipt = await restoreInitialRoute({ baseline, candidateSha: baseline.candidateSha,
+    expectedVersionId, directory: evidenceDirectory });
+  const receipt = { schema: 'commerce.storage-management-bootstrap-recovery/v1', failedRunId,
+    failedCandidateSha: baseline.candidateSha, candidateDigest: baseline.candidateDigest,
+    expectedVersionId, approval, rollbackReceipt, completedAt: new Date().toISOString() };
+  writeOnce(path.resolve(evidenceDirectory, 'bootstrap-recovery-receipt.json'), receipt);
+  return receipt;
+}
+
 async function main() {
-  const [command, candidateSha, releaseDirectory, evidenceDirectory, ...extra] = process.argv.slice(2);
-  assert.equal(extra.length, 0);
-  assert.equal(command, 'rollback');
-  assert(candidateSha && releaseDirectory && evidenceDirectory);
-  const result = await rollbackRelease({ releaseDirectory: path.resolve(releaseDirectory),
-    evidenceDirectory: path.resolve(evidenceDirectory), candidateSha });
+  const [command, ...args] = process.argv.slice(2);
+  let result;
+  if (command === 'recover-bootstrap') {
+    const [failedRun, expectedVersionId, releaseDirectory, evidenceDirectory, ...extra] = args;
+    assert.equal(extra.length, 0);
+    assert.match(failedRun ?? '', /^[1-9][0-9]{0,17}$/u);
+    assert(expectedVersionId && releaseDirectory && evidenceDirectory);
+    result = await recoverFailedBootstrap({ failedRunId: Number(failedRun), expectedVersionId,
+      releaseDirectory: path.resolve(releaseDirectory), evidenceDirectory: path.resolve(evidenceDirectory) });
+  } else {
+    const [candidateSha, releaseDirectory, evidenceDirectory, ...extra] = args;
+    assert.equal(extra.length, 0);
+    assert.equal(command, 'rollback');
+    assert(candidateSha && releaseDirectory && evidenceDirectory);
+    result = await rollbackRelease({ releaseDirectory: path.resolve(releaseDirectory),
+      evidenceDirectory: path.resolve(evidenceDirectory), candidateSha });
+  }
   process.stdout.write(`${JSON.stringify(result)}\n`);
 }
 

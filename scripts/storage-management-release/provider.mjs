@@ -206,11 +206,13 @@ export async function captureState({ verifyPublic = true } = {}) {
   const accountId = ACCOUNT();
   assert.match(accountId, /^[a-f0-9]{32}$/u);
   const zoneState = await readZone();
-  const [workerRows, routeRows, app] = await Promise.all([
+  const [workerRows, scriptRows, routeRows, app] = await Promise.all([
     pagedRows(`/accounts/${accountId}/workers/workers`, null),
+    pagedRows(`/accounts/${accountId}/workers/scripts`, null),
     pagedRows(`/zones/${zoneState.id}/workers/routes`, null), readReadiness(),
   ]);
   const workerMatches = workerRows.filter(row => row.name === WORKER || row.id === WORKER);
+  const scriptMatches = scriptRows.filter(row => row.name === WORKER || row.id === WORKER);
   const targetRoutes = routeRows.filter(row => ROUTES.includes(row.pattern)
     || String(row.pattern ?? '').startsWith('airvio.co/agentic-commerce-os/storage-management'))
     .map(routeShape).sort((a, b) => a.pattern.localeCompare(b.pattern) || String(a.id).localeCompare(String(b.id)));
@@ -218,17 +220,19 @@ export async function captureState({ verifyPublic = true } = {}) {
   assert.equal(appRoutes.length, 1, 'commerce_broad_route_not_unique');
   assert.equal(appRoutes[0].script, APP_WORKER, 'commerce_broad_route_worker_changed');
   assert.equal(workerMatches.length <= 1, true, 'static_worker_not_unique');
+  assert.equal(scriptMatches.length <= 1, true, 'static_script_not_unique');
   const targetExists = targetRoutes.length === ROUTES.length && ROUTES.every(pattern =>
     targetRoutes.some(route => route.pattern === pattern && route.script === WORKER));
   assert.equal(targetRoutes.length === 0 || targetExists, true, 'storage_route_conflict');
   assert.equal((workerMatches.length === 1) === targetExists, true, 'static_worker_route_state_inconsistent');
+  assert.equal((scriptMatches.length === 1) === targetExists, true, 'static_script_route_state_inconsistent');
   let worker = null;
   if (targetExists) {
     const deployment = await readDeployments();
-    const script = workerMatches[0];
+    const script = workerMatches[0], scriptDetails = scriptMatches[0];
     assert.equal(script.observability?.enabled, false, 'static_worker_observability_must_be_disabled');
     worker = { name: WORKER, deployment, observabilityEnabled: false,
-      hasAssets: script.has_assets === true, usageModel: script.usage_model ?? null };
+      hasAssets: scriptDetails.has_assets === true, usageModel: script.usage_model ?? null };
     assert.equal(worker.hasAssets, true, 'static_worker_assets_missing');
   }
   const capacity = { workers: workerRows.length, maxWorkers: WORKER_LIMIT,
@@ -327,7 +331,7 @@ export async function authorizeRun(candidateSha, directory) {
   return receipt;
 }
 
-export async function verifyDeployment(candidateSha, directory, message) {
+export async function verifyDeployment(candidateSha, directory, message, expectedVersionId) {
   const baseline = readJson(evidenceFile(directory, 'baseline.json'));
   const authorization = readJson(evidenceFile(directory, 'authorization.json'));
   const candidate = verifyCandidate({ candidateSha });
@@ -338,6 +342,7 @@ export async function verifyDeployment(candidateSha, directory, message) {
   assert.equal(current.storageRoutes.length, ROUTES.length);
   assert.deepEqual(current.storageRoutes.map(route => route.pattern).sort(), [...ROUTES].sort());
   assert.equal(current.storageRoutes.every(route => route.script === WORKER), true);
+  assert.equal(current.staticWorker?.deployment.versionId, expectedVersionId, 'static_worker_candidate_version_mismatch');
   if (baseline.releaseMode === 'steady-state')
     assert.deepEqual(current.storageRoutes, baseline.state.storageRoutes, 'storage_route_identity_changed');
   else assert.equal(baseline.state.storageRoutes.length, 0, 'bootstrap_route_baseline_not_empty');
