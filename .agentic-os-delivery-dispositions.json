@@ -4,158 +4,22 @@
   "dispositions": [
     {
       "schema": "agentic-os/delivery-disposition/v1",
-      "ref": "agent/device-0232231d4a19/commerce-design-system-token-pin-014",
-      "laneHead": "dbd9456b972a40f04fb3418c1743e84f68edcf05",
+      "ref": "agent/device-0232231d4a19/local-first-storage-economy",
+      "laneHead": "4859fe55e703ef27521c4d4e3f930c052533d1ab",
       "paths": [
-        "docs/prd-tad-adr-mvp-gtm-commerce-design-system-tokens.md"
+        "docs/repository-validation.md"
       ],
       "disposition": "no-deploy",
-      "candidateRevision": "3dc1302e1e1908cc7197e6e25be4ae985ffb44f3",
-      "candidateDigest": "a0cffb1d7d4c5cefe9ebfb7f7e11eba3d1beb14636cdcc1c0ebea77cf0ae5c9d",
+      "candidateRevision": "3600723f92c97df2ca483f31e21879b8230b515c",
+      "candidateDigest": "41dcb4cb852a2b119dae455528b0aaeb47e0ad3fef5221dcd0de93a021b8534a",
       "sourceReleaseReceiptDigest": null,
       "deploymentReceiptDigest": null,
       "runtimeVerificationReceiptDigest": null,
-      "evidencePath": "docs/prd-tad-adr-mvp-gtm-commerce-design-system-tokens.md",
-      "evidenceDigest": "f020e699c4b0a7e499bbe127eaa85c3b8d49aa2dad22ca6b69d48d58f8e45f9d",
-      "decisionRef": "https://github.com/huijoohwee/agentic-commerce-os/pull/175",
-      "reason": "The plan is the sole documentation-only path, outside the production Worker asset boundary (./public/local-first in wrangler.local-first.jsonc); it changes no application, generated asset, deployment configuration, route, or runtime state. No Dev, Production, or runtime pass is claimed."
-    },
-    {
-      "schema": "agentic-os/delivery-disposition/v1",
-      "ref": "agent/device-0232231d4a19/design-system-html-no-transform",
-      "laneHead": "6b1fd0f23a6b125a273ce6d86012cebf1dce2250",
-      "paths": [
-        "src/design-system-edge/index.mjs",
-        "test/domain/design-system-edge.test.mjs"
-      ],
-      "disposition": "deployed",
-      "candidateRevision": "0d794ba813fc593a852e561d4b73fab9f4c91462",
-      "candidateDigest": "bf8720fd419fa86c2e53f7c52810e410f80623b1ce806b0c8ca52001afb98c14",
-      "sourceReleaseReceiptDigest": "912caeebbb44025806f75521110180322493f9314106ec248dc2a5c388b9207e",
-      "deploymentReceiptDigest": "19b621616f2b6069c3cf60f7d5dbbdbb965f01f756d18f086264a596f7c9388f",
-      "runtimeVerificationReceiptDigest": "6dd23d80542e45690d06fc1d661031153c85f14d7cb26734cbcf79c2f4bb857e",
-      "evidencePath": "docs/reports/design-system-route-release-40420828266.json",
-      "evidenceDigest": "a991c0d25cd01697f7077c09569db23593490636d51f9347cdbbf4b119f5c61b",
-      "decisionRef": "https://github.com/huijoohwee/agentic-commerce-os/actions/runs/40420828266",
-      "reason": null
-    },
-    {
-      "schema": "agentic-os/delivery-disposition/v1",
-      "ref": "agent/device-0232231d4a19/design-system-immutable-pages-origin",
-      "laneHead": "e7113cb5eab13538c57cd6789e88acbd596e1a6d",
-      "paths": [
-        ".github/workflows/design-system-route-release.yml",
-        "scripts/design-system-release.mjs"
-      ],
-      "disposition": "deployed",
-      "candidateRevision": "0d794ba813fc593a852e561d4b73fab9f4c91462",
-      "candidateDigest": "bf8720fd419fa86c2e53f7c52810e410f80623b1ce806b0c8ca52001afb98c14",
-      "sourceReleaseReceiptDigest": "912caeebbb44025806f75521110180322493f9314106ec248dc2a5c388b9207e",
-      "deploymentReceiptDigest": "19b621616f2b6069c3cf60f7d5dbbdbb965f01f756d18f086264a596f7c9388f",
-      "runtimeVerificationReceiptDigest": "6dd23d80542e45690d06fc1d661031153c85f14d7cb26734cbcf79c2f4bb857e",
-      "evidencePath": "docs/reports/design-system-route-release-40420828266.json",
-      "evidenceDigest": "a991c0d25cd01697f7077c09569db23593490636d51f9347cdbbf4b119f5c61b",
-      "decisionRef": "https://github.com/huijoohwee/agentic-commerce-os/actions/runs/40420828266",
-      "reason": null
-    },
-    {
-      "schema": "agentic-os/delivery-disposition/v1",
-      "ref": "agent/device-0232231d4a19/design-system-route-disposition-ledger",
-      "laneHead": "a261d0c8768b7e1c0218860763a2f477d8885e16",
-      "paths": [
-        ".agentic-os-delivery-dispositions.json"
-      ],
-      "disposition": "no-deploy",
-      "candidateRevision": "b05cb5f48545a3f48dfa54657e515f5ebf228aa1",
-      "candidateDigest": "4d62be47f14dbe91d85ac32df1c0eae06a5316e3f11e3235a5b6be80d530fa78",
-      "sourceReleaseReceiptDigest": null,
-      "deploymentReceiptDigest": null,
-      "runtimeVerificationReceiptDigest": null,
-      "evidencePath": "docs/reports/design-system-route-release-40420828266.json",
-      "evidenceDigest": "a991c0d25cd01697f7077c09569db23593490636d51f9347cdbbf4b119f5c61b",
-      "decisionRef": "https://github.com/huijoohwee/agentic-commerce-os/pull/162",
-      "reason": "The control ledger is excluded from the product artifact; it is repository workflow metadata and is not included in the static Pages allowlist."
-    },
-    {
-      "schema": "agentic-os/delivery-disposition/v1",
-      "ref": "agent/device-0232231d4a19/design-system-route-release-handover",
-      "laneHead": "c6a0db16a9eefbf4f37e28a6fc837a9dece79120",
-      "paths": [
-        "docs/design-system-release-receipts.json",
-        "docs/prd-tad-adr-mvp-gtm-design-system-route.md",
-        "docs/reports/design-system-route-release-40420828266.json"
-      ],
-      "disposition": "no-deploy",
-      "candidateRevision": "ee8d6f69ae70f37b8516910c5312acca05da5fee",
-      "candidateDigest": "d3f5d596e3507a5040164b15009e6febeb6fba4fffe79fc627eee9190796d956",
-      "sourceReleaseReceiptDigest": null,
-      "deploymentReceiptDigest": null,
-      "runtimeVerificationReceiptDigest": null,
-      "evidencePath": "docs/reports/design-system-route-release-40420828266.json",
-      "evidenceDigest": "a991c0d25cd01697f7077c09569db23593490636d51f9347cdbbf4b119f5c61b",
-      "decisionRef": "https://github.com/huijoohwee/agentic-commerce-os/pull/161",
-      "reason": "These Commerce documentation files record delivery evidence and planning; they are not inputs to the separate agentic-design-system Pages build."
-    },
-    {
-      "schema": "agentic-os/delivery-disposition/v1",
-      "ref": "agent/device-0232231d4a19/generate-commerce-prd",
-      "laneHead": "049b2c807157742d5b1886ecac73f98fa7fc51eb",
-      "paths": [
-        "docs/prd-tad-adr-mvp-gtm-agentic-commerce-os.md"
-      ],
-      "disposition": "no-deploy",
-      "candidateRevision": "88f04096825d95fa04f4db6ca76a2c6591f6abf7",
-      "candidateDigest": "386937ae95d52fa51c99e0771f5287bf4d0b1c13c5d83fe0d3399af4015ae911",
-      "sourceReleaseReceiptDigest": null,
-      "deploymentReceiptDigest": null,
-      "runtimeVerificationReceiptDigest": null,
-      "evidencePath": "scripts/local-first-release/artifact.mjs",
-      "evidenceDigest": "e07f29375605f682fbe793e3208fee22a279a568511a6d27309e4df1275df02a",
-      "decisionRef": "https://github.com/huijoohwee/agentic-commerce-os/pull/168",
-      "reason": "The PRD is repository documentation outside the local-first Worker and static asset inputs enumerated by the committed artifact builder; this candidate changes no deployed runtime input."
-    },
-    {
-      "schema": "agentic-os/delivery-disposition/v1",
-      "ref": "agent/device-0232231d4a19/sme-native-review",
-      "laneHead": "7d8b97b4db8774aeb6b8fe220e7620097c22dd4a",
-      "paths": [
-        "docs/sme-business-pack-codebook-and-data-dictionary.md",
-        "public/local-first/sme-business-pack-core.js",
-        "public/local-first/sme-business-pack.js",
-        "public/local-first/sme-pack-business-plan.js",
-        "test/local-first/sme-comparison-browser.mjs",
-        "test/shared/sme-business-pack.test.ts"
-      ],
-      "disposition": "deployed",
-      "candidateRevision": "6d0693f03ac16b5d99e5c6c897ad9625b322187d",
-      "candidateDigest": "b74bbd2f46dab0df43c158d489b0deff374e74fd41d8e8605f860a6392a85109",
-      "sourceReleaseReceiptDigest": "0d39ebe077bf748edd186d6a645e5c79352c4b5bfd51f46abb1fe135658c3c28",
-      "deploymentReceiptDigest": "f0866c07461a72b32b69b2a29c2d64658efa7d22912c14bef1788a255831b42c",
-      "runtimeVerificationReceiptDigest": "06b6aab10a0cc8a412485072dc040ca4398606a21d56dc19eae39e03de104613",
-      "evidencePath": "docs/reports/sme-production-release-42138564108.json",
-      "evidenceDigest": "7d29729dfdb432893cc8a15ff3b9dcfc534edbce36fa67d6ec8e92623e7c7dff",
-      "decisionRef": "https://github.com/huijoohwee/agentic-commerce-os/actions/runs/42141754796",
-      "reason": null
-    },
-    {
-      "schema": "agentic-os/delivery-disposition/v1",
-      "ref": "agent/device-0232231d4a19/sme-production-closeout",
-      "laneHead": "0b5ff187f66498ab656fbb25081e4efefa72f119",
-      "paths": [
-        ".agentic-os-delivery-dispositions.json",
-        "docs/reports/sme-production-release-42138564108.json"
-      ],
-      "disposition": "no-deploy",
-      "candidateRevision": "76eea91d7a2ed7feb243af3a5a343a5d07e31efc",
-      "candidateDigest": "49deac71b98622be123bc44a5e6dcb376f1236b3e1bd4080ca7c39edbf179a1d",
-      "sourceReleaseReceiptDigest": null,
-      "deploymentReceiptDigest": null,
-      "runtimeVerificationReceiptDigest": null,
-      "evidencePath": "docs/reports/sme-production-release-42138564108.json",
-      "evidenceDigest": "7d29729dfdb432893cc8a15ff3b9dcfc534edbce36fa67d6ec8e92623e7c7dff",
-      "decisionRef": "https://github.com/huijoohwee/agentic-commerce-os/pull/213",
-      "reason": ".agentic-os-delivery-dispositions.json and docs/reports/sme-production-release-42138564108.json are excluded from the product artifact; both record repository delivery metadata outside the local-first Worker source and public/local-first assets. PR 213 records an existing production release and changes no runtime, deployment selection, service, checkout policy or dependency."
+      "evidencePath": "docs/repository-validation.md",
+      "evidenceDigest": "7f262ddc6b38587258aa8d33be4efc146a86607fa379717d35f90299303f810f",
+      "decisionRef": "https://github.com/huijoohwee/agentic-commerce-os/pull/254",
+      "reason": "Product owner disposition: no deploy. The exact changed path docs/repository-validation.md is a repository validation guide and is not an input to a Commerce Worker, route, migration, package, or generated browser artifact; the candidate changes no runtime artifact."
     }
   ],
-  "receiptDigest": "c81a087f7a4237522f09dde4b3b45cd52e749eba5b37215f55fd4925936b9544"
+  "receiptDigest": "b853261a2c9d8bc6fa35f08e847e88100a2d59965ed75a3ebe09d307d15aaf4b"
 }
