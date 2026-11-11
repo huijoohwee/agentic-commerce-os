@@ -1,0 +1,15 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "agentic-commerce-storage-management-static",
+  "compatibility_date": "2026-09-04",
+  "workers_dev": false,
+  "preview_urls": false,
+  "observability": { "enabled": false },
+  "assets": {
+    "directory": "./node_modules/.cache/storage-management-static/assets"
+  },
+  "routes": [
+    { "pattern": "airvio.co/agentic-commerce-os/storage-management", "zone_name": "airvio.co" },
+    { "pattern": "airvio.co/agentic-commerce-os/storage-management/*", "zone_name": "airvio.co" }
+  ]
+}

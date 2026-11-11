@@ -1,0 +1,174 @@
+name: Commerce Storage Management Static Route Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Publish the exact static page candidate or restore a retained successful release
+        required: true
+        type: choice
+        options: [deploy, rollback]
+      candidate_sha:
+        description: Exact current protected main commit
+        required: true
+        type: string
+      rollback_run_id:
+        description: Successful run ID whose retained release receipt is the exact rollback target
+        required: false
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+  deployments: read
+
+concurrency:
+  group: agentic-commerce-production
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify Static Route Candidate
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+      OPERATION: ${{ inputs.operation }}
+      ROLLBACK_RUN_ID: ${{ inputs.rollback_run_id }}
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.candidate_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Validate protected dispatch
+        run: |
+          set -euo pipefail
+          [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$OPERATION" == deploy || "$OPERATION" == rollback ]]
+          test "$GITHUB_RUN_ATTEMPT" = 1
+          test "$GITHUB_REF" = refs/heads/main
+          test "$GITHUB_SHA" = "$CANDIDATE_SHA"
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$CANDIDATE_SHA"
+          if [[ "$OPERATION" == rollback ]]; then
+            [[ "$ROLLBACK_RUN_ID" =~ ^[1-9][0-9]{0,17}$ ]]
+          else
+            test -z "$ROLLBACK_RUN_ID"
+          fi
+
+      - name: Install locked dependencies
+        run: timeout --foreground --kill-after=30s 8m npm ci --ignore-scripts
+
+      - name: Install mobile browser
+        run: node_modules/.bin/playwright install --with-deps chromium
+
+      - name: Run local-first integration and mobile/offline acceptance
+        run: timeout --foreground --kill-after=30s 18m npm run check:local-first
+
+      - name: Prepare and validate the exact static asset candidate
+        run: |
+          set -euo pipefail
+          node scripts/storage-management-release/verify.mjs prepare "$CANDIDATE_SHA"
+          timeout --foreground --kill-after=30s 3m npx --no-install wrangler deploy \
+            --config wrangler.storage-management.jsonc --dry-run \
+            --outdir "$RUNNER_TEMP/storage-management-dry-run"
+          test ! -e .wrangler/deploy/config.json
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Retain the prepared static candidate
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: commerce-storage-management-static-candidate-${{ github.run_id }}
+          path: node_modules/.cache/storage-management-static
+          if-no-files-found: error
+          retention-days: 90
+
+  release:
+    name: Authorized Static Route Production Release
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    env:
+      CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+      OPERATION: ${{ inputs.operation }}
+      ROLLBACK_RUN_ID: ${{ inputs.rollback_run_id }}
+      STORAGE_MANAGEMENT_EVIDENCE_DIR: ${{ runner.temp }}/commerce-storage-management-evidence
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.candidate_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked release dependencies
+        run: timeout --foreground --kill-after=30s 8m npm ci --ignore-scripts
+
+      - name: Download the prepared static candidate
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v7
+        with:
+          name: commerce-storage-management-static-candidate-${{ github.run_id }}
+          path: node_modules/.cache/storage-management-static
+
+      - name: Verify the staged candidate bytes
+        run: |
+          set -euo pipefail
+          test "$GITHUB_RUN_ATTEMPT" = 1
+          test "$GITHUB_REF" = refs/heads/main
+          test "$GITHUB_SHA" = "$CANDIDATE_SHA"
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$CANDIDATE_SHA"
+          node scripts/storage-management-release/verify.mjs verify "$CANDIDATE_SHA"
+          mkdir -p "$STORAGE_MANAGEMENT_EVIDENCE_DIR"
+
+      - name: Download the exact retained release for rollback
+        if: ${{ inputs.operation == 'rollback' }}
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v7
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.rollback_run_id }}
+          name: commerce-storage-management-static-result-${{ inputs.rollback_run_id }}
+          path: ${{ runner.temp }}/commerce-storage-management-rollback-target
+
+      - name: Deploy the static route while preserving live checkout
+        if: ${{ inputs.operation == 'deploy' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: node scripts/storage-management-release/deploy.mjs deploy "$CANDIDATE_SHA" "$STORAGE_MANAGEMENT_EVIDENCE_DIR"
+
+      - name: Restore the selected retained static Worker version
+        if: ${{ inputs.operation == 'rollback' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          STORAGE_MANAGEMENT_ROLLBACK_RUN_ID: ${{ inputs.rollback_run_id }}
+        run: node scripts/storage-management-release/rollback.mjs rollback "$CANDIDATE_SHA" \
+          "$RUNNER_TEMP/commerce-storage-management-rollback-target" "$STORAGE_MANAGEMENT_EVIDENCE_DIR"
+
+      - name: Retain typed release or rollback evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: commerce-storage-management-static-result-${{ github.run_id }}
+          path: ${{ env.STORAGE_MANAGEMENT_EVIDENCE_DIR }}
+          if-no-files-found: warn
+          retention-days: 90

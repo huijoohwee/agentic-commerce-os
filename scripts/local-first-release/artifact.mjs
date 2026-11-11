@@ -10,8 +10,14 @@ import { readCheckoutRelease, liveAuthorizationScope } from './live-profile.mjs'
 
 export const CONFIG = 'wrangler.local-first.jsonc';
 export const WORKER = 'agentic-commerce-edge-production';
-export const FILES = Object.freeze(['index.html', 'favicon.svg', 'workspace.js', 'workspace-navigation.js', 'workspace-pack.route.js', 'workspace-view-styles.js', 'commerce-toolbar.js', 'commerce-shell.css', 'workspace-layout.js', 'dashboard-columns.js', 'toolbar-icons.js', 'workspace-singleton.js', 'shopper-demo-detail.js', 'workspace-tour.js', 'workspace-capabilities.js', 'workspace-tools.js', 'workspace-graph.js', 'agentic-base-data-view.js', 'dropdown-menus.js', 'agentic-base-data-view.css', 'graph-data-view.js', 'graph-data-view.css', 'graph-ui-tokens.css', 'commerce-theme.css', 'workspace-shell.css', 'shared-ui-profile.css', 'app.js', 'drafts.js', 'checkout.js', 'launch.js', 'workflow.js', 'style.css', 'sw.js', 'workspace-pack.html', 'workspace-pack.js', 'workspace-pack.css', 'floating-panel.css', 'toolbar.css', 'workspace-pack.simulation.js', 'workspace-pack.console.js', 'sme-business-pack.js', 'sme-business-pack.css', 'sme-business-pack-core.js', 'sme-workflow-editor.js', 'sme-review-workflow.js', 'graph-gantt-timeline.js', 'graph-gantt-timeline.css', 'sme-pack-business-plan.js', 'sme-pack-dictionary.js', 'housing-comparison.js', 'housing-engine.js', 'housing-sample.js', 'housing-comparison.css', 'agentic-commerce-os/storage-management/index.html', 'agentic-commerce-os/storage-management/style.css', 'agentic-commerce-os/storage-management/guide.js', 'agentic-commerce-os/storage-management/sources.json']);
+export const FILES = Object.freeze(['index.html', 'favicon.svg', 'workspace.js', 'workspace-navigation.js', 'workspace-pack.route.js', 'workspace-view-styles.js', 'commerce-toolbar.js', 'commerce-shell.css', 'workspace-layout.js', 'dashboard-columns.js', 'toolbar-icons.js', 'workspace-singleton.js', 'shopper-demo-detail.js', 'workspace-tour.js', 'workspace-capabilities.js', 'workspace-tools.js', 'workspace-graph.js', 'agentic-base-data-view.js', 'dropdown-menus.js', 'agentic-base-data-view.css', 'graph-data-view.js', 'graph-data-view.css', 'graph-ui-tokens.css', 'commerce-theme.css', 'workspace-shell.css', 'shared-ui-profile.css', 'app.js', 'drafts.js', 'checkout.js', 'launch.js', 'workflow.js', 'style.css', 'sw.js', 'workspace-pack.html', 'workspace-pack.js', 'workspace-pack.css', 'floating-panel.css', 'toolbar.css', 'workspace-pack.simulation.js', 'workspace-pack.console.js', 'sme-business-pack.js', 'sme-business-pack.css', 'sme-business-pack-core.js', 'sme-workflow-editor.js', 'sme-review-workflow.js', 'graph-gantt-timeline.js', 'graph-gantt-timeline.css', 'sme-pack-business-plan.js', 'sme-pack-dictionary.js', 'housing-comparison.js', 'housing-engine.js', 'housing-sample.js', 'housing-comparison.css']);
 export const PRIVATE_FILES = Object.freeze(['education-materials.md', '_headers']);
+export const STORAGE_MANAGEMENT_ASSETS = Object.freeze(['index.html', 'style.css', 'guide.js', 'sources.json', 'sw.js']);
+export const STORAGE_MANAGEMENT_SOURCE_FILES = Object.freeze([
+  ...STORAGE_MANAGEMENT_ASSETS.map(file => `agentic-commerce-os/storage-management/${file}`),
+  'agentic-commerce-os/storage-management/_headers', 'agentic-commerce-os/storage-management/_redirects',
+]);
+export const LOCAL_FIRST_ASSET_DIRECTORY = './node_modules/.cache/local-first-assets';
 export const digest = value => createHash('sha256').update(value).digest('hex');
 const COMMERCE_THEME_PIN = Object.freeze({
   sourceRevision: 'c18253b35e8bcc0bed548cfb717ec31909422dbe',
@@ -43,7 +49,7 @@ export function assertLocalFirstConfig(config) {
   const keys = ['$schema', 'name', 'main', 'compatibility_date', 'workers_dev', 'preview_urls', 'version_metadata', 'assets', 'vars'];
   if (Object.keys(config).sort().join() !== keys.sort().join() || config.name !== WORKER
     || config.main !== 'src/local-first/worker.ts' || config.workers_dev !== false || config.preview_urls !== false
-    || JSON.stringify(config.assets) !== JSON.stringify({ directory: './public/local-first', binding: 'ASSETS', run_worker_first: ['/agentic-commerce-os/*', '!/agentic-commerce-os/storage-management', '!/agentic-commerce-os/storage-management/*'] })
+    || JSON.stringify(config.assets) !== JSON.stringify({ directory: LOCAL_FIRST_ASSET_DIRECTORY, binding: 'ASSETS', run_worker_first: ['/agentic-commerce-os/*', '!/agentic-commerce-os/storage-management', '!/agentic-commerce-os/storage-management/*'] })
     || JSON.stringify(config.version_metadata) !== JSON.stringify({ binding: 'CF_VERSION_METADATA' })
     || JSON.stringify(config.vars) !== JSON.stringify({ RELEASE_CANDIDATE_SHA: 'local-unreleased', CHECKOUT_MODE: 'sandbox' })) {
     throw Error('Local-first configuration must remain sandbox-only, private until route activation, and free of payment providers or financial resources.');
@@ -113,11 +119,19 @@ export function verifyStorageManagementSourceIndex() {
     || manifest.route !== 'https://airvio.co/agentic-commerce-os/storage-management/'
     || manifest.sources.length !== expected.size) throw Error('Storage management source index invalid')
   const page = fs.readFileSync('public/local-first/agentic-commerce-os/storage-management/index.html', 'utf8')
-  const headers = fs.readFileSync('public/local-first/_headers', 'utf8')
-  if (!headers.startsWith('/agentic-commerce-os/storage-management/*\n')
+  const routeRoot = 'public/local-first/agentic-commerce-os/storage-management/'
+  const headers = fs.readFileSync(routeRoot + '_headers', 'utf8')
+  const redirects = fs.readFileSync(routeRoot + '_redirects', 'utf8')
+  const guide = fs.readFileSync(routeRoot + 'guide.js', 'utf8')
+  const serviceWorker = fs.readFileSync(routeRoot + 'sw.js', 'utf8')
+  if (!headers.startsWith('/*\n')
     || !headers.includes('Content-Security-Policy: default-src')
     || !headers.includes('X-Content-Type-Options: nosniff')
-    || !headers.includes('Cache-Control: public, max-age=0, must-revalidate, no-transform'))
+    || !headers.includes('Cache-Control: public, max-age=0, must-revalidate, no-transform')
+    || redirects.trim() !== '/agentic-commerce-os/storage-management /agentic-commerce-os/storage-management/ 308'
+    || !guide.includes("register('./sw.js', { scope: './' })")
+    || !serviceWorker.includes("const FILES = ['', 'style.css', 'guide.js', 'sources.json', 'sw.js']")
+    || serviceWorker.includes('http://') || serviceWorker.includes('https://'))
     throw Error('Storage management static route headers invalid')
   const seen = new Set()
   for (const source of manifest.sources) {
@@ -133,11 +147,26 @@ export function verifyStorageManagementSourceIndex() {
         throw Error('Storage management source file pin invalid')
     }
   }
-  const assetFiles = ['agentic-commerce-os/storage-management/index.html', 'agentic-commerce-os/storage-management/style.css',
-    'agentic-commerce-os/storage-management/guide.js', 'agentic-commerce-os/storage-management/sources.json']
-  const totalBytes = assetFiles.reduce((total, file) => total + fs.statSync('public/local-first/' + file).size, 0)
+  const totalBytes = STORAGE_MANAGEMENT_ASSETS.reduce((total, file) => total + fs.statSync(routeRoot + file).size, 0)
   if (totalBytes >= 80000) throw Error('Storage management route exceeds its 80 kB payload cap')
-  return { sourceCount: seen.size, sourceFileCount: manifest.sources.reduce((total, source) => total + source.files.length, 0), totalBytes }
+  return { sourceCount: seen.size, sourceFileCount: manifest.sources.reduce((total, source) => total + source.files.length, 0), totalBytes,
+    servedFiles: STORAGE_MANAGEMENT_ASSETS.length }
+}
+export function prepareLocalFirstAssets() {
+  const source = path.resolve('public/local-first'), output = path.resolve(LOCAL_FIRST_ASSET_DIRECTORY)
+  fs.rmSync(output, { recursive: true, force: true })
+  fs.mkdirSync(output, { recursive: true })
+  for (const file of [...FILES, '_headers']) {
+    const input = path.resolve(source, file)
+    if (!input.startsWith(source + path.sep)) throw Error('Local-first asset path escaped its source directory')
+    const stat = fs.lstatSync(input)
+    if (!stat.isFile() || stat.isSymbolicLink()) throw Error('Local-first asset source must be a regular file')
+    const target = path.resolve(output, file)
+    fs.mkdirSync(path.dirname(target), { recursive: true })
+    fs.copyFileSync(input, target, fs.constants.COPYFILE_EXCL)
+  }
+  if (listRegularFiles(output).join() !== [...FILES, '_headers'].sort().join()) throw Error('Local-first staged asset inventory invalid')
+  return output
 }
 function listRegularFiles(directory, prefix = '') {
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap(entry => {
@@ -326,7 +355,7 @@ export function sourceManifest(revision, selection = readCheckoutRelease()) {
   verifySharedUiIconProfile();
   verifyStorageManagementSourceIndex();
   assertLocalFirstConfig(JSON.parse(fs.readFileSync(CONFIG, 'utf8')));
-  if (listRegularFiles('public/local-first').join() !== [...FILES, ...PRIVATE_FILES].sort().join()) throw Error('Unexpected static asset inventory');
+  if (listRegularFiles('public/local-first').join() !== [...FILES, ...PRIVATE_FILES, ...STORAGE_MANAGEMENT_SOURCE_FILES].sort().join()) throw Error('Unexpected static asset inventory');
   const paths = [CONFIG, 'src/local-first/worker.ts', 'src/local-first/workspace-pack.ts', 'src/local-first/workspace-service.ts', 'src/local-first/sme-business-pack.ts', 'public/local-first/sme-business-pack-core.js', 'config/capability-token-map.json', 'config/floating-panel.pin.json', 'config/toolbar.pin.json',
     'config/dashboard-columns.pin.json', 'config/agentic-base-data-view.json', 'config/graph-data-view.json', 'config/workspace-pack-graph.json', 'src/generated/graph-workspace-pack.js', 'src/generated/graph-workspace-pack.d.ts',
     'scripts/workspace-pack/build-graph.mjs', 'src/edge/production-prefix.ts', 'src/shared/http.ts',
@@ -339,6 +368,7 @@ export function sourceManifest(revision, selection = readCheckoutRelease()) {
     const bytes = fs.readFileSync(file); if (bytes.length >= 500000) throw Error('Artifact file exceeds 500 kB');
     return { path: file, bytes: bytes.length, digest: digest(bytes) };
   });
+  prepareLocalFirstAssets();
   const live = liveAuthorizationScope(selection);
   const body = { schema: live ? 'commerce.local-first-live-artifact/v1' : 'commerce.local-first-artifact/v2',
     profile: 'local-first', checkout: selection.checkout, ...(live ? {live} : {}),

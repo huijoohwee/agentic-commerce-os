@@ -9,7 +9,7 @@
     "binding": "CF_VERSION_METADATA"
   },
   "assets": {
-    "directory": "./public/local-first",
+    "directory": "./node_modules/.cache/local-first-assets",
     "binding": "ASSETS",
     "run_worker_first": [
       "/agentic-commerce-os/*",

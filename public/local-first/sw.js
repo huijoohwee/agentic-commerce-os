@@ -8,10 +8,8 @@ const PACK_FILES = ['', 'workspace-pack.js', 'workspace-pack.console.js', 'works
   'workspace-layout.js', 'dashboard-columns.js', 'toolbar-icons.js', 'commerce-toolbar.js', 'dropdown-menus.js', 'graph-ui-tokens.css', 'shared-ui-profile.css',
   'commerce-theme.css', 'commerce-shell.css', 'floating-panel.css', 'toolbar.css'];
 const LAZY_FILES = ['graph-gantt-timeline.js', 'graph-gantt-timeline.css', 'housing-comparison.js', 'housing-engine.js', 'housing-sample.js', 'housing-comparison.css', 'sme-workflow-editor.js', 'sme-pack-dictionary.js'];
-const STORAGE_GUIDE_FILES = ['storage-management/', 'storage-management/style.css', 'storage-management/guide.js', 'storage-management/sources.json'];
 const assetUrl = file => new URL(file.startsWith('services/') || file === 'favicon.svg' ? file : file ? `assets/${RELEASE}/${file}` : '', SCOPE);
-const STORAGE_GUIDE_PATHS = STORAGE_GUIDE_FILES.map(file => new URL(file, SCOPE).pathname);
-const PATHS = new Set([...FILES.map(file => assetUrl(file).pathname), ...STORAGE_GUIDE_PATHS]);
+const PATHS = new Set(FILES.map(file => assetUrl(file).pathname));
 const LAZY_PATHS = new Set([...LAZY_FILES.map(file => assetUrl(file).pathname),
   ...PACK_FILES.map(file => new URL(`assets/${RELEASE}/${packPath}${file}`, SCOPE).pathname)]);
 self.addEventListener('install', event => event.waitUntil((async () => {
@@ -30,11 +28,6 @@ self.addEventListener('install', event => event.waitUntil((async () => {
       const value = await response.clone().json();
       if (value.schema !== 'commerce.workspace-service/v1' || value.sourceRevision !== RELEASE) throw Error('offline_service_source_mismatch');
     }
-    await cache.put(url.href, response);
-  }
-  for (const url of STORAGE_GUIDE_FILES.map(file => new URL(file, SCOPE))) {
-    const response = await fetch(new Request(url, { cache: 'reload', credentials: 'omit', signal: AbortSignal.timeout(15000) }));
-    if (!response.ok) throw Error('offline_storage_guide_unavailable');
     await cache.put(url.href, response);
   }
   await self.skipWaiting();
