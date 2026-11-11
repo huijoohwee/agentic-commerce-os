@@ -192,8 +192,9 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           STORAGE_MANAGEMENT_ROLLBACK_RUN_ID: ${{ inputs.rollback_run_id }}
           STORAGE_MANAGEMENT_EVIDENCE_DIR: ${{ runner.temp }}/commerce-storage-management-evidence
-        run: node scripts/storage-management-release/rollback.mjs rollback "$CANDIDATE_SHA" \
-          "$RUNNER_TEMP/commerce-storage-management-rollback-target" "$STORAGE_MANAGEMENT_EVIDENCE_DIR"
+        run: |
+          node scripts/storage-management-release/rollback.mjs rollback "$CANDIDATE_SHA" \
+            "$RUNNER_TEMP/commerce-storage-management-rollback-target" "$STORAGE_MANAGEMENT_EVIDENCE_DIR"
 
       - name: Remove the exact failed bootstrap Worker
         if: ${{ inputs.operation == 'recover-bootstrap' }}
@@ -202,9 +203,10 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           STORAGE_MANAGEMENT_EVIDENCE_DIR: ${{ runner.temp }}/commerce-storage-management-evidence
-        run: node scripts/storage-management-release/rollback.mjs recover-bootstrap \
-          "$ROLLBACK_RUN_ID" "$FAILED_WORKER_VERSION_ID" \
-          "$RUNNER_TEMP/commerce-storage-management-rollback-target" "$STORAGE_MANAGEMENT_EVIDENCE_DIR"
+        run: |
+          node scripts/storage-management-release/rollback.mjs recover-bootstrap \
+            "$ROLLBACK_RUN_ID" "$FAILED_WORKER_VERSION_ID" \
+            "$RUNNER_TEMP/commerce-storage-management-rollback-target" "$STORAGE_MANAGEMENT_EVIDENCE_DIR"
 
       - name: Retain typed release or rollback evidence
         if: ${{ always() }}
