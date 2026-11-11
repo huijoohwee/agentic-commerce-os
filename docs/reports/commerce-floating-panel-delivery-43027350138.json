@@ -1,0 +1,101 @@
+{
+  "schema": "commerce.floating-panel-delivery-handover/v1",
+  "recordedAt": "2026-11-11T13:57:01Z",
+  "requestedWorktrees": {
+    "source": "/Users/huijoohwee/Documents/GitHub/.worktrees/agentic-commerce-os/device-0232231d4a19--commerce-floating-panel",
+    "recoverableQuarantine": "/Users/huijoohwee/Documents/GitHub/.worktrees/quarantine/agentic-commerce-os-floating-panel-scratch"
+  },
+  "sourceIntegration": {
+    "repository": "github.com/huijoohwee/agentic-commerce-os",
+    "pullRequest": 253,
+    "laneRef": "agent/device-0232231d4a19/floating-panel-layout-current",
+    "head": "9bc8e703d21199f318b2a8befe1f2076c5b1c173",
+    "merge": "ab56575e2fdcfa7312b439d1b6b0cdb5ccd75303",
+    "mergedAt": "2026-11-10T15:10:40Z",
+    "integrationGate": {
+      "result": "success",
+      "runId": 42839946329,
+      "url": "https://github.com/huijoohwee/agentic-commerce-os/actions/runs/42839946329"
+    },
+    "sourceReleaseReceipt": {
+      "schema": "commerce.source-release-receipt/v1",
+      "digestAlgorithm": "SHA-256 over agentic-os canonical JSON bytes (UTF-8, no trailing newline)",
+      "digest": "32d49a9d1a42d3a7edffc0e83f703b56d818a4a201a09ff794f07be1613e5140",
+      "receiptsAreObservations": true,
+      "targetRevision": "cb65b1d6e9715e6fb57b8a63bf9e6181ffa397e1",
+      "receipt": {
+        "schema": "commerce.source-release-receipt/v1",
+        "repository": "github.com/huijoohwee/agentic-commerce-os",
+        "result": "all listed PRs are merged and each listed required Integration Gate is green",
+        "targetRevision": "cb65b1d6e9715e6fb57b8a63bf9e6181ffa397e1",
+        "receiptsAreObservations": true,
+        "pullRequests": [
+          {
+            "number": 253,
+            "title": "floating-panel-layout-current: 2 commits",
+            "head": "9bc8e703d21199f318b2a8befe1f2076c5b1c173",
+            "merge": "ab56575e2fdcfa7312b439d1b6b0cdb5ccd75303",
+            "mergedAt": "2026-11-10T15:10:40Z",
+            "url": "https://github.com/huijoohwee/agentic-commerce-os/pull/253",
+            "integration": {
+              "conclusion": "success",
+              "runId": 42839946329,
+              "url": "https://github.com/huijoohwee/agentic-commerce-os/actions/runs/42839946329"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "development": {
+    "command": "npm run dev",
+    "sourceRevision": "ab56575e2fdcfa7312b439d1b6b0cdb5ccd75303",
+    "profile": "sandbox",
+    "route": "/agentic-commerce-os/#console",
+    "browser": "Puppeteer",
+    "viewports": [
+      { "width": 800, "height": 600, "result": "Console floating panel rendered" },
+      { "width": 390, "height": 844, "result": "responsive panel rendered; document width matched viewport" }
+    ],
+    "sideEffectScope": "local read-only UI inspection; no payment submission, session creation, or revenue action",
+    "limitation": "The isolated local profile returned 503 for /dashboard-layout; the panel route and authored panel assets rendered."
+  },
+  "productionRelease": {
+    "result": "success",
+    "runId": 43027350138,
+    "url": "https://github.com/huijoohwee/agentic-commerce-os/actions/runs/43027350138",
+    "candidateRevision": "cb65b1d6e9715e6fb57b8a63bf9e6181ffa397e1",
+    "artifactDigest": "46f02982173337e87ff4ffe650e4b78f6b94ce47648eb5ec304672c7b9586c9b",
+    "completionReceiptDigest": "b6892111c5d66728d3e06c898153c426fcf81015a7881a16425f85664f3c2063",
+    "worker": "agentic-commerce-edge-production",
+    "deploymentId": "1614708b-a60e-46d3-9e57-a7c938fe7424",
+    "workerVersionId": "7cb557cb-a4b6-4c06-9de6-121bb9765962",
+    "route": "airvio.co/agentic-commerce-os*"
+  },
+  "runtimeVerification": {
+    "result": "passed",
+    "sourceRevision": "cb65b1d6e9715e6fb57b8a63bf9e6181ffa397e1",
+    "readiness": { "status": 200, "workerVersionId": "7cb557cb-a4b6-4c06-9de6-121bb9765962", "matchedCandidate": true },
+    "browserProofDigest": "e88db2ed1b3c8a325b69108cc59e5698bc45f99a318002eb115079a5e9978261",
+    "scope": "live read-only GET verification; no hosted payment submission, live session creation, or customer revenue verification",
+    "stableAssetObservation": {
+      "attempt": 5,
+      "stableForMs": 15800,
+      "assets": [
+        { "path": "assets/cb65b1d6e9715e6fb57b8a63bf9e6181ffa397e1/services/workspace-pack/", "status": 200, "bytes": 18303, "sha256": "1ff777a976f2bda37a3f612378a244dd8943cb9795dfe6de0846cf8012c83aa9" },
+        { "path": "services/workspace-pack/floating-panel.css", "status": 200, "bytes": 5842, "sha256": "96d71b2009d4d93750bd09a187188979cbba9ea9b6e7cb4a94c5f62de9540d12" },
+        { "path": "shared-ui-profile.css", "status": 200, "bytes": 19722, "sha256": "e9fce49e9dce6cde8afa4cde9dc0e8d77ee8642cc10d4d38f66d35d3f53361b0" }
+      ]
+    }
+  },
+  "rollback": {
+    "performed": false,
+    "regressionObserved": false,
+    "rollbackProofDigest": null,
+    "retainedReaderRunId": 43026421044,
+    "retainedReaderWorkerVersionId": "787fa997-a61b-4f87-977e-659a455a17b3",
+    "retainedReaderReceiptDigest": "d62c410324567a73297f293d5b502873d2802fa918d03cc7ca8f9455241e4f73",
+    "outcome": "No rollback was executed. The exact retained reader was verified before release and remains the recovery target; this is not a rollback rehearsal."
+  },
+  "deliveryDispositionLedger": ".agentic-os-delivery-dispositions.json"
+}
