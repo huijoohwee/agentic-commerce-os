@@ -33,8 +33,10 @@ route unchanged.
 
 ## TAD — smallest independent delivery surface
 
-- Serve only this page's static assets through one assets-only Worker and one narrowly scoped
-  Cloudflare route: `airvio.co/agentic-commerce-os/storage-management*`.
+- Serve only this page's static assets through one assets-only Worker and two narrowly scoped
+  Cloudflare routes: the exact slashless address `airvio.co/agentic-commerce-os/storage-management`
+  for its redirect, and `airvio.co/agentic-commerce-os/storage-management/*` for the page and its
+  child assets. The browser URL is `https://airvio.co/agentic-commerce-os/storage-management/`.
 - Cloudflare's most-specific matching route must select the static Worker ahead of the existing
   broader `airvio.co/agentic-commerce-os*` Commerce Worker route. Preserve both the broader route
   and its active deployment identity.
@@ -46,7 +48,7 @@ route unchanged.
   application or buyer data.
 - Keep the exact existing public page path, source manifest, CSP, method policy, content hashes,
   slashless redirect, mobile layout, and offline acceptance from revision 0.1.0.
-- Add at most one Worker and one route, at most five served files, and no more than 80 kB of
+- Add at most one Worker and two exact route patterns, at most five served files, and no more than 80 kB of
   published assets. Use the repository's pinned Wrangler and production environment approval.
 - Before route creation, prove current Cloudflare account/zone capacity is within the Workers Free
   limits and that no conflicting narrow route exists. Fail closed if the existing Commerce route,
@@ -75,9 +77,9 @@ deployment record; no paid plan, add-on, or overage is permitted.
    Worker entrypoint, runtime bindings, storage, cron, or paid feature.
 3. In the protected Production job, re-read the exact Cloudflare route table, account/zone limits,
    existing broad Commerce route, current `/readyz` identity and `checkout=live` state immediately
-   before the write. Bind the candidate SHA, exact new route, absent or retained narrow-route
+   before the write. Bind the candidate SHA, exact new route patterns, absent or retained narrow-route
    baseline, static asset digest, repository Integration Gate and Production approval.
-4. Deploy the exact candidate Worker and route. Read back the canonical page, all four companion
+4. Deploy the exact candidate Worker and routes. Read back the canonical page, all four companion
    assets, MIME/security/cache headers, hashes, slashless redirect, unknown-path 404, and the
    specific route binding. Re-read the existing Commerce route and `/readyz`; the Worker version,
    source revision and live checkout state must match the pre-deploy observations.
@@ -86,7 +88,7 @@ deployment record; no paid plan, add-on, or overage is permitted.
 
 ## Rollback
 
-- If the narrow route is new and any post-deploy verification fails, remove only that exact route
+- If the narrow routes are new and any post-deploy verification fails, remove only those exact routes
   and its newly created Worker, then verify the broad Commerce route and `/readyz` still resolve to
   the retained live Worker. Do not alter checkout or payment configuration.
 - For a later page update, restore the exact retained static Worker version through the protected
