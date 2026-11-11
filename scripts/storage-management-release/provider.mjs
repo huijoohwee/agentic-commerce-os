@@ -317,6 +317,8 @@ export async function authorizeRun(candidateSha, directory) {
   assert.equal(actors[0].id, actors[1].id, 'workflow_dispatch_actor_changed');
   const approval = validateHumanAuthorization(reviews, environment, {
     releaseMode: baseline.releaseMode, candidateSha, runId, runAttempt: 1,
+    // GitHub production allows the configured owner reviewer to approve their own dispatch.
+    allowOwnerSelfReview: true,
   });
   const receipt = { schema: 'commerce.storage-management-production-authorization/v1',
     repository: REPOSITORY, workflow: WORKFLOW_PATH, candidateSha, candidateDigest: baseline.candidateDigest,
