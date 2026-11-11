@@ -4,6 +4,41 @@
   "dispositions": [
     {
       "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/commerce-storage-management-static-route",
+      "laneHead": "f430f3c6aa05b20c977509edd817bffee1c0baf0",
+      "paths": [
+        ".github/workflows/storage-management-static-release.yml",
+        "docs/prd-tad-adr-mvp-gtm-storage-management-route-preserving-live.md",
+        "public/local-first/_headers",
+        "public/local-first/agentic-commerce-os/storage-management/_headers",
+        "public/local-first/agentic-commerce-os/storage-management/_redirects",
+        "public/local-first/agentic-commerce-os/storage-management/guide.js",
+        "public/local-first/agentic-commerce-os/storage-management/sw.js",
+        "public/local-first/sw.js",
+        "scripts/local-first-release/artifact.mjs",
+        "scripts/local-first-release/availability.mjs",
+        "scripts/storage-management-release/deploy.mjs",
+        "scripts/storage-management-release/provider.mjs",
+        "scripts/storage-management-release/rollback.mjs",
+        "scripts/storage-management-release/verify.mjs",
+        "test/local-first/storage-management-static-route.test.mjs",
+        "test/local-first/storage-management.test.mjs",
+        "wrangler.local-first.jsonc",
+        "wrangler.storage-management.jsonc"
+      ],
+      "disposition": "deployed",
+      "candidateRevision": "a87e7f8b4b97eac23b4c1f3e006af69bbe1a6395",
+      "candidateDigest": "7ca1c7d284195374ea4d920beb0a4e894a7fa4af45679c08c504934af1d485e8",
+      "sourceReleaseReceiptDigest": "a1226c3750df1b6281d47f2c5a2e51c5a1de4960ab3b63b40f90dcc84af472e9",
+      "deploymentReceiptDigest": "a5e54a4024fe7d06a88589ffcdcdc1b1498103bc7312882c6c0e8fbd48225789",
+      "runtimeVerificationReceiptDigest": "4d9e4fa4c668696c78f5ce9888a98cd3e8ea8545c548854ea98f375381d158cb",
+      "evidencePath": "docs/reports/storage-management-static-route-release-43015411359.json",
+      "evidenceDigest": "ad8ec83f1216e327e9de3bd574ab040007c1b474f2ff7a2c60680ac0b4d188a1",
+      "decisionRef": "https://github.com/huijoohwee/agentic-commerce-os/actions/runs/43015411359",
+      "reason": null
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/local-first-storage-economy",
       "laneHead": "4859fe55e703ef27521c4d4e3f930c052533d1ab",
       "paths": [
@@ -19,7 +54,44 @@
       "evidenceDigest": "7f262ddc6b38587258aa8d33be4efc146a86607fa379717d35f90299303f810f",
       "decisionRef": "https://github.com/huijoohwee/agentic-commerce-os/pull/254",
       "reason": "Product owner disposition: no deploy. The exact changed path docs/repository-validation.md is a repository validation guide and is not an input to a Commerce Worker, route, migration, package, or generated browser artifact; the candidate changes no runtime artifact."
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/storage-disposition",
+      "laneHead": "ecaa2ddd668cac55147f07fc863d9de3c3ebf60b",
+      "paths": [
+        ".agentic-os-delivery-dispositions.json"
+      ],
+      "disposition": "no-deploy",
+      "candidateRevision": "cb65b1d6e9715e6fb57b8a63bf9e6181ffa397e1",
+      "candidateDigest": "869db3ee104ce8e84edcb8114ea0ff2663724856a41245be75df23d690a6458f",
+      "sourceReleaseReceiptDigest": null,
+      "deploymentReceiptDigest": null,
+      "runtimeVerificationReceiptDigest": null,
+      "evidencePath": "docs/prd-tad-adr-mvp-gtm-storage-management-route-preserving-live.md",
+      "evidenceDigest": "c7167e2c4ab09aebfe42587cfa42f03a2b83ca847fb1864445b980d93531e8a3",
+      "decisionRef": "https://github.com/huijoohwee/agentic-commerce-os/pull/255",
+      "reason": "The control ledger .agentic-os-delivery-dispositions.json is repository workflow metadata excluded from the product artifact; it is not included in the Commerce Worker input or static public asset directory."
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/storage-management-release-evidence",
+      "laneHead": "9d65e37568d5f672ebff70bb3e4409a6a6ee87b6",
+      "paths": [
+        "docs/prd-tad-adr-mvp-gtm-storage-management-route-preserving-live.md",
+        "docs/reports/storage-management-static-route-release-43015411359.json"
+      ],
+      "disposition": "no-deploy",
+      "candidateRevision": "cb65b1d6e9715e6fb57b8a63bf9e6181ffa397e1",
+      "candidateDigest": "28ae735e992b50c2eb77f22f04ab9132b92d5eadf6e6779f9cf6baafe99bdf22",
+      "sourceReleaseReceiptDigest": null,
+      "deploymentReceiptDigest": null,
+      "runtimeVerificationReceiptDigest": null,
+      "evidencePath": "docs/prd-tad-adr-mvp-gtm-storage-management-route-preserving-live.md",
+      "evidenceDigest": "c7167e2c4ab09aebfe42587cfa42f03a2b83ca847fb1864445b980d93531e8a3",
+      "decisionRef": "https://github.com/huijoohwee/agentic-commerce-os/pull/262",
+      "reason": "The exact follow-up paths docs/prd-tad-adr-mvp-gtm-storage-management-route-preserving-live.md and docs/reports/storage-management-static-route-release-43015411359.json are excluded from the Commerce Worker and static public product artifact; the follow-up changes no runtime input and requires no deployment."
     }
   ],
-  "receiptDigest": "b853261a2c9d8bc6fa35f08e847e88100a2d59965ed75a3ebe09d307d15aaf4b"
+  "receiptDigest": "2f9dbbca24683971a39b32be0d60898e7324e4ec0fea56c5f72153ceabd9dbc4"
 }
