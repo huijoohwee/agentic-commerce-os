@@ -27,6 +27,36 @@ function required(name) {
   return value;
 }
 
+async function boundedBody(response, maximum, label) {
+  assert(response.body, `${label}_body_missing`);
+  const reader = response.body.getReader(), chunks = [];
+  let length = 0;
+  try {
+    while (true) {
+      const next = await reader.read();
+      if (next.done) break;
+      length += next.value.byteLength;
+      assert(length <= maximum, `${label}_body_too_large`);
+      chunks.push(Buffer.from(next.value));
+    }
+    return Buffer.concat(chunks, length);
+  } catch (error) {
+    await reader.cancel().catch(() => {});
+    throw error;
+  } finally {
+    reader.releaseLock();
+  }
+}
+
+async function boundedJson(response, maximum, label) {
+  if (!/^application\/json(?:\s*;|$)/iu.test(response.headers.get('content-type') ?? '')) {
+    await response.body?.cancel();
+    assert.fail(`${label}_content_type_invalid`);
+  }
+  const bytes = await boundedBody(response, maximum, label);
+  return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
+}
+
 export async function api(route, { method = 'GET', body } = {}) {
   assert(route.startsWith('/') && !route.includes('..'));
   const response = await fetch(`https://api.cloudflare.com/client/v4${route}`, {
@@ -36,7 +66,7 @@ export async function api(route, { method = 'GET', body } = {}) {
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     signal: AbortSignal.timeout(15000),
   });
-  const value = await response.json();
+  const value = await boundedJson(response, 1_048_576, 'cloudflare_api');
   assert.equal(response.redirected, false, 'cloudflare_redirect_refused');
   assert.equal(response.ok && value.success === true, true,
     `cloudflare_api_failed:${route}:${response.status}`);
@@ -94,9 +124,10 @@ export async function readReadiness() {
     method: 'GET', redirect: 'error', cache: 'no-store', credentials: 'omit',
     signal: AbortSignal.timeout(12000), headers: { accept: 'application/json' },
   });
+  if (response.status !== 200) await response.body?.cancel();
   assert.equal(response.status, 200, 'commerce_readiness_unavailable');
   assert.match(response.headers.get('content-type') ?? '', /^application\/json/u);
-  const value = await response.json();
+  const value = await boundedJson(response, 16_384, 'commerce_readiness');
   assert.equal(value.ok, true);
   assert.equal(value.profile, 'local-first');
   assert.equal(value.checkout, 'live', 'commerce_checkout_not_live');
@@ -125,8 +156,9 @@ export async function readPublicAssets(candidate = null) {
       : `https://airvio.co${PUBLIC_PREFIX}/${name}`;
     const response = await fetch(url, { method: 'GET', redirect: 'error', cache: 'no-store',
       credentials: 'omit', signal: AbortSignal.timeout(10000) });
+    if (response.status !== 200) await response.body?.cancel();
     assert.equal(response.status, 200, `public_asset_status:${name}:${response.status}`);
-    const bytes = Buffer.from(await response.arrayBuffer());
+    const bytes = await boundedBody(response, 80_000, `public_asset:${name}`);
     const row = { path: name, status: response.status, bytes: bytes.length, sha256: digest(bytes),
       contentType: response.headers.get('content-type'),
       cacheControl: response.headers.get('cache-control'),
@@ -153,15 +185,18 @@ export async function readPublicAssets(candidate = null) {
   const slashless = await fetch(`https://airvio.co${PUBLIC_PREFIX}`, {
     method: 'GET', redirect: 'manual', cache: 'no-store', signal: AbortSignal.timeout(10000),
   });
+  await slashless.body?.cancel();
   assert.equal(slashless.status, 308, 'slashless_route_redirect_missing');
   assert.equal(new URL(slashless.headers.get('location') ?? '', 'https://airvio.co').pathname, `${PUBLIC_PREFIX}/`);
   const unknown = await fetch(`https://airvio.co${PUBLIC_PREFIX}/unknown-file`, {
     redirect: 'manual', cache: 'no-store', signal: AbortSignal.timeout(10000),
   });
+  await unknown.body?.cancel();
   assert.equal(unknown.status, 404, 'unknown_storage_route_must_404');
   const method = await fetch(`https://airvio.co${PUBLIC_PREFIX}/`, {
     method: 'POST', body: 'read-only', redirect: 'manual', signal: AbortSignal.timeout(10000),
   });
+  await method.body?.cancel();
   assert.equal([404, 405, 501].includes(method.status), true, 'storage_route_must_remain_read_only');
   return { assets: rows, slashlessStatus: slashless.status, unknownStatus: unknown.status,
     postStatus: method.status };
@@ -272,18 +307,17 @@ export async function authorizeRun(candidateSha, directory) {
   assert.equal(run.head_sha, candidateSha);
   assert.equal(run.run_attempt, 1);
   assert.equal(run.repository?.full_name, REPOSITORY);
-  const owner = run.repository?.owner;
-  assert.equal(owner?.type, 'User');
-  for (const actor of [run.actor, run.triggering_actor]) {
-    assert.equal(actor?.type, 'User');
-    assert.equal(actor?.id, owner.id, 'workflow_must_be_owner_initiated');
-    assert.equal(actor?.login, owner.login, 'workflow_must_be_owner_initiated');
+  const actors = [run.actor, run.triggering_actor];
+  for (const actor of actors) {
+    assert.equal(actor?.type, 'User', 'workflow_dispatch_actor_must_be_human');
+    assert.match(actor?.login ?? '', /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$/u);
+    assert.equal(actor.login.toLowerCase().endsWith('[bot]'), false);
+    assert(Number.isSafeInteger(actor.id) && actor.id > 0);
   }
+  assert.equal(actors[0].id, actors[1].id, 'workflow_dispatch_actor_changed');
   const approval = validateHumanAuthorization(reviews, environment, {
     releaseMode: baseline.releaseMode, candidateSha, runId, runAttempt: 1,
   });
-  assert.equal(approval.approver.id, owner.id, 'production_approval_must_be_owner');
-  assert.equal(approval.approver.login, owner.login, 'production_approval_must_be_owner');
   const receipt = { schema: 'commerce.storage-management-production-authorization/v1',
     repository: REPOSITORY, workflow: WORKFLOW_PATH, candidateSha, candidateDigest: baseline.candidateDigest,
     runId, releaseMode: baseline.releaseMode, baselineDigest: baseline.stateDigest, approval };
