@@ -35,14 +35,18 @@ function readDesignSystemStaticRelease() {
   return { owner: release.source.repository, revision: release.source.revision, files };
 }
 function readSharedUiIconPin() {
-  const release = readDesignSystemStaticRelease();
-  const path = 'vendor/shared-ui-profile.css', file = release.files.get(path);
-  const bytes = fs.readFileSync('public/agentic-design-system/' + path);
-  const provenance = bytes.toString('utf8').match(/^\/\* Generated from agentic-design-system@([a-f0-9]{40}); profile sha256 ([a-f0-9]{64})\. Do not edit\. \*\//u);
-  if (!file || !provenance || file.bytes !== bytes.length || file.sha256 !== digest(bytes))
-    throw Error('Design System shared UI profile projection differs from its static release');
-  return Object.freeze({ owner: release.owner, sourceRevision: provenance[1], registryRevision: release.revision,
-    profileSha256: provenance[2], projectionSha256: file.sha256 });
+  const pin = JSON.parse(fs.readFileSync('config/shared-ui-profile.pin.json', 'utf8'));
+  const profile = pin.profile;
+  if (pin.schema !== 'agentic-design-system/consumer-pin/v1' || profile?.id !== 'shared-ui'
+    || profile.owner !== 'github.com/huijoohwee/agentic-design-system'
+    || !/^[a-f0-9]{40}$/.test(profile.sourceRevision ?? '') || !/^[a-f0-9]{40}$/.test(profile.registryRevision ?? '')
+    || profile.sourcePath !== 'site/tokens/shared-ui-profile.json'
+    || !/^sha256:[a-f0-9]{64}$/.test(profile.sourceSha256 ?? '')
+    || profile.projectionPath !== 'site/vendor/shared-ui-profile.css'
+    || !/^sha256:[a-f0-9]{64}$/.test(profile.projectionSha256 ?? ''))
+    throw Error('Design System shared UI profile pin invalid');
+  return Object.freeze({ owner: profile.owner, sourceRevision: profile.sourceRevision, registryRevision: profile.registryRevision,
+    profileSha256: profile.sourceSha256.slice(7), projectionSha256: profile.projectionSha256.slice(7) });
 }
 export const git = (...args) => execFileSync('git', args, { encoding: 'utf8', timeout: 20000 }).trim();
 export function assertLocalFirstConfig(config) {
@@ -85,8 +89,8 @@ export function verifyAgenticBaseDataView() {
     throw Error('Agentic Base data view native owner missing or over budget');
   }
   const sharedProfile = pin.inputs.find(input => input.path === 'packages/views-react/src/browser/shared-ui-profile.css');
-  const sharedProfileFile = readDesignSystemStaticRelease().files.get('vendor/shared-ui-profile.css');
-  if (!sharedProfile || sharedProfile.bytes !== sharedProfileFile?.bytes || sharedProfile.sha256 !== sharedProfileFile?.sha256)
+  const sharedProfileProjection = fs.readFileSync('public/local-first/shared-ui-profile.css');
+  if (!sharedProfile || sharedProfile.bytes !== sharedProfileProjection.length || sharedProfile.sha256 !== digest(sharedProfileProjection))
     throw Error('Agentic Base must consume the exact Design System shared UI profile');
   const outputs = ['agentic-base-data-view.js', 'dropdown-menus.js', 'agentic-base-data-view.css'];
   if (!Array.isArray(pin.outputs) || pin.outputs.length !== outputs.length || outputs.some(name => !pin.outputs.some(row => row.path === name))) throw Error('Agentic Base data view inventory invalid');
@@ -306,13 +310,12 @@ export function verifySharedThemeOwner() {
 }
 export function verifySharedUiIconProfile(directory = 'public/local-first') {
   if (!FILES.includes('shared-ui-profile.css')) throw Error('Shared UI icon profile must be a released local-first asset');
-  const sharedUiPin = readSharedUiIconPin(), release = readDesignSystemStaticRelease();
+  const sharedUiPin = readSharedUiIconPin();
   const cssBytes = fs.readFileSync(path.join(directory, 'shared-ui-profile.css'));
   const css = cssBytes.toString('utf8');
   const provenance = css.match(/^\/\* Generated from agentic-design-system@([a-f0-9]{40}); profile sha256 ([a-f0-9]{64})\. Do not edit\. \*\//u);
   if (!provenance || provenance[1] !== sharedUiPin.sourceRevision
     || provenance[2] !== sharedUiPin.profileSha256 || digest(cssBytes) !== sharedUiPin.projectionSha256
-    || !cssBytes.equals(fs.readFileSync('public/agentic-design-system/vendor/shared-ui-profile.css'))
     || /@import\b|url\(\s*["']?(?:https?:|\/\/)/i.test(css))
     throw Error('Shared UI icon projection differs from its pinned Design System profile or uses a network dependency');
   for (const name of ['floating-panel', 'toolbar', 'dashboard-columns']) {
@@ -325,12 +328,8 @@ export function verifySharedUiIconProfile(directory = 'public/local-first') {
     if (artifactPin.owner !== sharedUiPin.owner || !/^[a-f0-9]{40}$/.test(artifactPin.revision)
       || artifactPin.path !== 'site/' + file || !FILES.includes(file) || digest(bytes) !== artifactPin.sha256)
       throw Error('Commerce differs from the pinned Design System shell: ' + file);
-    if (name === 'floating-panel') {
-      const centralFile = release.files.get(file);
-      if (artifactPin.revision !== release.revision || artifactPin.sha256 !== centralFile?.sha256
-        || !bytes.equals(fs.readFileSync('public/agentic-design-system/' + file)))
-        throw Error('Commerce FloatingPanel must use the exact current Design System projection');
-    }
+    if (name === 'floating-panel' && artifactPin.revision !== 'a3d30260ab31b1067fe3f9ee5c6fce5fba684bc9')
+      throw Error('Commerce FloatingPanel must use the pinned central panel family');
   }
   const shell = fs.readFileSync(path.join(directory, 'workspace-shell.css'), 'utf8');
   const rule = shell.match(/\.workspace-shell>\.sidebar \.console-search>svg\s*\{([^}]*)\}/u)?.[1] ?? '';
@@ -356,7 +355,7 @@ export function sourceManifest(revision, selection = readCheckoutRelease()) {
   verifyStorageManagementSourceIndex();
   assertLocalFirstConfig(JSON.parse(fs.readFileSync(CONFIG, 'utf8')));
   if (listRegularFiles('public/local-first').join() !== [...FILES, ...PRIVATE_FILES, ...STORAGE_MANAGEMENT_SOURCE_FILES].sort().join()) throw Error('Unexpected static asset inventory');
-  const paths = [CONFIG, 'src/local-first/worker.ts', 'src/local-first/workspace-pack.ts', 'src/local-first/workspace-service.ts', 'src/local-first/sme-business-pack.ts', 'public/local-first/sme-business-pack-core.js', 'config/capability-token-map.json', 'config/floating-panel.pin.json', 'config/toolbar.pin.json',
+  const paths = [CONFIG, 'src/local-first/worker.ts', 'src/local-first/workspace-pack.ts', 'src/local-first/workspace-service.ts', 'src/local-first/sme-business-pack.ts', 'public/local-first/sme-business-pack-core.js', 'config/capability-token-map.json', 'config/shared-ui-profile.pin.json', 'config/floating-panel.pin.json', 'config/toolbar.pin.json',
     'config/dashboard-columns.pin.json', 'config/agentic-base-data-view.json', 'config/graph-data-view.json', 'config/workspace-pack-graph.json', 'src/generated/graph-workspace-pack.js', 'src/generated/graph-workspace-pack.d.ts',
     'scripts/workspace-pack/build-graph.mjs', 'src/edge/production-prefix.ts', 'src/shared/http.ts',
     ...['checkout', 'session', 'fulfillment-contract', 'fulfillment-definition', 'fulfillment', 'fulfillment-relay', 'stripe-checkout', 'checkout-offer', 'checkout-recovery', 'stripe-webhook'].map(file => `src/local-first/${file}.ts`),

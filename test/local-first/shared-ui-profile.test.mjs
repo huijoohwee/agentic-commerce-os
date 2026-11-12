@@ -4,22 +4,25 @@ import test from 'node:test';
 import worker from '../../src/local-first/worker.ts';
 import { digest, verifySharedUiIconProfile } from '../../scripts/local-first-release/artifact.mjs';
 
-test('Commerce consumes the pinned Design System icon size from its offline shell assets', async () => {
+test('Commerce consumes the pinned Design System panel profile and shell offline', async () => {
   const pin = verifySharedUiIconProfile();
   assert.equal(pin.owner, 'github.com/huijoohwee/agentic-design-system');
-  assert.equal(pin.sourceRevision, '267cdb31047b02d4f54ea6708fb2518a8a2a57f4');
-  assert.equal(pin.registryRevision, 'c758c593c296d175541a031396c7f9e30b7f0454');
+  assert.equal(pin.sourceRevision, '60fc0c71de7a1fffa5f00957c78cdd9a28c5656c');
+  assert.equal(pin.registryRevision, 'c72ab37ff7e081ba8b4fb4bad1bee83f4f56e7ae');
   const profile = fs.readFileSync('public/local-first/shared-ui-profile.css', 'utf8');
-  assert.equal(profile, fs.readFileSync('public/agentic-design-system/vendor/shared-ui-profile.css', 'utf8'));
+  assert.equal(digest(profile), pin.projectionSha256);
   assert.match(profile, /stroke-width: var\(--agentic-icon-stroke-width\)/);
   assert.match(profile, /--agentic-font-size-body: 0\.875rem;/);
   assert.match(profile, /--agentic-line-height-body: 1\.25rem;/);
-  assert.match(profile, /--agentic-floating-panel-radius:\s*8px;/u);
-  assert.equal(fs.readFileSync('public/local-first/floating-panel.css', 'utf8'),
-    fs.readFileSync('public/agentic-design-system/floating-panel.css', 'utf8'));
+  assert.match(profile, /--agentic-panel-width:/u);
+  assert.match(profile, /--agentic-panel-bottom-height:/u);
+  const panelCss = fs.readFileSync('public/local-first/floating-panel.css', 'utf8');
+  assert.match(panelCss, /\.agentic-panel-main\b/u);
+  assert.match(panelCss, /\.agentic-panel-bottom\b/u);
+  assert.match(panelCss, /\.agentic-base-floating-panel\s*\{/u);
   const floatingPanelPin = JSON.parse(fs.readFileSync('config/floating-panel.pin.json', 'utf8'));
-  assert.equal(floatingPanelPin.revision, pin.registryRevision);
-  assert.equal(floatingPanelPin.sha256, digest(fs.readFileSync('public/agentic-design-system/floating-panel.css')));
+  assert.equal(floatingPanelPin.revision, 'a3d30260ab31b1067fe3f9ee5c6fce5fba684bc9');
+  assert.equal(floatingPanelPin.sha256, digest(panelCss));
   const revision = 'f'.repeat(40);
   const env = {RELEASE_CANDIDATE_SHA:revision, ASSETS:{fetch(request) {
     assert.equal(new URL(request.url).pathname, '/shared-ui-profile.css');
@@ -174,9 +177,9 @@ test('Base browser controls reuse the central shared border utility', () => {
   const pin = JSON.parse(fs.readFileSync('config/agentic-base-data-view.json', 'utf8'));
   const profile = fs.readFileSync('public/agentic-design-system/vendor/shared-ui-profile.css', 'utf8');
   const css = fs.readFileSync('public/local-first/agentic-base-data-view.css', 'utf8');
-  assert.equal(pin.source.revision, 'f966ce7f9551bd0afb3ea56b25bff029c4359efb');
+  assert.equal(pin.source.revision, '37e92e79ba9ad269fc9c9f757512a7784f159508');
   assert.equal(pin.inputs.find(input => input.path === 'packages/views-react/src/browser/shared-ui-profile.css')?.sha256,
-    'e9fce49e9dce6cde8afa4cde9dc0e8d77ee8642cc10d4d38f66d35d3f53361b0');
+    '8ba6039a75b94943bd93154949744cb51b5f470f3423aebcf89be592528acb36');
   assert.match(profile, /--agentic-control-border:\s*1px solid var\(--agentic-base-border,/u);
   assert.match(css, /--agentic-control-border:\s*1px solid var\(--agentic-base-border,/u);
   assert.match(css, /\.agentic-form-control,[\s\S]+?border:\s*var\(--agentic-control-border\)/u);

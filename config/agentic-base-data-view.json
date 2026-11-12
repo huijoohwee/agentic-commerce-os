@@ -1,1 +1,184 @@
-{"schema":"agentic-base/consumer-artifact/v1","source":{"repository":"github.com/huijoohwee/agentic-base","revision":"f966ce7f9551bd0afb3ea56b25bff029c4359efb","sourceDirty":false,"package":"@agentic-base/views-react","packageVersion":"0.1.0","packagePath":"packages/views-react","buildManifest":"packages/views-react/dist/browser-data-view.manifest.json","buildManifestSha256":"bff0ccaf98ea1c7f489fc38c5687c99194580008f8f08ae29f40ff0ab7fb45f9"},"contract":{"source":"agentic-base/browser-data-view/v1","browserExport":"mountDataView","cssScope":"shadow-root","hostThemeSlots":["--agentic-base-text","--agentic-base-surface","--agentic-base-border","--agentic-base-muted","--agentic-base-header","--agentic-base-selected","--agentic-base-hover","--agentic-base-focus"],"defaultLayout":"table","layoutModes":["table","multiDimensional"],"multiDimensionalOrientation":"Base-owned pivot control via optional onOrientationChange callback"},"build":{"esbuild":"0.25.12","react":"18.3.1","reactDom":"18.3.1","format":"esm","target":"es2022","offline":true},"inputs":[{"path":"packages/views-react/src/browser/DataViewBrowserAdapter.tsx","bytes":11072,"sha256":"2b98fb8076ff3bcac36c8de5c353f5cfa775d3772d2e26f2da1f524d679064aa"},{"path":"packages/views-react/src/browser/base-profile.css","bytes":647,"sha256":"9fb7da765d4f597f7e130faa51c10faff9dd977b943818904e4d474236f28758"},{"path":"packages/views-react/src/browser/base-profile.pin.json","bytes":652,"sha256":"a865db85c273a5ebb08b06e60cb2c8e4c8f62501ae03ed744feecb52a2d0ca75"},{"path":"packages/views-react/src/browser/browserDataView.css","bytes":16583,"sha256":"47ae14d197dfa71e2882e7eeb3cb040832ee02165de844c2313f142bee4961e5"},{"path":"packages/views-react/src/browser/index.ts","bytes":175,"sha256":"38310e61f58a6cbec4ddc354e6bcda4319602df70886980226e86c456c8effa6"},{"path":"packages/views-react/src/browser/shared-ui-profile.css","bytes":19722,"sha256":"e9fce49e9dce6cde8afa4cde9dc0e8d77ee8642cc10d4d38f66d35d3f53361b0"},{"path":"packages/views-react/src/browser/shared-ui-profile.pin.json","bytes":856,"sha256":"4755af3c5a67f168b9a0ad45808bfc29758426c3fd566456f622acea724940e8"},{"path":"packages/views-react/src/controls/MenuControls.tsx","bytes":10623,"sha256":"4c957810d79e7a6f14123c8d61a25bc851371548ae1e0a535de1544b8c192a11"},{"path":"packages/views-react/src/controls/dropdownMenu.ts","bytes":9118,"sha256":"e3a08bfa7fec688b43ab2c77acc73cda72450bd54ad9f914adbdf5fb00fe8944"},{"path":"packages/views-react/src/controls/icons.json","bytes":12805,"sha256":"52ab0c590ab71329f16d101e493f8dc21c455c918d52431c790a1477fcb357a1"},{"path":"packages/views-react/src/controls/icons.pin.json","bytes":285,"sha256":"0050f6da9e3a905c849437a4d38b7d536aec52410cd6787cb0d812ffd2cab86b"},{"path":"packages/views-react/src/controls/nativeSelect.ts","bytes":8852,"sha256":"5e0c64e5d53ecd4778d5553d02a71dd87cc1be915be94abf3f32c53814cfae78"},{"path":"packages/views-react/src/table/BaseColumnHeaderMenu.tsx","bytes":10084,"sha256":"5327956e249fc1e18e0f7a3946870836bbd6e75ce8d47ca81214a6a40f92cab6"},{"path":"packages/views-react/src/table/BaseTableHost.tsx","bytes":29969,"sha256":"daefc9e2de05e5c3bdf2aaa3945d33860533a48625f858737f6c43dbf349489a"},{"path":"packages/views-react/src/table/ColumnsTableView.tsx","bytes":13595,"sha256":"a6943cce203c14a380921610396fdc8a65eb19fa80244eda95cfee5ef2b3788e"},{"path":"packages/views-react/src/table/MultiDimTableView.tsx","bytes":1758,"sha256":"0d85945f485afbb28fd3b1be83f4f0e2c7fbe173e259f24c753ea2943584201c"},{"path":"packages/views-react/src/table/TableCore.tsx","bytes":1604,"sha256":"ee79998df19f75757d54d22ec8aa5c168904b0955b079aa4e7ec0105bd77af22"},{"path":"packages/views-react/src/table/TableHostContext.tsx","bytes":1370,"sha256":"6db07011e56ba2d5091ed010791e49b77c78a883f13bd0be623e9f0781cc24f9"},{"path":"packages/views-react/src/table/TableView.tsx","bytes":30369,"sha256":"b6c74e1d1038007b14590957e1b366bb81e7033977661a15a913a7cde3da5740"},{"path":"packages/views-react/src/table/TableViewHeader.tsx","bytes":7531,"sha256":"25f2bc13321b8172ed0a60d58fa48784d1b427ee1029e4b008d0ad0fb5a81cac"},{"path":"packages/views-react/src/table/ViewColumnType.ts","bytes":1543,"sha256":"3971e7e50ddf1fc5c3cbcdfe752e04b8421901d4394851f1fbe3cf1334e0e463"},{"path":"packages/views-react/src/table/dataViewDensity.ts","bytes":1183,"sha256":"75d33565efdafad586e1c1b0822be9fec1fc2925b1b26e134c1dda471580c8fd"},{"path":"packages/views-react/src/table/rowSelection.ts","bytes":4724,"sha256":"cf124567da7bbbe7f7d225d7ebe50a0c8d0cefd7f09ed3db1bd306cddff63e4a"},{"path":"packages/views-react/src/table/stickyHierarchy.ts","bytes":7950,"sha256":"69a2d79dfa288b8084a437f3862e04a7ae1dfcdcb83749a1f4df1c3021bc36c7"}],"outputs":[{"path":"agentic-base-data-view.js","bytes":240228,"sha256":"52646b5b0f63e4621b41caef69356a95e2e15d86e702a821fa90a845c15e211a","sourcePath":"browser-data-view.js"},{"path":"dropdown-menus.js","bytes":21015,"sha256":"9d81985b342f002324dd60ce8d3f04efa911d6be55fb3ff438ad667ea5cd8b0c","sourcePath":"dropdown-menus.js"},{"path":"agentic-base-data-view.css","bytes":35202,"sha256":"a028ebf83c95b0c480ea4f6fb8b455bd738ddf0225e67f7a3bd567ef53136163","sourcePath":"browser-data-view.css"}]}
+{
+  "schema": "agentic-base/consumer-artifact/v1",
+  "source": {
+    "repository": "github.com/huijoohwee/agentic-base",
+    "revision": "37e92e79ba9ad269fc9c9f757512a7784f159508",
+    "sourceDirty": false,
+    "package": "@agentic-base/views-react",
+    "packageVersion": "0.1.0",
+    "packagePath": "packages/views-react",
+    "buildManifest": "packages/views-react/dist/browser-data-view.manifest.json",
+    "buildManifestSha256": "d1dc3f4197618ce64323e908f391924f925acb423dc2fa12a929507ffb542185"
+  },
+  "contract": {
+    "source": "agentic-base/browser-data-view/v1",
+    "browserExport": "mountDataView",
+    "cssScope": "shadow-root",
+    "hostThemeSlots": [
+      "--agentic-base-text",
+      "--agentic-base-surface",
+      "--agentic-base-border",
+      "--agentic-base-muted",
+      "--agentic-base-header",
+      "--agentic-base-selected",
+      "--agentic-base-hover",
+      "--agentic-base-focus"
+    ],
+    "defaultLayout": "table",
+    "layoutModes": [
+      "table",
+      "multiDimensional"
+    ],
+    "multiDimensionalOrientation": "Base-owned pivot control via optional onOrientationChange callback"
+  },
+  "build": {
+    "esbuild": "0.25.12",
+    "react": "18.3.1",
+    "reactDom": "18.3.1",
+    "format": "esm",
+    "target": "es2022",
+    "offline": true
+  },
+  "inputs": [
+    {
+      "path": "packages/views-react/src/browser/DataViewBrowserAdapter.tsx",
+      "bytes": 11072,
+      "sha256": "2b98fb8076ff3bcac36c8de5c353f5cfa775d3772d2e26f2da1f524d679064aa"
+    },
+    {
+      "path": "packages/views-react/src/browser/base-profile.css",
+      "bytes": 647,
+      "sha256": "9fb7da765d4f597f7e130faa51c10faff9dd977b943818904e4d474236f28758"
+    },
+    {
+      "path": "packages/views-react/src/browser/base-profile.pin.json",
+      "bytes": 652,
+      "sha256": "a865db85c273a5ebb08b06e60cb2c8e4c8f62501ae03ed744feecb52a2d0ca75"
+    },
+    {
+      "path": "packages/views-react/src/browser/browserDataView.css",
+      "bytes": 16583,
+      "sha256": "47ae14d197dfa71e2882e7eeb3cb040832ee02165de844c2313f142bee4961e5"
+    },
+    {
+      "path": "packages/views-react/src/browser/index.ts",
+      "bytes": 175,
+      "sha256": "38310e61f58a6cbec4ddc354e6bcda4319602df70886980226e86c456c8effa6"
+    },
+    {
+      "path": "packages/views-react/src/browser/shared-ui-profile.css",
+      "bytes": 20532,
+      "sha256": "8ba6039a75b94943bd93154949744cb51b5f470f3423aebcf89be592528acb36"
+    },
+    {
+      "path": "packages/views-react/src/browser/shared-ui-profile.pin.json",
+      "bytes": 1024,
+      "sha256": "8cd5f2a5fcdf3ce7a17b00aae3d71e4e7b5c89f66e60922c1b842584ad33cec5"
+    },
+    {
+      "path": "packages/views-react/src/controls/MenuControls.tsx",
+      "bytes": 10623,
+      "sha256": "4c957810d79e7a6f14123c8d61a25bc851371548ae1e0a535de1544b8c192a11"
+    },
+    {
+      "path": "packages/views-react/src/controls/dropdownMenu.ts",
+      "bytes": 9118,
+      "sha256": "e3a08bfa7fec688b43ab2c77acc73cda72450bd54ad9f914adbdf5fb00fe8944"
+    },
+    {
+      "path": "packages/views-react/src/controls/icons.json",
+      "bytes": 12805,
+      "sha256": "52ab0c590ab71329f16d101e493f8dc21c455c918d52431c790a1477fcb357a1"
+    },
+    {
+      "path": "packages/views-react/src/controls/icons.pin.json",
+      "bytes": 285,
+      "sha256": "0050f6da9e3a905c849437a4d38b7d536aec52410cd6787cb0d812ffd2cab86b"
+    },
+    {
+      "path": "packages/views-react/src/controls/nativeSelect.ts",
+      "bytes": 8852,
+      "sha256": "5e0c64e5d53ecd4778d5553d02a71dd87cc1be915be94abf3f32c53814cfae78"
+    },
+    {
+      "path": "packages/views-react/src/table/BaseColumnHeaderMenu.tsx",
+      "bytes": 10084,
+      "sha256": "5327956e249fc1e18e0f7a3946870836bbd6e75ce8d47ca81214a6a40f92cab6"
+    },
+    {
+      "path": "packages/views-react/src/table/BaseTableHost.tsx",
+      "bytes": 29969,
+      "sha256": "daefc9e2de05e5c3bdf2aaa3945d33860533a48625f858737f6c43dbf349489a"
+    },
+    {
+      "path": "packages/views-react/src/table/ColumnsTableView.tsx",
+      "bytes": 13595,
+      "sha256": "a6943cce203c14a380921610396fdc8a65eb19fa80244eda95cfee5ef2b3788e"
+    },
+    {
+      "path": "packages/views-react/src/table/MultiDimTableView.tsx",
+      "bytes": 1758,
+      "sha256": "0d85945f485afbb28fd3b1be83f4f0e2c7fbe173e259f24c753ea2943584201c"
+    },
+    {
+      "path": "packages/views-react/src/table/TableCore.tsx",
+      "bytes": 1604,
+      "sha256": "ee79998df19f75757d54d22ec8aa5c168904b0955b079aa4e7ec0105bd77af22"
+    },
+    {
+      "path": "packages/views-react/src/table/TableHostContext.tsx",
+      "bytes": 1370,
+      "sha256": "6db07011e56ba2d5091ed010791e49b77c78a883f13bd0be623e9f0781cc24f9"
+    },
+    {
+      "path": "packages/views-react/src/table/TableView.tsx",
+      "bytes": 30369,
+      "sha256": "b6c74e1d1038007b14590957e1b366bb81e7033977661a15a913a7cde3da5740"
+    },
+    {
+      "path": "packages/views-react/src/table/TableViewHeader.tsx",
+      "bytes": 7531,
+      "sha256": "25f2bc13321b8172ed0a60d58fa48784d1b427ee1029e4b008d0ad0fb5a81cac"
+    },
+    {
+      "path": "packages/views-react/src/table/ViewColumnType.ts",
+      "bytes": 1543,
+      "sha256": "3971e7e50ddf1fc5c3cbcdfe752e04b8421901d4394851f1fbe3cf1334e0e463"
+    },
+    {
+      "path": "packages/views-react/src/table/dataViewDensity.ts",
+      "bytes": 1183,
+      "sha256": "75d33565efdafad586e1c1b0822be9fec1fc2925b1b26e134c1dda471580c8fd"
+    },
+    {
+      "path": "packages/views-react/src/table/rowSelection.ts",
+      "bytes": 4724,
+      "sha256": "cf124567da7bbbe7f7d225d7ebe50a0c8d0cefd7f09ed3db1bd306cddff63e4a"
+    },
+    {
+      "path": "packages/views-react/src/table/stickyHierarchy.ts",
+      "bytes": 7950,
+      "sha256": "69a2d79dfa288b8084a437f3862e04a7ae1dfcdcb83749a1f4df1c3021bc36c7"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "agentic-base-data-view.js",
+      "bytes": 240348,
+      "sha256": "48d88ce9cd1ba57cf45e99d8930da6111f13fa6a081431948dd8a88c1e35ab16",
+      "sourcePath": "browser-data-view.js"
+    },
+    {
+      "path": "dropdown-menus.js",
+      "bytes": 21015,
+      "sha256": "9d81985b342f002324dd60ce8d3f04efa911d6be55fb3ff438ad667ea5cd8b0c",
+      "sourcePath": "dropdown-menus.js"
+    },
+    {
+      "path": "agentic-base-data-view.css",
+      "bytes": 36012,
+      "sha256": "b08156d8d084df1856677b6e739970434e3560c9b743a14202ee36f6c5702905",
+      "sourcePath": "browser-data-view.css"
+    }
+  ]
+}
