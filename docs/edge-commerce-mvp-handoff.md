@@ -200,3 +200,41 @@ obtain provider/evaluator readiness, authorize the exact release, verify the liv
 then obtain a genuine settled receipt and buyer acceptance. Do not infer these from fixtures,
 positive economics, source checks or a merged PR. Merge, deployment, branch retirement,
 worktree cleanup and canonical synchronization remain separate authorized effects.
+# Listing lifecycle release verification — 2026-11-13
+
+The existing local-first release checker now runs the native listing browser drill in sandbox,
+live-reader and live profiles, both against its local fixture and the selected delivered origin.
+It reuses `test/local-first/listing-entry-browser.mjs`; there is no second editor, store, browser
+runner or runtime dependency. Sandbox and live proof consumers require the listing check, so an
+older complete-looking proof without it is refused.
+
+The shared drill binds the document response's exact `x-commerce-source` and local-first profile,
+uses isolated browser storage, and covers create/edit/search/archive/restore, stale-tab refusal,
+360/1280 px layout, offline reload/edit, atomic import conflicts, duplicate-source races and
+storage-denied recovery. Its contexts abort non-GET and cross-origin routed requests and assert
+the observed request set is same-origin GET only. The pinned native service worker remains
+enabled for offline verification. No checkout, job, publication or payment is submitted by the
+listing drill. Every context closes even after failure; the standalone CLI remains loopback-only.
+
+Focused proof/target/contract tests pass 17/17. The live local preview drill passes with explicit
+`local-unreleased` identity; that observation is not an exact-candidate production receipt.
+The clean committed candidate still needs its required Integration Gate and owning release run.
+
+The existing pinned device-session model container, host and tunnel were restarted without
+changing configuration, credentials, data, image, model or host bundle. Authenticated host pins
+match source `57418b3807a547de5083cdbd3254a19732f07c97` and bundle
+`8f7734144d8ae426fddf11b81ead8bab4c9284a849e8278504d53c338862dbdd`.
+Public readiness recovered from 503 to 200 with fulfillment ready on the retained deployed source
+`cb65b1d6e9715e6fb57b8a63bf9e6181ffa397e1`; it does not yet contain the listing CRUD increment.
+Availability remains device-session, with no always-on claim.
+
+Delivery remains pending until the exact current-main candidate has scoped owner approval,
+current provider-owned $0 evidence, retained live-reader/webhook prerequisites and matching
+runtime/recovery receipts. Preserve the existing live checkout profile. Full-platform independent
+evaluation stays separate: zero issuers, four missing inputs and the removed Canvas lifecycle
+check require their owning protected migration and real evaluator inputs. No substitute verdict,
+issuer, customer consent, acceptance or payment is created by this verification increment.
+
+Sprint bound: eight existing authored paths across the product and requested planning draft,
+under 25 KiB source additions, zero new runtime modules/packages or always-load guidance.
+

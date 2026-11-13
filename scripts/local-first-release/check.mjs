@@ -12,6 +12,7 @@ import { checkRoleWorkspace } from '../../test/local-first/workspace-browser.mjs
 import { checkMerchantLaunch } from '../../test/local-first/merchant-browser.mjs';
 import { checkOfferSetup } from '../../test/local-first/offer-setup-browser.mjs';
 import { checkHousingWorkspace } from '../../test/local-first/housing-browser.mjs';
+import { checkListingEntry } from '../../test/local-first/listing-entry-browser.mjs';
 import { BROWSER_CHECKS, BROWSER_PROOF_SCHEMA, completeBrowserChecks, assertBrowserProof,
   LIVE_BROWSER_PROOF_SCHEMA, completeLiveBrowserChecks, assertLiveBrowserProof } from './browser-proof.mjs';
 import { LIVE_CHECKOUT_PROFILE_SHA256 } from '../../src/local-first/checkout-offer.ts';
@@ -93,6 +94,8 @@ try {
   let proof;
   if (checkout !== 'sandbox') {
     browser = await chromium.launch({headless:true});
+    await checkListingEntry({ browser, url, output: path.join(output, 'listing-entry'), revision, observeContext });
+    record(BROWSER_CHECKS.listing);
     await (await import('../../test/local-first/live-checkout-browser.mjs')).checkLiveCheckout({
       browser, url, output, record, remote:!!remote, checkout, revision, profileDigest:LIVE_CHECKOUT_PROFILE_SHA256, readiness,
     });
@@ -108,6 +111,8 @@ try {
   }
   record(BROWSER_CHECKS.scope);
   browser = await chromium.launch({ headless: true });
+  await checkListingEntry({ browser, url, output: path.join(output, 'listing-entry'), revision, observeContext });
+  record(BROWSER_CHECKS.listing);
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, acceptDownloads: true });
   observeContext(context);
   const page = await context.newPage();

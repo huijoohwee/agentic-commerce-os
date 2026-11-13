@@ -1,6 +1,7 @@
 /** Shared completeness contract for the browser producer and protected release consumer. */
 export const BROWSER_PROOF_SCHEMA = 'commerce.local-first-browser-proof/v3';
 export const BROWSER_CHECKS = Object.freeze({
+  listing: 'private listing create/edit/search/archive/restore, offline reload, strict validation, revision conflict and lossless v4 backup with GET-only transport',
   scope: 'exact production scope and server mutation refusal',
   mobile: 'mobile draft creation, safe canvas link and responsive layout',
   offline: 'offline navigation, editing and durable reload',
@@ -39,8 +40,8 @@ export const LIVE_BROWSER_CHECKS = Object.freeze({
   safety: 'local-fixture: offline entitlement hiding, uncached receipts and same-origin requests',
 });
 function liveRequired(scope) {
-  if (scope === 'live-read-only') return [LIVE_BROWSER_CHECKS.identity, LIVE_BROWSER_CHECKS.layout, LIVE_BROWSER_CHECKS.readOnly];
-  if (scope === 'local-fixture') return [LIVE_BROWSER_CHECKS.identity, LIVE_BROWSER_CHECKS.layout,
+  if (scope === 'live-read-only') return [BROWSER_CHECKS.listing, LIVE_BROWSER_CHECKS.identity, LIVE_BROWSER_CHECKS.layout, LIVE_BROWSER_CHECKS.readOnly];
+  if (scope === 'local-fixture') return [BROWSER_CHECKS.listing, LIVE_BROWSER_CHECKS.identity, LIVE_BROWSER_CHECKS.layout,
     LIVE_BROWSER_CHECKS.fixture, LIVE_BROWSER_CHECKS.recovery, LIVE_BROWSER_CHECKS.safety];
   return [];
 }
