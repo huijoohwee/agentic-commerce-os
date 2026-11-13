@@ -5,14 +5,17 @@ import { expect } from '@playwright/test';
 
 const steps = ['describe', 'identity', 'economics', 'review'];
 const amounts = ['#delivery-cost', '#provider-fee', '#agent-cost', '#acquisition-cost', '#fixed-cost'];
-const guide = page => page.locator('#setup-guide-panel');
+const workspacePanel = page => page.locator('#commerce-workspace-panel');
+const guide = page => page.locator('#commerce-panel-setup-guide');
 const step = (page, name) => guide(page).locator(`button[data-step-id="${name}"]`);
-const closeButton = page => guide(page).getByRole('button', { name: 'Close offer setup', exact: true });
+const closeButton = page => workspacePanel(page).getByRole('button', { name: 'Close', exact: true });
 
 async function openGuide(page) {
   const launcher = page.locator('#open-setup-guide');
   if (await launcher.getAttribute('aria-expanded') !== 'true') await launcher.click();
   await expect(launcher).toHaveAttribute('aria-expanded', 'true');
+  await expect(workspacePanel(page)).toBeVisible();
+  await expect(workspacePanel(page).getByRole('tab', { name: 'Setup Guide' })).toHaveAttribute('aria-selected', 'true');
   await expect(guide(page).getByRole('heading', { name: 'Offer setup', exact: true })).toBeVisible();
   await expect(guide(page).locator('button[data-step-id]')).toHaveCount(4);
   return guide(page);
@@ -21,7 +24,8 @@ async function openGuide(page) {
 async function closeGuide(page) {
   if (await page.locator('#open-setup-guide').getAttribute('aria-expanded') !== 'true') return;
   await closeButton(page).click();
-  await expect(guide(page)).toHaveCount(0);
+  await expect(workspacePanel(page)).toBeHidden();
+  await expect(guide(page)).toBeHidden();
   await expect(page.locator('#open-setup-guide')).toHaveAttribute('aria-expanded', 'false');
 }
 
@@ -67,7 +71,7 @@ async function saveAndReview(page) {
 
 async function acknowledge(page) {
   await (await action(page, 'Read and acknowledge review')).click();
-  await expect(guide(page)).toHaveCount(0);
+  await expect(guide(page)).toBeHidden();
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   await expect(page.locator('#approve-launch')).toBeFocused();
   await expect(page.locator('#approve-launch')).not.toBeChecked();
@@ -85,9 +89,10 @@ async function checkGuideChrome(page, defaultGlyph = true) {
       return { width: rect.width, height: rect.height, left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
     };
     const icon = button.querySelector('svg');
-    const panel = button.closest('[data-agentic-base-floating-panel="true"]');
+    const panel = button.closest('.agentic-base-floating-panel');
     const readTypography = element => { const style = getComputedStyle(element); return { size: style.fontSize, line: style.lineHeight, family: style.fontFamily }; };
-    const typography = { role: readTypography(panel), body: [...panel.querySelectorAll('.sequence-inspector p, .sequence-inspector li button, .sequence-inspector li button strong, .sequence-inspector li button span, .sequence-inspector small')].map(readTypography) };
+    const guide = document.querySelector('#commerce-panel-setup-guide')?.shadowRoot;
+    const typography = { role: readTypography(panel), body: [...(guide?.querySelectorAll('.sequence-inspector p, .sequence-inspector li button, .sequence-inspector li button strong, .sequence-inspector li button span, .sequence-inspector small') ?? [])].map(readTypography) };
     return { typography, button: bounds(button), icon: bounds(icon), header: bounds(button.closest('header')),
       controlHeight: parseFloat(getComputedStyle(button).getPropertyValue('--kg-control-height')),
       sharedControlHeight: parseFloat(getComputedStyle(button).getPropertyValue('--agentic-control-height')),
@@ -105,10 +110,11 @@ async function checkGuideChrome(page, defaultGlyph = true) {
   const panelTarget = geometry.sharedRowHeight;
   assert(Number.isFinite(panelTarget) && panelTarget >= target, 'The central row token must resolve');
   assert.equal(geometry.panelControlHeight, panelTarget, 'Panel close and header share the current responsive panel/toolbar row owner');
-  assert(Math.abs(geometry.button.height - Math.max(panelTarget, geometry.icon.height + geometry.verticalInsets)) <= 1,
-    'Close uses the native panel height and includes its box insets around an enlarged shared glyph');
-  assert(geometry.button.width >= target, 'Close preserves the native minimum target width');
-  assert(Math.abs(geometry.header.height - geometry.button.height) <= 1, 'The floating header stays compact around its native control');
+  const iconTarget = Math.max(target, geometry.icon.width);
+  assert(Number.isFinite(geometry.icon.width) && geometry.icon.width > 0, 'The central default icon-size token must resolve');
+  assert(Math.abs(geometry.button.height - iconTarget) <= 1, 'Close uses the shared control target or the shared icon size when text scaling requires more room');
+  assert(geometry.button.width >= iconTarget, 'Close preserves the shared control and icon target width');
+  assert(Math.abs(geometry.header.height - panelTarget - 1) <= 1, 'The floating header uses the shared panel row token and its divider');
   assert.equal(geometry.strokeWidth, 1.5, 'The close glyph inherits the shared default stroke');
   if (defaultGlyph) {
     assert.equal(geometry.icon.width, 16, 'The default native glyph is 16px wide');
@@ -116,7 +122,7 @@ async function checkGuideChrome(page, defaultGlyph = true) {
   }
   assert(geometry.icon.left >= geometry.button.left && geometry.icon.right <= geometry.button.right
     && geometry.icon.top >= geometry.button.top && geometry.icon.bottom <= geometry.button.bottom,
-  'The close glyph remains fully inside its target, including with doubled text');
+  `The close glyph remains fully inside its target, including with doubled text: ${JSON.stringify({ button: geometry.button, icon: geometry.icon })}`);
 }
 
 async function coarseGuideControls({ browser, url, observeContext }) {
@@ -145,14 +151,14 @@ async function responsiveGuide(page, output) {
     await selectStep(page, 'review');
     await checkGuideChrome(page, false);
     await step(page, 'review').scrollIntoViewIfNeeded();
-    const panel = guide(page).locator('[data-agentic-base-floating-panel="true"]');
+    const panel = workspacePanel(page).locator('.agentic-base-floating-panel');
     const geometry = await panel.evaluate(section => {
       const bounds = element => {
         const rect = element.getBoundingClientRect();
         return { width: rect.width, height: rect.height, left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom,
           scrollWidth: element.scrollWidth, clientWidth: element.clientWidth };
       };
-      const close = section.querySelector('header button');
+      const close = section.querySelector('.agentic-base-floating-panel-close');
       const page = { innerWidth, documentWidth: document.documentElement.scrollWidth,
         clientWidth: document.documentElement.clientWidth, bodyWidth: document.body.scrollWidth };
       const elements = [...document.body.querySelectorAll('*')];
@@ -202,13 +208,15 @@ async function responsiveGuide(page, output) {
           left: rect.left, right: rect.right, width: rect.width,
           scrollWidth: element.scrollWidth, clientWidth: element.clientWidth, overflowX: style.overflowX };
       }) : [];
+      const guide = document.querySelector('#commerce-panel-setup-guide')?.shadowRoot;
       return { pageFits: page.documentWidth <= innerWidth, page, overflow, section: bounds(section),
-        overflowOrigins, layoutChildren, actions: [...section.querySelectorAll('button')]
-          .filter(button => button !== close).map(bounds) };
+        avoidBottom: section.parentElement?.dataset.agenticFloatingPanelAvoidBottom,
+        overflowOrigins, layoutChildren, actions: [...(guide?.querySelectorAll('.sequence-inspector li button') ?? [])].map(bounds) };
     });
     assert.equal(geometry.pageFits, true,
       `No page overflow at ${width}px with doubled text: ${JSON.stringify({ page: geometry.page,
         origins: geometry.overflowOrigins, children: geometry.layoutChildren })}`);
+    assert.equal(geometry.avoidBottom, 'true', 'The shared shell reserves the Commerce header before sizing its panel');
     assert(geometry.section.left >= 0 && geometry.section.right <= width + 1, `Setup stays within ${width}px`);
     assert(geometry.section.top >= 0 && geometry.section.bottom <= 901, `Setup stays within the viewport height at ${width}px`);
     for (const bounds of geometry.actions) {
@@ -239,7 +247,8 @@ async function delayedGuideLifecycle({ browser, url, observeContext }) {
     await expect.poll(() => requested).toBe(true);
     await expect(launcher).toHaveAttribute('aria-expanded', 'true');
     await page.locator('#vendor-navigation a[data-view="vendor"]').click();
-    await expect(guide(page)).toHaveCount(0);
+    await expect(workspacePanel(page)).toBeHidden();
+    await expect(guide(page)).toBeHidden();
     await expect(launcher).toHaveAttribute('aria-expanded', 'false');
     release();
     await page.evaluate(async () => {
@@ -247,10 +256,10 @@ async function delayedGuideLifecycle({ browser, url, observeContext }) {
       await import(new URL('graph-data-view.js', bootstrap).href);
       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     });
-    await expect(guide(page)).toHaveCount(0);
+    await expect(guide(page)).toBeHidden();
     await page.locator('#vendor-navigation a[data-view="vendor-editor"]').click();
     await openGuide(page);
-    await expect(guide(page)).toHaveCount(1);
+    await expect(guide(page)).toBeVisible();
     await checkGuideChrome(page);
     await closeGuide(page);
     await expect(launcher).toBeFocused();
@@ -271,9 +280,9 @@ export async function checkOfferSetup({ browser, url, output, observeContext }) 
     await expect(page.locator('#offer-setup').getByRole('heading', { name: 'Offer setup', exact: true })).toBeVisible();
     await expect(page.locator('#setup-status')).toHaveAttribute('role', 'status');
     const launcher = page.locator('#open-setup-guide');
-    await expect(launcher).toHaveAttribute('aria-controls', 'setup-guide-panel');
+    await expect(launcher).toHaveAttribute('aria-controls', 'commerce-panel-setup-guide');
     await expect(launcher).toHaveAttribute('aria-expanded', 'false');
-    await expect(guide(page)).toHaveCount(0);
+    await expect(guide(page)).toBeHidden();
     await launcher.focus(); await page.keyboard.press('Enter');
     await expect(launcher).toHaveAttribute('aria-expanded', 'true');
     await expect(guide(page).getByRole('heading', { name: 'Offer setup', exact: true })).toBeFocused();
@@ -286,7 +295,7 @@ export async function checkOfferSetup({ browser, url, output, observeContext }) 
     await expect(page.locator('#launch-review')).toBeHidden();
     await expect(page.locator('#approve-launch')).not.toBeChecked();
     await closeButton(page).focus(); await page.keyboard.press('Escape');
-    await expect(guide(page)).toHaveCount(0);
+    await expect(guide(page)).toBeHidden();
     await expect(launcher).toHaveAttribute('aria-expanded', 'false');
     await expect(launcher).toBeFocused();
     await openGuide(page); await closeGuide(page);
@@ -296,16 +305,16 @@ export async function checkOfferSetup({ browser, url, output, observeContext }) 
     if (await navigationToggle.getAttribute('aria-expanded') !== 'true') await navigationToggle.click();
     await expect(navigationToggle).toHaveAttribute('aria-expanded', 'true');
     await page.locator('#vendor-navigation a[data-view="vendor"]').click();
-    await expect(guide(page)).toHaveCount(0);
+    await expect(guide(page)).toBeHidden();
     await expect(launcher).toHaveAttribute('aria-expanded', 'false');
     await expect(navigationToggle).toHaveAttribute('aria-expanded', 'false');
     await navigationToggle.click();
     await expect(navigationToggle).toHaveAttribute('aria-expanded', 'true');
     await page.locator('#vendor-navigation a[data-view="vendor-editor"]').click();
-    await expect(guide(page)).toHaveCount(0);
+    await expect(guide(page)).toBeHidden();
 
     await (await action(page, 'Save offer')).click();
-    await expect(guide(page)).toHaveCount(0);
+    await expect(guide(page)).toBeHidden();
     await expect(page.locator('#title')).toBeFocused();
     assert.equal((await savedDrafts(page)).length, 0, 'Invalid native form stays unsaved and visible');
 
@@ -316,7 +325,7 @@ export async function checkOfferSetup({ browser, url, output, observeContext }) 
     await expect(page.locator('#launch-fields')).not.toHaveAttribute('open');
     await describe.getByRole('button', { name: 'Edit description', exact: true }).focus();
     await page.keyboard.press('Enter');
-    await expect(guide(page)).toHaveCount(0);
+    await expect(guide(page)).toBeHidden();
     await expect(page.locator('#launch-fields')).toHaveAttribute('open', '');
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     await expect(page.locator('#audience')).toBeFocused();

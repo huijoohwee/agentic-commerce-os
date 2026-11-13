@@ -23,6 +23,12 @@ function json(file) {
 function gitHead(path) {
   return execFileSync('git', ['-C', path, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
 }
+function gitPathRevision(path, file) {
+  return execFileSync('git', ['-C', path, 'log', '-1', '--format=%H', '--', file], { encoding: 'utf8' }).trim();
+}
+function gitStatus(path) {
+  return execFileSync('git', ['-C', path, 'status', '--porcelain=v1', '--untracked-files=all'], { encoding: 'utf8' });
+}
 function digestEntries(entries) {
   return hash(Buffer.from(`${JSON.stringify(entries)}\n`, 'utf8'));
 }
@@ -77,6 +83,7 @@ function writeJson(path, value) {
 function syncSource(sourceRoot, expectedRevision) {
   const source = resolve(sourceRoot);
   if (!/^[0-9a-f]{40}$/u.test(expectedRevision ?? '') || gitHead(source) !== expectedRevision) fail('source_revision_mismatch');
+  if (gitStatus(source).trim()) fail('source_dirty');
   const records = FILES.map(([from, to]) => {
     const path = join(source, from), stat = lstatSync(path);
     if (!stat.isFile() || stat.isSymbolicLink()) fail('source_file_invalid');
@@ -85,6 +92,27 @@ function syncSource(sourceRoot, expectedRevision) {
   verifyStaticCsp(read(join(source, 'site/index.html')).toString('utf8'));
   const license = read(join(source, 'LICENSE')).toString('utf8');
   if (!license.startsWith('MIT License\n')) fail('source_license_unverified');
+  const catalog = JSON.parse(read(join(source, 'site/catalog.json')).toString('utf8'));
+  const sharedUi = catalog.registry?.profiles?.find(profile => profile.id === 'shared-ui');
+  if (!sharedUi || sharedUi.owner !== 'github.com/huijoohwee/agentic-design-system'
+    || !/^[0-9a-f]{40}$/u.test(sharedUi.revision ?? '')
+    || sharedUi.source !== './tokens/shared-ui-profile.json'
+    || sharedUi.projection?.path !== './vendor/shared-ui-profile.css') fail('shared_ui_profile_invalid');
+  const sharedUiSource = read(join(source, 'site', sharedUi.source.slice(2)));
+  const sharedUiProjection = read(join(source, 'site', sharedUi.projection.path.slice(2)));
+  if (sharedUi.digest !== `sha256:${hash(sharedUiSource)}`
+    || sharedUi.projection.digest !== `sha256:${hash(sharedUiProjection)}`) fail('shared_ui_profile_digest_mismatch');
+  const sharedUiPin = {
+    id: sharedUi.id,
+    owner: sharedUi.owner,
+    sourceRevision: sharedUi.revision,
+    registryRevision: gitPathRevision(source, 'site/catalog.json'),
+    sourcePath: 'site/tokens/shared-ui-profile.json',
+    sourceSha256: sharedUi.digest,
+    projectionPath: 'site/vendor/shared-ui-profile.css',
+    projectionSha256: sharedUi.projection.digest,
+  };
+  if (!/^[0-9a-f]{40}$/u.test(sharedUiPin.registryRevision)) fail('shared_ui_registry_revision_invalid');
   const current = pathsUnder(PUBLIC);
   if (current.some((path) => !FILES.some(([, target]) => target === path))) fail('destination_has_unapproved_files');
   for (const [from, to] of FILES) {
@@ -92,12 +120,30 @@ function syncSource(sourceRoot, expectedRevision) {
     mkdirSync(dirname(target), { recursive: true });
     copyFileSync(join(source, from), target);
   }
+  const localFirst = join(ROOT, 'public/local-first');
+  for (const file of ['floating-panel.css', 'icons.json', 'toolbar-icons.js', 'toolbar.css']) {
+    copyFileSync(join(source, 'site', file), join(localFirst, file));
+  }
+  copyFileSync(join(source, 'site/vendor/shared-ui-profile.css'), join(localFirst, 'shared-ui-profile.css'));
+  const sharedUiConsumerPin = json(join(ROOT, 'config/shared-ui-profile.pin.json'));
+  sharedUiConsumerPin.profile = sharedUiPin;
+  writeJson(join(ROOT, 'config/shared-ui-profile.pin.json'), sharedUiConsumerPin);
+  const floatingPanelPin = json(join(ROOT, 'config/floating-panel.pin.json'));
+  floatingPanelPin.revision = expectedRevision;
+  floatingPanelPin.sha256 = hash(read(join(source, 'site/floating-panel.css')));
+  writeJson(join(ROOT, 'config/floating-panel.pin.json'), floatingPanelPin);
+  const toolbarPin = json(join(ROOT, 'config/toolbar.pin.json'));
+  toolbarPin.revision = expectedRevision;
+  toolbarPin.sha256 = hash(read(join(source, 'site/toolbar.css')));
+  toolbarPin.iconsSha256 = hash(read(join(source, 'site/toolbar-icons.js')));
+  writeJson(join(ROOT, 'config/toolbar.pin.json'), toolbarPin);
   const payloadDigest = digestEntries(records.map(({ path, bytes, sha256 }) => ({ path, bytes, sha256 })));
   const manifest = {
     schema: 'agentic-commerce-design-system-static-release/v1',
     source: { repository: 'github.com/huijoohwee/agentic-design-system', revision: expectedRevision },
     route: 'https://airvio.co/agentic-design-system/',
     files: records,
+    profilePins: { sharedUi: sharedUiPin },
     totalBytes: records.reduce((sum, item) => sum + item.bytes, 0),
     payloadDigest,
     excluded: ['registry/', 'site/review-inventory.json', 'site/vendor/agentic-base-browser-data-view.manifest.json'],

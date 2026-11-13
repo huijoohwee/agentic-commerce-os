@@ -34,12 +34,9 @@ surfaces: ["2D Renderer: D3 Graph"]
 
 # Reference implementation — native commerce workspace increment
 
-This on-demand companion extends the [product owner](prd-tad-adr-mvp-gtm-edge-commerce-agent.md)
-at **`edge-commerce-agent-mvp@0.23.0`**. PRD, TAD, ADR, MVP and GTM below share that join.
-The split preserves the <600-line limit and leaves dated sandbox evidence in its original owner.
-No second platform, roadmap, capability registry or release controller is introduced.
-The [first-dollar sprint](prd-tad-adr-mvp-gtm-20260909T1320Z-solopreneur-mvp-gtm.md)
-remains the customer-validation and payment owner. The implementation disposition below distinguishes shipped source, local checks and remaining acceptance.
+This on-demand companion extends the [product owner](prd-tad-adr-mvp-gtm-edge-commerce-agent.md) at **`edge-commerce-agent-mvp@0.23.0`**. PRD, TAD, ADR, MVP and GTM below share that join.
+The split preserves the <600-line limit and leaves dated sandbox evidence in its original owner. No second platform, roadmap, capability registry or release controller is introduced.
+The [first-dollar sprint](prd-tad-adr-mvp-gtm-20260909T1320Z-solopreneur-mvp-gtm.md) remains the customer-validation and payment owner. The implementation disposition below distinguishes shipped source, local checks and remaining acceptance.
 
 **Context:** native offer editing, exact review and Graph tables exist; setup should reuse the
 native floating sequence presentation. **Directive CW-D13:** replace the inline checklist with a
@@ -79,8 +76,7 @@ Package locks stay unchanged. The source-owned Graph browser artifact/CSS/proven
 | Existing native screens provide a complete commerce suite or multi-tenant control plane | Contradicted: source has bounded offers/themes/checkout; inventory, tax, returns, customer administration and tenant IAM are not established by these views |
 | Attractive screens prove demand, production status or zero total cost | Unverified; separate customer, runtime and cost receipts are required |
 
-External material supplies only abstract questions to investigate. It supplies no authored names,
-links, assets, source, prompts, packages or runtime dependencies. No parity claim is made.
+External material supplies only abstract questions to investigate. It supplies no authored names, links, assets, source, prompts, packages or runtime dependencies. No parity claim is made.
 
 ## PRD — reference implementation
 
@@ -517,7 +513,8 @@ Graph protected CI is green; Commerce publication/integration and deployment rem
 **CW-D12 / 0.22.0:** F8/CW-A13 passes 220 local tests, full browser checks, typecheck and invocation guards at `daf22bc4`. Device host: 499,993 bytes; Worker: 378.42 KiB. Exact committed-source verification is recorded separately in the release handoff. One validator and Graph design authority remain; native publication's alignment blocker and human/customer acceptance stay separate.
 
 **CW-A14 / CW-D13 / 0.23.0, implemented and locally verified:** share `FloatingPanelShell` and
-`SequenceInspectorView`; native Graph callers and `mountSequenceGuide` consume the same owners.
+`SequenceInspectorView`; native Graph callers, `mountSequenceGuide` and embedded `mountSequenceGuideContent`
+consume the same owners. Commerce owns one shell and hosts the same Graph view as its Setup Guide tab.
 The existing bundle gains an additive export and exact source/hash pin. No second palette or guide
 stylesheet. At Canvas OS `9feb738`, its product embeds Graph and exports design-check transports,
 not shared UI; retain the current dependency direction. A future `agentic-canvas-os/ui` migration
@@ -525,6 +522,8 @@ must move ownership and all consumers together with no Graph application imports
 reserved `SequenceFlow.css` elsewhere; this increment reads its exact source without editing it.
 Clean Graph `bf70fc3f33114bc0a4f971ad44b84d43bf25bb56` generates JS182,924B/CSS57,710B/tokens6,606B; all three match the browser-tested bytes. Table4/guide5/native-sequence39 and native TypeScript pass. The exact CI-selected suite passes15/15; broader native source guards pass20/23, with three failures reproduced unchanged at a9a2e31. Commerce passes all11 browser groups plus Program Pack/durable listing, including guide focus, cleanup, busy/error guards and mobile reflow. Final committed-source receipts remain external to avoid self-referential evidence.
 The accompanying `agentic-os` change validates declared single owners, acyclic thin adapters and exact generated-input/output bindings through existing design-check transports. It is generic source evidence, not automatic appearance/runtime verification or a consumer dependency upgrade.
+
+**CW-A14 shared-panel follow-up / 2026-11-13:** the Console, Agent tools and four-step Setup Guide render as tabs in one Commerce `FloatingPanelShell`. Commerce consumes Design System assets from `agentic-design-system` registry revision `9ee9ea9cffa3bf4b67c2dc96ca682033eeb60843`, shared UI profile source `6b25583a60c5f57c66e0d8fd25e726c0e8ad4595` (profile digest `01e7b88286247b17c186fadf9517852e46807bc01035d7f07f6d8947ab9c59b9`, CSS projection digest `43cd72a2a4dc6d25099dd0cdcb37906a0a82aa4f5d81e720434c161fc6998015`), Base browser views from clean source `0c2783837f12fc2b30938e274d4486856ee0ca5f`, and Graph browser views from clean source `ffecbe5125e98df075a8290145b24dafb3e38acb`. Generated Base files are 241,607/22,118/35,979 bytes (JS/dropdown JS/CSS); Graph files are 284,866/98,093/8,563 bytes (JS/CSS/token CSS), all bound by Commerce manifests. Live local Dev at 1054×951 shows all three tabs, the populated setup steps, no page-width overflow and no browser console errors. This source/pin update does not deploy; a later release must use its own exact candidate and rollback receipts.
 
 ### Existing invocation contract, reference implementation
 

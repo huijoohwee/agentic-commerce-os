@@ -2,8 +2,13 @@ import { isArchived } from './drafts.js';
 import { createPackRoute, isPackRoute } from './workspace-pack.route.js';
 import { enhanceSelects } from './dropdown-menus.js';
 import { listDrafts, groupProjects } from './drafts.js'; import { getOrCreateSingleton } from './workspace-singleton.js'; import { bindDemoOfferDetails, bindExampleFilters, offerDetailsButton } from './shopper-demo-detail.js';
+import { openCommercePanel, getCommercePanelView, isCommercePanelOpen, closeCommercePanel } from './commerce-toolbar.js';
 import { WORKSPACE_ROLES, bindWorkspaceNavigation, selectWorkspaceDestination, mountWorkspaceShell, mountWorkspaceSidebar } from './workspace-navigation.js?v=workspace-navigation-mobile-51';
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; await getOrCreateSingleton('workspace-application', async () => { mountWorkspaceShell(); const packRoute = createPackRoute(); enhanceSelects();
+const agentPanel = document.getElementById('commerce-panel-agent-tools'), packAgentPanel = document.getElementById('commerce-pack-agent-content');
+const agentPanelContent = document.getElementById('workspace-agent-content');
+if (!agentPanel || !packAgentPanel || !agentPanelContent) throw new Error('Commerce Agent tools panel is incomplete.');
+agentPanel.append(agentPanelContent);
 const displayLocale = document.documentElement.lang || 'en'; const $ = selector => document.querySelector(selector); const monogram = title => { const words = title.trim().split(/\s+/u); return (words.length > 1 ? words.slice(0, 2).map(word => [...word][0]).join('') : [...words[0]].slice(0, 2).join('')).toUpperCase(); }; const merchantName = id => String(id || '').replace(/[-._]+/gu, ' ').replace(/(^|\s)\p{L}/gu, initial => initial.toUpperCase());
 const checkoutMode = document.querySelector('meta[name="commerce-checkout-mode"]')?.content, shopCheckoutNav = document.querySelector('#shop-navigation-content')?.content.querySelector('#shop-checkout-nav');
 const liveCheckout = ['live', 'live-reader'].includes(checkoutMode); if (liveCheckout && shopCheckoutNav) {
@@ -106,8 +111,7 @@ async function openOffer(id, focus = 'title') {
   const app = await loadEditor(); if (!await app.openSavedDraft(id)) return; if (location.hash !== '#vendor-editor') history.pushState(null, '', '#vendor-editor');
   await route();
   const target = document.getElementById(focus) || $('#title');
-  if (target.closest('details')) target.closest('details').open = true;
-  target.focus();
+  if (target.closest('details')) target.closest('details').open = true; target.focus();
 }
 function renderTable(role) { if (role === 'vendor') { const search = document.querySelector('[data-workspace-sidebar][data-sidebar-variant="vendor"] [data-workspace-search]'); if (search) search.hidden = !draftsLoaded || drafts.length === 0; }
   if ($('#' + role + '-table').closest('[data-view-panel]')?.hidden) return;
@@ -151,7 +155,7 @@ function renderNativeTable(container, offers, role, label = role === 'vendor' ? 
     await module.mountCommerceTable(view, offers, { status: offer => stateLabel(stateOf(offer)), state: stateOf, price, reason: reviewReason, monogram, merchantName }, {
       label, display: role === 'vendor' ? 'cards' : 'table', editLabel: role === 'admin' ? 'Review offer ↗' : 'Edit offer ↗',
       open: offer => void openOffer(offer.id, stateOf(offer) === 'draft' ? 'merchant-id' : stateOf(offer) === 'revise' ? 'sale-price' : 'title').catch(message),
-      inspect: offer => void openAgentTools({ name: 'commerce.workspace.offer.review', input: { offerId: offer.id, expectedRevision: offer.revision }, label: 'Offer · ' + offer.title + ' · v' + offer.revision }),
+      inspect: (offer, trigger) => void openAgentTools({ name: 'commerce.workspace.offer.review', input: { offerId: offer.id, expectedRevision: offer.revision }, label: 'Offer · ' + offer.title + ' · v' + offer.revision }, trigger),
     });
   }).catch(error => {
     if (ticket !== container.dataset.graphGeneration) return;
@@ -180,8 +184,7 @@ async function refresh() {
 }
 function renderCurrent() {
   renderDraftStatus();
-  if (!$('#shop').hidden) renderShop();
-  if (!$('#vendor').hidden) renderTable('vendor');
+  if (!$('#shop').hidden) renderShop(); if (!$('#vendor').hidden) renderTable('vendor');
   if (!$('#admin').hidden) { renderTable('admin'); renderProjects(); }
   renderEnvironment();
 }
@@ -233,7 +236,7 @@ for (const role of ['vendor', 'admin']) for (const field of ['query', 'state']) 
 for (const link of document.querySelectorAll('#create-offer, [data-create-offer]')) link.addEventListener('click', event => {
   event.preventDefault(); void loadEditor().then(app => { if (app.newDraft()) location.hash = 'vendor-editor'; }).catch(message);
 });
-window.addEventListener('hashchange', () => { if ($('#workspace-agent-drawer').open) $('#workspace-agent-drawer').close(); if ($('#environment-check-detail').open) $('#environment-check-detail').close(); if ($('#offer-detail').open) $('#offer-detail').close(); void route().catch(message); });
+window.addEventListener('hashchange', () => { closeCommercePanel(false); if ($('#environment-check-detail').open) $('#environment-check-detail').close(); if ($('#offer-detail').open) $('#offer-detail').close(); void route().catch(message); });
 document.addEventListener('commerce:drafts-updated', () => { channel?.postMessage('changed'); void refresh().catch(message); });
 $('#draft-storage-retry').addEventListener('click', async () => {
   const previousError = draftError;
@@ -247,8 +250,7 @@ function connection() { const status = $('#connection'), label = status.querySel
 window.addEventListener('online', connection); window.addEventListener('offline', connection); matchMedia('(max-width:680px)').addEventListener('change', connection); connection();
 function projectPreview(project) {
   const preview = node('figure', undefined, 'console-preview'); preview.setAttribute('aria-label', 'Storefront preview for ' + project.name); preview.dataset.selectionTarget = 'project-storefront-preview';
-  const frame = node('section', undefined, 'mini-storefront');
-  const masthead = node('header', undefined, 'mini-masthead'); masthead.append(node('b', 'airvio'), node('span', 'LOCAL PREVIEW'));
+  const frame = node('section', undefined, 'mini-storefront'); const masthead = node('header', undefined, 'mini-masthead'); masthead.append(node('b', 'airvio'), node('span', 'LOCAL PREVIEW'));
   const hero = node('section', undefined, 'mini-hero');
   hero.append(node('span', project.name), node('strong', project.offers[0]?.launch?.outcome || 'Useful work. Thoughtfully prepared.'), node('i', 'Your collection'));
   const collection = node('section', undefined, 'mini-collection');
@@ -267,8 +269,7 @@ function projectLink(text, href, label) {
 function projectCard(project, detail = false) {
   const card = node('article', undefined, 'project-card'); card.dataset.project = project.id;
   const info = node('section', undefined, 'project-info'), content = node('section', undefined, 'project-copy');
-  const title = node('h2', detail ? 'Device workspace' : project.name);
-  const facts = node('dl', undefined, 'project-facts');
+  const title = node('h2', detail ? 'Device workspace' : project.name); const facts = node('dl', undefined, 'project-facts');
   const saved = project.offers.length, reviewed = project.offers.filter(offer => stateOf(offer) === 'reviewable').length;
   facts.append(node('dt', 'Draft storage'), node('dd', draftLoading || draftError ? 'Last loaded snapshot · Check storage status' : 'Available · This browser', 'project-available'),
     node('dt', 'Storefront'), node('dd', 'Private preview · Not published'),
@@ -302,8 +303,7 @@ function renderProjects() {
   const sandbox = node('article', undefined, 'console-sandbox');
   const summary = node('section'); summary.append(node('h2', liveCheckout ? 'Education checkout' : 'Sandbox checkout'), node('p', liveCheckout ? 'Separate education offer · Draft offers are not sold here' : 'Shared example offer · Test mode only · No real money', 'muted'));
   const observation = node('span', $('#environment-badge').textContent, 'state-badge'); observation.dataset.environmentObservation = '';
-  const timestamp = node('small', '', 'muted'); timestamp.dataset.environmentTime = '';
-  const evidence = node('section', undefined, 'sandbox-observation'); evidence.append(observation, timestamp);
+  const timestamp = node('small', '', 'muted'); timestamp.dataset.environmentTime = ''; const evidence = node('section', undefined, 'sandbox-observation'); evidence.append(observation, timestamp);
   sandbox.append(summary, evidence, projectLink('Inspect environment', '#admin-runtime?project=' + encodeURIComponent(project.id))); detail.append(sandbox);
   detail.append(offerRecords(project.offers, 'Project offers'));
 }
@@ -426,8 +426,7 @@ function renderEnvironment() {
 }
 async function readEnvironment(response) {
   if (![200, 503].includes(response.status) || !/^application\/json(?:;|$)/i.test(response.headers.get('content-type') || '')) throw Error('Environment response is unavailable or invalid.');
-  const reader = response.body?.getReader();
-  if (!reader) throw Error('Environment response is empty.');
+  const reader = response.body?.getReader(); if (!reader) throw Error('Environment response is empty.');
   let bytes = 0, text = ''; const decoder = new TextDecoder('utf-8', { fatal: true });
   try {
     for (;;) {
@@ -443,8 +442,7 @@ async function checkEnvironment(signal) {
   if (environmentController || !navigator.onLine) throw Error('workspace_environment_busy_or_offline');
   const started = performance.now(), generation = ++environmentGeneration, controller = new AbortController(); environmentController = controller;
   clearTimeout(environmentExpiry); environmentObservation = null;
-  const cancel = () => controller.abort(); signal?.addEventListener('abort', cancel, { once: true });
-  const timer = setTimeout(cancel, 5000);
+  const cancel = () => controller.abort(); signal?.addEventListener('abort', cancel, { once: true }); const timer = setTimeout(cancel, 5000);
   $('#environment-status').textContent = 'Checking this environment…'; renderEnvironment();
   let observation, evidence, httpStatus = null;
   try {
@@ -491,14 +489,12 @@ async function checkEnvironment(signal) {
   environmentHistoryPage = 0; environmentHistory.unshift(observation); environmentHistory.length = Math.min(20, environmentHistory.length);
   renderEnvironmentHistory();
   renderEnvironment();
-  if (!evidence || controller.signal.aborted) throw Error('workspace_environment_unverified');
-  return evidence;
+  if (!evidence || controller.signal.aborted) throw Error('workspace_environment_unverified'); return evidence;
 }
 function inspectEnvironmentCheck(item) {
   environmentDetailTrigger = document.activeElement;
   $('#environment-check-title').textContent = 'Environment check ' + item.id;
-  const facts = $('#environment-check-facts'); facts.replaceChildren();
-  const entries = { Result: item.label, Observed: new Date(item.time).toLocaleString(), Duration: item.durationMs + ' ms',
+  const facts = $('#environment-check-facts'); facts.replaceChildren(); const entries = { Result: item.label, Observed: new Date(item.time).toLocaleString(), Duration: item.durationMs + ' ms',
     'HTTP response': item.httpStatus ?? 'No response', 'Page source': sourceRevision,
     'Observed source': item.evidence?.sourceRevision ?? 'Unverified', 'Runtime version': item.evidence?.workerVersionId ?? 'Unknown' };
   for (const [label, value] of Object.entries(entries)) facts.append(node('dt', label), node('dd', String(value)));
@@ -518,8 +514,7 @@ function renderEnvironmentHistory() {
     && [item.label, item.message, item.version || '', item.evidence?.sourceRevision || '', 'check ' + item.id].join(' ').toLowerCase().includes(query));
   const pages = Math.max(1, Math.ceil(filtered.length / 10)); environmentHistoryPage = Math.min(environmentHistoryPage, pages - 1);
   $('#environment-history-count').textContent = filtered.length + (filtered.length === 1 ? ' check' : ' checks') + ' · Page ' + (environmentHistoryPage + 1) + ' of ' + pages; $('#environment-history-count').parentElement.hidden = pages <= 1;
-  $('#environment-history-previous').disabled = environmentHistoryPage === 0;
-  $('#environment-history-next').disabled = environmentHistoryPage + 1 >= pages;
+  $('#environment-history-previous').disabled = environmentHistoryPage === 0; $('#environment-history-next').disabled = environmentHistoryPage + 1 >= pages;
   const holder = $('#environment-history'); holder.replaceChildren();
   if (!filtered.length) { holder.append(node('p', environmentHistory.length ? 'No checks match these filters.' : 'No checks yet. Use Check environment to inspect this runtime.', 'records-empty')); return; }
   holder.append(recordTable(['Source', 'Result', 'Checkout', 'Observed', 'Duration', 'Action'], filtered.slice(environmentHistoryPage * 10, (environmentHistoryPage + 1) * 10).map(item => {
@@ -543,7 +538,7 @@ window.addEventListener('online', renderEnvironment);
 window.addEventListener('focus', renderEnvironment);
 window.addEventListener('pagehide', () => { environmentGeneration++; environmentController?.abort(); environmentController = null; clearTimeout(environmentExpiry); });
 window.addEventListener('pageshow', renderEnvironment);
-let toolsPromise, toolsApi, agentGeneration = 0, agentTrigger;
+let toolsPromise, toolsApi, agentGeneration = 0, agentTrigger, agentToolsActive = false, pendingAgentPreset;
 function loadTools() {
   toolsPromise ??= import('./workspace-tools.js').then(module => module.mountWorkspaceTools({ checkEnvironment, sourceRevision })).then(api => { toolsApi = api; return api; }).catch(error => { toolsPromise = null; throw error; });
   return toolsPromise;
@@ -558,30 +553,43 @@ function agentContext() {
   }
   return { name: 'commerce.workspace.projects.list', input: {}, label: 'Workspace · Projects on this device' };
 }
-async function openAgentTools(preset) {
-  const generation = ++agentGeneration, drawer = $('#workspace-agent-drawer'); agentTrigger = preset ? document.activeElement : $('#commerce-panels-toggle');
+async function openAgentTools(preset, trigger = document.activeElement) {
+  pendingAgentPreset = preset; agentTrigger = trigger?.isConnected ? trigger : document.activeElement;
+  openCommercePanel('agent-tools', { trigger: agentTrigger, focus: false });
+  syncAgentPanel();
+}
+async function activateAgentTools(preset) {
+  const generation = ++agentGeneration; agentToolsActive = true;
   $('#workspace-agent-context').textContent = 'Native workspace capabilities';
-  $('#workspace-agent-status').textContent = 'Loading tools…'; $('#workspace-agent-open').setAttribute('aria-expanded', 'true');
-  drawer.showModal();
+  $('#workspace-agent-status').textContent = 'Loading tools…';
   try {
     const api = await loadTools();
-    if (!drawer.open || generation !== agentGeneration) return;
+    if (!agentPanelIsActive(generation)) return;
     if (!draftsLoaded) await refresh();
     const current = preset ?? agentContext(); await api.configure(current.name, current.input);
-    if (!drawer.open || generation !== agentGeneration) return;
+    if (!agentPanelIsActive(generation)) return;
     $('#workspace-agent-context').textContent = current.label;
-    $('#workspace-agent-content').append($('#workspace-tools-body'));
+    $('#workspace-agent-content-body').append($('#workspace-tools-body'));
     enhanceSelects().refresh(); $('#workspace-agent-status').textContent = ''; $('#workspace-tool').focus();
-  } catch (error) { if (drawer.open && generation === agentGeneration) $('#workspace-agent-status').textContent = error.message; }
+  } catch (error) { if (agentPanelIsActive(generation)) $('#workspace-agent-status').textContent = error.message; }
 }
-$('#workspace-agent-open').addEventListener('click', () => { if (!isPackRoute()) void openAgentTools(); });
-$('#workspace-agent-close').addEventListener('click', () => $('#workspace-agent-drawer').close());
-$('#workspace-agent-drawer').addEventListener('close', () => {
-  agentGeneration++; toolsApi?.deactivate(); $('#workspace-tools-home').append($('#workspace-tools-body'));
-  $('#workspace-agent-open').setAttribute('aria-expanded', 'false');
-  if (agentTrigger?.isConnected) agentTrigger.focus({ preventScroll: true });
+function agentPanelIsActive(generation) { return agentToolsActive && generation === agentGeneration && isCommercePanelOpen() && getCommercePanelView() === 'agent-tools' && !isPackRoute(); }
+function deactivateAgentTools() {
+  if (!agentToolsActive) return;
+  agentToolsActive = false; agentGeneration++; toolsApi?.deactivate(); $('#workspace-tools-home').append($('#workspace-tools-body'));
+}
+function syncAgentPanel() {
+  if (isCommercePanelOpen() && getCommercePanelView() === 'agent-tools' && !isPackRoute()) {
+    const preset = pendingAgentPreset; pendingAgentPreset = undefined;
+    if (!agentToolsActive || preset) void activateAgentTools(preset);
+  } else deactivateAgentTools();
+}
+document.addEventListener('commerce:panel-state', syncAgentPanel);
+document.addEventListener('commerce:panel-context', event => {
+  const pack = event.detail?.pack === true;
+  agentPanelContent.hidden = pack; packAgentPanel.hidden = !pack; if (pack) deactivateAgentTools();
 });
-window.addEventListener('pagehide', () => { if ($('#workspace-agent-drawer').open) $('#workspace-agent-drawer').close(); });
+window.addEventListener('pagehide', deactivateAgentTools);
 void Promise.all([refresh(), route()]).catch(message);
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js', { scope: './', updateViaCache: 'none' })

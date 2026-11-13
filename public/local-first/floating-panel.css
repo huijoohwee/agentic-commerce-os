@@ -1,44 +1,134 @@
-/* FloatingPanel shell. Base class names are the existing React and native markup contract. */
+/* Shared panel family. Existing Base classes remain contract aliases to this one visual owner. */
 .agentic-base-floating-panel-root { position: relative; min-width: 0; min-height: 0; }
+.agentic-panel-surface,
 .agentic-base-floating-panel {
   position: relative; display: flex; box-sizing: border-box; min-width: 0; min-height: 0;
   max-width: calc(100vw - 2 * var(--agentic-menu-edge-gap)); max-height: calc(100dvh - 2 * var(--agentic-menu-edge-gap));
-  overflow: hidden; pointer-events: auto; border: 1px solid var(--base-border, var(--kg-border, ButtonBorder));
-  border-radius: var(--agentic-floating-panel-radius); box-shadow: var(--base-shadow-overlay, var(--kg-shadow-overlay, none));
-  color: var(--base-text-primary, var(--kg-text-primary, CanvasText)); background: var(--base-panel, var(--kg-panel-bg, Canvas));
+  overflow: hidden; pointer-events: auto; border: var(--agentic-panel-border);
+  border-radius: var(--agentic-panel-radius); box-shadow: var(--agentic-toolbar-shadow);
+  color-scheme: inherit; color: var(--agentic-panel-foreground); background: var(--agentic-panel-background);
   font: var(--agentic-font-size-body)/var(--agentic-line-height-body) var(--agentic-font-sans);
 }
+.agentic-panel-surface { flex-direction: column; }
+.agentic-panel-header,
+.agentic-base-floating-panel-header {
+  box-sizing: border-box; display: flex; flex: none; align-items: center; justify-content: space-between;
+  gap: var(--agentic-panel-gap); min-inline-size: 0; inline-size: 100%; block-size: var(--agentic-toolbar-height); min-block-size: var(--agentic-toolbar-height); user-select: none;
+  padding-inline: var(--agentic-control-padding-inline); border-block-end: var(--agentic-panel-border);
+}
+.agentic-panel-title,
+.agentic-floating-panel-title { min-inline-size: 0; margin: 0; font: 600 var(--agentic-font-size-body)/var(--agentic-line-height-body) var(--agentic-font-sans); }
+.agentic-panel-body,
+.agentic-floating-panel-body { flex: 1 1 auto; min-inline-size: 0; min-block-size: 0; overflow: auto; overscroll-behavior: contain; padding: var(--agentic-control-padding-inline); }
 .agentic-base-floating-panel-inner {
   box-sizing: border-box; display: flex; min-width: 0; min-height: 0; flex-direction: column; gap: var(--agentic-control-padding-block);
-  padding: var(--base-toolbar-compact-padding, var(--kg-toolbar-compact-padding, var(--agentic-control-padding-inline)));
+  padding: var(--agentic-control-padding-inline);
+}
+.agentic-panel-main--collapsed > .agentic-base-floating-panel-inner,
+.agentic-panel-bottom--collapsed > .agentic-base-floating-panel-inner,
+.agentic-base-floating-panel[data-agentic-base-panel-minimized="true"] > .agentic-base-floating-panel-inner {
+  gap: 0; padding: 0;
 }
 .agentic-base-floating-panel-expanded { width: 100%; height: 100%; }
-.agentic-base-floating-panel-header {
-  display: flex; min-width: 0; width: 100%; min-block-size: var(--agentic-row-height);
-  flex: none; align-items: center; justify-content: space-between; gap: var(--agentic-control-padding-block); user-select: none;
-}
 .agentic-base-floating-panel-draggable { cursor: move; }
 .agentic-base-floating-panel-root[data-agentic-floating-panel-placement="viewport-overlay"] {
   position: fixed; z-index: var(--agentic-floating-panel-layer, 4); inset: 0; pointer-events: none;
 }
 .agentic-base-floating-panel-root[data-agentic-floating-panel-placement="viewport-overlay"] > .agentic-base-floating-panel { pointer-events: auto; }
-.agentic-floating-panel-title { margin: 0; font: 600 var(--agentic-font-size-body)/var(--agentic-line-height-body) var(--agentic-font-sans); }
-.agentic-floating-panel-body { flex: 1 1 auto; min-height: 0; min-width: 0; overflow: auto; overscroll-behavior: contain; }
+.agentic-base-floating-panel-root[data-agentic-floating-panel-placement="viewport-overlay"] > .agentic-base-floating-panel {
+  position: absolute;
+  inset-block-start: calc(max(var(--agentic-menu-edge-gap), env(safe-area-inset-top)) + var(--agentic-toolbar-height) + var(--agentic-menu-edge-gap));
+  inset-inline-end: max(var(--agentic-menu-edge-gap), env(safe-area-inset-right));
+  inline-size: min(var(--agentic-panel-width), calc(100vw - 2 * var(--agentic-menu-edge-gap)));
+  block-size: min(var(--agentic-panel-main-height), calc(100dvh - max(var(--agentic-menu-edge-gap), env(safe-area-inset-top)) - var(--agentic-toolbar-height) - var(--agentic-menu-edge-gap) - max(var(--agentic-menu-edge-gap), env(safe-area-inset-bottom))));
+  max-block-size: min(var(--agentic-panel-main-max-height), calc(100dvh - max(var(--agentic-menu-edge-gap), env(safe-area-inset-top)) - var(--agentic-toolbar-height) - var(--agentic-menu-edge-gap) - max(var(--agentic-menu-edge-gap), env(safe-area-inset-bottom))));
+}
+.agentic-base-floating-panel-root[data-agentic-floating-panel-placement="viewport-overlay"] > .agentic-base-floating-panel[data-agentic-base-panel-minimized="true"] {
+  block-size: fit-content; height: auto; max-block-size: none; max-height: none;
+}
+.agentic-panel-main {
+  grid-area: main;
+  inline-size: min(var(--agentic-panel-main-width), calc(100vw - 2 * var(--agentic-menu-edge-gap)));
+  max-inline-size: min(var(--agentic-panel-main-max-width), calc(100vw - 2 * var(--agentic-menu-edge-gap)));
+  min-inline-size: 0; min-block-size: 0; max-block-size: 100%;
+}
+.agentic-panel-main--open.agentic-panel-main {
+  block-size: min(var(--agentic-panel-main-height), calc(100dvh - 2 * var(--agentic-menu-edge-gap)));
+  max-block-size: min(var(--agentic-panel-main-max-height), calc(100dvh - 2 * var(--agentic-menu-edge-gap)));
+}
+.agentic-panel-main--collapsed.agentic-panel-main {
+  block-size: fit-content; max-block-size: none;
+}
+.agentic-panel-bottom {
+  grid-area: bottom; inline-size: min(calc(100% - 2 * var(--agentic-panel-gap)), var(--agentic-panel-main-max-width));
+  max-inline-size: 100%; min-inline-size: 0; min-block-size: 0;
+  block-size: min(var(--agentic-panel-bottom-height), 100%);
+}
+.agentic-panel-bottom--collapsed { block-size: fit-content; max-block-size: none; }
+.agentic-panel-main-dock {
+  position: fixed; z-index: var(--agentic-floating-panel-layer, 4);
+  inset-block: max(var(--agentic-menu-edge-gap), env(safe-area-inset-top)) max(var(--agentic-menu-edge-gap), env(safe-area-inset-bottom));
+  inset-inline-end: max(var(--agentic-menu-edge-gap), env(safe-area-inset-right));
+  inline-size: min(var(--agentic-panel-width), calc(100vw - 2 * var(--agentic-menu-edge-gap)));
+  max-block-size: calc(100dvh - 2 * var(--agentic-menu-edge-gap));
+}
+.agentic-panel-bottom-dock {
+  position: fixed; z-index: var(--agentic-floating-panel-layer, 4);
+  inset-inline: max(var(--agentic-menu-edge-gap), env(safe-area-inset-left)) max(var(--agentic-menu-edge-gap), env(safe-area-inset-right));
+  inset-block-end: max(var(--agentic-menu-edge-gap), env(safe-area-inset-bottom));
+  inline-size: auto; block-size: min(var(--agentic-panel-bottom-height), calc(100dvh - 2 * var(--agentic-menu-edge-gap)));
+}
+.agentic-editor-workspace {
+  box-sizing: border-box; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, var(--agentic-panel-width));
+  grid-template-rows: minmax(0, 1fr) minmax(0, var(--agentic-panel-bottom-height));
+  grid-template-areas: "stage main" "bottom bottom"; gap: var(--agentic-panel-gap);
+  inline-size: 100%; block-size: 100%; min-inline-size: 0; min-block-size: 0; overflow: hidden;
+  font: var(--agentic-font-size-body)/var(--agentic-line-height-body) var(--agentic-font-sans);
+}
+.agentic-editor-workspace-preview { box-sizing: border-box; inline-size: min(100%, 58rem); block-size: 28rem; padding: var(--agentic-panel-gap); border: var(--agentic-panel-border); border-radius: var(--agentic-panel-radius); background: var(--agentic-panel-background); }
+.agentic-editor-workspace-stage { grid-area: stage; min-inline-size: 0; min-block-size: 0; overflow: auto; }
+.agentic-editor-workspace :where(.agentic-panel-surface, .agentic-base-floating-panel) { min-inline-size: 0; min-block-size: 0; }
 .agentic-floating-panel-tabs {
   display: flex; flex: 1 1 auto; align-items: center; min-width: 0; gap: var(--agentic-menu-gap);
   overflow-x: auto; overflow-y: hidden; overscroll-behavior-inline: contain; scrollbar-width: none; touch-action: pan-x;
 }
 .agentic-floating-panel-tabs::-webkit-scrollbar { display: none; }
+.agentic-panel-control-group {
+  box-sizing: border-box; display: flex; flex: none; align-items: center; justify-content: flex-end;
+  min-inline-size: 0; gap: var(--agentic-menu-gap);
+}
 .agentic-base-floating-panel .agentic-floating-panel-tab {
   box-sizing: border-box; display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center;
-  min-inline-size: var(--agentic-control-height); block-size: var(--agentic-row-height);
-  min-block-size: var(--agentic-row-height); gap: var(--agentic-menu-gap);
+  min-inline-size: var(--agentic-control-height); block-size: var(--agentic-toolbar-height);
+  min-block-size: var(--agentic-toolbar-height); gap: var(--agentic-menu-gap);
   padding-inline: var(--agentic-control-padding-inline); border: 0; border-radius: var(--agentic-control-radius);
   color: inherit; background: transparent; cursor: pointer; touch-action: manipulation; white-space: nowrap;
 }
-.agentic-base-floating-panel .agentic-floating-panel-tab:hover { background: var(--agentic-control-selected-background); }
+.agentic-base-floating-panel .agentic-floating-panel-tab:hover {
+  background: var(--agentic-control-hover-background);
+  box-shadow: none; transform: none; filter: none;
+}
+.agentic-base-floating-panel :is(.agentic-floating-panel-tab, .agentic-base-floating-panel-close):has(> .agentic-icon:only-child) {
+  inline-size: max(var(--agentic-control-height), var(--agentic-icon-size-default));
+  min-inline-size: max(var(--agentic-control-height), var(--agentic-icon-size-default));
+  block-size: max(var(--agentic-control-height), var(--agentic-icon-size-default));
+  min-block-size: max(var(--agentic-control-height), var(--agentic-icon-size-default)); padding: 0;
+}
+@media (pointer: coarse) {
+  .agentic-base-floating-panel :is(.agentic-floating-panel-tab, .agentic-base-floating-panel-close):has(> .agentic-icon:only-child) {
+    inline-size: max(var(--agentic-control-height-touch), var(--agentic-icon-size-default));
+    min-inline-size: max(var(--agentic-control-height-touch), var(--agentic-icon-size-default));
+    block-size: max(var(--agentic-control-height-touch), var(--agentic-icon-size-default));
+    min-block-size: max(var(--agentic-control-height-touch), var(--agentic-icon-size-default));
+  }
+  .agentic-panel-header,
+  .agentic-base-floating-panel-header { min-block-size: var(--agentic-toolbar-height); }
+}
 .agentic-base-floating-panel .agentic-floating-panel-tab[aria-selected="true"] {
   color: var(--agentic-control-selected-foreground); background: var(--agentic-control-selected-background);
+}
+.agentic-base-floating-panel .agentic-floating-panel-tab[aria-selected="true"]:hover {
+  background: var(--agentic-control-hover-background);
 }
 .agentic-base-floating-panel .agentic-floating-panel-tab:focus-visible,
 .agentic-base-floating-panel .agentic-base-floating-panel-close:focus-visible {
@@ -47,11 +137,11 @@
 }
 .agentic-base-floating-panel .agentic-base-floating-panel-close {
   box-sizing: border-box; display: inline-flex; flex: none; align-items: center; justify-content: center;
-  min-inline-size: var(--agentic-row-height); block-size: var(--agentic-row-height);
-  min-block-size: var(--agentic-row-height); padding: 0; cursor: pointer;
+  min-inline-size: var(--agentic-toolbar-height); block-size: var(--agentic-toolbar-height);
+  min-block-size: var(--agentic-toolbar-height); padding: 0; cursor: pointer;
   border: 0; border-radius: var(--agentic-control-radius); color: inherit; background: transparent;
 }
-.agentic-base-floating-panel .agentic-base-floating-panel-close:hover { background: var(--agentic-control-selected-background); }
+.agentic-base-floating-panel .agentic-base-floating-panel-close:hover { background: var(--agentic-control-hover-background); }
 .agentic-base-floating-panel-close .agentic-icon,
 .agentic-floating-panel-tab .agentic-icon { pointer-events: none; }
 .agentic-base-floating-panel :where(main, header, footer, nav, search, hgroup, section, article, aside, figure, figcaption, ul, ol, p, span, small, label, output, dl, dt, dd, summary, button, input, select, textarea, li, a):not(:where(h1 *, h2 *, h3 *, h4 *, h5 *, h6 *)) {
@@ -64,10 +154,37 @@
   inset-block-start: max(var(--agentic-menu-edge-gap), env(safe-area-inset-top));
   inset-inline-end: max(var(--agentic-menu-edge-gap), env(safe-area-inset-right));
   inset-block-end: calc(var(--agentic-floating-panel-bottom-offset, 0px) + max(var(--agentic-menu-edge-gap), env(safe-area-inset-bottom)));
-  width: min(var(--agentic-ktv-panel-width), calc(100% - 2 * var(--agentic-menu-edge-gap)));
+  width: min(var(--agentic-panel-width), calc(100% - 2 * var(--agentic-menu-edge-gap)));
   max-height: none; margin: 0; padding: 0; border: 0; background: transparent;
 }
 .agentic-floating-panel-dock > .agentic-base-floating-panel,
 .agentic-base-floating-panel-root[data-agentic-floating-panel-placement="dock"] > .agentic-base-floating-panel { height: 100%; }
 .agentic-floating-panel-dock:has(> [hidden]),
 .agentic-base-floating-panel-root[data-agentic-floating-panel-placement="dock"]:has(> [hidden]) { display: none; }
+@media (max-width: 768px) {
+  .agentic-editor-workspace {
+    grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(8rem, 1fr) minmax(8rem, 0.8fr) minmax(7rem, min(30vh, var(--agentic-panel-bottom-height)));
+    grid-template-areas: "stage" "main" "bottom";
+  }
+  .agentic-panel-main { inline-size: 100%; }
+  .agentic-editor-workspace-preview { block-size: 34rem; }
+  .agentic-panel-main-dock {
+    inset-inline: max(var(--agentic-menu-edge-gap), env(safe-area-inset-left)) max(var(--agentic-menu-edge-gap), env(safe-area-inset-right));
+    inline-size: auto; max-block-size: calc(100dvh - 2 * var(--agentic-menu-edge-gap));
+  }
+  .agentic-panel-main { inline-size: min(var(--agentic-panel-main-width-mobile), 100%); }
+  .agentic-panel-main--open.agentic-panel-main {
+    block-size: min(var(--agentic-panel-main-height-mobile), calc(100dvh - 2 * var(--agentic-menu-edge-gap)));
+    max-block-size: calc(100dvh - 2 * var(--agentic-menu-edge-gap));
+  }
+  .agentic-base-floating-panel-root[data-agentic-floating-panel-placement="viewport-overlay"] > .agentic-base-floating-panel {
+    block-size: min(var(--agentic-panel-main-height-mobile), calc(100dvh - max(var(--agentic-menu-edge-gap), env(safe-area-inset-top)) - var(--agentic-toolbar-height) - var(--agentic-menu-edge-gap) - max(var(--agentic-menu-edge-gap), env(safe-area-inset-bottom))));
+    max-block-size: calc(100dvh - max(var(--agentic-menu-edge-gap), env(safe-area-inset-top)) - var(--agentic-toolbar-height) - var(--agentic-menu-edge-gap) - max(var(--agentic-menu-edge-gap), env(safe-area-inset-bottom)));
+  }
+  .agentic-panel-bottom-dock { max-block-size: min(var(--agentic-panel-bottom-height), 45dvh); }
+  .agentic-floating-panel-dock,
+  .agentic-base-floating-panel-root[data-agentic-floating-panel-placement="dock"] {
+    inset-inline-end: max(var(--agentic-menu-edge-gap), env(safe-area-inset-right));
+    inline-size: min(var(--agentic-panel-width), calc(100vw - 2 * var(--agentic-menu-edge-gap)));
+  }
+}

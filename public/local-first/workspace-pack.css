@@ -193,6 +193,12 @@ main>footer p { margin: 0; }
   position: relative; display: grid; grid-template-columns: 44px 1fr; gap: 12px; padding: 0 0 18px 16px;
   overflow-wrap: anywhere;
 }
+#agent-tools-list>li { grid-template-columns: minmax(0,1fr) minmax(0,auto); align-items: start; }
+#agent-tools-list>li>h3 { grid-column: 1; min-width: 0; overflow-wrap: anywhere; }
+#agent-tools-list>li>.capability-state { grid-column: 2; min-width: 0; max-width: 14rem; white-space: normal; text-align: right; }
+#agent-tools-list>li>p,
+#agent-tools-list>li>code,
+#agent-tools-list>li>small { grid-column: 1 / -1; min-width: 0; overflow-wrap: anywhere; }
 .console-events li:before {
   content: ""; position: absolute; left: 0; top: 4px; width: 6px; height: 6px;
   border: 1px solid var(--kg-text-secondary); border-radius: 50%; background: var(--commerce-surface);

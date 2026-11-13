@@ -1,6 +1,7 @@
 import { LISTING_FIELDS, LISTING_LABELS, isArchived } from './drafts.js';
 import { formatMoney } from './launch.js';
 // Commerce owns record projection and actions; Agentic Base owns the portable table.
+import { openCommercePanel, closeCommercePanel } from './commerce-toolbar.js';
 const mounts = new WeakMap();
 const baseCssUrl = new URL('./agentic-base-data-view.css', import.meta.url).href;
 const graphCssUrl = new URL('./graph-data-view.css', import.meta.url).href;
@@ -95,6 +96,14 @@ function loadGraphAdapter() {
   graphAdapter ??= import('./graph-data-view.js').catch(error => { graphAdapter = null; throw error; });
   return graphAdapter;
 }
+async function mountSequenceGuideContent(target, state) {
+  const native = await loadGraphAdapter();
+  return native.mountSequenceGuideContent(target, state);
+}
+export async function mountCommerceSequenceGuide(host, state, signal) {
+  const target = await surface(host, signal, graphCssUrl);
+  return mountSequenceGuideContent(target, state);
+}
 export function disposeTable(container) {
   const state = mounts.get(container);
   if (!state) return;
@@ -103,7 +112,10 @@ export function disposeTable(container) {
   state.grid?.destroy(); state.detail?.destroy(); mounts.delete(container);
 }
 async function surface(host, signal, stylesheetUrl) {
-  const shadow = host.attachShadow({ mode: 'open' }), stylesheet = el('link'), target = el('div');
+  const shadow = host.shadowRoot ?? host.attachShadow({ mode: 'open' }), stylesheet = el('link'), target = el('div');
+  const loading = el('p', 'Loading shared workspace content…', 'muted');
+  loading.setAttribute('role', 'status');
+  target.append(loading);
   stylesheet.rel = 'stylesheet'; stylesheet.href = stylesheetUrl;
   const loaded = new Promise((resolve, reject) => {
     const finish = error => {
@@ -118,7 +130,7 @@ async function surface(host, signal, stylesheetUrl) {
     signal?.addEventListener('abort', abort, { once: true });
     if (signal?.aborted) abort();
   });
-  shadow.append(stylesheet, target);
+  shadow.replaceChildren(stylesheet, target);
   await loaded;
   return target;
 }
@@ -159,7 +171,7 @@ export async function mountCommerceTable(container, offers, presentation, action
       applyBaseTheme(detailHost);
       const edit = el('a', isArchived(offer) ? 'Edit or restore listing ↗' : actions.editLabel, 'button secondary'); edit.href = '#vendor-editor';
       edit.addEventListener('click', event => { event.preventDefault(); actions.open(offer); }); controls.append(edit);
-      if (actions.inspect) { const inspect = el('button', 'Inspect with tools', 'secondary'); inspect.type = 'button'; inspect.setAttribute('aria-label', 'Inspect ' + offer.title + ' with agent tools'); inspect.addEventListener('click', () => actions.inspect(offer)); controls.append(inspect); }
+      if (actions.inspect) { const inspect = el('button', 'Inspect with tools', 'secondary'); inspect.type = 'button'; inspect.setAttribute('aria-label', 'Inspect ' + offer.title + ' with agent tools'); inspect.addEventListener('click', () => actions.inspect(offer, inspect)); controls.append(inspect); }
       details.replaceChildren(header, note, detailHost, controls); details.hidden = false; layout.classList.add('has-selection');
       try {
         const adapter = native || await loadBaseAdapter();
@@ -193,15 +205,20 @@ export async function mountCommerceTable(container, offers, presentation, action
   } catch (error) { if (!state.disposed && mounts.get(container) === state) { disposeTable(container); throw error; } }
 }
 
-/** Host lifecycle only; the native adapter owns the panel and sequence presentation. */
+/** Commerce owns the shell; Graph owns the embedded sequence guide view and its state contract. */
 export function createCommerceSetupGuide({ launcher }) {
-  let generation = 0, host, handle, latest, loading, resizeHeader, requested = false;
+  let generation = 0, handle, latest, targetPromise, setupTarget, requested = false, mountQueue = Promise.resolve();
+  const host = document.getElementById('commerce-panel-setup-guide');
+  if (!host) throw new Error('Commerce Setup Guide panel slot is missing.');
+  const loadTarget = () => targetPromise ??= surface(host, undefined, graphCssUrl).then(target => { setupTarget = target; return target; })
+    .catch(error => { targetPromise = null; throw error; });
+  const panelState = event => launcher.setAttribute('aria-expanded', String(event.detail?.open === true && event.detail?.view === 'setup-guide'));
+  document.addEventListener('commerce:panel-state', panelState);
   const close = (restoreFocus = true) => {
-    generation++; requested = false; loading?.abort(); loading = null;
-    if (resizeHeader) window.removeEventListener('resize', resizeHeader);
-    resizeHeader = null;
-    handle?.destroy(); handle = null; host?.remove(); host = null;
+    generation++; requested = false; handle?.destroy(); handle = null;
+    setupTarget?.replaceChildren();
     launcher.setAttribute('aria-expanded', 'false');
+    closeCommercePanel(false);
     if (restoreFocus && launcher.isConnected && !launcher.disabled) launcher.focus();
   };
   return {
@@ -209,18 +226,23 @@ export function createCommerceSetupGuide({ launcher }) {
     update(state) { latest = state; handle?.update(state); },
     async open(state) {
       latest = state;
+      openCommercePanel('setup-guide', { trigger: launcher, focus: false });
+      launcher.setAttribute('aria-expanded', 'true');
       if (requested) { handle?.update(state); return; }
       requested = true;
       const ticket = ++generation;
-      host = el('div'); host.id = 'setup-guide-panel'; loading = new AbortController();
-      document.body.append(host);
-      resizeHeader = () => host?.style.setProperty('--kg-safe-top', `${Math.ceil(document.querySelector('.topbar')?.getBoundingClientRect().height ?? 0)}px`);
-      resizeHeader(); window.addEventListener('resize', resizeHeader, { passive: true });
-      launcher.setAttribute('aria-expanded', 'true');
       try {
-        const [native, target] = await Promise.all([loadGraphAdapter(), surface(host, loading.signal, graphCssUrl)]);
+        const target = await loadTarget();
         if (!requested || generation !== ticket) return;
-        handle = native.mountSequenceGuide(target, latest);
+        const pending = mountQueue.catch(() => {}).then(async () => {
+          if (!requested || generation !== ticket) return null;
+          const mounted = await mountSequenceGuideContent(target, latest);
+          if (!requested || generation !== ticket) { mounted.destroy(); return null; }
+          return mounted;
+        });
+        mountQueue = pending.then(() => undefined, () => undefined);
+        const mounted = await pending;
+        if (mounted) handle = mounted;
       } catch (error) {
         if (!requested || generation !== ticket) return;
         close(); throw error;

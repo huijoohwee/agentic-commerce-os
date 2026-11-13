@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="light">
+  <meta name="color-scheme" content="light dark">
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self'; script-src 'self'; worker-src 'self'; style-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="description" content="A local, read-only design registry with revision-pinned Commerce, Graph, Base, and shared UI profiles.">
@@ -24,7 +24,10 @@
         <p data-dashboard-primitive="text">Find the owner, source revision, and reuse terms for a design token.</p>
       </hgroup>
     </header>
-    <nav id="catalog-navigation" class="agentic-toolbar" data-scroll aria-label="Catalog sections"></nav>
+    <div class="agentic-toolbar-dock">
+      <nav id="catalog-navigation" class="agentic-toolbar" data-scroll aria-label="Catalog sections"></nav>
+      <button id="floating-panel-preview-trigger" type="button" class="agentic-toolbar-item" data-icon-only data-dock-edge="end" aria-label="FloatingPanel" title="FloatingPanel" aria-haspopup="dialog" aria-controls="panel-preview" aria-expanded="false"><svg data-agentic-design-icon="SlidersHorizontal"></svg></button>
+    </div>
     <section class="agentic-dashboard-region" aria-labelledby="records-heading">
       <h2 id="records-heading">Owners and candidate profiles</h2>
       <search class="registry-search" aria-label="Search the registry">
@@ -43,7 +46,18 @@
         <li><article class="agentic-dashboard-card" id="profiles" tabindex="-1"><h3>Profiles</h3><p class="agentic-dashboard-description">Inspect profile identity, rights evidence, and consumer pins.</p></article></li>
         <li><article class="agentic-dashboard-card" id="guidelines" tabindex="-1"><h3>Guidelines</h3><p class="agentic-dashboard-description">Each key has one owner. Duplicate definitions and overrides fail validation.</p></article></li>
         <li><article class="agentic-dashboard-card" id="accessibility" tabindex="-1"><h3>Accessibility</h3><p class="agentic-dashboard-description">Use the keyboard to search, navigate sections, and expand token values.</p></article></li>
-        <li><article class="agentic-dashboard-card" id="components" tabindex="-1"><h3>Components</h3><p class="agentic-dashboard-description">Product repositories own their component behavior and APIs.</p><details data-dashboard-primitive="disclosure"><summary>Dashboard primitives</summary><hr data-dashboard-primitive="divider"><section data-dashboard-primitive="container" data-columns="2" aria-label="Dashboard primitive example"><h4 data-dashboard-primitive="heading">Heading</h4><p data-dashboard-primitive="text">Text follows the available column width.</p></section></details><button id="floating-panel-preview-trigger" type="button" class="agentic-icon-pill" aria-haspopup="dialog" aria-controls="panel-preview" aria-expanded="false">Preview FloatingPanel</button></article></li>
+        <li><article class="agentic-dashboard-card editor-workspace-card" id="components" tabindex="-1">
+          <h3>Shared Editor Workspace</h3>
+          <p class="agentic-dashboard-description">MainPanel, BottomPanel, and FloatingPanel share one visual profile and responsive layout.</p>
+          <div class="agentic-editor-workspace-preview">
+            <div class="agentic-editor-workspace" aria-label="Editor Workspace panel layout preview">
+              <section class="agentic-editor-workspace-stage" aria-label="Editor canvas"><h4>Editor workspace</h4><p>Content stays inside the available stage.</p></section>
+              <aside class="agentic-panel-surface agentic-panel-main" aria-label="MainPanel preview"><header class="agentic-panel-header"><h4 class="agentic-panel-title">MainPanel</h4><span>Inspector</span></header><div class="agentic-panel-body"><p>Shared width, surface, and spacing.</p></div></aside>
+              <section class="agentic-panel-surface agentic-panel-bottom" aria-label="BottomPanel preview"><header class="agentic-panel-header"><h4 class="agentic-panel-title">BottomPanel</h4><span>Console</span></header><div class="agentic-panel-body"><p>Responsive, scrollable workspace content.</p></div></section>
+            </div>
+          </div>
+          <details data-dashboard-primitive="disclosure"><summary>Dashboard primitives</summary><hr data-dashboard-primitive="divider"><section data-dashboard-primitive="container" data-columns="2" aria-label="Dashboard primitive example"><h4 data-dashboard-primitive="heading">Heading</h4><p data-dashboard-primitive="text">Text follows the available column width.</p></section></details>
+        </article></li>
         <li><article class="agentic-dashboard-card" id="examples" tabindex="-1"><h3>Examples</h3><p class="agentic-dashboard-description">Search for dashboard.card-gap to inspect the spacing used by these cards.</p></article></li>
         <li><article class="agentic-dashboard-card" id="releases" tabindex="-1"><h3>Releases</h3><p class="agentic-dashboard-description">Public records require an owner, grant, source digest, and review evidence.</p></article></li>
       </ul>
@@ -56,16 +70,28 @@
     </footer>
   </main>
   <section id="panel-preview" class="agentic-base-floating-panel-root agentic-floating-panel-dock" hidden>
-    <aside class="agentic-base-floating-panel agentic-form-controls" role="dialog" aria-modal="false" aria-labelledby="panel-title">
+    <aside class="agentic-base-floating-panel agentic-form-controls" role="dialog" aria-modal="false" aria-label="FloatingPanel preview">
       <section class="agentic-base-floating-panel-inner agentic-base-floating-panel-expanded">
         <header class="agentic-base-floating-panel-header">
-          <h2 class="agentic-floating-panel-title" id="panel-title">FloatingPanel</h2>
-          <button type="button" class="agentic-base-floating-panel-close" data-panel-close aria-label="Close FloatingPanel"><svg class="agentic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" role="img" aria-label="Close icon"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+          <nav class="agentic-floating-panel-tabs" role="tablist" aria-label="Workspace panels" aria-orientation="horizontal">
+            <button id="panel-agent-tools-tab" class="agentic-floating-panel-tab" type="button" role="tab" data-agentic-floating-panel-tab-key="agent-tools" aria-controls="panel-agent-tools" aria-selected="false" title="Agent tools" tabindex="-1">
+              <svg data-agentic-design-icon="Bot"></svg><span>Agent tools</span>
+            </button>
+            <button id="panel-console-tab" class="agentic-floating-panel-tab" type="button" role="tab" data-agentic-floating-panel-tab-key="console" aria-controls="panel-console" aria-selected="true" title="Console" tabindex="0">
+              <svg data-agentic-design-icon="SquareTerminal"></svg><span>Console</span>
+            </button>
+            <button id="panel-setup-guide-tab" class="agentic-floating-panel-tab" type="button" role="tab" data-agentic-floating-panel-tab-key="setup-guide" aria-controls="panel-setup-guide" aria-selected="false" title="Setup Guide" tabindex="-1">
+              <svg data-agentic-design-icon="HelpCircle"></svg><span>Setup Guide</span>
+            </button>
+          </nav>
+          <button type="button" data-agentic-panel-control="close" data-panel-close></button>
         </header>
-        <section class="agentic-floating-panel-body"><p>The header stays in place while the content scrolls. Graph’s tool panel and the Workspace Pack Console use this shell.</p></section>
+        <section id="panel-agent-tools" class="agentic-floating-panel-body" role="tabpanel" aria-labelledby="panel-agent-tools-tab" hidden><p>Registered tools and their local availability belong to the host application.</p></section>
+        <section id="panel-console" class="agentic-floating-panel-body" role="tabpanel" aria-labelledby="panel-console-tab"><p>The header stays in place while the content scrolls. Graph’s tool panel and the Workspace Pack Console use this shell.</p></section>
+        <section id="panel-setup-guide" class="agentic-floating-panel-body" role="tabpanel" aria-labelledby="panel-setup-guide-tab" hidden><p>Host guides use these shared tabs while keeping their steps and actions in the product.</p></section>
       </section>
     </aside>
   </section>
-  <script type="module" src="./app.js?v=floating-panel-preview-4"></script>
+  <script type="module" src="./app.js?v=floating-panel-preview-7"></script>
 </body>
 </html>
