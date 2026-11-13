@@ -344,7 +344,8 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await page.locator('#workspace-prepare').click();
   await expect(page.locator('#workspace-tool-status')).toHaveText('workspace_revision_changed');
   await expect(page.locator('#workspace-result')).toBeEmpty();
-  await page.keyboard.press('Escape'); await expect(inspectOffer).toBeFocused();
+  await page.locator('#commerce-workspace-panel').getByRole('button', { name: 'Close', exact: true }).click();
+  await expect(inspectOffer).toBeFocused();
   for (const width of [390, 768, 1280]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto(url + '#admin-runtime?project=store%3Astudio-north'); await launcher.click(); await agentButton.click();
