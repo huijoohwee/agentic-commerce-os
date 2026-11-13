@@ -16,7 +16,7 @@ export type LocalFirstEnv = Readonly<CheckoutEnv & ListingRelayEnv & {
 }>
 const packDirectory = '/services/workspace-pack/'
 // A bounded, exact allowlist: shared files get the same asset at both route prefixes.
-const sharedPackFiles = 'commerce-shell.css workspace-layout.js dashboard-columns.js toolbar-icons.js commerce-toolbar.js dropdown-menus.js graph-ui-tokens.css commerce-theme.css shared-ui-profile.css floating-panel.css toolbar.css'.split(' ')
+const sharedPackFiles = 'commerce-shell.css workspace-layout.js dashboard-columns.js toolbar-icons.js icons.json commerce-toolbar.js dropdown-menus.js graph-ui-tokens.css commerce-theme.css shared-ui-profile.css floating-panel.css toolbar.css'.split(' ')
 const primaryFiles = [
   'app.js drafts.js checkout.js launch.js workspace.js workspace-graph.js agentic-base-data-view.js agentic-base-data-view.css graph-data-view.js graph-data-view.css style.css sw.js workflow.js workspace-capabilities.js workspace-tools.js',
   ...(import.meta.commerceLiveCheckout === false ? ['dropdown-menus.js graph-ui-tokens.css'] : [

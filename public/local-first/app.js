@@ -240,15 +240,22 @@ function activateSetupStep(id, action) {
     case 'reload': void openSavedDraft(selected.id).catch(error => { actionFailed = true; message(error.message, true); renderSetup(); }); break;
   }
 }
-$('#open-setup-guide').addEventListener('click', async () => {
-  if (busy) return;
+let setupGuideOpeningGeneration = -1;
+async function openSetupGuide() {
+  if (busy || setupGuideOpeningGeneration === setupGeneration || location.hash !== '#vendor-editor') return;
   const ticket = ++setupGeneration;
+  setupGuideOpeningGeneration = ticket;
   try {
     const { createCommerceSetupGuide } = await import('./workspace-graph.js');
     if (ticket !== setupGeneration || location.hash !== '#vendor-editor') return;
     setupGuide ??= createCommerceSetupGuide({ launcher: $('#open-setup-guide') });
     await setupGuide.open(setupProjection);
   } catch (error) { if (ticket === setupGeneration) message(error.message || 'Could not open the setup guide.', true); }
+  finally { if (setupGuideOpeningGeneration === ticket) setupGuideOpeningGeneration = -1; }
+}
+$('#open-setup-guide').addEventListener('click', () => { void openSetupGuide(); });
+document.addEventListener('commerce:panel-state', event => {
+  if (event.detail?.open && event.detail?.view === 'setup-guide') void openSetupGuide();
 });
 window.addEventListener('hashchange', () => {
   if (location.hash !== '#vendor-editor') { setupGeneration++; setupGuide?.close(false); }

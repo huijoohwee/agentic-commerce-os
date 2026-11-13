@@ -17,6 +17,19 @@
   margin: 0; padding: 0; border: 0; background: transparent; overflow: visible; pointer-events: auto;
 }
 .commerce-flyout[data-edge=start] { inset-inline: var(--agentic-toolbar-inset) auto; }
+.commerce-workspace-panel {
+  z-index: var(--agentic-floating-panel-layer, 4); inset: 0; pointer-events: none;
+  --agentic-floating-panel-available-height: calc(100dvh - var(--workspace-chrome-height) - var(--agentic-menu-edge-gap));
+}
+.commerce-workspace-panel[hidden] { display: none; }
+.commerce-workspace-panel > .agentic-base-floating-panel {
+  position: absolute; inset-block-start: calc(var(--workspace-chrome-height) + var(--agentic-menu-edge-gap));
+  inset-inline-end: max(var(--agentic-toolbar-inset), env(safe-area-inset-right)); pointer-events: auto;
+  inline-size: min(var(--agentic-panel-width), calc(100vw - 2 * var(--agentic-menu-edge-gap)));
+}
+.commerce-workspace-panel .agentic-base-floating-panel-inner { inline-size: 100%; block-size: 100%; overflow: hidden; }
+.commerce-workspace-panel-content { display: flex; flex: 1 1 auto; min-inline-size: 0; min-block-size: 0; overflow: hidden; }
+.commerce-workspace-panel-view { min-inline-size: 0; min-block-size: 0; }
 @media (max-width: 32rem) {
   :root { --workspace-banner-height: calc(2 * var(--agentic-line-height-body)); }
   .commerce-banner { flex-direction: column; }

@@ -1,5 +1,5 @@
 import { mountWorkspaceLayout } from './workspace-layout.js'
-import { createIconButton } from './toolbar-icons.js'
+import { createDesignIcon, createIconButton, createPanelControlButton } from './toolbar-icons.js'
 
 export const PACK_TOOL = 'commerce.workspace.program-pack.create'
 
@@ -102,23 +102,138 @@ function attachPanel(button, label, ...items) {
   return popover
 }
 
+const PANEL_VIEWS = Object.freeze([
+  Object.freeze({ key: 'agent-tools', label: 'Agent tools', icon: 'Bot' }),
+  Object.freeze({ key: 'console', label: 'Console', icon: 'SquareTerminal' }),
+  Object.freeze({ key: 'setup-guide', label: 'Setup Guide', icon: 'HelpCircle' }),
+])
+const workspacePanelKey = Symbol.for('agentic-commerce-os.shared-workspace-panel')
+const getWorkspacePanel = () => document[workspacePanelKey] ?? null
+
+function panelTab(view) {
+  const tab = createElement('button', undefined, 'agentic-floating-panel-tab')
+  tab.type = 'button'; tab.id = `commerce-panel-tab-${view.key}`; tab.dataset.panelView = view.key
+  tab.setAttribute('role', 'tab'); tab.setAttribute('aria-controls', `commerce-panel-${view.key}`)
+  tab.setAttribute('aria-label', view.label); tab.title = view.label
+  tab.append(createDesignIcon(view.icon), createElement('span', view.label))
+  return tab
+}
+
+function dispatchPanelState(open, view) {
+  document.dispatchEvent(new CustomEvent('commerce:panel-state', { detail: { open, view } }))
+}
+
+function attachWorkspacePanel(button) {
+  const popover = createElement('div', undefined, 'agentic-base-floating-panel-root commerce-workspace-panel')
+  popover.id = 'commerce-workspace-panel'; popover.hidden = true
+  popover.dataset.agenticFloatingPanelPlacement = 'viewport-overlay'
+  popover.dataset.agenticFloatingPanelAvoidBottom = 'true'
+  const surface = createElement('section', undefined, 'agentic-base-floating-panel')
+  surface.setAttribute('role', 'dialog'); surface.setAttribute('aria-modal', 'false')
+  surface.setAttribute('aria-label', 'Commerce workspace panels')
+  const inner = createElement('div', undefined, 'agentic-base-floating-panel-inner agentic-base-floating-panel-expanded')
+  const header = createElement('header', undefined, 'agentic-base-floating-panel-header')
+  const tabs = createElement('nav', undefined, 'agentic-floating-panel-tabs')
+  tabs.setAttribute('role', 'tablist'); tabs.setAttribute('aria-label', 'Workspace panels')
+  const close = createPanelControlButton('close')
+  const content = createElement('div', undefined, 'commerce-workspace-panel-content')
+  const views = new Map()
+  for (const view of PANEL_VIEWS) {
+    const tab = panelTab(view), slot = createElement('section', undefined, 'commerce-workspace-panel-view agentic-floating-panel-body')
+    slot.id = `commerce-panel-${view.key}`; slot.dataset.panelView = view.key
+    slot.setAttribute('role', 'tabpanel'); slot.setAttribute('aria-labelledby', tab.id); slot.tabIndex = 0
+    tab.setAttribute('aria-selected', 'false'); tab.tabIndex = -1; slot.hidden = true
+    tabs.append(tab); content.append(slot); views.set(view.key, { tab, slot, view })
+    if (view.key === 'agent-tools') {
+      const packContent = createElement('section', undefined, 'commerce-pack-agent-content'); packContent.id = 'commerce-pack-agent-content'; packContent.hidden = true
+      slot.append(packContent)
+    }
+    tab.addEventListener('click', () => select(view.key, true))
+    tab.addEventListener('keydown', event => {
+      const keys = [...views.keys()], index = keys.indexOf(view.key)
+      const next = event.key === 'ArrowRight' ? (index + 1) % keys.length
+        : event.key === 'ArrowLeft' ? (index + keys.length - 1) % keys.length
+          : event.key === 'Home' ? 0 : event.key === 'End' ? keys.length - 1 : -1
+      if (next < 0) return
+      event.preventDefault(); select(keys[next], true)
+    })
+  }
+  header.append(tabs, close); inner.append(header, content); surface.append(inner); popover.append(surface)
+  button.setAttribute('aria-haspopup', 'dialog'); button.setAttribute('aria-controls', popover.id); button.setAttribute('aria-expanded', 'false')
+  let activeView = '', isOpen = false, returnFocus = button
+  const setOpen = open => {
+    if (isOpen === open) return
+    isOpen = open; popover.hidden = !open
+    button.setAttribute('aria-expanded', String(open))
+    dispatchPanelState(open, activeView)
+  }
+  const select = (key, focus = false) => {
+    const selected = views.get(key)
+    if (!selected) throw new RangeError(`Unknown Commerce panel: ${key}`)
+    const changed = activeView !== key
+    activeView = key
+    for (const [candidate, item] of views) {
+      const active = candidate === key
+      item.tab.setAttribute('aria-selected', String(active)); item.tab.tabIndex = active ? 0 : -1
+      item.slot.hidden = !active
+    }
+    surface.setAttribute('aria-labelledby', selected.tab.id)
+    if (focus) selected.tab.focus({ preventScroll: true })
+    if (changed && isOpen) dispatchPanelState(true, activeView)
+  }
+  const open = (key = activeView, options = {}) => {
+    if (options.trigger?.isConnected) returnFocus = options.trigger
+    select(key, false)
+    setOpen(true)
+    if (options.focus) views.get(activeView).tab.focus({ preventScroll: true })
+  }
+  const hide = (focus = false) => {
+    setOpen(false)
+    if (focus && returnFocus?.isConnected) returnFocus.focus({ preventScroll: true })
+  }
+  button.addEventListener('click', () => {
+    returnFocus = button
+    if (isOpen) hide(false)
+    else open(activeView)
+  })
+  close.addEventListener('click', () => hide(true))
+  popover.addEventListener('keydown', event => {
+    if (event.key !== 'Escape' || event.defaultPrevented || event.isComposing) return
+    if (event.composedPath().some(node => node instanceof HTMLDialogElement && node.open)) return
+    event.preventDefault(); hide(true)
+  })
+  select('agent-tools')
+  const controller = { open, hide, select, get activeView() { return activeView },
+    get isOpen() { return isOpen }, setContext(pack) { select(pack ? 'console' : 'agent-tools') } }
+  return { popover, controller }
+}
+
+export function openCommercePanel(view, options) {
+  const panel = getWorkspacePanel()
+  if (!panel) throw new Error('Commerce FloatingPanel has not been mounted.')
+  panel.open(view, options)
+}
+
+export function closeCommercePanel(focus = false) { getWorkspacePanel()?.hide(focus) }
+export function getCommercePanelView() { return getWorkspacePanel()?.activeView ?? '' }
+export function isCommercePanelOpen() { return getWorkspacePanel()?.isOpen ?? false }
+
 export function mountCommerceChrome(header, options = {}) {
   const toolbar = createCommerceToolbar(options)
   const navigation = edgeButton('start', 'Show navigation', 'workspace-navigation-toggle')
-  const launcher = edgeButton('end', 'Tools and Console', 'commerce-panels-toggle')
-  const tools = createElement('button', 'Agent tools', 'agentic-toolbar-item')
-  tools.type = 'button'; tools.id = 'workspace-agent-open'
-  tools.setAttribute('aria-haspopup', 'dialog')
-  const consoleAction = createElement('button', 'Console', 'agentic-toolbar-item')
-  consoleAction.type = 'button'; consoleAction.id = 'console-toggle'
+  const launcher = createIconButton('Tools and Console', createDesignIcon('SlidersHorizontal'))
+  launcher.id = 'commerce-panels-toggle'; launcher.title = 'Tools and Console'; launcher.dataset.dockEdge = 'end'
   const dock = createElement('div', undefined, 'agentic-toolbar-dock')
   const banner = createElement('div', undefined, 'commerce-banner')
   banner.setAttribute('role', 'note')
   banner.append(createElement('strong', 'Workspace Program Pack'), createElement('span', 'Free conversion · No account · No payment'))
   header.classList.add('commerce-chrome'); header.append(banner, dock)
-  const panel = attachPanel(launcher, 'Tools and Console', tools, consoleAction)
-  dock.append(navigation, toolbar, launcher, panel)
-  mountWorkspaceLayout({panel, toolbar, create:createElement, roles:WORKSPACE_ROLES, packPage:!!options.packPage})
+  const { popover, controller } = attachWorkspacePanel(launcher)
+  if (getWorkspacePanel()) throw new Error('Commerce FloatingPanel is already mounted.')
+  Object.defineProperty(document, workspacePanelKey, { value: controller })
+  dock.append(navigation, toolbar, launcher, popover)
+  controller.setContext(!!options.packPage)
+  mountWorkspaceLayout({panel:popover, toolbar, create:createElement, roles:WORKSPACE_ROLES, packPage:!!options.packPage})
   const sections = [...toolbar.querySelectorAll('[data-pack-destination]')].map(link => toolbarLink(link.textContent, link.href))
   dock.append(attachPanel(navigation, 'Pack navigation', ...sections))
   setPackChrome(toolbar, !!options.packPage)
@@ -130,11 +245,10 @@ export function setPackChrome(toolbar, pack) {
   const menu = header.querySelector('#workspace-navigation-toggle-panel')
   nav.popoverTargetElement = pack ? menu : null
   menu.hidePopover()
-  const tools = header.querySelector('#workspace-agent-open'), consoleAction = header.querySelector('#console-toggle')
-  if (pack && !document.getElementById('console-sheet')) tools.removeAttribute('aria-controls')
-  else tools.setAttribute('aria-controls', pack ? 'console-sheet' : 'workspace-agent-drawer')
-  if (pack && document.getElementById('console-panel')) consoleAction.setAttribute('aria-controls', 'console-panel')
-  if (!pack) consoleAction.removeAttribute('aria-expanded')
+  const panel = getWorkspacePanel()
+  if (panel?.isOpen) panel.hide(false)
+  panel?.setContext(pack)
+  document.dispatchEvent(new CustomEvent('commerce:panel-context', { detail: { pack } }))
   if (pack) {
     nav.setAttribute('aria-controls', menu.id)
     nav.setAttribute('aria-expanded', 'false')

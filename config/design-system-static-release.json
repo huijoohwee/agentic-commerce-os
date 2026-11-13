@@ -2,24 +2,24 @@
   "schema": "agentic-commerce-design-system-static-release/v1",
   "source": {
     "repository": "github.com/huijoohwee/agentic-design-system",
-    "revision": "c758c593c296d175541a031396c7f9e30b7f0454"
+    "revision": "37b8c181a473603c963ca71c078136c81459b734"
   },
   "route": "https://airvio.co/agentic-design-system/",
   "files": [
     {
       "path": "app.js",
-      "bytes": 17166,
-      "sha256": "1024aab84cf5d3a088392abb907b9a14a30417a303b596f00cab1fca3891859e"
+      "bytes": 19262,
+      "sha256": "a204b80598e0f68f65a50c1829092c387cfff0112c785c404d475ecb6b54599b"
     },
     {
       "path": "catalog.json",
-      "bytes": 13442,
-      "sha256": "8cd96a4dd157ef86a5950d91623fcd8673587d130c8a60bccc2b27ff61e725e9"
+      "bytes": 13778,
+      "sha256": "78c9df0441b40d7fe6651062997d0c37aac5d34a8346b68655c45664cd6b3f06"
     },
     {
       "path": "catalog.schema.json",
       "bytes": 13998,
-      "sha256": "0427eed7bcf299666a520ae43353942f9f4dcc6bc497574e0dd284fdb14eb9e1"
+      "sha256": "9a97ac3167f89eaf8e9198969d3b0d7fa4e227670b0108290f4307270b090033"
     },
     {
       "path": "dashboard-columns.js",
@@ -33,18 +33,18 @@
     },
     {
       "path": "floating-panel.css",
-      "bytes": 5842,
-      "sha256": "96d71b2009d4d93750bd09a187188979cbba9ea9b6e7cb4a94c5f62de9540d12"
+      "bytes": 13150,
+      "sha256": "f4195c2964b3d94e5129de8157db9cb0a7e51c68d66a2082b59662c4431b59a5"
     },
     {
       "path": "icons.json",
-      "bytes": 12805,
-      "sha256": "52ab0c590ab71329f16d101e493f8dc21c455c918d52431c790a1477fcb357a1"
+      "bytes": 13997,
+      "sha256": "6adc0bca42161901a0c29d51a60859b435373ae415c157c8aaa978a3fc439dc6"
     },
     {
       "path": "index.html",
-      "bytes": 6638,
-      "sha256": "3725db9ca02e1c31243e686e0a861114b2a395b28520d2611c4f980270a8476e"
+      "bytes": 9366,
+      "sha256": "f85ffbc70e195a2e0a8c115fbb3f23086ccefbcecf0f6eb5d682f451628dd1be"
     },
     {
       "path": "LICENSE",
@@ -64,7 +64,7 @@
     {
       "path": "sw.js",
       "bytes": 1966,
-      "sha256": "96e4194eeb0c5e4c394cc786daf6896b70b11537e2f72b37f268cd61451b91d5"
+      "sha256": "6803416f04b16576d090699ea41c17f6ff92a3990c4a8c9a249314240fbc0977"
     },
     {
       "path": "THIRD-PARTY-NOTICES.txt",
@@ -88,18 +88,18 @@
     },
     {
       "path": "tokens/shared-ui-profile.json",
-      "bytes": 6669,
-      "sha256": "6bc322f50d5c6cdfb82dc8b472e0ea3a440cb51d1379aadd0a204738c615d2c5"
+      "bytes": 9073,
+      "sha256": "81ea83f837f417d2e7492821f1c7e466a34cbcc24c50d32304365a2c9219ce7d"
     },
     {
       "path": "toolbar-icons.js",
-      "bytes": 1011,
-      "sha256": "6092b30c66839048049ca9e505a997370a7ed3f4f52880b8a2654f63dd38ddf7"
+      "bytes": 11636,
+      "sha256": "f304f25cdef7e054bdd9c62ca7e9f79959363c4e210c9cede0640609183a4471"
     },
     {
       "path": "toolbar.css",
-      "bytes": 3933,
-      "sha256": "0bfb089e0f717c8bde20a5db76ce0a42c85502561aef24a067cd4787f2e127c8"
+      "bytes": 4058,
+      "sha256": "a3e9a0699370bd8aba637870c394faaf00be3c0106737ad20e5d748adf6559ed"
     },
     {
       "path": "vendor/base-profile.css",
@@ -118,12 +118,24 @@
     },
     {
       "path": "vendor/shared-ui-profile.css",
-      "bytes": 19722,
-      "sha256": "e9fce49e9dce6cde8afa4cde9dc0e8d77ee8642cc10d4d38f66d35d3f53361b0"
+      "bytes": 20458,
+      "sha256": "9cff9a5969cfdf4f459d0e223868cf0fbc163bbc350e55c92efca43b4b48583c"
     }
   ],
-  "totalBytes": 172135,
-  "payloadDigest": "920f0a463593c75c0161e5ade7a469b8890cebeba7968a2daa379bd39a770751",
+  "profilePins": {
+    "sharedUi": {
+      "id": "shared-ui",
+      "owner": "github.com/huijoohwee/agentic-design-system",
+      "sourceRevision": "3a1bce56673bdc3256cef861717bf64f846e15eb",
+      "registryRevision": "c14c19df2bf17dd5faf0cf8d93caccb526b656a1",
+      "sourcePath": "site/tokens/shared-ui-profile.json",
+      "sourceSha256": "sha256:81ea83f837f417d2e7492821f1c7e466a34cbcc24c50d32304365a2c9219ce7d",
+      "projectionPath": "site/vendor/shared-ui-profile.css",
+      "projectionSha256": "sha256:9cff9a5969cfdf4f459d0e223868cf0fbc163bbc350e55c92efca43b4b48583c"
+    }
+  },
+  "totalBytes": 199685,
+  "payloadDigest": "ae076bc7edb35cb4fd8da904de14b63a88083452762d67329d467ebbd728834d",
   "excluded": [
     "registry/",
     "site/review-inventory.json",

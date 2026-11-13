@@ -1,8 +1,13 @@
 import { createPackRoute, isPackRoute } from './workspace-pack.route.js';
 import { enhanceSelects } from './dropdown-menus.js';
 import { listDrafts, groupProjects } from './drafts.js'; import { getOrCreateSingleton } from './workspace-singleton.js'; import { bindDemoOfferDetails, bindExampleFilters, offerDetailsButton } from './shopper-demo-detail.js';
+import { openCommercePanel, getCommercePanelView, isCommercePanelOpen, closeCommercePanel } from './commerce-toolbar.js';
 import { WORKSPACE_ROLES, bindWorkspaceNavigation, selectWorkspaceDestination, mountWorkspaceShell, mountWorkspaceSidebar } from './workspace-navigation.js?v=workspace-navigation-mobile-51';
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; await getOrCreateSingleton('workspace-application', async () => { mountWorkspaceShell(); const packRoute = createPackRoute(); enhanceSelects();
+const agentPanel = document.getElementById('commerce-panel-agent-tools'), packAgentPanel = document.getElementById('commerce-pack-agent-content');
+const agentPanelContent = document.getElementById('workspace-agent-content');
+if (!agentPanel || !packAgentPanel || !agentPanelContent) throw new Error('Commerce Agent tools panel is incomplete.');
+agentPanel.append(agentPanelContent);
 const displayLocale = document.documentElement.lang || 'en'; const $ = selector => document.querySelector(selector); const monogram = title => { const words = title.trim().split(/\s+/u); return (words.length > 1 ? words.slice(0, 2).map(word => [...word][0]).join('') : [...words[0]].slice(0, 2).join('')).toUpperCase(); }; const merchantName = id => String(id || '').replace(/[-._]+/gu, ' ').replace(/(^|\s)\p{L}/gu, initial => initial.toUpperCase());
 const checkoutMode = document.querySelector('meta[name="commerce-checkout-mode"]')?.content, shopCheckoutNav = document.querySelector('#shop-navigation-content')?.content.querySelector('#shop-checkout-nav');
 const liveCheckout = ['live', 'live-reader'].includes(checkoutMode);
@@ -160,7 +165,7 @@ function renderNativeTable(container, offers, role, label = role === 'vendor' ? 
     await module.mountCommerceTable(view, offers, { status: offer => stateLabel(stateOf(offer)), state: stateOf, price, reason: reviewReason, monogram, merchantName }, {
       label, display: role === 'vendor' ? 'cards' : 'table', editLabel: role === 'admin' ? 'Review offer ↗' : 'Edit offer ↗',
       open: offer => void openOffer(offer.id, stateOf(offer) === 'draft' ? 'merchant-id' : stateOf(offer) === 'revise' ? 'sale-price' : 'title').catch(message),
-      inspect: offer => void openAgentTools({ name: 'commerce.workspace.offer.review', input: { offerId: offer.id, expectedRevision: offer.revision }, label: 'Offer · ' + offer.title + ' · v' + offer.revision }),
+      inspect: (offer, trigger) => void openAgentTools({ name: 'commerce.workspace.offer.review', input: { offerId: offer.id, expectedRevision: offer.revision }, label: 'Offer · ' + offer.title + ' · v' + offer.revision }, trigger),
     });
   }).catch(error => {
     if (ticket !== container.dataset.graphGeneration) return;
@@ -242,7 +247,7 @@ for (const role of ['vendor', 'admin']) for (const field of ['query', 'state']) 
 for (const link of document.querySelectorAll('#create-offer, [data-create-offer]')) link.addEventListener('click', event => {
   event.preventDefault(); void loadEditor().then(app => { if (app.newDraft()) location.hash = 'vendor-editor'; }).catch(message);
 });
-window.addEventListener('hashchange', () => { if ($('#workspace-agent-drawer').open) $('#workspace-agent-drawer').close(); if ($('#environment-check-detail').open) $('#environment-check-detail').close(); if ($('#offer-detail').open) $('#offer-detail').close(); void route().catch(message); });
+window.addEventListener('hashchange', () => { closeCommercePanel(false); if ($('#environment-check-detail').open) $('#environment-check-detail').close(); if ($('#offer-detail').open) $('#offer-detail').close(); void route().catch(message); });
 document.addEventListener('commerce:drafts-updated', () => { channel?.postMessage('changed'); void refresh().catch(message); });
 $('#draft-storage-retry').addEventListener('click', async () => {
   const previousError = draftError;
@@ -552,7 +557,7 @@ window.addEventListener('online', renderEnvironment);
 window.addEventListener('focus', renderEnvironment);
 window.addEventListener('pagehide', () => { environmentGeneration++; environmentController?.abort(); environmentController = null; clearTimeout(environmentExpiry); });
 window.addEventListener('pageshow', renderEnvironment);
-let toolsPromise, toolsApi, agentGeneration = 0, agentTrigger;
+let toolsPromise, toolsApi, agentGeneration = 0, agentTrigger, agentToolsActive = false, pendingAgentPreset;
 function loadTools() {
   toolsPromise ??= import('./workspace-tools.js').then(module => module.mountWorkspaceTools({ checkEnvironment, sourceRevision })).then(api => { toolsApi = api; return api; }).catch(error => { toolsPromise = null; throw error; });
   return toolsPromise;
@@ -567,30 +572,44 @@ function agentContext() {
   }
   return { name: 'commerce.workspace.projects.list', input: {}, label: 'Workspace · Projects on this device' };
 }
-async function openAgentTools(preset) {
-  const generation = ++agentGeneration, drawer = $('#workspace-agent-drawer'); agentTrigger = preset ? document.activeElement : $('#commerce-panels-toggle');
+async function openAgentTools(preset, trigger = document.activeElement) {
+  pendingAgentPreset = preset; agentTrigger = trigger?.isConnected ? trigger : document.activeElement;
+  openCommercePanel('agent-tools', { trigger: agentTrigger, focus: false });
+  syncAgentPanel();
+}
+async function activateAgentTools(preset) {
+  const generation = ++agentGeneration; agentToolsActive = true;
   $('#workspace-agent-context').textContent = 'Native workspace capabilities';
-  $('#workspace-agent-status').textContent = 'Loading tools…'; $('#workspace-agent-open').setAttribute('aria-expanded', 'true');
-  drawer.showModal();
+  $('#workspace-agent-status').textContent = 'Loading tools…';
   try {
     const api = await loadTools();
-    if (!drawer.open || generation !== agentGeneration) return;
+    if (!agentPanelIsActive(generation)) return;
     if (!draftsLoaded) await refresh();
     const current = preset ?? agentContext(); await api.configure(current.name, current.input);
-    if (!drawer.open || generation !== agentGeneration) return;
+    if (!agentPanelIsActive(generation)) return;
     $('#workspace-agent-context').textContent = current.label;
-    $('#workspace-agent-content').append($('#workspace-tools-body'));
+    $('#workspace-agent-content-body').append($('#workspace-tools-body'));
     enhanceSelects().refresh(); $('#workspace-agent-status').textContent = ''; $('#workspace-tool').focus();
-  } catch (error) { if (drawer.open && generation === agentGeneration) $('#workspace-agent-status').textContent = error.message; }
+  } catch (error) { if (agentPanelIsActive(generation)) $('#workspace-agent-status').textContent = error.message; }
 }
-$('#workspace-agent-open').addEventListener('click', () => { if (!isPackRoute()) void openAgentTools(); });
-$('#workspace-agent-close').addEventListener('click', () => $('#workspace-agent-drawer').close());
-$('#workspace-agent-drawer').addEventListener('close', () => {
-  agentGeneration++; toolsApi?.deactivate(); $('#workspace-tools-home').append($('#workspace-tools-body'));
-  $('#workspace-agent-open').setAttribute('aria-expanded', 'false');
-  if (agentTrigger?.isConnected) agentTrigger.focus({ preventScroll: true });
+function agentPanelIsActive(generation) { return agentToolsActive && generation === agentGeneration && isCommercePanelOpen() && getCommercePanelView() === 'agent-tools' && !isPackRoute(); }
+function deactivateAgentTools() {
+  if (!agentToolsActive) return;
+  agentToolsActive = false; agentGeneration++; toolsApi?.deactivate(); $('#workspace-tools-home').append($('#workspace-tools-body'));
+}
+function syncAgentPanel() {
+  if (isCommercePanelOpen() && getCommercePanelView() === 'agent-tools' && !isPackRoute()) {
+    const preset = pendingAgentPreset; pendingAgentPreset = undefined;
+    if (!agentToolsActive || preset) void activateAgentTools(preset);
+  } else deactivateAgentTools();
+}
+document.addEventListener('commerce:panel-state', syncAgentPanel);
+document.addEventListener('commerce:panel-context', event => {
+  const pack = event.detail?.pack === true;
+  agentPanelContent.hidden = pack; packAgentPanel.hidden = !pack;
+  if (pack) deactivateAgentTools();
 });
-window.addEventListener('pagehide', () => { if ($('#workspace-agent-drawer').open) $('#workspace-agent-drawer').close(); });
+window.addEventListener('pagehide', deactivateAgentTools);
 void Promise.all([refresh(), route()]).catch(message);
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js', { scope: './', updateViaCache: 'none' })

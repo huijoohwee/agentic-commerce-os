@@ -1,19 +1,103 @@
 import { enhanceSelects } from './dropdown-menus.js';
-import { mountCommerceChrome, observePackService, selectToolbarItem, PACK_TOOL } from './commerce-toolbar.js';
+import { mountCommerceChrome, observePackService, selectToolbarItem, PACK_TOOL, openCommercePanel, closeCommercePanel } from './commerce-toolbar.js';
 export function mountWorkspacePack({ root, toolbar, service, active, readiness }) {
   enhanceSelects(root);
-  const $ = id => root.getElementById(id)
-  const chrome = id => document.getElementById(id)
+  const mountPanelContent = (hostId, templateId) => {
+    const host = document.getElementById(hostId), template = root.getElementById(templateId)
+    if (!host || !(template instanceof HTMLTemplateElement)) throw new Error(`Commerce panel content is missing: ${templateId}`)
+    const panelRoot = host.shadowRoot ?? host.attachShadow({ mode: 'open' })
+    if (!panelRoot.childNodes.length) {
+      const stylesheet = document.createElement('link'); stylesheet.rel = 'stylesheet'; stylesheet.href = new URL('./workspace-pack.css', import.meta.url).href
+      panelRoot.append(stylesheet, template.content.cloneNode(true))
+    }
+    return panelRoot
+  }
+  const agentPanelRoot = mountPanelContent('commerce-pack-agent-content', 'agent-tools-template')
+  const consoleRoot = mountPanelContent('commerce-panel-console', 'console-template')
+  document.getElementById('commerce-pack-agent-content').hidden = false
+  enhanceSelects(consoleRoot)
+  const $ = id => root.getElementById(id) ?? consoleRoot.getElementById(id) ?? agentPanelRoot.getElementById(id)
   const sample = '# Add up a small order\ndef order_total(quantity, unit_price):\n    return quantity * unit_price\n\ntotal = 0\nfor quantity in range(1, 4):\n    total = total + order_total(quantity, 5)\n\nprint(total)\n'
   const endpoint = new URL('api', service), toolName = PACK_TOOL
   const sha = async text => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)))].map(x => x.toString(16).padStart(2, '0')).join('')
   let generation = 0, controller = null, pack = null, urls = [], reviewEnabled = false, review = null
   const reviewDialog = $('request-review')
   let reviewTrigger = $('create')
-  const consolePanel = $('console-panel'), consoleToggle = chrome('console-toggle')
   let consoleEventCount = 0, browserRegistered = false, toolCalls = 0, consoleApi = null, consoleLoad = null, consoleIntent = 0
   let extensionStats = { registered: 0, available: 0, stage: 'Idle', events: 0 }
   const modelContext = document.modelContext?.registerTool ? document.modelContext : navigator.modelContext
+  const setupGuideHost = document.getElementById('commerce-panel-setup-guide')
+  const setupSteps = Object.freeze([
+    Object.freeze({ id: 'prepare', label: 'Prepare your source', detail: 'Paste supported Python or load the local example. Imports and general Python execution are outside this converter.', actionLabel: 'Show source' }),
+    Object.freeze({ id: 'review', label: 'Review the request', detail: 'Check the source and conversion scope. Your source is sent only after you create the pack.', actionLabel: 'Review source' }),
+    Object.freeze({ id: 'convert', label: 'Create the pack', detail: 'The converter creates the four files from supported Python. It does not run your code.', actionLabel: 'Continue conversion' }),
+    Object.freeze({ id: 'files', label: 'Inspect and download files', detail: 'Review the Python, Blocks / JSON, Markdown, and Canvas files before downloading.', actionLabel: 'Open included files' }),
+  ])
+  let packStage = 'prepare', packStageStatus = 'Prepare your source', selectedGuideStep = 'prepare'
+  let setupGuideHandle = null, setupGuideLoad = null, setupGuideController = null, setupGuideGeneration = 0
+  function setupGuideState() {
+    const current = setupSteps.findIndex(step => step.id === packStage)
+    return {
+      title: 'Program Pack setup', closeLabel: 'Close Program Pack setup guide',
+      summary: 'Prepare a supported Python source, review the request, and download four files.',
+      status: packStageStatus, selectedId: selectedGuideStep, busy: packStage === 'convert',
+      items: setupSteps.map((step, index) => ({ ...step,
+        meta: index < current ? 'Complete' : index === current ? 'Current' : 'Next', actionDisabled: false })),
+      notice: 'Your source stays on this page until you create the pack. Conversion does not execute it.',
+      onSelect(id) {
+        if (!setupSteps.some(step => step.id === id)) return
+        selectedGuideStep = id; setupGuideHandle?.update(setupGuideState())
+      },
+      onAction: focusSetupStep,
+      onClose: () => closeCommercePanel(true),
+    }
+  }
+  function focusSetupStep(id) {
+    if (id === 'files') {
+      location.hash = '#formats'
+      root.getElementById('formats')?.scrollIntoView({ block: 'start' })
+      return
+    }
+    const target = id === 'prepare' ? $('source')
+      : id === 'review' ? ($('create')?.disabled ? $('source') : $('create'))
+        : reviewDialog?.open ? $('confirm-request') : ($('create')?.disabled ? $('source') : $('create'))
+    target?.scrollIntoView?.({ block: 'center' })
+    target?.focus?.({ preventScroll: true })
+  }
+  async function openPackSetupGuide() {
+    if (!active() || setupGuideHandle || setupGuideLoad) return
+    if (!setupGuideHost) throw new Error('Commerce Setup Guide panel slot is missing.')
+    const generation = ++setupGuideGeneration
+    const controller = setupGuideController = new AbortController()
+    const shadow = setupGuideHost.shadowRoot ?? setupGuideHost.attachShadow({ mode: 'open' })
+    const loading = document.createElement('p'); loading.className = 'hint'; loading.textContent = 'Loading Program Pack guide…'
+    shadow.replaceChildren(loading)
+    const load = (async () => {
+      try {
+        const moduleUrl = new URL(import.meta.url)
+        const graphUrl = moduleUrl.pathname.includes('/services/workspace-pack/')
+          ? new URL('../../workspace-graph.js', moduleUrl) : new URL('./workspace-graph.js', moduleUrl)
+        const { mountCommerceSequenceGuide } = await import(graphUrl.href)
+        if (!active() || generation !== setupGuideGeneration) return
+        const handle = await mountCommerceSequenceGuide(setupGuideHost, setupGuideState(), controller.signal)
+        if (!active() || generation !== setupGuideGeneration) { handle.destroy(); return }
+        setupGuideHandle = handle
+      } catch {
+        if (!active() || generation !== setupGuideGeneration) return
+        const status = document.createElement('p'); status.className = 'hint'; status.textContent = 'Setup Guide could not load. Reload this workspace to retry.'
+        status.setAttribute('role', 'status')
+        setupGuideHost.shadowRoot?.replaceChildren(status)
+      }
+    })()
+    setupGuideLoad = load
+    try { await load } finally { if (setupGuideLoad === load) setupGuideLoad = null }
+  }
+  function disposePackSetupGuide() {
+    setupGuideGeneration++; setupGuideLoad = null
+    setupGuideController?.abort(); setupGuideController = null
+    setupGuideHandle?.destroy(); setupGuideHandle = null
+    setupGuideHost?.shadowRoot?.replaceChildren()
+  }
   function liveSnapshot() {
     return { service: $('console-service').textContent, browser: $('console-browser-tool').textContent,
       conversionRegistered: browserRegistered, form: $('console-form-state').textContent, events: consoleEventCount, toolCalls }
@@ -23,6 +107,8 @@ export function mountWorkspacePack({ root, toolbar, service, active, readiness }
     const registered = stats.registered + Number(browserRegistered), available = stats.available + Number(browserRegistered)
     $('console-tool-count').textContent = `${registered} browser tool${registered === 1 ? '' : 's'}`
     $('capability-count').textContent = `${available} available · ${registered} registered`
+    $('agent-tools-count').textContent = `${available} available`
+    $('agent-tools-summary').textContent = `${available} available now · ${registered} registered · ${stats.stage.toLowerCase()}`
     $('status-service').textContent = `Service: ${$('console-service').textContent}`
     $('status-rehearsal').textContent = `Rehearsal: ${stats.stage} · ${stats.events} event${stats.events === 1 ? '' : 's'}`
     $('status-agent').textContent = toolCalls ? `${toolCalls} browser call${toolCalls === 1 ? '' : 's'} observed` : 'No browser calls observed'
@@ -31,21 +117,23 @@ export function mountWorkspacePack({ root, toolbar, service, active, readiness }
     const intent = ++consoleIntent
     try {
       consoleLoad ??= import('./workspace-pack.console.js').then(module => module.initConsole({
-        root, active, context: modelContext, live: liveSnapshot, changed: updateStatus,
-        openPanel: () => setConsoleOpen(true, false), review: () => $('pack-form').requestSubmit(),
+        root, agentRoot: agentPanelRoot, consoleRoot, active, context: modelContext, live: liveSnapshot, changed: updateStatus,
+        openPanel: (view = 'console', trigger = document.activeElement) => openCommercePanel(view, { trigger, focus: false }), review: () => $('pack-form').requestSubmit(),
         toolObserved: () => { toolCalls++; updateStatus() },
       }))
       consoleApi = await consoleLoad
-      if (intent === consoleIntent) consoleApi.action(action, trigger)
+      if (intent === consoleIntent && action !== 'init') consoleApi.action(action, trigger)
     } catch { consoleLoad = null; $('simulation-status').textContent = 'Console tools unavailable. Reload when connected and try again.' }
   }
-  root.querySelectorAll('[data-console-action]').forEach(button => button.addEventListener('click', () => consoleAction(button.dataset.consoleAction, button)))
+  for (const button of [...root.querySelectorAll('[data-console-action]'), ...consoleRoot.querySelectorAll('[data-console-action]')])
+    button.addEventListener('click', () => consoleAction(button.dataset.consoleAction, button))
+  $('agent-tools-filter').addEventListener('input', () => consoleApi?.refreshLive())
   $('simulation-scenario').addEventListener('change', () => { consoleIntent++ })
   document.addEventListener('keydown', event => {
-    if (!active() || !(event.metaKey || event.ctrlKey) || event.altKey || event.repeat || root.querySelector('dialog[open]')
+    if (!active() || !(event.metaKey || event.ctrlKey) || event.altKey || event.repeat || root.querySelector('dialog[open]') || consoleRoot.querySelector('dialog[open]')
       || event.composedPath()[0]?.closest?.('input,textarea,select,[contenteditable=true]')) return
     if (event.key.toLowerCase() === 'k') { event.preventDefault(); consoleAction('commands', root.activeElement ?? document.activeElement) }
-    if (event.key.toLowerCase() === 'j') { event.preventDefault(); setConsoleOpen(consolePanel.hidden) }
+    if (event.key.toLowerCase() === 'j') { event.preventDefault(); setConsoleOpen(true, true, event.target) }
   })
   function recordConsole(kind, message) {
     const entry = document.createElement('li'), label = document.createElement('time'), detail = document.createElement('span')
@@ -62,27 +150,36 @@ export function mountWorkspacePack({ root, toolbar, service, active, readiness }
     $('console-event-count').textContent = `${consoleEventCount} events`
     updateStatus(); consoleApi?.refreshLive()
   }
-  function setConsoleOpen(open, focus = true) {
+  function setConsoleOpen(open, focus = true, trigger = null) {
     if (!open && focus && location.hash === '#console') {
       history.replaceState(history.state, '', '#builder')
       syncPackLocation()
     }
-    consolePanel.hidden = !open
-    consoleToggle.setAttribute('aria-expanded', String(open))
-    if (!focus) return
-    if (open) $('console-close').focus({ preventScroll: true })
-    else chrome('commerce-panels-toggle').focus({ preventScroll: true })
+    if (open) openCommercePanel('console', { trigger, focus })
+    else closeCommercePanel(focus)
   }
-  chrome('workspace-agent-open').addEventListener('click', () => { if (active()) consoleAction('tools', chrome('commerce-panels-toggle')) })
-  consoleToggle.addEventListener('click', () => { if (active()) setConsoleOpen(consolePanel.hidden) })
-  $('status-console').addEventListener('click', () => setConsoleOpen(consolePanel.hidden))
-  $('console-close').addEventListener('click', () => setConsoleOpen(false))
-  document.addEventListener('keydown', event => {
-    if (active() && event.key === 'Escape' && !consolePanel.hidden && !root.querySelector('dialog[open]')) { event.preventDefault(); setConsoleOpen(false) }
+  $('status-console').addEventListener('click', event => setConsoleOpen(true, true, event.currentTarget))
+  const activateWorkspacePanelView = view => {
+    if (view === 'setup-guide') void openPackSetupGuide()
+    if (view === 'agent-tools') {
+      if (consoleApi) consoleApi.refreshLive()
+      else void consoleAction('tools', agentPanelRoot.activeElement)
+    }
+    if (view === 'console' && !consoleApi) void consoleAction('init')
+  }
+  document.addEventListener('commerce:panel-state', event => {
+    if (!active()) return
+    if (event.detail?.open) activateWorkspacePanelView(event.detail.view)
+    if (!event.detail?.open && location.hash === '#console') { history.replaceState(history.state, '', '#builder'); syncPackLocation() }
   })
+  const workspacePanel = document.getElementById('commerce-workspace-panel')
+  const initiallySelectedView = !workspacePanel?.hidden
+    ? workspacePanel?.querySelector('[role="tab"][aria-selected="true"]')?.dataset.panelView
+    : undefined
+  if (active() && initiallySelectedView) activateWorkspacePanelView(initiallySelectedView)
   const statusBar = $('status-service').parentElement
   if (typeof statusBar?.getBoundingClientRect === 'function') {
-    const syncStatusHeight = () => (root.host ?? document.documentElement).style.setProperty('--agentic-floating-panel-bottom-offset', `${statusBar.getBoundingClientRect().height}px`)
+    const syncStatusHeight = () => document.documentElement.style.setProperty('--agentic-floating-panel-bottom-offset', `${statusBar.getBoundingClientRect().height}px`)
     syncStatusHeight()
     if (typeof ResizeObserver === 'function') new ResizeObserver(syncStatusHeight).observe(statusBar)
     else window.addEventListener('resize', syncStatusHeight)
@@ -92,12 +189,14 @@ export function mountWorkspacePack({ root, toolbar, service, active, readiness }
     const section = [...toolbar.querySelectorAll('[data-pack-destination]')].find(link => link.hash === hash)
     if (section) selectToolbarItem(section)
     else toolbar.querySelector('[aria-current]')?.removeAttribute('aria-current')
-    if (hash === '#console') setConsoleOpen(true)
+    if (hash === '#console') setConsoleOpen(true, false)
   }
   function setFormStage(stage, message) {
+    packStage = stage; packStageStatus = message
     $('console-form-state').textContent = message
     consoleApi?.refreshLive()
-    root.querySelectorAll('[data-stage]').forEach(step => {
+    setupGuideHandle?.update(setupGuideState())
+    consoleRoot.querySelectorAll('[data-stage]').forEach(step => {
       if (step.dataset.stage === stage) step.setAttribute('aria-current', 'step')
       else step.removeAttribute('aria-current')
     })
@@ -280,12 +379,14 @@ export function mountWorkspacePack({ root, toolbar, service, active, readiness }
   }
   function leave() {
     consoleIntent++
+    disposePackSetupGuide()
     if (controller) invalidate()
     closeReview()
     if ($('console-sheet').open) $('console-sheet').close()
     setConsoleOpen(false, false)
     consoleApi?.setActive(false)
     retireConversion()
+    document.documentElement.style.removeProperty('--agentic-floating-panel-bottom-offset')
   }
   addEventListener('pagehide', leave)
   return {

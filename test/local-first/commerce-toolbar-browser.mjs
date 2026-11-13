@@ -12,7 +12,7 @@ export async function checkCommerceToolbar(browser, url, width) {
     const service = toolbar.locator('[data-pack-status]');
     const pack = url + 'services/workspace-pack/';
     const panels = page.getByRole('button', { name: 'Tools and Console' });
-    const options = page.getByRole('region', { name: 'Tools and Console' });
+    const options = page.locator('#commerce-workspace-panel');
     const nav = page.locator('#workspace-navigation-toggle');
     for (const [name, hash] of Object.entries({ Shopper: 'shop', Vendor: 'vendor', Admin: 'admin',
       'SME pack': 'sme', Housing: 'housing', Workspace: 'builder', 'Included files': 'formats' })) {
@@ -38,11 +38,34 @@ export async function checkCommerceToolbar(browser, url, width) {
         await expect(nav).toHaveAttribute('aria-expanded', expanded === 'true' ? 'false' : 'true'); await nav.click();
       }
       await panels.focus(); await page.keyboard.press('Enter');
-      await expect(options.getByRole('button', { name: 'Console' })).toBeVisible();
-      await options.getByRole('button', { name: 'Agent tools' }).click();
-      const agent = page.locator(isPack ? '#console-sheet' : '#workspace-agent-drawer');
+      await expect(options).toBeVisible();
+      await expect(panels).toHaveAttribute('aria-expanded', 'true');
+      expect(await options.evaluate(root => ({
+        popover: root.hasAttribute('popover'),
+        placement: root.dataset.agenticFloatingPanelPlacement,
+        position: getComputedStyle(root).position,
+      }))).toEqual({ popover: false, placement: 'viewport-overlay', position: 'fixed' });
+      await expect(options.getByRole('tab', { name: 'Console' })).toBeVisible();
+      if (isPack) {
+        await options.getByRole('tab', { name: 'Console' }).click();
+        const consolePanel = options.getByRole('tabpanel', { name: 'Console' });
+        await expect(consolePanel.getByRole('heading', { name: 'Response rehearsal' })).toBeVisible();
+        await options.getByRole('tab', { name: 'Setup Guide' }).click();
+        const guide = options.getByRole('tabpanel', { name: 'Setup Guide' });
+        await expect(guide.getByRole('heading', { name: 'Program Pack setup' })).toBeVisible();
+        await expect(guide.locator('button[data-step-id]')).toHaveCount(4);
+      }
+      await options.getByRole('tab', { name: 'Agent tools' }).click();
+      const agent = options.getByRole('tabpanel', { name: 'Agent tools' });
       await expect(agent).toBeVisible();
-      await expect(page.locator(isPack ? '#console-filter' : '#workspace-tool + button')).toBeFocused();
+      if (isPack) {
+        await expect(agent.locator('#commerce-pack-agent-content')).toBeVisible();
+        await expect(options.getByRole('tab', { name: 'Agent tools' })).toBeFocused();
+        await expect(agent.locator('#agent-tools-filter')).toBeVisible();
+      } else {
+        await expect(agent.locator('#workspace-agent-content')).toBeVisible();
+        await expect(options.getByRole('tab', { name: 'Agent tools' })).toBeFocused();
+      }
       await page.keyboard.press('Escape'); await expect(panels).toBeFocused();
     }
     await link('Housing').click();
@@ -75,14 +98,12 @@ export async function checkCommerceToolbar(browser, url, width) {
     await expect(link('Included files')).toHaveAttribute('aria-current', 'location');
     await link('Vendor').click();
     await expect(page).toHaveURL(url + '#vendor');
-    await panels.click(); await options.getByRole('button', { name: 'Console' }).click();
-    await expect(page).toHaveURL(url + '#console');
-    await expect(page.getByRole('complementary', { name: 'Console' })).toBeVisible();
-    await expect(page.locator('#console-close')).toBeFocused();
+    await panels.click(); await options.getByRole('tab', { name: 'Console' }).click();
+    await expect(options.getByRole('tabpanel', { name: 'Console' }).getByRole('heading', { name: 'Response rehearsal' })).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(panels).toBeFocused();
     await page.goBack();
-    await expect(link('Vendor')).toHaveAttribute('aria-current', 'location');
+    await expect(link('Included files')).toHaveAttribute('aria-current', 'location');
     if (width <= 390) {
       await page.route(pack + 'service.json', route => route.fulfill({ json: {} }));
       await page.reload();
