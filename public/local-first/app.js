@@ -147,6 +147,7 @@ function renderSetup() {
   setupGuide?.update(setupProjection);
   $('#export-launch').disabled = busy || !acknowledged || isArchived(selected);
   $('#review-launch').disabled = busy || isArchived(selected);
+  $('#prepare-listing').disabled = busy || isArchived(selected);
 }
 function edited() { dirty = true; actionFailed = false; $('#save-state').textContent = 'Unsaved changes'; invalidateReview(); renderSetup(); }
 function mayLeave() { return !dirty || window.confirm('Leave these unsaved edits? Your saved drafts will remain.'); }
@@ -239,6 +240,7 @@ $('#review-launch').addEventListener('click', () => void run(async () => {
 }));
 $('#prepare-listing').addEventListener('click', () => void run(async () => {
   if (!selected || dirty) throw Error('Save this draft before preparing a listing.');
+  if (isArchived(selected)) throw Error('Restore this listing before preparing its workflow.');
   const current = (await listDrafts()).find(draft => draft.id === selected.id);
   if (!current || current.revision !== selected.revision) { stale = true; throw Error('This draft changed. Reopen the saved version first.'); }
   const { openWorkflow } = await import('./workflow.js');

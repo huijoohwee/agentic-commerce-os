@@ -52,6 +52,7 @@ try {
 
   await page.locator('#archive-listing').click(); await expect(page.locator('#listing-state')).toContainText('Archived');
   await expect(page.locator('#review-launch')).toBeDisabled();
+  await expect(page.locator('#prepare-listing')).toBeDisabled();
   const archived = (await records(page))[0]; assert.equal(archived.revision, 4);
   assert.equal(archived.id, original.id); assert.equal(archived.createdAt, original.createdAt);
   await page.getByRole('link', { name: 'Back to offers', exact: true }).click();
@@ -104,6 +105,13 @@ try {
   assert.equal(transactions.count, 2); assert.equal(transactions.unchangedImport, 0);
   await importedContext.close();
   console.log('PASS v4 UI import, lossless backup, atomic conflicting import and simultaneous duplicate-source refusal');
+  const deniedContext = await browser.newContext();
+  await deniedContext.addInitScript(() => { indexedDB.open = () => { throw Error('Storage denied for verification'); }; });
+  const denied = await deniedContext.newPage(); await denied.goto(base + '#vendor-editor');
+  await denied.locator('#title').fill('Text retained when storage is denied'); await save(denied);
+  await expect(denied.locator('#status')).toContainText('Storage denied');
+  await expect(denied.locator('#title')).toHaveValue('Text retained when storage is denied');
+  await deniedContext.close(); console.log('PASS storage-denied save fails visibly and retains editor text');
   assert.deepEqual(errors, []);
   fs.writeFileSync(path.join(output, 'result.json'), JSON.stringify({ source: 'uncommitted-worktree', base, viewports: [1280, 360],
     assertions: 'create/edit/reload/validation/CAS/archive/search/restore/offline/backup/import/duplicate-race', errors, state: final }, null, 2));
