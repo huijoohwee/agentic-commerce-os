@@ -111,8 +111,7 @@ async function openOffer(id, focus = 'title') {
   const app = await loadEditor(); if (!await app.openSavedDraft(id)) return; if (location.hash !== '#vendor-editor') history.pushState(null, '', '#vendor-editor');
   await route();
   const target = document.getElementById(focus) || $('#title');
-  if (target.closest('details')) target.closest('details').open = true;
-  target.focus();
+  if (target.closest('details')) target.closest('details').open = true; target.focus();
 }
 function renderTable(role) { if (role === 'vendor') { const search = document.querySelector('[data-workspace-sidebar][data-sidebar-variant="vendor"] [data-workspace-search]'); if (search) search.hidden = !draftsLoaded || drafts.length === 0; }
   if ($('#' + role + '-table').closest('[data-view-panel]')?.hidden) return;
@@ -185,8 +184,7 @@ async function refresh() {
 }
 function renderCurrent() {
   renderDraftStatus();
-  if (!$('#shop').hidden) renderShop();
-  if (!$('#vendor').hidden) renderTable('vendor');
+  if (!$('#shop').hidden) renderShop(); if (!$('#vendor').hidden) renderTable('vendor');
   if (!$('#admin').hidden) { renderTable('admin'); renderProjects(); }
   renderEnvironment();
 }
@@ -252,8 +250,7 @@ function connection() { const status = $('#connection'), label = status.querySel
 window.addEventListener('online', connection); window.addEventListener('offline', connection); matchMedia('(max-width:680px)').addEventListener('change', connection); connection();
 function projectPreview(project) {
   const preview = node('figure', undefined, 'console-preview'); preview.setAttribute('aria-label', 'Storefront preview for ' + project.name); preview.dataset.selectionTarget = 'project-storefront-preview';
-  const frame = node('section', undefined, 'mini-storefront');
-  const masthead = node('header', undefined, 'mini-masthead'); masthead.append(node('b', 'airvio'), node('span', 'LOCAL PREVIEW'));
+  const frame = node('section', undefined, 'mini-storefront'); const masthead = node('header', undefined, 'mini-masthead'); masthead.append(node('b', 'airvio'), node('span', 'LOCAL PREVIEW'));
   const hero = node('section', undefined, 'mini-hero');
   hero.append(node('span', project.name), node('strong', project.offers[0]?.launch?.outcome || 'Useful work. Thoughtfully prepared.'), node('i', 'Your collection'));
   const collection = node('section', undefined, 'mini-collection');
@@ -272,8 +269,7 @@ function projectLink(text, href, label) {
 function projectCard(project, detail = false) {
   const card = node('article', undefined, 'project-card'); card.dataset.project = project.id;
   const info = node('section', undefined, 'project-info'), content = node('section', undefined, 'project-copy');
-  const title = node('h2', detail ? 'Device workspace' : project.name);
-  const facts = node('dl', undefined, 'project-facts');
+  const title = node('h2', detail ? 'Device workspace' : project.name); const facts = node('dl', undefined, 'project-facts');
   const saved = project.offers.length, reviewed = project.offers.filter(offer => stateOf(offer) === 'reviewable').length;
   facts.append(node('dt', 'Draft storage'), node('dd', draftLoading || draftError ? 'Last loaded snapshot · Check storage status' : 'Available · This browser', 'project-available'),
     node('dt', 'Storefront'), node('dd', 'Private preview · Not published'),
@@ -307,8 +303,7 @@ function renderProjects() {
   const sandbox = node('article', undefined, 'console-sandbox');
   const summary = node('section'); summary.append(node('h2', liveCheckout ? 'Education checkout' : 'Sandbox checkout'), node('p', liveCheckout ? 'Separate education offer · Draft offers are not sold here' : 'Shared example offer · Test mode only · No real money', 'muted'));
   const observation = node('span', $('#environment-badge').textContent, 'state-badge'); observation.dataset.environmentObservation = '';
-  const timestamp = node('small', '', 'muted'); timestamp.dataset.environmentTime = '';
-  const evidence = node('section', undefined, 'sandbox-observation'); evidence.append(observation, timestamp);
+  const timestamp = node('small', '', 'muted'); timestamp.dataset.environmentTime = ''; const evidence = node('section', undefined, 'sandbox-observation'); evidence.append(observation, timestamp);
   sandbox.append(summary, evidence, projectLink('Inspect environment', '#admin-runtime?project=' + encodeURIComponent(project.id))); detail.append(sandbox);
   detail.append(offerRecords(project.offers, 'Project offers'));
 }
@@ -431,8 +426,7 @@ function renderEnvironment() {
 }
 async function readEnvironment(response) {
   if (![200, 503].includes(response.status) || !/^application\/json(?:;|$)/i.test(response.headers.get('content-type') || '')) throw Error('Environment response is unavailable or invalid.');
-  const reader = response.body?.getReader();
-  if (!reader) throw Error('Environment response is empty.');
+  const reader = response.body?.getReader(); if (!reader) throw Error('Environment response is empty.');
   let bytes = 0, text = ''; const decoder = new TextDecoder('utf-8', { fatal: true });
   try {
     for (;;) {
@@ -448,8 +442,7 @@ async function checkEnvironment(signal) {
   if (environmentController || !navigator.onLine) throw Error('workspace_environment_busy_or_offline');
   const started = performance.now(), generation = ++environmentGeneration, controller = new AbortController(); environmentController = controller;
   clearTimeout(environmentExpiry); environmentObservation = null;
-  const cancel = () => controller.abort(); signal?.addEventListener('abort', cancel, { once: true });
-  const timer = setTimeout(cancel, 5000);
+  const cancel = () => controller.abort(); signal?.addEventListener('abort', cancel, { once: true }); const timer = setTimeout(cancel, 5000);
   $('#environment-status').textContent = 'Checking this environment…'; renderEnvironment();
   let observation, evidence, httpStatus = null;
   try {
@@ -496,14 +489,12 @@ async function checkEnvironment(signal) {
   environmentHistoryPage = 0; environmentHistory.unshift(observation); environmentHistory.length = Math.min(20, environmentHistory.length);
   renderEnvironmentHistory();
   renderEnvironment();
-  if (!evidence || controller.signal.aborted) throw Error('workspace_environment_unverified');
-  return evidence;
+  if (!evidence || controller.signal.aborted) throw Error('workspace_environment_unverified'); return evidence;
 }
 function inspectEnvironmentCheck(item) {
   environmentDetailTrigger = document.activeElement;
   $('#environment-check-title').textContent = 'Environment check ' + item.id;
-  const facts = $('#environment-check-facts'); facts.replaceChildren();
-  const entries = { Result: item.label, Observed: new Date(item.time).toLocaleString(), Duration: item.durationMs + ' ms',
+  const facts = $('#environment-check-facts'); facts.replaceChildren(); const entries = { Result: item.label, Observed: new Date(item.time).toLocaleString(), Duration: item.durationMs + ' ms',
     'HTTP response': item.httpStatus ?? 'No response', 'Page source': sourceRevision,
     'Observed source': item.evidence?.sourceRevision ?? 'Unverified', 'Runtime version': item.evidence?.workerVersionId ?? 'Unknown' };
   for (const [label, value] of Object.entries(entries)) facts.append(node('dt', label), node('dd', String(value)));
@@ -523,8 +514,7 @@ function renderEnvironmentHistory() {
     && [item.label, item.message, item.version || '', item.evidence?.sourceRevision || '', 'check ' + item.id].join(' ').toLowerCase().includes(query));
   const pages = Math.max(1, Math.ceil(filtered.length / 10)); environmentHistoryPage = Math.min(environmentHistoryPage, pages - 1);
   $('#environment-history-count').textContent = filtered.length + (filtered.length === 1 ? ' check' : ' checks') + ' · Page ' + (environmentHistoryPage + 1) + ' of ' + pages; $('#environment-history-count').parentElement.hidden = pages <= 1;
-  $('#environment-history-previous').disabled = environmentHistoryPage === 0;
-  $('#environment-history-next').disabled = environmentHistoryPage + 1 >= pages;
+  $('#environment-history-previous').disabled = environmentHistoryPage === 0; $('#environment-history-next').disabled = environmentHistoryPage + 1 >= pages;
   const holder = $('#environment-history'); holder.replaceChildren();
   if (!filtered.length) { holder.append(node('p', environmentHistory.length ? 'No checks match these filters.' : 'No checks yet. Use Check environment to inspect this runtime.', 'records-empty')); return; }
   holder.append(recordTable(['Source', 'Result', 'Checkout', 'Observed', 'Duration', 'Action'], filtered.slice(environmentHistoryPage * 10, (environmentHistoryPage + 1) * 10).map(item => {
@@ -597,8 +587,7 @@ function syncAgentPanel() {
 document.addEventListener('commerce:panel-state', syncAgentPanel);
 document.addEventListener('commerce:panel-context', event => {
   const pack = event.detail?.pack === true;
-  agentPanelContent.hidden = pack; packAgentPanel.hidden = !pack;
-  if (pack) deactivateAgentTools();
+  agentPanelContent.hidden = pack; packAgentPanel.hidden = !pack; if (pack) deactivateAgentTools();
 });
 window.addEventListener('pagehide', deactivateAgentTools);
 void Promise.all([refresh(), route()]).catch(message);

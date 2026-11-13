@@ -34,12 +34,9 @@ surfaces: ["2D Renderer: D3 Graph"]
 
 # Reference implementation — native commerce workspace increment
 
-This on-demand companion extends the [product owner](prd-tad-adr-mvp-gtm-edge-commerce-agent.md)
-at **`edge-commerce-agent-mvp@0.23.0`**. PRD, TAD, ADR, MVP and GTM below share that join.
-The split preserves the <600-line limit and leaves dated sandbox evidence in its original owner.
-No second platform, roadmap, capability registry or release controller is introduced.
-The [first-dollar sprint](prd-tad-adr-mvp-gtm-20260909T1320Z-solopreneur-mvp-gtm.md)
-remains the customer-validation and payment owner. The implementation disposition below distinguishes shipped source, local checks and remaining acceptance.
+This on-demand companion extends the [product owner](prd-tad-adr-mvp-gtm-edge-commerce-agent.md) at **`edge-commerce-agent-mvp@0.23.0`**. PRD, TAD, ADR, MVP and GTM below share that join.
+The split preserves the <600-line limit and leaves dated sandbox evidence in its original owner. No second platform, roadmap, capability registry or release controller is introduced.
+The [first-dollar sprint](prd-tad-adr-mvp-gtm-20260909T1320Z-solopreneur-mvp-gtm.md) remains the customer-validation and payment owner. The implementation disposition below distinguishes shipped source, local checks and remaining acceptance.
 
 **Context:** native offer editing, exact review and Graph tables exist; setup should reuse the
 native floating sequence presentation. **Directive CW-D13:** replace the inline checklist with a
@@ -79,8 +76,7 @@ Package locks stay unchanged. The source-owned Graph browser artifact/CSS/proven
 | Existing native screens provide a complete commerce suite or multi-tenant control plane | Contradicted: source has bounded offers/themes/checkout; inventory, tax, returns, customer administration and tenant IAM are not established by these views |
 | Attractive screens prove demand, production status or zero total cost | Unverified; separate customer, runtime and cost receipts are required |
 
-External material supplies only abstract questions to investigate. It supplies no authored names,
-links, assets, source, prompts, packages or runtime dependencies. No parity claim is made.
+External material supplies only abstract questions to investigate. It supplies no authored names, links, assets, source, prompts, packages or runtime dependencies. No parity claim is made.
 
 ## PRD — reference implementation
 
