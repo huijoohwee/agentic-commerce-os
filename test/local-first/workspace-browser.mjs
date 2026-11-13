@@ -299,7 +299,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await page.getByRole('link', { name: 'All projects', exact: true }).click();
   await expect(page.locator('#project-list .project-card')).toHaveCount(2);
   await page.goto(url + '#admin-project?project=store%3Astudio-north');
-  const agentButton = page.getByRole('button', { name: 'Agent tools', exact: true });
+  const agentButton = page.getByRole('tab', { name: 'Agent tools', exact: true });
   const launcher = page.getByRole('button', { name: 'Tools and Console' });
   const drawer = page.getByRole('dialog', { name: 'Agent tools', exact: true });
   await launcher.click(); await agentButton.click();
@@ -326,7 +326,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   assert.equal(prepared.params.arguments.snapshot.offers.length, 6);
   assert(prepared.params.arguments.snapshot.offers.every(offer => offer.launch.merchantId === 'studio-north'));
   assert(!JSON.stringify(prepared).includes('PRIVATE'));
-  await page.getByRole('button', { name: 'Close agent tools', exact: true }).click();
+  await page.locator('#commerce-workspace-panel').getByRole('button', { name: 'Close', exact: true }).click();
   await expect(launcher).toBeFocused();
   await expect.poll(() => page.evaluate(async () => (await document.modelContext.getTools()).length)).toBe(0);
   assert.equal(await page.locator('#workspace-tool').count(), 1);
