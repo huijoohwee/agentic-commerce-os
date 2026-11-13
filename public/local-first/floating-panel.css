@@ -6,7 +6,7 @@
   max-width: calc(100vw - 2 * var(--agentic-menu-edge-gap)); max-height: calc(100dvh - 2 * var(--agentic-menu-edge-gap));
   overflow: hidden; pointer-events: auto; border: var(--agentic-panel-border);
   border-radius: var(--agentic-panel-radius); box-shadow: var(--agentic-panel-shadow);
-  color-scheme: light dark; color: var(--agentic-panel-foreground); background: var(--agentic-panel-background);
+  color-scheme: inherit; color: var(--agentic-panel-foreground); background: var(--agentic-panel-background);
   font: var(--agentic-font-size-body)/var(--agentic-line-height-body) var(--agentic-font-sans);
 }
 .agentic-panel-surface { flex-direction: column; }
@@ -34,6 +34,9 @@
   inline-size: min(var(--agentic-panel-width), calc(100vw - 2 * var(--agentic-menu-edge-gap)));
   block-size: min(var(--agentic-panel-main-height), calc(100dvh - 2 * var(--agentic-menu-edge-gap)));
   max-block-size: min(var(--agentic-panel-main-max-height), calc(100dvh - 2 * var(--agentic-menu-edge-gap)));
+}
+.agentic-base-floating-panel-root[data-agentic-floating-panel-placement="viewport-overlay"] > .agentic-base-floating-panel[data-agentic-base-panel-minimized="true"] {
+  block-size: fit-content; height: auto; max-block-size: none; max-height: none;
 }
 .agentic-panel-main {
   grid-area: main; inline-size: min(var(--agentic-panel-main-width), 100%); max-inline-size: min(var(--agentic-panel-main-max-width), 100%);
@@ -80,6 +83,10 @@
   overflow-x: auto; overflow-y: hidden; overscroll-behavior-inline: contain; scrollbar-width: none; touch-action: pan-x;
 }
 .agentic-floating-panel-tabs::-webkit-scrollbar { display: none; }
+.agentic-panel-control-group {
+  box-sizing: border-box; display: flex; flex: none; align-items: center; justify-content: flex-end;
+  min-inline-size: 0; gap: var(--agentic-menu-gap);
+}
 .agentic-base-floating-panel .agentic-floating-panel-tab {
   box-sizing: border-box; display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center;
   min-inline-size: var(--agentic-control-height); block-size: var(--agentic-row-height);
@@ -87,9 +94,25 @@
   padding-inline: var(--agentic-control-padding-inline); border: 0; border-radius: var(--agentic-control-radius);
   color: inherit; background: transparent; cursor: pointer; touch-action: manipulation; white-space: nowrap;
 }
-.agentic-base-floating-panel .agentic-floating-panel-tab:hover { background: var(--agentic-control-selected-background); }
+.agentic-base-floating-panel .agentic-floating-panel-tab:hover {
+  background: var(--agentic-control-hover-background);
+  box-shadow: none; transform: none; filter: none;
+}
+.agentic-base-floating-panel :is(.agentic-floating-panel-tab, .agentic-base-floating-panel-close):has(> .agentic-icon:only-child) {
+  inline-size: var(--agentic-control-height); min-inline-size: var(--agentic-control-height);
+  block-size: var(--agentic-control-height); min-block-size: var(--agentic-control-height); padding: 0;
+}
+@media (pointer: coarse) {
+  .agentic-base-floating-panel :is(.agentic-floating-panel-tab, .agentic-base-floating-panel-close):has(> .agentic-icon:only-child) {
+    inline-size: var(--agentic-control-height-touch); min-inline-size: var(--agentic-control-height-touch);
+    block-size: var(--agentic-control-height-touch); min-block-size: var(--agentic-control-height-touch);
+  }
+}
 .agentic-base-floating-panel .agentic-floating-panel-tab[aria-selected="true"] {
   color: var(--agentic-control-selected-foreground); background: var(--agentic-control-selected-background);
+}
+.agentic-base-floating-panel .agentic-floating-panel-tab[aria-selected="true"]:hover {
+  background: var(--agentic-control-hover-background);
 }
 .agentic-base-floating-panel .agentic-floating-panel-tab:focus-visible,
 .agentic-base-floating-panel .agentic-base-floating-panel-close:focus-visible {
@@ -102,7 +125,7 @@
   min-block-size: var(--agentic-row-height); padding: 0; cursor: pointer;
   border: 0; border-radius: var(--agentic-control-radius); color: inherit; background: transparent;
 }
-.agentic-base-floating-panel .agentic-base-floating-panel-close:hover { background: var(--agentic-control-selected-background); }
+.agentic-base-floating-panel .agentic-base-floating-panel-close:hover { background: var(--agentic-control-hover-background); }
 .agentic-base-floating-panel-close .agentic-icon,
 .agentic-floating-panel-tab .agentic-icon { pointer-events: none; }
 .agentic-base-floating-panel :where(main, header, footer, nav, search, hgroup, section, article, aside, figure, figcaption, ul, ol, p, span, small, label, output, dl, dt, dd, summary, button, input, select, textarea, li, a):not(:where(h1 *, h2 *, h3 *, h4 *, h5 *, h6 *)) {
@@ -148,4 +171,9 @@
     inset-inline-end: max(var(--agentic-menu-edge-gap), env(safe-area-inset-right));
     inline-size: min(var(--agentic-panel-width), calc(100vw - 2 * var(--agentic-menu-edge-gap)));
   }
+}
+
+/* A floating surface yields height to a registered BottomPanel so both headers remain usable. */
+.agentic-base-floating-panel-root[data-agentic-floating-panel-avoid-bottom="true"][data-agentic-floating-panel-placement="viewport-overlay"] > .agentic-base-floating-panel {
+  max-block-size: min(var(--agentic-panel-main-max-height), max(var(--agentic-row-height), calc(var(--agentic-floating-panel-available-height, 100dvh) - var(--agentic-panel-gap))));
 }

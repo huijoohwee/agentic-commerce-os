@@ -10,7 +10,7 @@ import { readCheckoutRelease, liveAuthorizationScope } from './live-profile.mjs'
 
 export const CONFIG = 'wrangler.local-first.jsonc';
 export const WORKER = 'agentic-commerce-edge-production';
-export const FILES = Object.freeze(['index.html', 'favicon.svg', 'workspace.js', 'workspace-navigation.js', 'workspace-pack.route.js', 'workspace-view-styles.js', 'commerce-toolbar.js', 'commerce-shell.css', 'workspace-layout.js', 'dashboard-columns.js', 'toolbar-icons.js', 'workspace-singleton.js', 'shopper-demo-detail.js', 'workspace-tour.js', 'workspace-capabilities.js', 'workspace-tools.js', 'workspace-graph.js', 'agentic-base-data-view.js', 'dropdown-menus.js', 'agentic-base-data-view.css', 'graph-data-view.js', 'graph-data-view.css', 'graph-ui-tokens.css', 'commerce-theme.css', 'workspace-shell.css', 'shared-ui-profile.css', 'app.js', 'drafts.js', 'checkout.js', 'launch.js', 'workflow.js', 'style.css', 'sw.js', 'workspace-pack.html', 'workspace-pack.js', 'workspace-pack.css', 'floating-panel.css', 'toolbar.css', 'workspace-pack.simulation.js', 'workspace-pack.console.js', 'sme-business-pack.js', 'sme-business-pack.css', 'sme-business-pack-core.js', 'sme-workflow-editor.js', 'sme-review-workflow.js', 'graph-gantt-timeline.js', 'graph-gantt-timeline.css', 'sme-pack-business-plan.js', 'sme-pack-dictionary.js', 'housing-comparison.js', 'housing-engine.js', 'housing-sample.js', 'housing-comparison.css']);
+export const FILES = Object.freeze(['index.html', 'favicon.svg', 'workspace.js', 'workspace-navigation.js', 'workspace-pack.route.js', 'workspace-view-styles.js', 'commerce-toolbar.js', 'commerce-shell.css', 'workspace-layout.js', 'dashboard-columns.js', 'toolbar-icons.js', 'icons.json', 'workspace-singleton.js', 'shopper-demo-detail.js', 'workspace-tour.js', 'workspace-capabilities.js', 'workspace-tools.js', 'workspace-graph.js', 'agentic-base-data-view.js', 'dropdown-menus.js', 'agentic-base-data-view.css', 'graph-data-view.js', 'graph-data-view.css', 'graph-ui-tokens.css', 'commerce-theme.css', 'workspace-shell.css', 'shared-ui-profile.css', 'app.js', 'drafts.js', 'checkout.js', 'launch.js', 'workflow.js', 'style.css', 'sw.js', 'workspace-pack.html', 'workspace-pack.js', 'workspace-pack.css', 'floating-panel.css', 'toolbar.css', 'workspace-pack.simulation.js', 'workspace-pack.console.js', 'sme-business-pack.js', 'sme-business-pack.css', 'sme-business-pack-core.js', 'sme-workflow-editor.js', 'sme-review-workflow.js', 'graph-gantt-timeline.js', 'graph-gantt-timeline.css', 'sme-pack-business-plan.js', 'sme-pack-dictionary.js', 'housing-comparison.js', 'housing-engine.js', 'housing-sample.js', 'housing-comparison.css']);
 export const PRIVATE_FILES = Object.freeze(['education-materials.md', '_headers']);
 export const STORAGE_MANAGEMENT_ASSETS = Object.freeze(['index.html', 'style.css', 'guide.js', 'sources.json', 'sw.js']);
 export const STORAGE_MANAGEMENT_SOURCE_FILES = Object.freeze([
@@ -28,11 +28,12 @@ function readDesignSystemStaticRelease() {
   const release = JSON.parse(fs.readFileSync('config/design-system-static-release.json', 'utf8'));
   if (release.schema !== 'agentic-commerce-design-system-static-release/v1'
     || release.source?.repository !== 'github.com/huijoohwee/agentic-design-system'
-    || !/^[a-f0-9]{40}$/.test(release.source?.revision ?? '') || !Array.isArray(release.files))
+    || !/^[a-f0-9]{40}$/.test(release.source?.revision ?? '') || !Array.isArray(release.files)
+    || !release.profilePins?.sharedUi)
     throw Error('Design System static release provenance invalid');
   const files = new Map(release.files.map(file => [file.path, file]));
   if (files.size !== release.files.length) throw Error('Design System static release has duplicate paths');
-  return { owner: release.source.repository, revision: release.source.revision, files };
+  return { owner: release.source.repository, revision: release.source.revision, profilePins: release.profilePins, files };
 }
 function readSharedUiIconPin() {
   const pin = JSON.parse(fs.readFileSync('config/shared-ui-profile.pin.json', 'utf8'));
@@ -186,7 +187,7 @@ export function verifyGraphDataView() {
   const pin = JSON.parse(fs.readFileSync(manifestFile, 'utf8'));
   if (pin.schema !== 'agentic-graph/data-view-artifact/v1' || pin.sourceDirty !== false || !/^[0-9a-f]{40}$/.test(pin.sourceRevision)) throw Error('Graph data view provenance invalid');
   if (pin.entry !== 'canvas/src/features/markdown/ui/dataViewBrowserAdapter.tsx' || pin.browserExport !== 'mountDataView' || pin.cssScope !== 'shadow-root' || pin.hostTokens !== 'graph-ui-tokens.css'
-    || JSON.stringify(pin.browserExports) !== JSON.stringify(['mountDataView', 'mountSequenceGuide'])
+    || JSON.stringify(pin.browserExports) !== JSON.stringify(['mountDataView', 'mountSequenceGuide', 'mountSequenceGuideContent'])
     || !Array.isArray(pin.inputs) || !pin.inputs.length || pin.inputs.length > 128 || digest(JSON.stringify(pin.inputs)) !== pin.inputDigest) throw Error('Graph data view source contract invalid');
   const paths = new Set(); let totalInputBytes = 0, previousPath = '';
   for (const input of pin.inputs) {
@@ -310,7 +311,27 @@ export function verifySharedThemeOwner() {
 }
 export function verifySharedUiIconProfile(directory = 'public/local-first') {
   if (!FILES.includes('shared-ui-profile.css')) throw Error('Shared UI icon profile must be a released local-first asset');
+  const designSystemFiles = readDesignSystemStaticRelease().files;
+  for (const file of ['icons.json', 'toolbar-icons.js', 'toolbar.css']) {
+    const central = designSystemFiles.get(file);
+    if (!central || !FILES.includes(file)
+      || digest(fs.readFileSync(path.join(directory, file))) !== central.sha256)
+      throw Error('Commerce must consume the exact pinned Design System icon and toolbar projection: ' + file);
+  }
   const sharedUiPin = readSharedUiIconPin();
+  const releaseProfile = readDesignSystemStaticRelease().profilePins.sharedUi;
+  const centralCatalog = JSON.parse(fs.readFileSync('public/agentic-design-system/catalog.json', 'utf8'));
+  const centralProfile = centralCatalog.registry?.profiles?.find(profile => profile.id === 'shared-ui');
+  if (!centralProfile || releaseProfile.id !== 'shared-ui'
+    || releaseProfile.owner !== sharedUiPin.owner
+    || releaseProfile.sourceRevision !== sharedUiPin.sourceRevision
+    || releaseProfile.registryRevision !== sharedUiPin.registryRevision
+    || releaseProfile.sourceSha256 !== `sha256:${sharedUiPin.profileSha256}`
+    || releaseProfile.projectionSha256 !== `sha256:${sharedUiPin.projectionSha256}`
+    || centralProfile.revision !== sharedUiPin.sourceRevision
+    || centralProfile.digest !== `sha256:${sharedUiPin.profileSha256}`
+    || centralProfile.projection?.digest !== `sha256:${sharedUiPin.projectionSha256}`)
+    throw Error('Commerce shared UI profile pin differs from the exact Design System registry source');
   const cssBytes = fs.readFileSync(path.join(directory, 'shared-ui-profile.css'));
   const css = cssBytes.toString('utf8');
   const provenance = css.match(/^\/\* Generated from agentic-design-system@([a-f0-9]{40}); profile sha256 ([a-f0-9]{64})\. Do not edit\. \*\//u);
@@ -328,8 +349,8 @@ export function verifySharedUiIconProfile(directory = 'public/local-first') {
     if (artifactPin.owner !== sharedUiPin.owner || !/^[a-f0-9]{40}$/.test(artifactPin.revision)
       || artifactPin.path !== 'site/' + file || !FILES.includes(file) || digest(bytes) !== artifactPin.sha256)
       throw Error('Commerce differs from the pinned Design System shell: ' + file);
-    if (name === 'floating-panel' && artifactPin.revision !== 'a3d30260ab31b1067fe3f9ee5c6fce5fba684bc9')
-      throw Error('Commerce FloatingPanel must use the pinned central panel family');
+    if (name === 'floating-panel' && artifactPin.revision !== readDesignSystemStaticRelease().revision)
+      throw Error('Commerce FloatingPanel must use the pinned Design System revision');
   }
   const shell = fs.readFileSync(path.join(directory, 'workspace-shell.css'), 'utf8');
   const rule = shell.match(/\.workspace-shell>\.sidebar \.console-search>svg\s*\{([^}]*)\}/u)?.[1] ?? '';

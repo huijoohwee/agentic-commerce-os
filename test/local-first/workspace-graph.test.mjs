@@ -45,7 +45,7 @@ test('Commerce table uses the exact Agentic Base browser artifact candidate', ()
   const pin = JSON.parse(fs.readFileSync('config/agentic-base-data-view.json', 'utf8'));
   assert.equal(pin.schema, 'agentic-base/consumer-artifact/v1');
   assert.equal(pin.source.repository, 'github.com/huijoohwee/agentic-base');
-  assert.equal(pin.source.revision, '37e92e79ba9ad269fc9c9f757512a7784f159508');
+  assert.equal(pin.source.revision, '311af6ba1b45dbf6f18ba8a293964cd3399a160c');
   assert.equal(pin.source.sourceDirty, false);
   assert.equal(pin.contract.browserExport, 'mountDataView');
   assert.equal(pin.contract.defaultLayout, 'table');
@@ -66,6 +66,7 @@ test('Commerce table uses the exact Agentic Base browser artifact candidate', ()
   assert.match(source, /import\('\.\/graph-data-view\.js'\)/);
   assert.match(source, /native\.mountDataView/);
   assert.match(source, /native\.mountSequenceGuide/);
+  assert.match(source, /native\.mountSequenceGuideContent/);
   for (const slot of pin.contract.hostThemeSlots) assert(source.includes(slot), `Missing host mapping for ${slot}`);
 });
 
@@ -76,6 +77,7 @@ test('generated Graph assets match their bounded native manifest and remain self
   assert.equal(pin.browserExport, 'mountDataView');
   assert.equal(pin.cssScope, 'shadow-root');
   assert.equal(pin.hostTokens, 'graph-ui-tokens.css');
+  assert.deepEqual(pin.browserExports, ['mountDataView', 'mountSequenceGuide', 'mountSequenceGuideContent']);
   assert.match(pin.sourceRevision, /^[0-9a-f]{40}$/);
   assert.equal(typeof pin.sourceDirty, 'boolean');
   assert.equal(pin.inputDigest, hash(JSON.stringify(pin.inputs)));
@@ -108,6 +110,7 @@ test('generated Graph assets match their bounded native manifest and remain self
       assert.doesNotMatch(text, /\b(?:fetch|XMLHttpRequest|WebSocket|EventSource)\s*\(/);
       assert.match(text, /mountDataView/);
       assert.match(text, /mountSequenceGuide/);
+      assert.match(text, /mountSequenceGuideContent/);
     }
   }
 });

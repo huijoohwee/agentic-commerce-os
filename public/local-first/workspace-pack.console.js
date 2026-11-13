@@ -3,11 +3,12 @@ import { SCENARIOS, STAGES, CONSOLE_TOOLS, startSimulation, selectStage, applyRe
 
 export function initConsole(bridge) {
   const root = bridge.root ?? document
-  const $ = id => root.getElementById(id)
-  const stages = [...root.querySelectorAll('[data-response-stage]')]
+  const agentRoot = bridge.agentRoot ?? root, consoleRoot = bridge.consoleRoot ?? root
+  const $ = id => root.getElementById(id) ?? consoleRoot.getElementById(id) ?? agentRoot.getElementById(id)
+  const stages = [...consoleRoot.querySelectorAll('[data-response-stage]')]
   const sheet = $('console-sheet'), registrations = new Map()
   let state = null, generation = 0, guide = null, timer = null, events = [], sequence = 0, closed = false
-  let sheetMode = 'tools', sheetTrigger = null
+  let sheetTrigger = null
   const push = message => {
     events.push({ index: ++sequence, message }); events = events.slice(-12)
   }
@@ -68,6 +69,7 @@ export function initConsole(bridge) {
     }))
     $('rehearsal-history').hidden = events.length === 0
     bridge.changed(counts())
+    renderTools()
     if (sheet.open) renderSheet()
   }
   function start(scenario, mode = null) {
@@ -110,8 +112,11 @@ export function initConsole(bridge) {
     if (sheetTrigger?.isConnected && !sheetTrigger.disabled) sheetTrigger.focus()
   }
   function openSheet(mode, trigger) {
+    if (mode === 'tools') {
+      bridge.openPanel('agent-tools', trigger); renderTools(); agentRoot.getElementById('agent-tools-filter').focus({ preventScroll: true }); return
+    }
     if (root.querySelector('dialog[open]')) return
-    sheetMode = mode; sheetTrigger = trigger; $('console-filter').value = ''
+    sheetTrigger = trigger; $('console-filter').value = ''
     renderSheet(); sheet.showModal(); $('console-filter').focus()
   }
   const commands = [
@@ -123,34 +128,40 @@ export function initConsole(bridge) {
     ['review', 'Review current source', 'Open the existing review before conversion.'],
   ]
   function renderSheet() {
-    const filter = $('console-filter').value.trim().toLowerCase(), live = bridge.live(), summary = counts()
-    $('console-sheet-heading').textContent = sheetMode === 'tools' ? 'Console capabilities' : 'Workspace commands'
-    $('console-sheet-summary').textContent = sheetMode === 'tools'
-      ? `${summary.available + Number(live.conversionRegistered)} available now · ${summary.registered + Number(live.conversionRegistered)} registered · ${state?.stage ?? 'no rehearsal'}`
-      : 'Commands use the same visible controls. Recovery decisions remain in the Console.'
-    const rows = sheetMode === 'tools' ? [
+    const filter = $('console-filter').value.trim().toLowerCase()
+    $('console-sheet-summary').textContent = 'Commands use the same visible controls. Recovery decisions remain in the Console.'
+    const matches = commands.filter(([key, title, description]) => `${title} ${description}`.toLowerCase().includes(filter))
+    $('console-sheet-list').replaceChildren(...matches.map(([key, title, description]) => {
+      const item = document.createElement('li'), button = document.createElement('button')
+      button.type = 'button'; button.textContent = title
+      button.addEventListener('click', () => { closeSheet(); action(key, sheetTrigger) })
+      const detail = document.createElement('p'); detail.textContent = description
+      const status = document.createElement('span'); status.className = 'capability-state'; status.textContent = 'Visible action'
+      item.append(button, status, detail)
+      return item
+    }))
+    $('console-sheet-empty').hidden = matches.length !== 0
+  }
+  function renderTools() {
+    const filter = agentRoot.getElementById('agent-tools-filter').value.trim().toLowerCase(), live = bridge.live(), summary = counts()
+    const rows = [
       { name: 'commerce.workspace.program-pack.create', title: 'Create Workspace Program Pack', effect: 'Sends source for conversion',
         description: 'Free conversion with digest verification. Agent calls use the tool directly; the form has its own review.',
         status: live.conversionRegistered ? 'Available · registered' : `Not registered · ${live.browser}` },
       ...CONSOLE_TOOLS.map(tool => ({ ...tool, status: registrations.get(tool.key)?.ready
         ? toolGate(tool.key, state) ?? 'Available · registered' : registrations.get(tool.key)?.status ?? 'Browser WebMCP unavailable' })),
-    ] : commands.map(([key, title, description]) => ({ key, title, description, effect: 'Visible action' }))
-    const matches = rows.filter(row => `${row.title} ${row.name ?? ''} ${row.description}`.toLowerCase().includes(filter))
-    $('console-sheet-list').replaceChildren(...matches.map(row => {
-      const item = document.createElement('li'), title = document.createElement(sheetMode === 'tools' ? 'h3' : 'button')
-      title.textContent = row.title
-      if (sheetMode === 'commands') {
-        title.type = 'button'
-        title.addEventListener('click', () => { closeSheet(); action(row.key, sheetTrigger) })
-      }
-      const detail = document.createElement('p'); detail.textContent = row.description
-      const status = document.createElement('span'); status.className = 'capability-state'; status.textContent = row.status ?? row.effect
-      item.append(title, status, detail)
-      if (row.name) { const code = document.createElement('code'); code.textContent = row.name; item.append(code) }
-      if (sheetMode === 'tools') { const effect = document.createElement('small'); effect.textContent = `Effect: ${row.effect}`; item.append(effect) }
-      return item
+    ]
+    const matches = rows.filter(row => `${row.title} ${row.name} ${row.description}`.toLowerCase().includes(filter))
+    agentRoot.getElementById('agent-tools-list').replaceChildren(...matches.map(row => {
+      const item = document.createElement('li'), title = document.createElement('h3'), detail = document.createElement('p')
+      title.textContent = row.title; detail.textContent = row.description
+      const status = document.createElement('span'); status.className = 'capability-state'; status.textContent = row.status
+      const code = document.createElement('code'); code.textContent = row.name
+      const effect = document.createElement('small'); effect.textContent = `Effect: ${row.effect}`
+      item.append(title, status, detail, code, effect); return item
     }))
-    $('console-sheet-empty').hidden = matches.length !== 0
+    agentRoot.getElementById('agent-tools-empty').hidden = matches.length !== 0
+    agentRoot.getElementById('agent-tools-summary').textContent = `${summary.available + Number(live.conversionRegistered)} available now · ${summary.registered + Number(live.conversionRegistered)} registered · ${state?.stage ?? 'no rehearsal'}`
   }
   function action(name, trigger) {
     if (name === 'tools' || name === 'commands') { openSheet(name, trigger); return }
@@ -235,5 +246,5 @@ export function initConsole(bridge) {
   addEventListener('pagehide', () => { closed = true; setActive(false) }, { once: true })
   setActive(!closed && (bridge.active?.() ?? true))
   render()
-  return { action, setActive, refreshLive: () => { bridge.changed(counts()); if (sheet.open) renderSheet() } }
+  return { action, setActive, refreshLive: () => { bridge.changed(counts()); renderTools(); if (sheet.open) renderSheet() } }
 }
