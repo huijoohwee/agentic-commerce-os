@@ -39,6 +39,56 @@
     },
     {
       "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/listing-entry-management",
+      "laneHead": "42f118e1192733e5bba6869350d08f3c2de47441",
+      "paths": [
+        "public/local-first/app.js",
+        "public/local-first/drafts.js",
+        "public/local-first/index.html",
+        "public/local-first/launch.js",
+        "public/local-first/workspace-capabilities.js",
+        "public/local-first/workspace-graph.js",
+        "public/local-first/workspace.js",
+        "test/local-first/listing-entry-browser.mjs",
+        "test/local-first/listing-entry.test.mjs"
+      ],
+      "disposition": "deployed",
+      "candidateRevision": "acaae50534077ec0890c6597ed2966c0b8257604",
+      "candidateDigest": "c466b38a391d827b312525f01fff62bb7f4c74a866a9192ff87e3be7a0614779",
+      "sourceReleaseReceiptDigest": "5c8a4b7a461f777a3bc8b8cb98631a2e700753543ac8232213b722d379100f4c",
+      "deploymentReceiptDigest": "e26052c1496c4964b07243f349a8bdbced1bec4a93dd51d918e4886574e4ef2d",
+      "runtimeVerificationReceiptDigest": "c93389e3f2553012823b33dc3a5de0b71df17dfa0d29d896b73ffeedd038e60c",
+      "evidencePath": "docs/reports/listing-entry-production-20261114.json",
+      "evidenceDigest": "cb5d9bcdf0cc73d4b525f8399041b5cc596b7cc658d2f69a20543dfe5fad260e",
+      "decisionRef": "https://github.com/huijoohwee/agentic-commerce-os/actions/runs/43469342102",
+      "reason": null
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/listing-runtime-verification",
+      "laneHead": "498e0fbaa39f5a97be368699d122684a27353317",
+      "paths": [
+        "docs/edge-commerce-mvp-handoff.md",
+        "scripts/local-first-release/browser-proof.mjs",
+        "scripts/local-first-release/check.mjs",
+        "test/local-first/browser-proof.test.mjs",
+        "test/local-first/listing-entry-browser.mjs",
+        "test/local-first/listing-entry.test.mjs",
+        "test/local-first/live-browser-proof.test.mjs"
+      ],
+      "disposition": "deployed",
+      "candidateRevision": "acaae50534077ec0890c6597ed2966c0b8257604",
+      "candidateDigest": "c466b38a391d827b312525f01fff62bb7f4c74a866a9192ff87e3be7a0614779",
+      "sourceReleaseReceiptDigest": "525f9b4643b9389f51d35137238955d017de42d7657b129e9fb6a765e82867d6",
+      "deploymentReceiptDigest": "e26052c1496c4964b07243f349a8bdbced1bec4a93dd51d918e4886574e4ef2d",
+      "runtimeVerificationReceiptDigest": "c93389e3f2553012823b33dc3a5de0b71df17dfa0d29d896b73ffeedd038e60c",
+      "evidencePath": "docs/reports/listing-entry-production-20261114.json",
+      "evidenceDigest": "cb5d9bcdf0cc73d4b525f8399041b5cc596b7cc658d2f69a20543dfe5fad260e",
+      "decisionRef": "https://github.com/huijoohwee/agentic-commerce-os/actions/runs/43469342102",
+      "reason": null
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/local-first-storage-economy",
       "laneHead": "4859fe55e703ef27521c4d4e3f930c052533d1ab",
       "paths": [
@@ -93,5 +143,5 @@
       "reason": "The exact follow-up paths docs/prd-tad-adr-mvp-gtm-storage-management-route-preserving-live.md and docs/reports/storage-management-static-route-release-43015411359.json are excluded from the Commerce Worker and static public product artifact; the follow-up changes no runtime input and requires no deployment."
     }
   ],
-  "receiptDigest": "2f9dbbca24683971a39b32be0d60898e7324e4ec0fea56c5f72153ceabd9dbc4"
+  "receiptDigest": "a712835a79410550ce2620c49547fa7a6e5da2a23fdcbe3b7ecc1504f85037b1"
 }
