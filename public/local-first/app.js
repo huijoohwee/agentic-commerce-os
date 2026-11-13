@@ -240,8 +240,10 @@ function activateSetupStep(id, action) {
     case 'reload': void openSavedDraft(selected.id).catch(error => { actionFailed = true; message(error.message, true); renderSetup(); }); break;
   }
 }
-$('#open-setup-guide').addEventListener('click', async () => {
-  if (busy) return;
+let setupGuideOpening = false;
+async function openSetupGuide() {
+  if (busy || setupGuideOpening || location.hash !== '#vendor-editor') return;
+  setupGuideOpening = true;
   const ticket = ++setupGeneration;
   try {
     const { createCommerceSetupGuide } = await import('./workspace-graph.js');
@@ -249,6 +251,11 @@ $('#open-setup-guide').addEventListener('click', async () => {
     setupGuide ??= createCommerceSetupGuide({ launcher: $('#open-setup-guide') });
     await setupGuide.open(setupProjection);
   } catch (error) { if (ticket === setupGeneration) message(error.message || 'Could not open the setup guide.', true); }
+  finally { setupGuideOpening = false; }
+}
+$('#open-setup-guide').addEventListener('click', () => { void openSetupGuide(); });
+document.addEventListener('commerce:panel-state', event => {
+  if (event.detail?.open && event.detail?.view === 'setup-guide') void openSetupGuide();
 });
 window.addEventListener('hashchange', () => {
   if (location.hash !== '#vendor-editor') { setupGeneration++; setupGuide?.close(false); }

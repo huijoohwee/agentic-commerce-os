@@ -18,7 +18,7 @@ export async function checkDashboardEditor(page, url) {
   });
   await page.goto(url + '#admin');
   const button = page.getByRole('button', {name:'Tools and Console'});
-  const panel = page.getByRole('region', {name:'Tools and Console'});
+  const panel = page.getByRole('dialog', {name:'Commerce workspace panels'});
   const start = panel.getByRole('button', {name:'Enter admin edit mode'});
   await button.click(); await start.click();
   await panel.getByLabel('Layout admin key').fill('b'.repeat(64));
