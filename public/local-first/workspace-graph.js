@@ -107,6 +107,9 @@ export function disposeTable(container) {
 }
 async function surface(host, signal, stylesheetUrl) {
   const shadow = host.shadowRoot ?? host.attachShadow({ mode: 'open' }), stylesheet = el('link'), target = el('div');
+  const loading = el('p', 'Loading shared workspace content…', 'muted');
+  loading.setAttribute('role', 'status');
+  target.append(loading);
   stylesheet.rel = 'stylesheet'; stylesheet.href = stylesheetUrl;
   const loaded = new Promise((resolve, reject) => {
     const finish = error => {

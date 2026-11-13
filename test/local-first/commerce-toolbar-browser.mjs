@@ -46,10 +46,26 @@ export async function checkCommerceToolbar(browser, url, width) {
         position: getComputedStyle(root).position,
       }))).toEqual({ popover: false, placement: 'viewport-overlay', position: 'fixed' });
       await expect(options.getByRole('tab', { name: 'Console' })).toBeVisible();
+      if (isPack) {
+        await options.getByRole('tab', { name: 'Console' }).click();
+        const consolePanel = options.getByRole('tabpanel', { name: 'Console' });
+        await expect(consolePanel.getByRole('heading', { name: 'Response rehearsal' })).toBeVisible();
+        await options.getByRole('tab', { name: 'Setup Guide' }).click();
+        const guide = options.getByRole('tabpanel', { name: 'Setup Guide' });
+        await expect(guide.getByRole('heading', { name: 'Program Pack setup' })).toBeVisible();
+        await expect(guide.locator('button[data-step-id]')).toHaveCount(4);
+      }
       await options.getByRole('tab', { name: 'Agent tools' }).click();
-      const agent = page.locator(isPack ? '#console-sheet' : '#workspace-agent-drawer');
+      const agent = options.getByRole('tabpanel', { name: 'Agent tools' });
       await expect(agent).toBeVisible();
-      await expect(page.locator(isPack ? '#console-filter' : '#workspace-tool + button')).toBeFocused();
+      if (isPack) {
+        await expect(agent.locator('#commerce-pack-agent-content')).toBeVisible();
+        await expect(options.getByRole('tab', { name: 'Agent tools' })).toBeFocused();
+        await expect(agent.locator('#agent-tools-filter')).toBeVisible();
+      } else {
+        await expect(agent.locator('#workspace-agent-content')).toBeVisible();
+        await expect(options.getByRole('tab', { name: 'Agent tools' })).toBeFocused();
+      }
       await page.keyboard.press('Escape'); await expect(panels).toBeFocused();
     }
     await link('Housing').click();
