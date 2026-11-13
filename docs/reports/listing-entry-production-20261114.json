@@ -1,0 +1,587 @@
+{
+  "schema": "commerce.listing-entry-production-observation/v1",
+  "observedAt": "2026-11-13T22:43:42.055Z",
+  "continuity": "listing-db-admin@0.9.0",
+  "scope": "Existing browser-local private listing management MVP; full Commerce platform and future shared-database criteria excluded",
+  "producer": "Codex observations of native GitHub/provider receipts and browser verification; not independent evaluator authority",
+  "sourceReleases": [
+    {
+      "repository": "huijoohwee/agentic-commerce-os",
+      "pr": 271,
+      "url": "https://github.com/huijoohwee/agentic-commerce-os/pull/271",
+      "head": "42f118e1192733e5bba6869350d08f3c2de47441",
+      "merge": "76cc38cf12ed965c2c2859f4ba1116677796f019",
+      "mergedAt": "2026-11-13T11:22:26Z",
+      "requiredChecks": [
+        {
+          "name": "Integration Gate",
+          "status": "completed",
+          "conclusion": "success",
+          "id": 131852017397,
+          "detailsUrl": "https://github.com/huijoohwee/agentic-commerce-os/actions/runs/43415437428/job/131852017397"
+        }
+      ],
+      "providerObservationOnly": true,
+      "ref": "agent/device-0232231d4a19/listing-entry-management",
+      "paths": [
+        "public/local-first/app.js",
+        "public/local-first/drafts.js",
+        "public/local-first/index.html",
+        "public/local-first/launch.js",
+        "public/local-first/workspace-capabilities.js",
+        "public/local-first/workspace-graph.js",
+        "public/local-first/workspace.js",
+        "test/local-first/listing-entry-browser.mjs",
+        "test/local-first/listing-entry.test.mjs"
+      ],
+      "sourceReleaseReceiptDigest": "5c8a4b7a461f777a3bc8b8cb98631a2e700753543ac8232213b722d379100f4c"
+    },
+    {
+      "repository": "huijoohwee/agentic-commerce-os",
+      "pr": 273,
+      "url": "https://github.com/huijoohwee/agentic-commerce-os/pull/273",
+      "head": "498e0fbaa39f5a97be368699d122684a27353317",
+      "merge": "acaae50534077ec0890c6597ed2966c0b8257604",
+      "mergedAt": "2026-11-13T15:28:10Z",
+      "requiredChecks": [
+        {
+          "name": "Integration Gate",
+          "status": "completed",
+          "conclusion": "success",
+          "id": 131975321854,
+          "detailsUrl": "https://github.com/huijoohwee/agentic-commerce-os/actions/runs/43451729752/job/131975321854"
+        }
+      ],
+      "providerObservationOnly": true,
+      "ref": "agent/device-0232231d4a19/listing-runtime-verification",
+      "paths": [
+        "docs/edge-commerce-mvp-handoff.md",
+        "scripts/local-first-release/browser-proof.mjs",
+        "scripts/local-first-release/check.mjs",
+        "test/local-first/browser-proof.test.mjs",
+        "test/local-first/listing-entry-browser.mjs",
+        "test/local-first/listing-entry.test.mjs",
+        "test/local-first/live-browser-proof.test.mjs"
+      ],
+      "sourceReleaseReceiptDigest": "525f9b4643b9389f51d35137238955d017de42d7657b129e9fb6a765e82867d6"
+    }
+  ],
+  "development": {
+    "subject": "acaae50534077ec0890c6597ed2966c0b8257604",
+    "artifactDigest": "c466b38a391d827b312525f01fff62bb7f4c74a866a9192ff87e3be7a0614779",
+    "browserProof": {
+      "schema": "commerce.local-first-live-browser-proof/v1",
+      "ok": true,
+      "sourceRevision": "acaae50534077ec0890c6597ed2966c0b8257604",
+      "origin": "http://127.0.0.1:36371",
+      "checkout": "live",
+      "profileDigest": "b809cda2e0c3adff95b3acc9cd6fe3f5797b3b2da05ebdda2c54648ebd36233e",
+      "scope": "local-fixture",
+      "checks": [
+        "private listing create/edit/search/archive/restore, offline reload, strict validation, revision conflict and lossless v4 backup with GET-only transport",
+        "exact candidate, live offer profile and explicit checkout mode",
+        "mobile and desktop education review with explicit price and private recovery controls",
+        "local-fixture: configured sales policy and verified paid download from a simulated payment",
+        "local-fixture: saved-file restore in a fresh browser and invalid recovery refusal",
+        "local-fixture: offline entitlement hiding, uncached receipts and same-origin requests"
+      ],
+      "provider": "local-stripe-contract-fixture",
+      "hostedPaymentSubmitted": false,
+      "liveSessionCreated": false,
+      "customerRevenueVerified": false,
+      "verifiedAt": "2026-11-13T17:07:37.142Z"
+    },
+    "listing": {
+      "source": "local-browser",
+      "sourceRevision": "acaae50534077ec0890c6597ed2966c0b8257604",
+      "base": "http://127.0.0.1:36371/agentic-commerce-os/",
+      "viewports": [
+        1280,
+        360
+      ],
+      "networkWrites": 0,
+      "requestCount": 226,
+      "assertions": "create/edit/reload/validation/CAS/archive/search/restore/offline/backup/import/duplicate-race/storage-denied",
+      "errors": [],
+      "state": {
+        "id": "e927e1dc-9014-4f13-825b-249b68815bd8",
+        "title": "Fictional design studio",
+        "description": "Current tab wins once",
+        "price": "",
+        "launch": null,
+        "workflow": null,
+        "revision": 6,
+        "createdAt": 1794589648305,
+        "updatedAt": 1794589654538,
+        "listing": {
+          "schemaVersion": 1,
+          "status": "draft",
+          "category": "Design services",
+          "country": "SG",
+          "region": "East district",
+          "currency": "SGD",
+          "askingPriceMinor": 8500000,
+          "monthlyRevenueMinor": null,
+          "monthlyProfitMinor": -50000,
+          "monthlyRentMinor": 125000,
+          "establishedYear": 2020,
+          "leaseEndsOn": "2028-03-31",
+          "areaSqFt": 650,
+          "employees": 0,
+          "sourceUrl": "https://example.invalid/business/studio",
+          "asOf": "2026-11-13"
+        }
+      }
+    },
+    "requiredIntegrationRun": 43451729752,
+    "localTests": 261,
+    "priorVerification": [
+      {
+        "stage": "local-first",
+        "exitCode": 0,
+        "profile": "sandbox"
+      },
+      {
+        "stage": "live-fixture",
+        "exitCode": 0,
+        "profile": "live"
+      }
+    ],
+    "scope": "Native credentialless local live-profile fixture; payment is simulated, not a remote Dev deployment"
+  },
+  "production": {
+    "status": {
+      "conclusion": "success",
+      "databaseId": 43469342102,
+      "headSha": "acaae50534077ec0890c6597ed2966c0b8257604",
+      "status": "completed",
+      "updatedAt": "2026-11-13T22:34:59Z",
+      "url": "https://github.com/huijoohwee/agentic-commerce-os/actions/runs/43469342102"
+    },
+    "approval": {
+      "runId": 43469342102,
+      "observedAt": "2026-11-13T22:35:43.048461+00:00",
+      "providerApprovals": [
+        {
+          "state": "approved",
+          "user": "huijoohwee",
+          "environments": [
+            "production"
+          ]
+        }
+      ],
+      "agentSubmittedReview": false
+    },
+    "completion": {
+      "schema": "commerce.local-first-live-completion/v1",
+      "status": "production-complete",
+      "profile": "local-first",
+      "checkout": "live",
+      "sourceRevision": "acaae50534077ec0890c6597ed2966c0b8257604",
+      "artifactDigest": "c466b38a391d827b312525f01fff62bb7f4c74a866a9192ff87e3be7a0614779",
+      "runId": 43469342102,
+      "worker": "agentic-commerce-edge-production",
+      "deployment": {
+        "deploymentId": "c1a68075-cf9b-4099-a801-bc57a298a323",
+        "versionId": "51c2d0b1-e420-49e9-bec9-a08decd6c31d"
+      },
+      "route": {
+        "id": "4faa49c45eee4879b4ae660f50b1a636",
+        "pattern": "airvio.co/agentic-commerce-os*",
+        "script": "agentic-commerce-edge-production",
+        "state": "bound"
+      },
+      "fulfillment": {
+        "config": {
+          "schema": "commerce.fulfillment-release/v1",
+          "pins": {
+            "origin": "https://commerce-executor.airvio.co",
+            "bundleSha256": "8f7734144d8ae426fddf11b81ead8bab4c9284a849e8278504d53c338862dbdd",
+            "imageId": "adbc645ef5a186f4f3466a7d1eb77bd852fcd7eec5e366a277bc439cabe4238c",
+            "sourceRevision": "57418b3807a547de5083cdbd3254a19732f07c97"
+          },
+          "reader": {
+            "sourceRevision": "38662008dae8b3fc20905c7fb09d67036c878611",
+            "versionId": "1c04f403-9cc1-4b45-9dbb-a83e5f3ce7b4",
+            "runId": 34976120904
+          }
+        },
+        "readerVersion": {
+          "versionId": "1c04f403-9cc1-4b45-9dbb-a83e5f3ce7b4",
+          "sourceRevision": "38662008dae8b3fc20905c7fb09d67036c878611",
+          "bindingNames": [
+            "ASSETS",
+            "CF_VERSION_METADATA",
+            "CHECKOUT_MODE",
+            "RELEASE_CANDIDATE_SHA",
+            "STOREFRONT_SESSION_SECRET",
+            "STRIPE_TEST_SECRET_KEY"
+          ],
+          "fulfillmentPins": null
+        },
+        "host": {
+          "ok": true,
+          "contract": "commerce.listing-host/v1",
+          "availability": "device-session",
+          "bundleSha256": "8f7734144d8ae426fddf11b81ead8bab4c9284a849e8278504d53c338862dbdd",
+          "imageId": "adbc645ef5a186f4f3466a7d1eb77bd852fcd7eec5e366a277bc439cabe4238c",
+          "sourceRevision": "57418b3807a547de5083cdbd3254a19732f07c97",
+          "definitionRevision": "listing-5439419095688b5bd4da547f123c6ff3353f4336c630bd7d63d1182bed3181a3",
+          "modelSha256": "9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031"
+        },
+        "verifiedAt": "2026-11-13T22:34:10.902Z"
+      },
+      "livePrerequisites": {
+        "schema": "commerce.live-release-prerequisites/v1",
+        "checkout": "live",
+        "profileDigest": "b809cda2e0c3adff95b3acc9cd6fe3f5797b3b2da05ebdda2c54648ebd36233e",
+        "webhookId": "we_1UN1uuGzH0w0k4VUO6XEixhU",
+        "provisioningDigest": "d68fb8ffee7bdd50b54e9d3978fbfad910f986b358985f68a730a833a6d88d62",
+        "secretSetDigest": "2ff03add7d96b81e5d6f0da47e289b79d7c7d9b94d2658053bd57a949a0dc5ae",
+        "offer": {
+          "accountId": "acct_1TKGGUGzH0w0k4VU",
+          "priceId": "price_1TeXU4GzH0w0k4VUqOmX4aTn",
+          "amountMinor": 800,
+          "currency": "sgd",
+          "livemode": true,
+          "salesCapable": true
+        },
+        "readerProof": {
+          "reader": {
+            "sourceRevision": "acaae50534077ec0890c6597ed2966c0b8257604",
+            "versionId": "b38b3c36-1fac-485e-b1f0-d8f49d4c6f90",
+            "runId": 43468250552,
+            "receiptDigest": "22890f99ecc3150a6827e96d7c0fe706a1cb2feb657e76fdecee87e95f0114d6"
+          },
+          "version": {
+            "versionId": "b38b3c36-1fac-485e-b1f0-d8f49d4c6f90",
+            "sourceRevision": "acaae50534077ec0890c6597ed2966c0b8257604",
+            "bindingNames": [
+              "ASSETS",
+              "CF_VERSION_METADATA",
+              "CHECKOUT_LIVE_PROFILE_SHA256",
+              "CHECKOUT_MODE",
+              "CHECKOUT_RECOVERY_SECRET",
+              "CHECKOUT_SECRET_SET_SHA256",
+              "LISTING_HOST_BEARER",
+              "LISTING_HOST_PINS_JSON",
+              "RELEASE_CANDIDATE_SHA",
+              "STOREFRONT_SESSION_SECRET",
+              "STRIPE_LIVE_SECRET_KEY",
+              "STRIPE_LIVE_WEBHOOK_SECRET",
+              "STRIPE_TEST_SECRET_KEY"
+            ],
+            "fulfillmentPins": {
+              "origin": "https://commerce-executor.airvio.co",
+              "bundleSha256": "8f7734144d8ae426fddf11b81ead8bab4c9284a849e8278504d53c338862dbdd",
+              "imageId": "adbc645ef5a186f4f3466a7d1eb77bd852fcd7eec5e366a277bc439cabe4238c",
+              "sourceRevision": "57418b3807a547de5083cdbd3254a19732f07c97"
+            },
+            "checkout": "live-reader",
+            "profileDigest": "b809cda2e0c3adff95b3acc9cd6fe3f5797b3b2da05ebdda2c54648ebd36233e",
+            "secretSetDigest": "2ff03add7d96b81e5d6f0da47e289b79d7c7d9b94d2658053bd57a949a0dc5ae"
+          },
+          "receiptDigest": "22890f99ecc3150a6827e96d7c0fe706a1cb2feb657e76fdecee87e95f0114d6"
+        },
+        "verifiedAt": "2026-11-13T22:34:12.539Z"
+      },
+      "rollbackProofDigest": null,
+      "completedAt": "2026-11-13T22:34:55.717Z",
+      "browserProofDigest": "c93389e3f2553012823b33dc3a5de0b71df17dfa0d29d896b73ffeedd038e60c",
+      "receiptDigest": "e26052c1496c4964b07243f349a8bdbced1bec4a93dd51d918e4886574e4ef2d"
+    },
+    "completionFileSha256": "8f3d5bd27bbfba447bf4e1b1ebd115de24f98b6668005b1adfe87f7dee806995",
+    "receiptDigestValidation": "SHA-256(JSON.stringify(completion without receiptDigest)) equals completion.receiptDigest",
+    "agentSubmittedReview": false
+  },
+  "runtime": {
+    "readyz": {
+      "ok": true,
+      "readinessScope": "configured-capabilities",
+      "fulfillment": "ready",
+      "profile": "local-first",
+      "checkout": "live",
+      "storage": "browser-only",
+      "paymentStorage": "stripe-live",
+      "paymentProvider": "stripe",
+      "realMoney": true,
+      "sourceRevision": "acaae50534077ec0890c6597ed2966c0b8257604",
+      "workerVersionId": "51c2d0b1-e420-49e9-bec9-a08decd6c31d"
+    },
+    "readyzObservedAt": "2026-11-13T22:43:42.057Z",
+    "browserProof": {
+      "schema": "commerce.local-first-live-browser-proof/v1",
+      "ok": true,
+      "sourceRevision": "acaae50534077ec0890c6597ed2966c0b8257604",
+      "origin": "https://airvio.co",
+      "checkout": "live",
+      "profileDigest": "b809cda2e0c3adff95b3acc9cd6fe3f5797b3b2da05ebdda2c54648ebd36233e",
+      "scope": "live-read-only",
+      "checks": [
+        "private listing create/edit/search/archive/restore, offline reload, strict validation, revision conflict and lossless v4 backup with GET-only transport",
+        "exact candidate, live offer profile and explicit checkout mode",
+        "mobile and desktop education review with explicit price and private recovery controls",
+        "live-read-only: GET-only UI, readiness and checkout; no Session creation or hosted payment"
+      ],
+      "provider": "read-only-live",
+      "hostedPaymentSubmitted": false,
+      "liveSessionCreated": false,
+      "customerRevenueVerified": false,
+      "verifiedAt": "2026-11-13T22:34:50.590Z"
+    },
+    "browserProofDigest": "c93389e3f2553012823b33dc3a5de0b71df17dfa0d29d896b73ffeedd038e60c",
+    "listing": {
+      "source": "delivered-browser",
+      "sourceRevision": "acaae50534077ec0890c6597ed2966c0b8257604",
+      "base": "https://airvio.co/agentic-commerce-os/",
+      "viewports": [
+        1280,
+        360
+      ],
+      "networkWrites": 0,
+      "requestCount": 225,
+      "assertions": "create/edit/reload/validation/CAS/archive/search/restore/offline/backup/import/duplicate-race/storage-denied",
+      "errors": [],
+      "state": {
+        "id": "438a12df-a868-410a-ba43-753bb8dc5e29",
+        "title": "Fictional design studio",
+        "description": "Current tab wins once",
+        "price": "",
+        "launch": null,
+        "workflow": null,
+        "revision": 6,
+        "createdAt": 1794609281899,
+        "updatedAt": 1794609288116,
+        "listing": {
+          "schemaVersion": 1,
+          "status": "draft",
+          "category": "Design services",
+          "country": "SG",
+          "region": "East district",
+          "currency": "SGD",
+          "askingPriceMinor": 8500000,
+          "monthlyRevenueMinor": null,
+          "monthlyProfitMinor": -50000,
+          "monthlyRentMinor": 125000,
+          "establishedYear": 2020,
+          "leaseEndsOn": "2028-03-31",
+          "areaSqFt": 650,
+          "employees": 0,
+          "sourceUrl": "https://example.invalid/business/studio",
+          "asOf": "2026-11-13"
+        }
+      }
+    },
+    "search": {
+      "schema": "listing-search-acceptance-observation/v1",
+      "observedAt": "2026-11-13T22:42:40.605Z",
+      "sourceRevision": "acaae50534077ec0890c6597ed2966c0b8257604",
+      "base": "https://airvio.co/agentic-commerce-os/",
+      "rows": [
+        {
+          "width": 360,
+          "role": "vendor",
+          "categorySearch": true,
+          "locationSearch": true,
+          "nonMatchingSearchExcludes": true,
+          "archivedFilter": true,
+          "activeExcludesArchived": true,
+          "reflow": true
+        },
+        {
+          "width": 360,
+          "role": "admin",
+          "categorySearch": true,
+          "locationSearch": true,
+          "nonMatchingSearchExcludes": true,
+          "archivedFilter": true,
+          "activeExcludesArchived": true,
+          "reflow": true
+        },
+        {
+          "width": 1280,
+          "role": "vendor",
+          "categorySearch": true,
+          "locationSearch": true,
+          "nonMatchingSearchExcludes": true,
+          "archivedFilter": true,
+          "activeExcludesArchived": true,
+          "reflow": true
+        },
+        {
+          "width": 1280,
+          "role": "admin",
+          "categorySearch": true,
+          "locationSearch": true,
+          "nonMatchingSearchExcludes": true,
+          "archivedFilter": true,
+          "activeExcludesArchived": true,
+          "reflow": true
+        }
+      ],
+      "networkWrites": 0,
+      "requestCount": 152,
+      "errors": [],
+      "fixture": "fictional browser-local record; contexts disposed",
+      "producer": "Codex purpose-built Playwright verification; not an independent evaluator"
+    },
+    "transport": "GET-only, same-origin; writes remain private to disposable browser contexts"
+  },
+  "cost": {
+    "providerProof": {
+      "schema": "commerce.cloudflare-free-effect-observation/v1",
+      "observedAt": "2026-11-13T16:49:49.603Z",
+      "observationOnly": true,
+      "grantsDeploymentAuthority": false,
+      "accountMatchesRetainedConfiguration": true,
+      "accountId": "170e89fdb8679ff2fcc2900e25ed04f4",
+      "worker": "agentic-commerce-edge-production",
+      "sourceCandidate": "acaae50534077ec0890c6597ed2966c0b8257604",
+      "plan": {
+        "providerSurface": "authenticated Cloudflare dashboard",
+        "url": "https://dash.cloudflare.com/170e89fdb8679ff2fcc2900e25ed04f4/billing/subscriptions",
+        "name": "Workers Free",
+        "status": "Active"
+      },
+      "usage": {
+        "providerSurface": "authenticated Cloudflare dashboard",
+        "url": "https://dash.cloudflare.com/170e89fdb8679ff2fcc2900e25ed04f4/workers-and-pages",
+        "window": "current UTC calendar day",
+        "utcDay": "2026-11-13",
+        "requestsUsed": 1084,
+        "requestLimit": 100000,
+        "observedRequestHeadroom": 98916,
+        "observabilityEventsUsed": 48,
+        "observabilityEventLimit": 200000,
+        "reservedCapacity": false
+      },
+      "enforcement": {
+        "requestLimitFailOpen": false,
+        "quotaFailure": "Cloudflare error 1027; no automatic paid overage under Workers Free",
+        "documentation": "https://developers.cloudflare.com/workers/platform/limits/"
+      },
+      "effectScope": {
+        "newResources": 0,
+        "r2Binding": false,
+        "d1Binding": false,
+        "cloudflareContainerBinding": false,
+        "existingUnrelatedR2PaidSubscriptionObserved": true,
+        "unrelatedSubscriptionChanged": false,
+        "credentialCreated": false,
+        "deploymentCredentialChanged": false
+      },
+      "active": {
+        "deploymentId": "1614708b-a60e-46d3-9e57-a7c938fe7424",
+        "versionId": "7cb557cb-a4b6-4c06-9de6-121bb9765962"
+      },
+      "route": {
+        "id": "4faa49c45eee4879b4ae660f50b1a636",
+        "pattern": "airvio.co/agentic-commerce-os*",
+        "script": "agentic-commerce-edge-production",
+        "state": "bound"
+      },
+      "version": {
+        "versionId": "7cb557cb-a4b6-4c06-9de6-121bb9765962",
+        "sourceRevision": "cb65b1d6e9715e6fb57b8a63bf9e6181ffa397e1",
+        "bindingNames": [
+          "ASSETS",
+          "CF_VERSION_METADATA",
+          "CHECKOUT_LIVE_PROFILE_SHA256",
+          "CHECKOUT_MODE",
+          "CHECKOUT_RECOVERY_SECRET",
+          "CHECKOUT_SECRET_SET_SHA256",
+          "LISTING_HOST_BEARER",
+          "LISTING_HOST_PINS_JSON",
+          "RELEASE_CANDIDATE_SHA",
+          "STOREFRONT_SESSION_SECRET",
+          "STRIPE_LIVE_SECRET_KEY",
+          "STRIPE_LIVE_WEBHOOK_SECRET",
+          "STRIPE_TEST_SECRET_KEY"
+        ],
+        "fulfillmentPins": {
+          "origin": "https://commerce-executor.airvio.co",
+          "bundleSha256": "8f7734144d8ae426fddf11b81ead8bab4c9284a849e8278504d53c338862dbdd",
+          "imageId": "adbc645ef5a186f4f3466a7d1eb77bd852fcd7eec5e366a277bc439cabe4238c",
+          "sourceRevision": "57418b3807a547de5083cdbd3254a19732f07c97"
+        },
+        "checkout": "live",
+        "profileDigest": "b809cda2e0c3adff95b3acc9cd6fe3f5797b3b2da05ebdda2c54648ebd36233e",
+        "secretSetDigest": "2ff03add7d96b81e5d6f0da47e289b79d7c7d9b94d2658053bd57a949a0dc5ae"
+      },
+      "ready": {
+        "status": 200,
+        "identity": {
+          "ok": true,
+          "readinessScope": "configured-capabilities",
+          "fulfillment": "ready",
+          "profile": "local-first",
+          "checkout": "live",
+          "storage": "browser-only",
+          "paymentStorage": "stripe-live",
+          "paymentProvider": "stripe",
+          "realMoney": true,
+          "sourceRevision": "cb65b1d6e9715e6fb57b8a63bf9e6181ffa397e1",
+          "workerVersionId": "7cb557cb-a4b6-4c06-9de6-121bb9765962"
+        }
+      },
+      "cloudflareWorkersCostPrerequisite": "satisfied for the observed bounded existing-worker release; refresh before effect",
+      "otherProviderAndReleasePrerequisites": "separate"
+    },
+    "refresh": {
+      "observedAt": "2026-11-13T22:35:43.049204+00:00",
+      "providerSurface": "authenticated Cloudflare dashboard",
+      "accountId": "170e89fdb8679ff2fcc2900e25ed04f4",
+      "plan": "Free",
+      "price": "$0",
+      "currentPlan": true,
+      "utcDay": "2026-11-13",
+      "requestsUsed": 1898,
+      "requestLimit": 100000,
+      "observedRequestHeadroom": 98102,
+      "observabilityEventsUsed": 49,
+      "eventLimit": 200000,
+      "credentialCreated": false,
+      "planChanged": false
+    },
+    "scope": "Existing Workers Free profile and deny-at-quota route; no new plan, credential, binding, runner class or paid resource"
+  },
+  "recovery": {
+    "readerRun": 43468250552,
+    "sourceRevision": "acaae50534077ec0890c6597ed2966c0b8257604",
+    "versionId": "b38b3c36-1fac-485e-b1f0-d8f49d4c6f90",
+    "receiptDigest": "22890f99ecc3150a6827e96d7c0fe706a1cb2feb657e76fdecee87e95f0114d6",
+    "rollbackProofDigest": null,
+    "outcome": "Verified reader activated first, then final live candidate promoted. Current live branch records no new actual-job rollback rehearsal; retained reader proof is not represented as such. Recovery secrets retained by native controller.",
+    "availability": "Existing device-session fulfillment host; no always-on guarantee"
+  },
+  "acceptance": {
+    "VCC-LST-01": "Strict schema unit coverage plus native delivered create/edit/invalid-rent UI; all 261 local tests passed for exact verifier candidate",
+    "VCC-LST-02": "Native delivered multi-tab stale-save refusal and exact revision check",
+    "VCC-LST-03": "Native delivered archive/find/restore preserves ID, creation time and facts",
+    "VCC-LST-04": "Focused live vendor/admin category/location/archived filtering at 360 and 1280 px, four passed rows",
+    "VCC-LST-05": "Native delivered offline reload/edit and storage-denied retained text",
+    "VCC-ADM-01": "Candidate unit privacy allowlists and archived launch refusal; delivered private entry remains device-local",
+    "VCC-OPS-01": "Candidate v1/v2/v3 reads; native delivered v4 lossless import and atomic conflict/duplicate race checks",
+    "VCC-PUB-01": "Candidate archived shopper/launch exclusion checks and delivered active-count exclusion"
+  },
+  "metadataArtifactExclusion": {
+    "paths": [
+      ".agentic-os-delivery-dispositions.json",
+      "docs/reports/listing-entry-production-20261114.json"
+    ],
+    "reason": "The exact paths .agentic-os-delivery-dispositions.json and docs/reports/listing-entry-production-20261114.json are excluded from the product artifact: neither is an input to the local-first Worker bundle or public browser asset allowlist. This evidence change requires source integration only; it does not rebuild or redeploy the approved runtime."
+  },
+  "limitations": [
+    "No actual hosted payment, customer revenue, operator acceptance, external participant identity or listing consent was supplied.",
+    "Purpose-built acceptance check needed two harness corrections: required currency was initially omitted, then expected archived label was corrected to the actual label; final four combinations pass. No product defect or runtime change was inferred.",
+    "VCC-DBR-01/02 and VCC-MIG-01 remain explicitly deferred; no relational/shared-write parity.",
+    "Full-platform independent evaluator enrollment, 100-task evidence and lifecycle migration remain under their existing owners.",
+    "Source binding of these observations supplies no independent authority or new deployment grant."
+  ],
+  "nextAction": {
+    "owner": "product operator",
+    "action": "Run one consenting human usability trial, then evaluate the prepared owner/agent and broker pilots",
+    "condition": "Actual participant identity, channel and consented reference supplied; no outbound message or charge is authorized by this report",
+    "check": "Record observed completion time, help, field confusion, explicit acceptance and actual payment separately"
+  }
+}
