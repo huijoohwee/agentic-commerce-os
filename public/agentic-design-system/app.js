@@ -1,4 +1,8 @@
 import { registerWebMcpTools, searchRegistry, validateRegistryContext } from "./registry-query.js?v=c104158";
+import { hydrateDesignIcons, hydratePanelControls } from "./toolbar-icons.js";
+
+hydratePanelControls(document);
+hydrateDesignIcons(document);
 
 const grid = document.querySelector("#catalog-grid");
 const empty = document.querySelector("#catalog-empty");
@@ -262,6 +266,44 @@ window.addEventListener("hashchange", updateSectionSelection);
 const floatingPanelTrigger = document.querySelector("#floating-panel-preview-trigger");
 const floatingPanelPreview = document.querySelector("#panel-preview");
 const floatingPanelClose = floatingPanelPreview?.querySelector("[data-panel-close]");
+const floatingPanelTablist = floatingPanelPreview?.querySelector('[role="tablist"]');
+const floatingPanelTabs = [...(floatingPanelTablist?.querySelectorAll('[role="tab"]') ?? [])];
+
+function selectFloatingPanelTab(key, focus = false) {
+  const selectedTab = floatingPanelTabs.find(tab => tab.dataset.agenticFloatingPanelTabKey === key);
+  if (!selectedTab) throw new Error(`Unknown shared FloatingPanel tab: ${key}`);
+  for (const tab of floatingPanelTabs) {
+    const selected = tab === selectedTab;
+    tab.setAttribute("aria-selected", String(selected));
+    tab.tabIndex = selected ? 0 : -1;
+    const panel = document.getElementById(tab.getAttribute("aria-controls"));
+    if (!panel) throw new Error(`FloatingPanel tab has no panel: ${tab.id}`);
+    panel.hidden = !selected;
+  }
+  if (focus) selectedTab.focus({ preventScroll: true });
+}
+
+const initialFloatingPanelTab = floatingPanelTabs.find(tab => tab.getAttribute("aria-selected") === "true");
+if (initialFloatingPanelTab) selectFloatingPanelTab(initialFloatingPanelTab.dataset.agenticFloatingPanelTabKey);
+
+floatingPanelTablist?.addEventListener("click", event => {
+  const tab = event.target.closest('[role="tab"]');
+  if (tab && floatingPanelTablist.contains(tab)) selectFloatingPanelTab(tab.dataset.agenticFloatingPanelTabKey);
+});
+
+floatingPanelTablist?.addEventListener("keydown", event => {
+  const current = event.target.closest('[role="tab"]');
+  const index = floatingPanelTabs.indexOf(current);
+  if (index < 0) return;
+  let next = index;
+  if (event.key === "ArrowRight") next = (index + 1) % floatingPanelTabs.length;
+  else if (event.key === "ArrowLeft") next = (index - 1 + floatingPanelTabs.length) % floatingPanelTabs.length;
+  else if (event.key === "Home") next = 0;
+  else if (event.key === "End") next = floatingPanelTabs.length - 1;
+  else return;
+  event.preventDefault();
+  selectFloatingPanelTab(floatingPanelTabs[next].dataset.agenticFloatingPanelTabKey, true);
+});
 
 function setFloatingPanelOpen(open) {
   if (!floatingPanelTrigger || !floatingPanelPreview) return;
@@ -336,7 +378,7 @@ loadRegistry().catch(error => {
 });
 
 async function prepareOfflineRegistry() {
-  const registration = await navigator.serviceWorker.register("./sw.js?v=floating-panel-preview-4", {
+  const registration = await navigator.serviceWorker.register("./sw.js?v=floating-panel-preview-5", {
     scope: "./", updateViaCache: "none",
   });
   const worker = registration.installing ?? registration.waiting ?? registration.active;
