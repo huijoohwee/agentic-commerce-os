@@ -1,13 +1,13 @@
 /* Compact toolbar surface, shared by native HTML and component hosts. */
 :root {
   --agentic-toolbar-inset: var(--kg-canvas-viewport-edge-gap, .5rem);
-  --agentic-toolbar-height: var(--kg-toolbar-compact-surface-height, var(--agentic-row-height));
+  --agentic-toolbar-height: var(--agentic-row-height);
   --agentic-toolbar-dock-height: calc(var(--agentic-toolbar-height) + 2 * var(--agentic-toolbar-inset) + env(safe-area-inset-top));
 }
 .agentic-toolbar-dock {
   position: sticky;
   inset-block-start: 0;
-  z-index: calc(var(--agentic-floating-panel-layer, 4) - 1);
+  z-index: var(--agentic-toolbar-overlay-layer);
   display: grid;
   justify-items: center;
   min-inline-size: 0;
@@ -16,6 +16,7 @@
     var(--agentic-toolbar-inset) max(var(--agentic-toolbar-inset), env(safe-area-inset-left));
   pointer-events: none;
 }
+.agentic-toolbar-overlay-layer { z-index: var(--agentic-toolbar-overlay-layer); }
 /* Equal side tracks keep the toolbar centered when one action is hidden. */
 .agentic-toolbar-dock:has(> [data-dock-edge]) {
   grid-template-columns: var(--agentic-control-height) minmax(0, 1fr) var(--agentic-control-height);
@@ -26,10 +27,10 @@
 .agentic-toolbar-dock > [data-dock-edge="start"] { grid-area: 1 / 1; }
 .agentic-toolbar-dock > [data-dock-edge="end"] { grid-area: 1 / 3; }
 .agentic-toolbar, .agentic-toolbar-dock > [data-dock-edge] {
-  background: var(--kg-panel-bg, var(--agentic-base-surface, Canvas));
-  border: 1px solid var(--kg-border, var(--agentic-base-border, ButtonBorder));
-  border-radius: var(--island-radius, .5rem);
-  box-shadow: var(--island-shadow, 0 1px 2px rgb(0 0 0 / .04));
+  background: var(--agentic-panel-background);
+  border: var(--agentic-panel-border);
+  border-radius: var(--agentic-panel-radius);
+  box-shadow: var(--agentic-toolbar-shadow);
   pointer-events: auto;
 }
 .agentic-toolbar {
@@ -91,6 +92,6 @@
 .agentic-toolbar-status { color: var(--kg-text-secondary, GrayText); }
 .agentic-toolbar-item small { text-transform: uppercase; }
 @media (pointer: coarse) {
-  :root { --agentic-toolbar-height: max(var(--kg-toolbar-compact-surface-height, var(--agentic-row-height)), 46px); }
+  :root { --agentic-toolbar-height: max(var(--agentic-row-height), 46px); }
   .agentic-toolbar-item { min-block-size: 44px; min-inline-size: 44px; }
 }

@@ -3,12 +3,12 @@
   "profile": {
     "id": "shared-ui",
     "owner": "github.com/huijoohwee/agentic-design-system",
-    "sourceRevision": "3a1bce56673bdc3256cef861717bf64f846e15eb",
-    "registryRevision": "c14c19df2bf17dd5faf0cf8d93caccb526b656a1",
+    "sourceRevision": "9862a2f89b47be3496c72ed9ca28576c992873f4",
+    "registryRevision": "85ad931bf4cb9808765ed0a20fde56976a0aa7ae",
     "sourcePath": "site/tokens/shared-ui-profile.json",
-    "sourceSha256": "sha256:81ea83f837f417d2e7492821f1c7e466a34cbcc24c50d32304365a2c9219ce7d",
+    "sourceSha256": "sha256:cff7692142b9a744a9f01d0fe91c1b62afaf57b028c901b298b411d5cdb1f098",
     "projectionPath": "site/vendor/shared-ui-profile.css",
-    "projectionSha256": "sha256:9cff9a5969cfdf4f459d0e223868cf0fbc163bbc350e55c92efca43b4b48583c"
+    "projectionSha256": "sha256:5396a794b984c505960807e419f2bfd4504c1006af96533d710d7e433af26063"
   },
   "metrics": {
     "rowHeight": 38,

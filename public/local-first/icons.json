@@ -4,7 +4,7 @@
   "owner": "github.com/huijoohwee/agentic-design-system",
   "source": {"package":"lucide-react","version":"0.562.0","license":"ISC AND MIT","licenseSha256":"3c57143f22dac950efebf84002e360bba5458c7b90fe583b0667aaaef1a7256e"},
   "viewBox": "0 0 24 24",
-  "panelControls": {"search":{"icon":"Search","label":"Search"},"pin":{"icon":"Pin","label":"Pin"},"apply":{"icon":"Check","label":"Apply"},"reset":{"icon":"RotateCcw","label":"Reset"},"minimize":{"icon":"Minimize2","label":"Minimize"},"restore":{"icon":"History","label":"Restore"},"close":{"icon":"X","label":"Close"}},
+  "panelControls": {"search":{"icon":"Search","label":"Search"},"pin":{"icon":"Pin","label":"Pin"},"apply":{"icon":"Check","label":"Apply"},"reset":{"icon":"RotateCcw","label":"Reset"},"minimize":{"icon":"Minimize2","label":"Minimize panel"},"restore":{"icon":"Maximize2","label":"Restore panel"},"close":{"icon":"X","label":"Close"}},
   "icons": {
     "Accessibility": [["circle",{"cx":"16","cy":"4","r":"1"}],["path",{"d":"m18 19 1-7-6 1"}],["path",{"d":"m5 8 3-3 5.5 3-2.36 3.5"}],["path",{"d":"M4.24 14.5a5 5 0 0 0 6.88 6"}],["path",{"d":"M13.76 17.5a5 5 0 0 0-6.88-6"}]],
     "ArrowRightLeft": [["path",{"d":"m16 3 4 4-4 4"}],["path",{"d":"M20 7H4"}],["path",{"d":"m8 21-4-4 4-4"}],["path",{"d":"M4 17h16"}]],

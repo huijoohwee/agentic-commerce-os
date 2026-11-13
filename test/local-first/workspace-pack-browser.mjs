@@ -32,8 +32,18 @@ export async function checkWorkspacePack({ browser, url, output, revision }) {
     await expect(create).toBeEnabled();
     const original = await source.inputValue();
     const launcher = page.getByRole('button', { name: 'Tools and Console' });
-    const consoleToggle = page.locator('#console-toggle');
-    await expect(page.getByRole('complementary', { name: 'Console' })).toBeVisible();
+    const consoleToggle = launcher;
+    const panel = page.getByRole('dialog', { name: 'Console' });
+    const panelTabs = page.getByRole('tablist', { name: 'Workspace panels' });
+    await expect(panel).toBeVisible();
+    await expect(panelTabs.getByRole('tab', { name: 'Agent tools' })).toBeVisible();
+    await expect(panelTabs.getByRole('tab', { name: 'Console' })).toBeVisible();
+    await expect(panelTabs.getByRole('tab', { name: 'Setup Guide' })).toBeVisible();
+    await panelTabs.getByRole('tab', { name: 'Setup Guide' }).click();
+    await expect(page.getByRole('dialog', { name: 'Setup Guide' })).toBeVisible();
+    await expect(page.getByRole('tabpanel', { name: 'Setup Guide' })).toContainText('Program Pack setup');
+    await panelTabs.getByRole('tab', { name: 'Console' }).click();
+    await expect(panel).toBeVisible();
     await expect(consoleToggle).toHaveAttribute('aria-expanded', 'true');
     const dock = await page.locator('#console-panel').boundingBox();
     const workspaceBounds = () => page.locator('#builder, .format-grid, .format-grid > *').evaluateAll(nodes =>
@@ -49,7 +59,7 @@ export async function checkWorkspacePack({ browser, url, output, revision }) {
     const shell = page.locator('#console-panel');
     const shellHeader = shell.locator(':scope > .agentic-base-floating-panel-inner > .agentic-base-floating-panel-header');
     const scrollBody = shell.locator('.agentic-floating-panel-body');
-    await expect(shellHeader.getByRole('button', { name: 'Close Console' })).toBeVisible();
+    await expect(shellHeader.getByRole('button', { name: 'Close', exact: true })).toBeVisible();
     assert(dock.y > 0 && dock.x + dock.width < page.viewportSize().width, 'Console must float inside the viewport');
     const initialHeaderY = (await shellHeader.boundingBox()).y;
     assert(await scrollBody.evaluate(el => { el.scrollTop = el.scrollHeight; return el.scrollTop > 0; }));
