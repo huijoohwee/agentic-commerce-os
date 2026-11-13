@@ -1,3 +1,5 @@
+import { LISTING_FIELDS, isArchived } from './drafts.js';
+import { formatMoney } from './launch.js';
 // Commerce owns record projection and actions; Agentic Base owns the portable table.
 const mounts = new WeakMap();
 const baseCssUrl = new URL('./agentic-base-data-view.css', import.meta.url).href;
@@ -35,9 +37,13 @@ function responsiveOfferView(offers, presentation, width) {
 }
 export function projectOfferDetail(offer, presentation) {
   const labels = ['Offer', 'Merchant', 'Review status', 'Planned price', 'Buyer', 'Outcome', 'Review guidance', 'Saved revision'];
-  return { columns: labels.map((name, i) => ({ id: 'detail-' + i, name })), rows: [{ id: offer.id,
-    cells: [offer.title, offer.launch?.merchantId || 'Store not set', presentation.status(offer), presentation.price(offer),
-      offer.launch?.audience || 'Not set', offer.launch?.outcome || 'Not set', presentation.reason(offer), String(offer.revision)] }] };
+  const cells = [offer.title, offer.launch?.merchantId || 'Store not set', presentation.status(offer), presentation.price(offer),
+    offer.launch?.audience || 'Not set', offer.launch?.outcome || 'Not set', presentation.reason(offer), String(offer.revision)];
+  if (offer.listing) for (const { key, label, type } of LISTING_FIELDS) {
+    const value = offer.listing[key]; labels.push(label + (type === 'money' ? ' · supplied' : ''));
+    cells.push(value === null || value === '' ? 'Not provided' : type === 'money' ? formatMoney(value, offer.listing.currency) : String(value));
+  }
+  return { columns: labels.map((name, i) => ({ id: 'detail-' + i, name })), rows: [{ id: offer.id, cells }] };
 }
 function mountOfferDetail(target, native, offer, presentation) {
   const data = projectOfferDetail(offer, presentation);
@@ -151,7 +157,7 @@ export async function mountCommerceTable(container, offers, presentation, action
       header.append(heading, close);
       const detailHost = el('div', undefined, 'graph-record-fields'), controls = el('div', undefined, 'record-actions');
       applyBaseTheme(detailHost);
-      const edit = el('a', actions.editLabel, 'button secondary'); edit.href = '#vendor-editor';
+      const edit = el('a', isArchived(offer) ? 'Edit or restore listing ↗' : actions.editLabel, 'button secondary'); edit.href = '#vendor-editor';
       edit.addEventListener('click', event => { event.preventDefault(); actions.open(offer); }); controls.append(edit);
       if (actions.inspect) { const inspect = el('button', 'Inspect with tools', 'secondary'); inspect.type = 'button'; inspect.setAttribute('aria-label', 'Inspect ' + offer.title + ' with agent tools'); inspect.addEventListener('click', () => actions.inspect(offer)); controls.append(inspect); }
       details.replaceChildren(header, note, detailHost, controls); details.hidden = false; layout.classList.add('has-selection');

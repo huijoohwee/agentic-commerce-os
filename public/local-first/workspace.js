@@ -1,12 +1,11 @@
 import { createPackRoute, isPackRoute } from './workspace-pack.route.js';
 import { enhanceSelects } from './dropdown-menus.js';
-import { listDrafts, groupProjects } from './drafts.js'; import { getOrCreateSingleton } from './workspace-singleton.js'; import { bindDemoOfferDetails, bindExampleFilters, offerDetailsButton } from './shopper-demo-detail.js';
+import { listDrafts, groupProjects, isArchived } from './drafts.js'; import { getOrCreateSingleton } from './workspace-singleton.js'; import { bindDemoOfferDetails, bindExampleFilters, offerDetailsButton } from './shopper-demo-detail.js';
 import { WORKSPACE_ROLES, bindWorkspaceNavigation, selectWorkspaceDestination, mountWorkspaceShell, mountWorkspaceSidebar } from './workspace-navigation.js?v=workspace-navigation-mobile-51';
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; await getOrCreateSingleton('workspace-application', async () => { mountWorkspaceShell(); const packRoute = createPackRoute(); enhanceSelects();
 const displayLocale = document.documentElement.lang || 'en'; const $ = selector => document.querySelector(selector); const monogram = title => { const words = title.trim().split(/\s+/u); return (words.length > 1 ? words.slice(0, 2).map(word => [...word][0]).join('') : [...words[0]].slice(0, 2).join('')).toUpperCase(); }; const merchantName = id => String(id || '').replace(/[-._]+/gu, ' ').replace(/(^|\s)\p{L}/gu, initial => initial.toUpperCase());
 const checkoutMode = document.querySelector('meta[name="commerce-checkout-mode"]')?.content, shopCheckoutNav = document.querySelector('#shop-navigation-content')?.content.querySelector('#shop-checkout-nav');
-const liveCheckout = ['live', 'live-reader'].includes(checkoutMode);
-if (liveCheckout && shopCheckoutNav) {
+const liveCheckout = ['live', 'live-reader'].includes(checkoutMode); if (liveCheckout && shopCheckoutNav) {
   shopCheckoutNav.textContent = 'Education materials'; shopCheckoutNav.setAttribute('aria-label', 'Education materials'); $('#live-offer-heading').textContent = 'Education materials';
   $('#shop-offer-note').textContent = 'Markdown · Download after payment';
   $('#shop-checkout-badge').textContent = checkoutMode === 'live-reader' ? 'New purchases paused' : 'Live payment';
@@ -17,12 +16,8 @@ if (liveCheckout && shopCheckoutNav) {
 const views = new Set(['shop', 'checkout', 'vendor', 'vendor-editor', 'vendor-preview', 'admin', 'admin-reviews', 'admin-data', 'admin-runtime', 'admin-project', 'admin-tools', 'sme', 'housing']), resolveRoute = hash => { const requested = hash.split('?')[0], view = views.has(requested) ? requested : requested.startsWith('sme-') ? 'sme' : requested.startsWith('housing-') ? 'housing' : 'shop'; return { requested, view, role: view === 'sme' ? 'sme' : view.split('-')[0] }; }, setRolePanels = role => document.querySelectorAll('[data-role-panel]').forEach(panel => { panel.hidden = panel.dataset.rolePanel !== role; }), initialRole = resolveRoute(location.hash.slice(1)).role; document.body.dataset.workspaceRole = initialRole; setRolePanels(initialRole === 'sme' ? '' : initialRole);
 const channel = typeof BroadcastChannel === 'function' ? new BroadcastChannel('commerce-local-drafts') : null;
 let drafts = [], draftsLoaded = false, launch, editor, editorPromise, generation = 0, navigation = 0, shopPage = 0, detailId = null, searchRequested = null, smeRoute = null, housingRoute = null, workspaceSwitchPending = null, draftLoading = true, draftError = '', graphView, tableGeneration = 0;
-const tablePages = { vendor: 0, admin: 0 };
-const node = (tag, text, className) => {
-  const element = document.createElement(tag);
-  if (text !== undefined) element.textContent = text;
-  if (className) element.className = className;
-  return element;
+const tablePages = { vendor: 0, admin: 0 }; const node = (tag, text, className) => {
+  const element = document.createElement(tag); if (text !== undefined) element.textContent = text; if (className) element.className = className; return element;
 };
 function message(error) { $('#status').textContent = error.message || 'Could not open this workspace.'; $('#status').dataset.error = 'true'; }
 async function loadEditor() {
@@ -30,13 +25,12 @@ async function loadEditor() {
   editor = await editorPromise; return editor;
 }
 function stateOf(draft) {
-  return !draft.launch ? 'draft' : launch.evaluateLaunch(draft.launch).constraints.length ? 'revise' : 'reviewable';
+  return isArchived(draft) ? 'archived' : !draft.launch ? 'draft' : launch.evaluateLaunch(draft.launch).constraints.length ? 'revise' : 'reviewable';
 }
-const stateLabel = state => ({ draft: 'Draft', revise: 'Revise costs', reviewable: 'Ready for review' })[state];
+const stateLabel = state => ({ archived: 'Archived', draft: 'Draft', revise: 'Revise costs', reviewable: 'Ready for review' })[state];
 function reviewReason(draft) {
-  if (!draft.launch) return 'Complete merchant, buyer, outcome, price and cost terms.';
-  const result = launch.evaluateLaunch(draft.launch);
-  return 'Estimated contribution ' + launch.formatMoney(result.contributionMinor, result.currency)
+  if (isArchived(draft)) return 'Restore this private listing before launch review.'; if (!draft.launch) return 'Complete merchant, buyer, outcome, price and cost terms.';
+  const result = launch.evaluateLaunch(draft.launch); return 'Estimated contribution ' + launch.formatMoney(result.contributionMinor, result.currency)
     + (result.constraints.length ? ' · Increase price or revise per-sale costs.' : ' · Human review still required.') + ' Demand unvalidated.';
 }
 function renderDraftStatus() {
@@ -62,13 +56,11 @@ function art(draft) {
   visual.append(image); return visual;
 }
 function price(draft) { return draft.launch ? launch.formatMoney(draft.launch.priceMinor, draft.launch.currency) : 'Not set'; }
-function matches(draft, query) { return [draft.title, draft.launch?.merchantId, merchantName(draft.launch?.merchantId), draft.launch?.outcome, draft.launch?.audience].join(' ').toLowerCase().includes(query); }
+function matches(draft, query) { return [draft.title, draft.listing?.category, draft.listing?.country, draft.listing?.region, draft.launch?.merchantId, merchantName(draft.launch?.merchantId), draft.launch?.outcome, draft.launch?.audience].join(' ').toLowerCase().includes(query); }
 function openDetail(dialog, heading) { heading.tabIndex = -1; dialog.showModal(); heading.focus({ preventScroll: true }); }
 function showDetail(draft) { if (draft === 'sandbox') { detailId = null; const dialog = $('#offer-detail'), header = $('#shop-sandbox header'), illustration = $('#shop-sandbox .live-offer-art svg').cloneNode(true), artwork = node('figure', undefined, 'product-art'), heading = node('h2', $('#shop-sandbox header h3').textContent), action = node('a', $('#shop-checkout-action').textContent, 'button'); illustration.setAttribute('class', 'detail-sandbox-art'); artwork.append(illustration); heading.id = 'detail-heading'; action.href = $('#shop-checkout-action').getAttribute('href'); $('#detail-content').replaceChildren(artwork, node('small', 'Airvio · Sandbox'), heading, node('p', header.querySelector('p:not(.footnote)').textContent), node('p', $('#shop-offer-note').textContent, 'muted'), node('p', $('#shop-checkout-price').textContent, 'preview-price'), node('p', `${$('#shop-checkout-badge').textContent} · ${$('#shop-checkout-note').textContent}`, 'muted'), action); dialog.classList.add('detail-split'); openDetail(dialog, heading); return; }
-  const current = drafts.find(item => item.id === draft.id && item.revision === draft.revision);
-  if (!current?.launch) return;
-  $('#offer-detail').classList.add('detail-split'); detailId = current.id;
-  const heading = node('h2', current.title); heading.id = 'detail-heading';
+  const current = drafts.find(item => item.id === draft.id && item.revision === draft.revision); if (!current?.launch) return;
+  $('#offer-detail').classList.add('detail-split'); detailId = current.id; const heading = node('h2', current.title); heading.id = 'detail-heading';
   const body = $('#detail-content');
   body.replaceChildren(art(current), node('small', merchantName(current.launch.merchantId)), heading,
     node('p', current.launch.outcome, 'detail-outcome'), node('p', current.launch.audience, 'detail-audience muted'),
@@ -82,7 +74,7 @@ const exampleFilters = bindExampleFilters($('#shop-demo-filters'), () => { shopP
 function renderShop() {
   if (unavailableDrafts($('#shop-grid'))) { $('#shop-demo-filters').hidden = true; $('#collection').hidden = false; $('#shop-demo-shelf').hidden = true; $('#shop-grid').hidden = false; $('#shop-empty').hidden = true; $('#collection-heading').textContent = 'Your offers'; $('#shop-pagination').hidden = true; $('#shop-count-value').textContent = '?'; $('#shop-count-label').textContent = 'saved offers unknown'; $('#shop-search').hidden = true; $('#shop-navigation [data-workspace-search]').hidden = true; return; }
   const query = $('#shop-query').value.trim().toLowerCase(), store = $('#shop-store').value;
-  const offered = drafts.filter(draft => draft.launch), hasOffers = offered.length > 0; $('#collection').hidden = false; $('#shop-demo-shelf').hidden = hasOffers; $('#shop-demo-filters').hidden = hasOffers; $('#shop-grid').hidden = !hasOffers; $('#collection-heading').textContent = hasOffers ? 'Your offers' : 'Example offers';
+  const offered = drafts.filter(draft => draft.launch && !isArchived(draft)), hasOffers = offered.length > 0; $('#collection').hidden = false; $('#shop-demo-shelf').hidden = hasOffers; $('#shop-demo-filters').hidden = hasOffers; $('#shop-grid').hidden = !hasOffers; $('#collection-heading').textContent = hasOffers ? 'Your offers' : 'Example offers';
   $('#shop-search').hidden = false; $('#shop-navigation [data-workspace-search]').hidden = !hasOffers; $('#shop-store').closest('label').hidden = !hasOffers; $('#shop-sort').closest('label').hidden = !hasOffers; $('#shop-query').placeholder = hasOffers ? 'Search offers or stores' : 'Search example offers';
   const filtered = offered.filter(draft => matches(draft, query) && (!store || draft.launch.merchantId === store));
   if ($('#shop-sort').value === 'name') filtered.sort((a, b) => a.title.localeCompare(b.title) || a.id.localeCompare(b.id));
@@ -110,9 +102,7 @@ function offerLink(draft, text, focus = 'title') {
   }); return link;
 }
 async function openOffer(id, focus = 'title') {
-  const app = await loadEditor();
-  if (!await app.openSavedDraft(id)) return;
-  if (location.hash !== '#vendor-editor') history.pushState(null, '', '#vendor-editor');
+  const app = await loadEditor(); if (!await app.openSavedDraft(id)) return; if (location.hash !== '#vendor-editor') history.pushState(null, '', '#vendor-editor');
   await route();
   const target = document.getElementById(focus) || $('#title');
   if (target.closest('details')) target.closest('details').open = true;
@@ -123,7 +113,7 @@ function renderTable(role) { if (role === 'vendor') { const search = document.qu
   if (unavailableDrafts($('#' + role + '-table'))) { if (role === 'vendor') $('#create-offer').hidden = false; $('#' + role + '-count').textContent = 'Saved offer count unknown'; return; }
   const filters = $('#' + role + '-query').closest('.table-tools'); filters.hidden = drafts.length === 0; if (!drafts.length) { $('#' + role + '-query').value = ''; $('#' + role + '-state').value = ''; }
   const query = $('#' + role + '-query').value.trim().toLowerCase(), state = $('#' + role + '-state').value;
-  const filtered = drafts.filter(draft => matches(draft, query) && (!state || stateOf(draft) === state));
+  const filtered = drafts.filter(draft => matches(draft, query) && (state ? stateOf(draft) === state : !isArchived(draft)));
   if (role === 'vendor') $('#create-offer').hidden = false;
   const pages = Math.max(1, Math.ceil(filtered.length / 10)); tablePages[role] = Math.min(tablePages[role], pages - 1);
   const container = $('#' + role + '-table'); clearNativeTable(container);
@@ -180,10 +170,10 @@ async function refresh() {
   const selectedStore = $('#shop-store').value;
   $('#shop-store').replaceChildren(new Option('All stores', ''), ...[...new Set(drafts.filter(d => d.launch).map(d => d.launch.merchantId))].sort().map(store => new Option(merchantName(store), store)));
   if ([...$('#shop-store').options].some(option => option.value === selectedStore)) $('#shop-store').value = selectedStore;
-  const complete = drafts.filter(draft => draft.launch), reviewable = complete.filter(draft => stateOf(draft) === 'reviewable');
-  $('#vendor-total').textContent = String(drafts.length); $('#vendor-complete').textContent = String(complete.length);
+  const complete = drafts.filter(draft => draft.launch && !isArchived(draft)), reviewable = complete.filter(draft => stateOf(draft) === 'reviewable');
+  $('#vendor-total').textContent = String(drafts.filter(draft => !isArchived(draft)).length); $('#vendor-complete').textContent = String(complete.length);
   $('#admin-stores').textContent = String(new Set(complete.map(d => d.launch.merchantId)).size);
-  $('#admin-reviewable').textContent = String(reviewable.length); $('#admin-attention').textContent = String(drafts.length - reviewable.length);
+  $('#admin-reviewable').textContent = String(reviewable.length); $('#admin-attention').textContent = String(drafts.filter(draft => !isArchived(draft)).length - reviewable.length);
   renderScope();
   renderCurrent();
 }
@@ -410,7 +400,7 @@ let environmentController = null, environmentGeneration = 0, environmentObservat
 const environmentHistory = [];
 let environmentHistoryPage = 0, environmentDetailTrigger;
 function renderScope() {
-  const stores = [...new Set(drafts.filter(draft => draft.launch).map(draft => draft.launch.merchantId))];
+  const stores = [...new Set(drafts.filter(draft => draft.launch && !isArchived(draft)).map(draft => draft.launch.merchantId))];
   const scope = stores.length === 1 ? stores[0] : stores.length ? `${stores.length} stores in local drafts` : 'No saved merchant';
   $('#workspace-scope').textContent = scope + ' · This device';
   $('#environment-scope').textContent = scope;
