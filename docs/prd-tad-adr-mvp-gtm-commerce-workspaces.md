@@ -517,7 +517,8 @@ Graph protected CI is green; Commerce publication/integration and deployment rem
 **CW-D12 / 0.22.0:** F8/CW-A13 passes 220 local tests, full browser checks, typecheck and invocation guards at `daf22bc4`. Device host: 499,993 bytes; Worker: 378.42 KiB. Exact committed-source verification is recorded separately in the release handoff. One validator and Graph design authority remain; native publication's alignment blocker and human/customer acceptance stay separate.
 
 **CW-A14 / CW-D13 / 0.23.0, implemented and locally verified:** share `FloatingPanelShell` and
-`SequenceInspectorView`; native Graph callers and `mountSequenceGuide` consume the same owners.
+`SequenceInspectorView`; native Graph callers, `mountSequenceGuide` and embedded `mountSequenceGuideContent`
+consume the same owners. Commerce owns one shell and hosts the same Graph view as its Setup Guide tab.
 The existing bundle gains an additive export and exact source/hash pin. No second palette or guide
 stylesheet. At Canvas OS `9feb738`, its product embeds Graph and exports design-check transports,
 not shared UI; retain the current dependency direction. A future `agentic-canvas-os/ui` migration
@@ -525,6 +526,8 @@ must move ownership and all consumers together with no Graph application imports
 reserved `SequenceFlow.css` elsewhere; this increment reads its exact source without editing it.
 Clean Graph `bf70fc3f33114bc0a4f971ad44b84d43bf25bb56` generates JS182,924B/CSS57,710B/tokens6,606B; all three match the browser-tested bytes. Table4/guide5/native-sequence39 and native TypeScript pass. The exact CI-selected suite passes15/15; broader native source guards pass20/23, with three failures reproduced unchanged at a9a2e31. Commerce passes all11 browser groups plus Program Pack/durable listing, including guide focus, cleanup, busy/error guards and mobile reflow. Final committed-source receipts remain external to avoid self-referential evidence.
 The accompanying `agentic-os` change validates declared single owners, acyclic thin adapters and exact generated-input/output bindings through existing design-check transports. It is generic source evidence, not automatic appearance/runtime verification or a consumer dependency upgrade.
+
+**CW-A14 shared-panel follow-up / 2026-11-13:** the Console, Agent tools and four-step Setup Guide render as tabs in one Commerce `FloatingPanelShell`. Commerce consumes Design System static assets pinned to `755712e8cc4f9a449328cbfaaf8808487a0e5758`, the shared-ui projection from `3a1bce56673bdc3256cef861717bf64f846e15eb`, Base browser views pinned to clean source `311af6ba1b45dbf6f18ba8a293964cd3399a160c`, and Graph browser views pinned to clean source `9aec4a7c6842c0826224858062daf8328e3ec428`. The generated Graph files are 284,570/97,778/8,563 bytes (JS/CSS/token CSS), each bound by the Commerce manifest. Live local Dev at 1054×951 shows all three tabs, the populated setup steps, no page-width overflow and no browser console errors. This source/pin update does not deploy; a later release must use its own exact candidate and rollback receipts.
 
 ### Existing invocation contract, reference implementation
 

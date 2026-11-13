@@ -63,6 +63,7 @@ export function mountWorkspaceLayout({panel, toolbar, create, roles, packPage}) 
   async function refresh() {
     const ticket=++reads, version=generation
     apply()
+    if (!admin()) { authoring=false; end(); return }
     try{
       const r=await fetch(api,{credentials:'omit',cache:'no-store',redirect:'error',signal:AbortSignal.timeout(4000)})
       if(!r.ok)throw Error();const next=await r.json();if(!isColumnLayout(next))throw Error()
@@ -72,7 +73,7 @@ export function mountWorkspaceLayout({panel, toolbar, create, roles, packPage}) 
     if ((!editToken && !box.querySelector('form')) || !authoring) end()
   }
   // Credentials stay in the open Admin panel only and never enter offline storage.
-  panel.addEventListener('beforetoggle',event=>{if(event.newState==='closed')end();else void refresh()})
+  document.addEventListener('commerce:panel-state',event=>{if(event.detail?.open)void refresh();else end()})
   addEventListener('hashchange',()=>{end();void refresh()});addEventListener('pagehide',end)
   addEventListener('online',refresh);document.addEventListener('visibilitychange',()=>{if(!document.hidden)void refresh()})
   queueMicrotask(refresh)

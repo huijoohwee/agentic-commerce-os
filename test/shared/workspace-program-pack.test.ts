@@ -109,11 +109,19 @@ describe('Workspace Pack HTTP and MCP host', () => {
 describe('Workspace Pack browser tool lifecycle', () => {
   async function browser(registerTool?: (...args: any[]) => unknown, legacy?: object) {
     const nodes = new Map<string, any>(), events = new Map<string, () => void>()
-    const element = (): any => ({ value: '', textContent: '', dataset: {}, children: [], addEventListener() {}, setAttribute() {},
-      append(...items: any[]) { this.children.push(...items); items.forEach(item => { item.remove = () => this.children.splice(this.children.indexOf(item), 1) }) },
+    const element = (): any => ({ value: '', textContent: '', dataset: {}, children: [], childNodes: [],
+      style: { setProperty() {}, removeProperty() {} }, classList: { add() {}, remove() {}, toggle() {} },
+      addEventListener() {}, setAttribute() {}, removeAttribute() {}, focus() {}, scrollIntoView() {},
+      querySelector() { return null }, querySelectorAll() { return [] },
+      append(...items: any[]) { this.children.push(...items); this.childNodes = this.children; items.forEach(item => { item.remove = () => this.children.splice(this.children.indexOf(item), 1) }) },
+      replaceChildren(...items: any[]) { this.children = items; this.childNodes = items },
+      attachShadow() { return this.shadowRoot = element() },
       get firstElementChild() { return this.children[0] } })
+    class FakeHTMLTemplateElement {
+      content = { cloneNode: () => element() }
+    }
     const node = (id: string) => {
-      if (!nodes.has(id)) nodes.set(id, element())
+      if (!nodes.has(id)) nodes.set(id, id.endsWith('-template') ? new FakeHTMLTemplateElement() : element())
       return nodes.get(id)
     }
     const fetcher = vi.fn(async (_url: unknown, options?: any) => {
@@ -123,11 +131,16 @@ describe('Workspace Pack browser tool lifecycle', () => {
     })
     const moduleSource = await fs.readFile('public/local-first/workspace-pack.js', 'utf8')
     // This VM exercises WebMCP registration. Cross-page toolbar and service checks run in the browser.
-    const source = moduleSource.replace(/^import .+ from '.+';$/gm, '').replace('export function mountWorkspacePack', 'function mountWorkspacePack'), enhanceSelects = vi.fn()
+    const source = moduleSource.replace(/^import .+ from '.+';$/gm, '')
+      .replaceAll('import.meta.url', '"http://localhost/services/workspace-pack/workspace-pack.js"')
+      .replace('export function mountWorkspacePack', 'function mountWorkspacePack'), enhanceSelects = vi.fn()
     const pending = runInNewContext(`(async () => {${source}\n})()`, {
       PACK_TOOL, mountCommerceChrome: () => ({ querySelectorAll: () => [], querySelector: () => null }),
+      openCommercePanel() {}, closeCommercePanel() {}, selectToolbarItem() {},
       observePackService: async (_toolbar: unknown, changed: (available: boolean) => void) => changed(true),
-      enhanceSelects, document: { getElementById: node, createElement: element, addEventListener() {}, querySelectorAll: () => [], modelContext: registerTool ? { registerTool } : undefined },
+      HTMLTemplateElement: FakeHTMLTemplateElement, enhanceSelects,
+      document: { getElementById: node, createElement: element, addEventListener() {}, querySelectorAll: () => [],
+        documentElement: element(), modelContext: registerTool ? { registerTool } : undefined },
       matchMedia: () => ({ matches: false }), navigator: { modelContext: legacy }, location: { href: 'http://localhost/services/workspace-pack/' },
       addEventListener: (name: string, action: () => void) => events.set(name, action),
       URL, TextEncoder, crypto: webcrypto, AbortController, AbortSignal, setTimeout, clearTimeout, fetch: fetcher,
@@ -141,7 +154,7 @@ describe('Workspace Pack browser tool lifecycle', () => {
     const page = await browser((value, options) => { tool = value; signal = options.signal; return registered }, legacy)
     expect(page.node('webmcp-status').textContent).not.toContain('registered')
     complete!(); await page.pending
-    expect(page.enhanceSelects).toHaveBeenCalledTimes(1)
+    expect(page.enhanceSelects).toHaveBeenCalledTimes(2)
     expect(legacy.registerTool).not.toHaveBeenCalled()
     expect(page.node('webmcp-status').textContent).toBe('Browser WebMCP tool registered.')
     const output = await tool.execute(input(), {})
