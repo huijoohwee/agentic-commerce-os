@@ -8,8 +8,10 @@ const TERMS_KEYS = [...LAUNCH_ID_FIELDS, ...LAUNCH_DESCRIPTION_FIELDS, 'currency
 const DATABASE = 'agentic-commerce-local-drafts';
 const SCHEMA = 'commerce.local-drafts/v3';
 const LEGACY_KEYS = ['createdAt', 'description', 'id', 'price', 'revision', 'title', 'updatedAt'];
-const V2_KEYS = [...LEGACY_KEYS, 'launch'].sort();
-const KEYS = [...V2_KEYS, 'workflow'].sort();
+const V2_KEYS = /* @__PURE__ */ [...LEGACY_KEYS, 'launch'].sort();
+const KEYS = /* @__PURE__ */ [...V2_KEYS, 'workflow'].sort();
+const V4_KEYS = /* @__PURE__ */ [...KEYS, 'listing'].sort();
+const LISTING_SCHEMA = 'commerce.local-drafts/v4';
 const WORKFLOW_KEYS = 'description,inputRevision,outputDigest,reviewedDigest,runId,status,text,title';
 export function validWorkflow(value) {
   const hash = v => typeof v === 'string' && /^[a-f0-9]{64}$/u.test(v);
@@ -61,11 +63,75 @@ export function launchFieldIssues(value) {
 }
 export function validLaunchTerms(value) { return invalidLaunchFields(value).length === 0; }
 
+// One optional listing contract shared by the existing editor, store and backup reader.
+export const LISTING_FIELDS = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ [
+  ['category', 'text', 120], ['country', 'text', 2], ['region', 'text', 120], ['currency', 'text', 3],
+  ['askingPriceMinor', 'money'], ['monthlyRevenueMinor', 'money'], ['monthlyProfitMinor', 'money'], ['monthlyRentMinor', 'money'],
+  ['establishedYear', 'integer'], ['leaseEndsOn', 'date'], ['areaSqFt', 'number'], ['employees', 'integer'],
+  ['sourceUrl', 'url', 2048], ['asOf', 'date'],
+].map(([key, type, maxLength]) => Object.freeze({ key, type, maxLength })));
+// Presentation metadata is excluded from headless validation bundles.
+export const LISTING_LABELS = /* @__PURE__ */ Object.freeze({ category: 'Category', country: 'Country code', region: 'Region / district',
+  currency: 'Listing currency', askingPriceMinor: 'Asking price', monthlyRevenueMinor: 'Monthly revenue', monthlyProfitMinor: 'Monthly profit / loss',
+  monthlyRentMinor: 'Monthly rent', establishedYear: 'Established year', leaseEndsOn: 'Lease end', areaSqFt: 'Premises area (sq ft)',
+  employees: 'Staff count', sourceUrl: 'Source URL', asOf: 'Facts as of' });
+const listingKeys = () => ['schemaVersion', 'status', ...LISTING_FIELDS.map(field => field.key)].sort().join();
+export function isArchived(draft) { return draft?.listing?.status === 'archived'; }
+export function validCalendarDate(value) {
+  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/u.test(value)
+    && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
+}
+function invalidListingFields(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)
+    || Object.keys(value).sort().join() !== listingKeys() || value.schemaVersion !== 1
+    || !['draft', 'archived'].includes(value.status)) return ['listing'];
+  const issues = [];
+  for (const { key, type, maxLength } of LISTING_FIELDS) {
+    const item = value[key]; let valid;
+    if (type === 'money') valid = item === null || Number.isSafeInteger(item)
+      && item >= (key === 'monthlyProfitMinor' ? -MAXIMUM_AMOUNT_MINOR : key === 'askingPriceMinor' ? 1 : 0) && item <= MAXIMUM_AMOUNT_MINOR;
+    else if (type === 'integer') valid = item === null || Number.isSafeInteger(item) && item >= (key === 'establishedYear' ? 1600 : 0)
+      && item <= (key === 'establishedYear' ? new Date().getUTCFullYear() : 1000000);
+    else if (type === 'number') valid = item === null || typeof item === 'number' && Number.isFinite(item) && item > 0 && item <= 100000000;
+    else if (type === 'date') valid = item === '' || validCalendarDate(item);
+    else valid = typeof item === 'string' && item === item.trim() && item.length <= maxLength;
+    if (key === 'country') valid &&= item === '' || /^[A-Z]{2}$/u.test(item);
+    if (key === 'currency') valid &&= /^[A-Z]{3}$/u.test(item);
+    if (key === 'sourceUrl' && valid && item) {
+      try { const url = new URL(item); valid = ['https:', 'http:'].includes(url.protocol) && !url.username && !url.password; }
+      catch { valid = false; }
+    }
+    if (!valid) issues.push(key);
+  }
+  return issues;
+}
+export function validListing(value) { return invalidListingFields(value).length === 0; }
+export function listingFieldIssues(value) {
+  return invalidListingFields(value).map(field => ({ field, message: field === 'listing' ? 'Use the supported listing fields and version.'
+    : field === 'sourceUrl' ? 'Source URL: use HTTP or HTTPS without credentials.'
+      : ['asOf', 'leaseEndsOn'].includes(field) ? `${LISTING_LABELS[field]}: use a real calendar date.`
+        : field === 'currency' ? 'Listing currency: use a three-letter currency code.'
+          : `${LISTING_LABELS[field]}: use a valid value within the supported limits.` }));
+}
+export function listingSourceKey(draft) {
+  if (!draft.listing?.sourceUrl) return null;
+  const url = new URL(draft.listing.sourceUrl); url.hash = ''; return url.href;
+}
+export function assertUniqueListingSources(drafts) {
+  const seen = new Set();
+  for (const draft of drafts) {
+    const key = listingSourceKey(draft); if (!key) continue;
+    if (seen.has(key)) throw Error('A listing with this source URL already exists. Open or restore that entry.');
+    seen.add(key);
+  }
+}
+
 export function validDraft(value, legacy = false) {
   return value && typeof value === 'object' && !Array.isArray(value)
     && (legacy ? Object.keys(value).sort().join() === LEGACY_KEYS.join()
-      : [V2_KEYS.join(), KEYS.join()].includes(Object.keys(value).sort().join()))
+      : [V2_KEYS.join(), KEYS.join(), V4_KEYS.join()].includes(Object.keys(value).sort().join()))
     && (legacy || value.launch === null || validLaunchTerms(value.launch))
+    && (!Object.hasOwn(value, 'listing') || value.listing === null || validListing(value.listing))
     && (!Object.hasOwn(value, 'workflow') || value.workflow === null || validWorkflow(value.workflow)
       && value.workflow.inputRevision <= value.revision)
     && typeof value.id === 'string' && /^[0-9a-f-]{36}$/.test(value.id)
@@ -80,14 +146,15 @@ export function parseImport(text) {
   if (new TextEncoder().encode(text).length > LIMITS.transferBytes) throw Error('Import exceeds 8 MB.');
   let value;
   try { value = JSON.parse(text); } catch { throw Error('Choose a valid draft JSON export.'); }
-  const legacy = value?.schema === 'commerce.local-drafts/v1', v2 = value?.schema === 'commerce.local-drafts/v2';
-  if (!value || Object.keys(value).sort().join() !== 'drafts,schema' || (!legacy && !v2 && value.schema !== SCHEMA)
+  const legacy = value?.schema === 'commerce.local-drafts/v1', v2 = value?.schema === 'commerce.local-drafts/v2', v4 = value?.schema === LISTING_SCHEMA;
+  if (!value || Object.keys(value).sort().join() !== 'drafts,schema' || (!legacy && !v2 && !v4 && value.schema !== SCHEMA)
     || !Array.isArray(value.drafts) || value.drafts.length > LIMITS.count
     || !value.drafts.every(draft => validDraft(draft, legacy)
-      && Object.keys(draft).sort().join() === (legacy ? LEGACY_KEYS : v2 ? V2_KEYS : KEYS).join())
+      && Object.keys(draft).sort().join() === (legacy ? LEGACY_KEYS : v2 ? V2_KEYS : v4 ? V4_KEYS : KEYS).join())
     || new Set(value.drafts.map(draft => draft.id)).size !== value.drafts.length) {
     throw Error('This file is not a supported draft export. Existing drafts were kept.');
   }
+  assertUniqueListingSources(value.drafts);
   return value.drafts.map(normalizeStored).map(draft => draft.workflow
     ? { ...draft, workflow: { ...draft.workflow, reviewedDigest: null } } : draft);
 }
@@ -128,6 +195,7 @@ export function saveDraft(input, expectedRevision = null, { allowNewWorkflow = f
   if (!input || !['title', 'description', 'price'].every(key => typeof input[key] === 'string')) {
     throw Error('Add a title and keep each field within its limit.');
   }
+  input = structuredClone(input);
   return transaction('readwrite', (store, done, fail) => {
     const id = input.id || crypto.randomUUID(), read = store.get(id);
     read.onsuccess = () => {
@@ -140,20 +208,25 @@ export function saveDraft(input, expectedRevision = null, { allowNewWorkflow = f
       if (input.workflow && !previous?.workflow && allowNewWorkflow !== true) {
         fail(Error('Reconnect to the execution host before preparing a new listing. Your draft was kept.')); return;
       }
-      const count = store.count();
-      count.onsuccess = () => {
-        if (!previous && count.result >= LIMITS.count) { fail(Error('This workspace holds up to 100 drafts. Export a backup to keep your work.')); return; }
+      const records = store.getAll();
+      records.onsuccess = () => {
+        if (!previous && records.result.length >= LIMITS.count) { fail(Error('This workspace holds up to 100 drafts. Export a backup to keep your work.')); return; }
         const now = Date.now();
         const draft = { id, title: input.title.trim(), description: input.description, price: input.price,
           launch: input.launch === undefined ? previous?.launch ?? null : input.launch,
           workflow: input.workflow === undefined ? previous?.workflow ?? null : input.workflow,
           revision: (previous?.revision ?? 0) + 1, createdAt: previous?.createdAt ?? now,
           updatedAt: Math.max(now, previous?.updatedAt ?? 0) };
+        const listing = input.listing === undefined ? previous?.listing : input.listing;
+        if (listing !== undefined) draft.listing = structuredClone(listing);
+        if (previous?.listing && listing === null) { fail(Error('Keep listing facts; archive the entry to retire it.')); return; }
         if (draft.workflow && (draft.title !== draft.workflow.title || draft.description !== draft.workflow.description))
           draft.workflow = { ...draft.workflow, reviewedDigest: null };
         // Keep ordinary drafts readable by retained v2 clients until a job is explicitly prepared.
-        if (draft.workflow === null) delete draft.workflow;
+        if (draft.workflow === null && !Object.hasOwn(draft, 'listing')) delete draft.workflow;
         if (!validDraft(draft)) { fail(Error('Add a title and keep each field within its limit.')); return; }
+        try { assertUniqueListingSources([...records.result.filter(item => item.id !== id), draft]); }
+        catch (error) { fail(error); return; }
         store.put(draft); done(draft);
       };
     };
@@ -175,12 +248,14 @@ export async function importDrafts(text, authorizeWorkflow = null) {
       const additions = [];
       for (const draft of incoming) {
         const previous = existing.get(draft.id);
-        if (previous && KEYS.some(key => JSON.stringify(previous[key]) !== JSON.stringify(draft[key]))) {
+        if (previous && V4_KEYS.some(key => JSON.stringify(previous[key]) !== JSON.stringify(draft[key]))) {
           fail(Error('An imported draft conflicts with a saved draft. Nothing was replaced.')); return;
         }
         if (!previous) additions.push(draft);
       }
       if (existing.size + additions.length > LIMITS.count) { fail(Error('Import would exceed the 100-draft limit. Nothing was changed.')); return; }
+      try { assertUniqueListingSources([...existing.values(), ...additions]); }
+      catch (error) { fail(error); return; }
       additions.forEach(draft => store.add(draft)); done(additions.length);
     };
   });
@@ -195,6 +270,8 @@ function normalizeStored(draft) {
 
 export async function exportDrafts() {
   const drafts = await listDrafts(), workflows = drafts.some(draft => draft.workflow !== null);
+  if (drafts.some(draft => Object.hasOwn(draft, 'listing'))) return JSON.stringify({ schema: LISTING_SCHEMA,
+    drafts: drafts.map(draft => ({ ...draft, workflow: draft.workflow ?? null, listing: draft.listing ?? null })) }, null, 2);
   return JSON.stringify({ schema: workflows ? SCHEMA : 'commerce.local-drafts/v2',
     drafts: workflows ? drafts : drafts.map(({ workflow: _workflow, ...draft }) => draft) }, null, 2);
 }
@@ -202,6 +279,7 @@ export async function exportDrafts() {
 export function groupProjects(drafts) {
   const projects = new Map();
   for (const draft of drafts) {
+    if (isArchived(draft)) continue;
     const id = draft.launch ? 'store:' + draft.launch.merchantId : 'local:unassigned';
     if (!projects.has(id)) projects.set(id, { id, name: draft.launch?.merchantId || 'Personal workspace', offers: [] });
     projects.get(id).offers.push(draft);

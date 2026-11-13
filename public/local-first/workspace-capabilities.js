@@ -1,4 +1,4 @@
-import { groupProjects, validDraft, validLaunchTerms, LAUNCH_ID_FIELDS, LAUNCH_DESCRIPTION_FIELDS,
+import { isArchived, groupProjects, validDraft, validLaunchTerms, LAUNCH_ID_FIELDS, LAUNCH_DESCRIPTION_FIELDS,
   LAUNCH_MONEY_FIELDS, LIMITS as DRAFT_LIMITS, MAXIMUM_AMOUNT_MINOR } from './drafts.js';
 import { evaluateOfferSetup } from './launch.js';
 
@@ -39,7 +39,7 @@ export const WORKSPACE_TOOLS = Object.freeze([
 ]);
 export function workspaceSnapshot(drafts) {
   if (!Array.isArray(drafts) || drafts.length > DRAFT_LIMITS.count || !drafts.every(draft => validDraft(draft))) fail('drafts_invalid');
-  return validateSnapshot({ schema: SNAPSHOT, offers: drafts.map(({ id, title, revision, updatedAt, launch }) => ({ id, title, revision, updatedAt, launch: structuredClone(launch) })) });
+  return validateSnapshot({ schema: SNAPSHOT, offers: drafts.filter(draft => !isArchived(draft)).map(({ id, title, revision, updatedAt, launch }) => ({ id, title, revision, updatedAt, launch: structuredClone(launch) })) });
 }
 function validateSnapshot(value) {
   if (!record(value) || Object.keys(value).sort().join() !== 'offers,schema' || value.schema !== SNAPSHOT
