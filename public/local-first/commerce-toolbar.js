@@ -197,7 +197,8 @@ function attachWorkspacePanel(button) {
     else open(activeView)
   })
   close.addEventListener('click', () => hide(true))
-  popover.addEventListener('keydown', event => {
+  document.addEventListener('keydown', event => {
+    if (!isOpen) return
     if (event.key !== 'Escape' || event.defaultPrevented || event.isComposing) return
     if (event.composedPath().some(node => node instanceof HTMLDialogElement && node.open)) return
     event.preventDefault(); hide(true)

@@ -1,5 +1,5 @@
 import { enhanceSelects } from './dropdown-menus.js';
-import { mountCommerceChrome, observePackService, selectToolbarItem, PACK_TOOL, openCommercePanel, closeCommercePanel } from './commerce-toolbar.js';
+import { mountCommerceChrome, observePackService, selectToolbarItem, PACK_TOOL, openCommercePanel, closeCommercePanel, getCommercePanelView, isCommercePanelOpen } from './commerce-toolbar.js';
 export function mountWorkspacePack({ root, toolbar, service, active, readiness }) {
   enhanceSelects(root);
   const mountPanelContent = (hostId, templateId) => {
@@ -26,6 +26,11 @@ export function mountWorkspacePack({ root, toolbar, service, active, readiness }
   let consoleEventCount = 0, browserRegistered = false, toolCalls = 0, consoleApi = null, consoleLoad = null, consoleIntent = 0
   let extensionStats = { registered: 0, available: 0, stage: 'Idle', events: 0 }
   const modelContext = document.modelContext?.registerTool ? document.modelContext : navigator.modelContext
+  function deepActiveElement() {
+    let active = document.activeElement
+    while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement
+    return active
+  }
   const setupGuideHost = document.getElementById('commerce-panel-setup-guide')
   const setupSteps = Object.freeze([
     Object.freeze({ id: 'prepare', label: 'Prepare your source', detail: 'Paste supported Python or load the local example. Imports and general Python execution are outside this converter.', actionLabel: 'Show source' }),
@@ -118,7 +123,7 @@ export function mountWorkspacePack({ root, toolbar, service, active, readiness }
     try {
       consoleLoad ??= import('./workspace-pack.console.js').then(module => module.initConsole({
         root, agentRoot: agentPanelRoot, consoleRoot, active, context: modelContext, live: liveSnapshot, changed: updateStatus,
-        openPanel: (view = 'console', trigger = document.activeElement) => openCommercePanel(view, { trigger, focus: false }), review: () => $('pack-form').requestSubmit(),
+        openPanel: (view = 'console', trigger = null) => openCommercePanel(view, { trigger, focus: false }), review: () => $('pack-form').requestSubmit(),
         toolObserved: () => { toolCalls++; updateStatus() },
       }))
       consoleApi = await consoleLoad
@@ -133,7 +138,10 @@ export function mountWorkspacePack({ root, toolbar, service, active, readiness }
     if (!active() || !(event.metaKey || event.ctrlKey) || event.altKey || event.repeat || root.querySelector('dialog[open]') || consoleRoot.querySelector('dialog[open]')
       || event.composedPath()[0]?.closest?.('input,textarea,select,[contenteditable=true]')) return
     if (event.key.toLowerCase() === 'k') { event.preventDefault(); consoleAction('commands', root.activeElement ?? document.activeElement) }
-    if (event.key.toLowerCase() === 'j') { event.preventDefault(); setConsoleOpen(true, true, event.target) }
+    if (event.key.toLowerCase() === 'j') {
+      event.preventDefault()
+      setConsoleOpen(!isCommercePanelOpen() || getCommercePanelView() !== 'console', true, event.target)
+    }
   })
   function recordConsole(kind, message) {
     const entry = document.createElement('li'), label = document.createElement('time'), detail = document.createElement('span')
@@ -196,7 +204,7 @@ export function mountWorkspacePack({ root, toolbar, service, active, readiness }
     $('console-form-state').textContent = message
     consoleApi?.refreshLive()
     setupGuideHandle?.update(setupGuideState())
-    consoleRoot.querySelectorAll('[data-stage]').forEach(step => {
+    root.querySelectorAll('[data-stage]').forEach(step => {
       if (step.dataset.stage === stage) step.setAttribute('aria-current', 'step')
       else step.removeAttribute('aria-current')
     })
@@ -260,7 +268,7 @@ export function mountWorkspacePack({ root, toolbar, service, active, readiness }
   $('pack-form').addEventListener('submit', async event => {
     event.preventDefault()
     if (!reviewEnabled || controller) return
-    const trigger = root.activeElement === $('console-review') ? $('console-review') : $('create')
+    const trigger = deepActiveElement() === $('console-review') ? $('console-review') : $('create')
     invalidate()
     const current = generation, source = $('source').value, title = $('title').value
     const bytes = new TextEncoder().encode(source).length
