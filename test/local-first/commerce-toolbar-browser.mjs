@@ -103,7 +103,7 @@ export async function checkCommerceToolbar(browser, url, width) {
     await page.keyboard.press('Escape');
     await expect(panels).toBeFocused();
     await page.goBack();
-    await expect(link('Vendor')).toHaveAttribute('aria-current', 'location');
+    await expect(link('Included files')).toHaveAttribute('aria-current', 'location');
     if (width <= 390) {
       await page.route(pack + 'service.json', route => route.fulfill({ json: {} }));
       await page.reload();
