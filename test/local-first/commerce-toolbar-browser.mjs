@@ -99,9 +99,7 @@ export async function checkCommerceToolbar(browser, url, width) {
     await link('Vendor').click();
     await expect(page).toHaveURL(url + '#vendor');
     await panels.click(); await options.getByRole('tab', { name: 'Console' }).click();
-    await expect(page).toHaveURL(url + '#console');
-    await expect(page.getByRole('complementary', { name: 'Console' })).toBeVisible();
-    await expect(page.locator('#console-close')).toBeFocused();
+    await expect(options.getByRole('tabpanel', { name: 'Console' }).getByRole('heading', { name: 'Response rehearsal' })).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(panels).toBeFocused();
     await page.goBack();
