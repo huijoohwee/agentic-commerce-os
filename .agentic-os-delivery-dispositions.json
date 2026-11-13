@@ -39,6 +39,26 @@
     },
     {
       "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/listing-delivery-evidence",
+      "laneHead": "6153bee75e15db28c5ebbe8f67f9b1589ab4b27a",
+      "paths": [
+        ".agentic-os-delivery-dispositions.json",
+        ".github/workflows/ci.yml",
+        "docs/reports/listing-entry-production-20261114.json"
+      ],
+      "disposition": "no-deploy",
+      "candidateRevision": "e1b98d217d0748cba492373bfa393f3e8c73b373",
+      "candidateDigest": "1056e2d6766d4d91bb1fb0b5de58f1bd3d95b0ed26c617f0630e66c61fdd72a4",
+      "sourceReleaseReceiptDigest": null,
+      "deploymentReceiptDigest": null,
+      "runtimeVerificationReceiptDigest": null,
+      "evidencePath": "docs/reports/listing-entry-production-20261114.json",
+      "evidenceDigest": "cb5d9bcdf0cc73d4b525f8399041b5cc596b7cc658d2f69a20543dfe5fad260e",
+      "decisionRef": "https://github.com/huijoohwee/agentic-commerce-os/pull/274",
+      "reason": "The exact paths .agentic-os-delivery-dispositions.json, .github/workflows/ci.yml and docs/reports/listing-entry-production-20261114.json are excluded from the product artifact. All three are repository workflow/evidence metadata, outside the local-first Worker and public asset inputs. No runtime deployment is required. candidateDigest binds the native governance digest of {sourceRevision, paths, evidenceDigest} for this metadata-only projection."
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/listing-entry-management",
       "laneHead": "42f118e1192733e5bba6869350d08f3c2de47441",
       "paths": [
@@ -143,5 +163,5 @@
       "reason": "The exact follow-up paths docs/prd-tad-adr-mvp-gtm-storage-management-route-preserving-live.md and docs/reports/storage-management-static-route-release-43015411359.json are excluded from the Commerce Worker and static public product artifact; the follow-up changes no runtime input and requires no deployment."
     }
   ],
-  "receiptDigest": "a712835a79410550ce2620c49547fa7a6e5da2a23fdcbe3b7ecc1504f85037b1"
+  "receiptDigest": "8de719b7e77216330e02cde35bb74c3b6e102ab395e7d662e7647c6e7bba1419"
 }
