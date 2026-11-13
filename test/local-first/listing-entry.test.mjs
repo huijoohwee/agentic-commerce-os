@@ -4,6 +4,7 @@ import { LISTING_FIELDS, validListing, listingFieldIssues, validDraft, parseImpo
   assertUniqueListingSources } from '../../public/local-first/drafts.js';
 import { workspaceSnapshot } from '../../public/local-first/workspace-capabilities.js';
 import { reviewLaunch, exportLaunchPack } from '../../public/local-first/launch.js';
+import { checkListingEntry } from './listing-entry-browser.mjs';
 const terms = { merchantId: 'listing-test', agentId: 'listing-agent', audience: 'Local operators', outcome: 'One prepared entry',
   currency: 'SGD', priceMinor: 200, deliveryCostMinor: 0, providerFeeMinor: 0, agentCostMinor: 0, acquisitionCostMinor: 0, fixedCostMinor: 0 };
 
@@ -15,6 +16,16 @@ export const listingDraft = () => ({ id: '12345678-1234-1234-1234-123456789abc',
   description: 'PRIVATE research', price: 'PRIVATE negotiation notes', launch: { ...terms }, workflow: null,
   listing: listing(), revision: 1, createdAt: 1, updatedAt: 1 });
 const encode = drafts => JSON.stringify({ schema: 'commerce.local-drafts/v4', drafts });
+
+test('reusable browser drill rejects unsafe targets and unbound delivered source before browser use', async () => {
+  const browser = { newContext() { assert.fail('Invalid input reached the browser'); } };
+  for (const [url, revision] of [['http://example.invalid/agentic-commerce-os/', 'a'.repeat(40)],
+    ['https://user:secret@example.invalid/agentic-commerce-os/', 'a'.repeat(40)],
+    ['https://example.invalid/agentic-commerce-os/?other=1', 'a'.repeat(40)],
+    ['https://example.invalid/agentic-commerce-os/', 'local-unreleased']]) {
+    await assert.rejects(checkListingEntry({ browser, url, revision, output: '/unused' }));
+  }
+});
 
 test('listing contract distinguishes unknowns, zero and loss and refuses unsafe source/date/value claims', () => {
   const valid = listing(); assert.equal(validListing(valid), true); assert.equal(valid.monthlyRevenueMinor, null);

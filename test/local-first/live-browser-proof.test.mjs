@@ -10,7 +10,7 @@ function fixture(checkout = 'live', scope = 'live-read-only') {
   return {schema:LIVE_BROWSER_PROOF_SCHEMA,ok:true,sourceRevision:revision,profileDigest,checkout,scope,
     hostedPaymentSubmitted:false,liveSessionCreated:false,customerRevenueVerified:false,
     provider:scope === 'local-fixture' ? 'local-stripe-contract-fixture' : 'read-only-live',
-    checks:[LIVE_BROWSER_CHECKS.identity,LIVE_BROWSER_CHECKS.layout,...(scope === 'local-fixture'
+    checks:[BROWSER_CHECKS.listing,LIVE_BROWSER_CHECKS.identity,LIVE_BROWSER_CHECKS.layout,...(scope === 'local-fixture'
       ? [LIVE_BROWSER_CHECKS.fixture,LIVE_BROWSER_CHECKS.recovery,LIVE_BROWSER_CHECKS.safety] : [LIVE_BROWSER_CHECKS.readOnly])]};
 }
 test('live proofs bind exact candidate, profile, mode and independent verification scope', () => {
@@ -35,6 +35,14 @@ test('live proof refuses omitted expectations, partial or substituted groups and
   assert.throws(() => assertLiveBrowserProof(proof,revision),/live browser proof/);
   assert.throws(() => assertLiveBrowserProof(proof,'',expected),/live browser proof/);
   assert.equal(completeLiveBrowserChecks(proof.checks,'unknown'),false);
+});
+test('both live profiles require the private listing drill in local and delivered proofs', () => {
+  for (const checkout of ['live','live-reader']) for (const scope of ['local-fixture','live-read-only']) {
+    const proof = fixture(checkout,scope);
+    assert.throws(() => assertLiveBrowserProof({ ...proof,
+      checks: proof.checks.filter(check => check !== BROWSER_CHECKS.listing) }, revision,
+    { checkout, scope, profileDigest }), /live browser proof/);
+  }
 });
 test('live and sandbox proof schemas cannot satisfy one another', () => {
   const sandbox={schema:BROWSER_PROOF_SCHEMA,ok:true,sourceRevision:revision,checkout:'sandbox',checks:Object.values(BROWSER_CHECKS)};

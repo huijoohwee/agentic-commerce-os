@@ -2,24 +2,36 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { chromium, expect } from '@playwright/test';
 import { chooseDropdown } from './dropdown-menu-browser.mjs';
 
-const base = process.argv.find(arg => arg.startsWith('--base-url='))?.slice(11);
-if (!base || !/^http:\/\/127\.0\.0\.1:\d+\/agentic-commerce-os\/$/u.test(base)) throw Error('Use an explicitly selected local Commerce URL.');
-const output = path.resolve(process.argv.find(arg => arg.startsWith('--output='))?.slice(9) || 'node_modules/.cache/listing-entry-verification');
-fs.mkdirSync(output, { recursive: true });
-const browser = await chromium.launch({ headless: true }), errors = [];
 const records = page => page.evaluate(async () => {
   const source = document.querySelector('script[type=module]').src;
   return (await import(new URL('drafts.js', source).href)).listDrafts();
 });
 const save = page => page.getByRole('button', { name: 'Save on this device', exact: true }).click();
 const open = async (page, title) => { await page.locator('#draft-list button').filter({ hasText: title }).click(); };
-try {
-  const context = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
-  context.on('page', page => page.on('pageerror', error => errors.push(error.message)));
-  const page = await context.newPage(); await page.goto(base + '#vendor-editor');
+export async function checkListingEntry({ browser, url: base, output, revision, observeContext = () => {} }) {
+  const target = new URL(base), errors = [], requests = [], contexts = [];
+  assert.equal(target.pathname, '/agentic-commerce-os/');
+  assert(!target.search && !target.hash && !target.username && !target.password);
+  assert(target.protocol === 'https:' || target.protocol === 'http:' && target.hostname === '127.0.0.1');
+  assert(/^[a-f0-9]{40}$/u.test(revision) || target.hostname === '127.0.0.1' && revision === 'local-unreleased');
+  fs.mkdirSync(output, { recursive: true });
+  const newContext = async options => {
+    const context = await browser.newContext(options); contexts.push(context); observeContext(context);
+    context.on('page', page => page.on('pageerror', error => errors.push(error.message)));
+    context.on('request', request => requests.push({ method: request.method(), url: request.url() }));
+    await context.route('**/*', route => route.request().method() === 'GET'
+      && new URL(route.request().url()).origin === target.origin ? route.continue() : route.abort());
+    return context;
+  };
+  try {
+  const context = await newContext({ viewport: { width: 1280, height: 1000 } });
+  const page = await context.newPage(), response = await page.goto(base + '#vendor-editor');
+  assert.equal(response.status(), 200); assert.equal(response.headers()['x-commerce-source'], revision);
+  assert.equal(response.headers()['x-commerce-profile'], 'local-first');
   await expect(page.locator('#title')).toBeEnabled();
   await page.locator('#title').fill('Fictional design studio');
   await page.locator('#description').fill('Invented acquisition notes for a private operator drill.');
@@ -82,7 +94,7 @@ try {
 
   const backup = await page.evaluate(async () => (await import(new URL('drafts.js', document.querySelector('script[type=module]').src).href)).exportDrafts());
   assert.equal(JSON.parse(backup).schema, 'commerce.local-drafts/v4');
-  const importedContext = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
+  const importedContext = await newContext({ viewport: { width: 1280, height: 1000 } });
   const imported = await importedContext.newPage(); imported.on('pageerror', error => errors.push(error.message)); await imported.goto(base + '#admin-data');
   await expect(imported.locator('#import')).toBeEnabled();
   await imported.locator('#import').setInputFiles({ name: 'listing-backup.json', mimeType: 'application/json', buffer: Buffer.from(backup) });
@@ -106,7 +118,7 @@ try {
   assert.equal(transactions.count, 2); assert.equal(transactions.unchangedImport, 0);
   await importedContext.close();
   console.log('PASS v4 UI import, lossless backup, atomic conflicting import and simultaneous duplicate-source refusal');
-  const deniedContext = await browser.newContext();
+  const deniedContext = await newContext();
   await deniedContext.addInitScript(() => { indexedDB.open = () => { throw Error('Storage denied for verification'); }; });
   const denied = await deniedContext.newPage(); await denied.goto(base + '#vendor-editor');
   await denied.locator('#title').fill('Text retained when storage is denied'); await save(denied);
@@ -114,8 +126,22 @@ try {
   await expect(denied.locator('#title')).toHaveValue('Text retained when storage is denied');
   await deniedContext.close(); console.log('PASS storage-denied save fails visibly and retains editor text');
   assert.deepEqual(errors, []);
-  fs.writeFileSync(path.join(output, 'result.json'), JSON.stringify({ source: 'local-worktree', sourceRevision: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
-    workingTreeClean: !execFileSync('git', ['status', '--porcelain'], { encoding: 'utf8' }).trim(), base, viewports: [1280, 360],
-    assertions: 'create/edit/reload/validation/CAS/archive/search/restore/offline/backup/import/duplicate-race/storage-denied', errors, state: final }, null, 2));
-  await context.close();
-} finally { await browser.close(); }
+  assert(requests.length > 0 && requests.every(request => request.method === 'GET' && new URL(request.url).origin === target.origin));
+  const result = { source: target.hostname === '127.0.0.1' ? 'local-browser' : 'delivered-browser', sourceRevision: revision,
+    base, viewports: [1280, 360], networkWrites: 0, requestCount: requests.length,
+    assertions: 'create/edit/reload/validation/CAS/archive/search/restore/offline/backup/import/duplicate-race/storage-denied', errors, state: final };
+  fs.writeFileSync(path.join(output, 'result.json'), JSON.stringify(result, null, 2));
+  return result;
+  } finally { for (const context of contexts) await context.close(); }
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const base = process.argv.find(arg => arg.startsWith('--base-url='))?.slice(11);
+  if (!base || !/^http:\/\/127\.0\.0\.1:\d+\/agentic-commerce-os\/$/u.test(base)) throw Error('Use an explicitly selected local Commerce URL.');
+  const output = path.resolve(process.argv.find(arg => arg.startsWith('--output='))?.slice(9) || 'node_modules/.cache/listing-entry-verification');
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const result = await checkListingEntry({ browser, url: base, output, revision: process.env.CANDIDATE_SHA || 'local-unreleased' });
+    console.log(JSON.stringify({ sourceRevision: result.sourceRevision, candidateRevision: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim() }));
+  } finally { await browser.close(); }
+}

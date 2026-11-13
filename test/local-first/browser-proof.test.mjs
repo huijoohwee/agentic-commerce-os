@@ -24,6 +24,11 @@ test('release rejects a proof that omits the SME comparison browser check', () =
   assert.throws(() => assertBrowserProof({ ...proof, checks }, revision), /browser proof/);
 });
 
+test('release refuses a complete legacy proof without the listing lifecycle drill', () => {
+  const checks = proof.checks.filter(check => check !== BROWSER_CHECKS.listing);
+  assert.throws(() => assertBrowserProof({ ...proof, checks }, revision), /browser proof/);
+});
+
 test('a complete suite cannot substitute a different source, profile or failed proof', () => {
   for (const changed of [null, {}, { ...proof, ok: false }, { ...proof, sourceRevision: 'b'.repeat(40) },
     { ...proof, checkout: 'enabled' }, { ...proof, schema: 'unrecognized' },
