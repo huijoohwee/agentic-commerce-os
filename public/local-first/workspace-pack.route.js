@@ -39,11 +39,11 @@ export function createPackRoute() {
     const response = await fetch(assets, { credentials: 'omit', redirect: 'error', signal: AbortSignal.timeout(8000) })
     if (!response.ok || !response.headers.get('content-type')?.includes('text/html')) throw Error('pack_view_unavailable')
     const page = new DOMParser().parseFromString(await response.text(), 'text/html')
-    if (!page.getElementById('pack-form') || !page.getElementById('console-panel')) throw Error('pack_view_invalid')
+    if (!page.getElementById('pack-form') || !page.getElementById('console-template') || !page.getElementById('agent-tools-template')) throw Error('pack_view_invalid')
     const content = document.createElement('div')
     content.className = 'pack-content agentic-form-controls'
     // Mount the same authored Pack body used by the standalone host, without a second header or bootstrap.
-    content.append(...page.body.querySelectorAll(':scope > main, :scope > dialog, :scope > div, :scope > section'))
+    content.append(...page.body.querySelectorAll(':scope > main, :scope > dialog, :scope > div, :scope > section, :scope > template'))
     content.querySelector('a[href="./"]')?.setAttribute('href', '#builder')
     const [module] = await Promise.all([import(new URL('workspace-pack.js', assets).href), prepareStyles()])
     root.querySelector('.pack-content')?.remove()
@@ -53,9 +53,6 @@ export function createPackRoute() {
   }
 
   if (isPackRoute()) { main.hidden = footer.hidden = true; status.hidden = false }
-  document.getElementById('console-toggle').addEventListener('click', () => {
-    if (!visible) location.hash = 'console'
-  })
   return {
     async enter(current, leaveRole) {
       pending ??= load().catch(error => { pending = undefined; throw error })

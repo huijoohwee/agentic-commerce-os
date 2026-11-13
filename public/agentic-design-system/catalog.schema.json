@@ -281,7 +281,7 @@
           "const": "icons.json"
         },
         "version": {
-          "const": "1.0.0"
+          "const": "1.3.0"
         },
         "digest": {
           "type": "string",

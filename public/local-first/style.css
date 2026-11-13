@@ -97,7 +97,7 @@ dialog{border:1px solid var(--commerce-border-strong);border-radius:20px;width:m
 /* Native capability runner shares the compact console panels and responsive grid. */
 .workspace-tool-panel label { display:block; margin:16px 0 7px; font-size:var(--agentic-font-size-body); font-weight:600; }
 .workspace-tool-panel input,.workspace-tool-panel :is(select, .agentic-select-trigger),.workspace-tool-panel textarea { width:100%; min-width:0; }
-.agent-drawer .workspace-tool-panel #workspace-tool-description { margin-top:8px; }
+.commerce-agent-tools .workspace-tool-panel #workspace-tool-description { margin-top:8px; }
 .workspace-tool-panel h3 { margin-top:24px; font-size:var(--agentic-font-size-body); }
 .workspace-tool-panel code { display:block; font-size:var(--agentic-font-size-body); line-height:var(--agentic-line-height-body); }
 .workspace-tool-output { margin-top:20px; }
@@ -167,28 +167,19 @@ dialog{border:1px solid var(--commerce-border-strong);border-radius:20px;width:m
 .environment-support details[open]{padding-bottom:20px}
 @media(max-width:1000px){.environment-overview{grid-template-columns:minmax(0,1fr)}#environment-preview>.console-preview{min-height:230px;border-right:0;border-bottom:1px solid var(--commerce-border)}.environment-card-actions>a{white-space:normal}.records-heading{align-items:flex-start;flex-wrap:wrap}.project-records .data-table th{white-space:normal}}
 @media(max-width:680px){.project-selector{width:142px;flex-shrink:0;margin:0 8px 0 0}.project-selector :is(select, .agentic-select-trigger){margin-top:2px}.console-section-toolbar{margin-top:20px;padding-top:18px;flex-wrap:wrap}.console-section-toolbar h2{flex:0 0 auto;white-space:nowrap}.console-section-toolbar .console-query{flex:1 1 170px;min-width:0}.environment-overview .project-facts{grid-template-columns:100px minmax(0,1fr)}#admin .project-facts{grid-template-columns:minmax(0,1fr);gap:2px}#admin .project-facts dt{margin-top:8px}#admin .project-facts dd{margin-bottom:8px}.environment-card-heading{flex-wrap:wrap}.environment-card-actions{padding:12px}.environment-card-actions>a{flex-basis:100%}.records-heading{margin:-18px -18px 0;padding:14px 18px}.records-heading .console-query,.records-heading input{width:100%}.project-records .pagination{margin:0 -18px -18px;padding:12px;flex-wrap:wrap;justify-content:space-between}.environment-support details.panel{padding:8px 18px}}
-/* One lazy native tool runner can be opened beside the current Admin context. */
-body:has(#workspace-agent-drawer[open]){overflow:hidden}
-.agent-drawer{inset:0 0 0 auto;margin:0;width:min(460px,100%);height:100dvh;max-width:100%;max-height:100dvh;border:0;border-left:1px solid var(--commerce-border);border-radius:0;padding:0;background:var(--commerce-canvas);color:var(--commerce-ink);overflow:auto;box-shadow:-8px 0 32px color-mix(in srgb, var(--commerce-ink) 10%, transparent)}
-.agent-drawer::backdrop{background:color-mix(in srgb, var(--commerce-ink) 15%, transparent)}
-.agent-drawer-heading{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:16px;background:var(--commerce-surface);border-bottom:1px solid var(--commerce-border);padding:12px 20px}
-.agent-drawer-heading h2{margin:0;font-size:var(--agentic-font-size-body)}
-.agent-drawer-heading p{font-size:var(--agentic-font-size-body);color:var(--commerce-text-muted);margin:5px 0 0;overflow-wrap:anywhere}
-.agent-drawer-heading>section{min-width:0}
-.agent-drawer-heading button{flex-shrink:0;width:44px;height:44px}
-.agent-drawer-note,#workspace-agent-status{font-size:var(--agentic-font-size-body);line-height:var(--agentic-line-height-body);margin:16px 20px;color:var(--commerce-text-muted)}
+/* Commerce tool content uses the shared FloatingPanel shell and shared panel sections. */
+.commerce-agent-tools h2{margin:0;font-size:var(--agentic-font-size-body)}
+.commerce-agent-tools .environment-grid{display:block}
+.commerce-agent-tools .panel{padding:var(--commerce-space-md);margin-top:var(--commerce-space-sm);min-width:0}
+.commerce-agent-tools .workspace-tool-panel h2{margin:0 0 var(--commerce-space-sm)}
+.commerce-agent-tools .workspace-tool-panel label{font-size:var(--agentic-font-size-body)}
+.commerce-agent-tools .workspace-tool-panel input,.commerce-agent-tools .workspace-tool-panel :is(select, .agentic-select-trigger),.commerce-agent-tools .workspace-tool-panel textarea{font-size:var(--agentic-font-size-body)}
+.commerce-agent-tools .workspace-tool-panel .muted,.commerce-agent-tools .workspace-tool-panel .footnote,.commerce-agent-tools #workspace-tool-status,.commerce-agent-tools #workspace-webmcp-status{font-size:var(--agentic-font-size-body);line-height:var(--agentic-line-height-body)}
+.commerce-agent-tools .workspace-tool-output pre{font-size:var(--agentic-font-size-body);max-height:320px}
 #workspace-agent-status:empty{display:none}
-#workspace-agent-content{padding:0 16px 20px}
-.agent-drawer .environment-grid{display:block}
-.agent-drawer .panel{padding:18px;margin-top:14px;min-width:0}
-.agent-drawer .workspace-tool-panel h2{margin:0 0 12px}
-.agent-drawer .workspace-tool-panel label{font-size:var(--agentic-font-size-body)}
-.agent-drawer .workspace-tool-panel input,.agent-drawer .workspace-tool-panel :is(select, .agentic-select-trigger),.agent-drawer .workspace-tool-panel textarea{font-size:var(--agentic-font-size-body)}
-.agent-drawer .workspace-tool-panel .muted,.agent-drawer .workspace-tool-panel .footnote,.agent-drawer #workspace-tool-status,.agent-drawer #workspace-webmcp-status{font-size:var(--agentic-font-size-body);line-height:var(--agentic-line-height-body)}
-.agent-drawer .workspace-tool-output pre{font-size:var(--agentic-font-size-body);max-height:320px}
+.commerce-agent-tools #workspace-agent-content-body{padding-block-end:var(--commerce-space-md)}
 .record-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .record-actions button{min-height:44px}
-@media(max-width:680px){.agent-drawer{width:100%;border-left:0}.agent-drawer-heading{padding:10px 16px}.agent-drawer-note,#workspace-agent-status{margin:14px 16px}#workspace-agent-content{padding:0 12px 20px}}
 /* Tab-local observations share the existing console table and native dialog. */
 .environment-history-filters{display:flex;align-items:center;gap:10px;min-width:0}
 .environment-history-filters label{margin:0}

@@ -76,10 +76,13 @@
   block-size: var(--agentic-control-height);
   padding: 0;
 }
-.agentic-toolbar-item:hover { background: var(--kg-panel-bg-hover, var(--agentic-base-hover, ButtonFace)); }
+.agentic-toolbar-item:hover { background: var(--agentic-control-hover-background); }
 .agentic-toolbar-item:is([aria-current], [aria-expanded=true], [aria-pressed=true]) {
   color: var(--agentic-control-selected-foreground);
   background: var(--agentic-control-selected-background);
+}
+.agentic-toolbar-item:is([aria-current], [aria-expanded=true], [aria-pressed=true]):hover {
+  background: var(--agentic-control-hover-background);
 }
 .agentic-toolbar-item:focus-visible {
   outline: var(--agentic-control-focus-width) solid var(--kg-accent, Highlight);
