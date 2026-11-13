@@ -364,7 +364,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await page.keyboard.press('Escape'); await context.setOffline(false);
   await page.goto(url + '#admin-project?project=missing'); await launcher.click(); await agentButton.click();
   await expect(page.locator('#workspace-agent-status')).toContainText('project is unavailable');
-  await expect(page.locator('#workspace-agent-content')).toBeEmpty(); await page.keyboard.press('Escape');
+  await expect(page.locator('#workspace-agent-content-body')).toBeEmpty(); await page.keyboard.press('Escape');
   await page.goto(url + '#admin');
   await page.locator('#admin-navigation').getByRole('link', { name: 'Tools & commands', exact: true }).click();
   await chooseDropdown(page.locator('#workspace-tool'), 'commerce.workspace.projects.list');
