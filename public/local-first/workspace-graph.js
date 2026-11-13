@@ -201,7 +201,7 @@ export async function mountCommerceTable(container, offers, presentation, action
 
 /** Commerce owns the shell; Graph owns the embedded sequence guide view and its state contract. */
 export function createCommerceSetupGuide({ launcher }) {
-  let generation = 0, handle, latest, targetPromise, setupTarget, requested = false;
+  let generation = 0, handle, latest, targetPromise, setupTarget, requested = false, mountQueue = Promise.resolve();
   const host = document.getElementById('commerce-panel-setup-guide');
   if (!host) throw new Error('Commerce Setup Guide panel slot is missing.');
   const loadTarget = () => targetPromise ??= surface(host, undefined, graphCssUrl).then(target => { setupTarget = target; return target; })
@@ -228,7 +228,15 @@ export function createCommerceSetupGuide({ launcher }) {
       try {
         const target = await loadTarget();
         if (!requested || generation !== ticket) return;
-        handle = await mountSequenceGuideContent(target, latest);
+        const pending = mountQueue.catch(() => {}).then(async () => {
+          if (!requested || generation !== ticket) return null;
+          const mounted = await mountSequenceGuideContent(target, latest);
+          if (!requested || generation !== ticket) { mounted.destroy(); return null; }
+          return mounted;
+        });
+        mountQueue = pending.then(() => undefined, () => undefined);
+        const mounted = await pending;
+        if (mounted) handle = mounted;
       } catch (error) {
         if (!requested || generation !== ticket) return;
         close(); throw error;
