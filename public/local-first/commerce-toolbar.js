@@ -127,6 +127,7 @@ function attachWorkspacePanel(button) {
   const popover = createElement('div', undefined, 'agentic-base-floating-panel-root commerce-workspace-panel')
   popover.id = 'commerce-workspace-panel'; popover.hidden = true
   popover.dataset.agenticFloatingPanelPlacement = 'viewport-overlay'
+  popover.dataset.agenticFloatingPanelAvoidBottom = 'true'
   const surface = createElement('section', undefined, 'agentic-base-floating-panel')
   surface.setAttribute('role', 'dialog'); surface.setAttribute('aria-modal', 'false')
   surface.setAttribute('aria-label', 'Commerce workspace panels')
