@@ -1,5 +1,5 @@
 // One browser/agent contract. No model, provider, account or network dependency.
-import { validDraft, validLaunchTerms, launchFieldIssues, invalidLaunchFields, LAUNCH_ID_FIELDS,
+import { isArchived, validDraft, validLaunchTerms, launchFieldIssues, invalidLaunchFields, LAUNCH_ID_FIELDS,
   LAUNCH_DESCRIPTION_FIELDS, LAUNCH_VARIABLE_COST_FIELDS, LAUNCH_MONEY_FIELDS as MONEY_FIELDS, LIMITS, MAXIMUM_AMOUNT_MINOR } from './drafts.js';
 export const LAUNCH_CONTINUITY = 'edge-commerce-agent-mvp@0.2.0';
 const TEXT_FIELDS = ['merchantId', 'agentId', 'audience', 'outcome', 'currency'];
@@ -75,6 +75,7 @@ async function digest(value) {
 }
 
 export async function reviewLaunch(draft) {
+  if (isArchived(draft)) throw Error('Restore this listing before reviewing its launch.');
   if (!validDraft(draft)) {
     throw Error('Save this offer before reviewing its launch.');
   }

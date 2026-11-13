@@ -1,5 +1,5 @@
-import { listDrafts, saveDraft, importDrafts, exportDrafts, LIMITS } from './drafts.js';
-import { inspectLaunchInput, parseLaunchInput, evaluateOfferSetup } from './launch.js';
+import { listDrafts, saveDraft, importDrafts, exportDrafts, LIMITS, LISTING_FIELDS, LISTING_LABELS, listingFieldIssues, isArchived } from './drafts.js';
+import { inspectLaunchInput, parseLaunchInput, evaluateOfferSetup, parseMoney } from './launch.js';
 
 const $ = selector => document.querySelector(selector);
 const displayLocale = document.documentElement.lang || 'en';
@@ -44,18 +44,88 @@ function renderAudienceSuggestions(drafts) {
   }));
   audienceSuggestions.hidden = values.length === 0;
 }
+const listingInputs = new Map();
+let listingErrorField;
+for (const field of LISTING_FIELDS) {
+  const label = document.createElement('label'), input = document.createElement('input');
+  label.htmlFor = input.id = 'listing-' + field.key; label.textContent = LISTING_LABELS[field.key];
+  input.type = field.type === 'money' ? 'text' : field.type === 'integer' ? 'number' : field.type === 'text' ? 'text' : field.type;
+  if (field.type === 'money' || field.type === 'number') input.inputMode = 'decimal';
+  if (field.type === 'integer') { input.step = '1'; input.min = field.key === 'establishedYear' ? '1600' : '0'; }
+  if (field.type === 'number') { input.step = 'any'; input.min = '0'; }
+  if (field.maxLength) input.maxLength = field.maxLength;
+  if (field.key === 'currency') { input.required = true; input.placeholder = 'Three-letter code'; }
+  if (field.key === 'country') input.placeholder = 'Two-letter code';
+  const error = document.createElement('small'); error.id = input.id + '-error';
+  input.setAttribute('aria-describedby', error.id); input.autocomplete = 'off';
+  label.append(input, error); $('#listing-inputs').append(label); listingInputs.set(field.key, input);
+}
+function clearListingIssues() {
+  listingErrorField = null;
+  for (const input of listingInputs.values()) { input.removeAttribute('aria-invalid'); $('#' + input.id + '-error').textContent = ''; }
+}
+function listingControls() {
+  $('#listing-inputs').disabled = busy || !$('#listing-enabled').checked;
+  $('#listing-enabled').disabled = busy || Boolean(selected?.listing);
+  $('#archive-listing').hidden = !selected?.listing;
+  $('#archive-listing').disabled = busy;
+  $('#archive-listing').textContent = isArchived(selected) ? 'Restore listing' : 'Archive listing';
+  $('#listing-state').textContent = selected?.listing ? isArchived(selected) ? 'Archived · private on this device' : 'Private listing draft' : '';
+}
+function showListing(draft) {
+  clearListingIssues(); $('#listing-enabled').checked = Boolean(draft?.listing);
+  $('#listing-fields').open = Boolean(draft?.listing);
+  const currency = draft?.listing?.currency;
+  const digits = currency ? new Intl.NumberFormat('en', { style: 'currency', currency }).resolvedOptions().maximumFractionDigits : 2;
+  for (const { key, type } of LISTING_FIELDS) {
+    const value = draft?.listing?.[key];
+    listingInputs.get(key).value = value === null || value === undefined ? '' : type === 'money' ? (value / 10 ** digits).toFixed(digits) : String(value);
+  }
+  listingControls();
+}
+function readListing() {
+  clearListingIssues(); if (!$('#listing-enabled').checked) return undefined;
+  const listing = { schemaVersion: 1, status: selected?.listing?.status ?? 'draft' }, issues = [];
+  for (const { key, type } of LISTING_FIELDS) {
+    const text = listingInputs.get(key).value.trim();
+    if (type === 'money') {
+      try {
+        const negative = key === 'monthlyProfitMinor' && text.startsWith('-');
+        listing[key] = text === '' ? null : parseMoney(negative ? text.slice(1) : text, listingInputs.get('currency').value.trim().toUpperCase()) * (negative ? -1 : 1);
+      } catch (error) { listing[key] = null; issues.push({ field: key, message: error.message }); }
+    } else listing[key] = ['integer', 'number'].includes(type) ? text === '' ? null : Number(text)
+      : ['currency', 'country'].includes(key) ? text.toUpperCase() : text;
+  }
+  issues.push(...listingFieldIssues(listing));
+  for (const issue of issues) {
+    const input = listingInputs.get(issue.field); if (!input) continue;
+    input.setAttribute('aria-invalid', 'true'); $('#' + input.id + '-error').textContent = issue.message;
+  }
+  if (issues.length) {
+    $('#listing-fields').open = true; listingErrorField = issues[0].field;
+    throw Error(issues[0].message);
+  }
+  return listing;
+}
+$('#listing-enabled').addEventListener('change', listingControls);
+$('#archive-listing').addEventListener('click', () => void run(async () => {
+  if (!selected?.listing || dirty) throw Error('Save or reopen your listing before changing its archive state.');
+  const archived = isArchived(selected), saved = await saveDraft({ ...selected,
+    listing: { ...selected.listing, status: archived ? 'draft' : 'archived' } }, selected.revision);
+  show(saved); await refresh(); changed(); message(archived ? 'Listing restored as a private draft.' : 'Listing archived. Its facts are kept; restore it here or find it with the Archived filter.');
+}));
 function changed() { document.dispatchEvent(new Event('commerce:drafts-updated')); }
 function message(text, error = false) { $('#status').textContent = text; $('#status').dataset.error = String(error); }
 function invalidateReview() { reviewed = null; $('#launch-review').hidden = true; $('#approve-launch').checked = false; $('#export-launch').disabled = true; }
 function rawLaunch() { return Object.fromEntries(Object.entries({ ...textFields, ...moneyFields }).map(([key, selector]) => [key, $(selector).value])); }
 function setupState() { return evaluateOfferSetup({ title: $('#title').value, launch: inspectLaunchInput(rawLaunch()).terms }); }
 function renderSetup() {
-  const setup = setupState(), saved = selected && !dirty && !stale && !actionFailed;
+  const setup = setupState(), saved = selected && !isArchived(selected) && !dirty && !stale && !actionFailed;
   const currentReview = saved && reviewed?.draftId === selected.id && reviewed?.revision === selected.revision;
   const acknowledged = Boolean(currentReview && $('#approve-launch').checked);
   const steps = [...setup.steps, { id: 'review', complete: acknowledged }];
   $('#setup-count').textContent = `${steps.filter(step => step.complete).length} of 4 steps complete`;
-  $('#setup-status').textContent = busy ? 'Checking this offer…' : actionFailed ? `The action could not finish. Your editor text is still here. ${$('#status').textContent}`
+  $('#setup-status').textContent = isArchived(selected) ? 'This listing is archived. Restore it before launch review.' : busy ? 'Checking this offer…' : actionFailed ? `The action could not finish. Your editor text is still here. ${$('#status').textContent}`
     : stale ? 'The saved offer changed. Reload its latest version before review.'
     : dirty || !selected ? 'Your current inputs are checked in the setup guide. Save them before review.'
     : acknowledged ? `Revision ${selected.revision} reviewed on this device. You can export its setup.`
@@ -75,7 +145,9 @@ function renderSetup() {
     onClose() { setupGuide?.close(); },
   };
   setupGuide?.update(setupProjection);
-  $('#export-launch').disabled = busy || !acknowledged;
+  $('#export-launch').disabled = busy || !acknowledged || isArchived(selected);
+  $('#review-launch').disabled = busy || isArchived(selected);
+  $('#prepare-listing').disabled = busy || isArchived(selected);
 }
 function edited() { dirty = true; actionFailed = false; $('#save-state').textContent = 'Unsaved changes'; invalidateReview(); renderSetup(); }
 function mayLeave() { return !dirty || window.confirm('Leave these unsaved edits? Your saved drafts will remain.'); }
@@ -92,7 +164,7 @@ function show(draft) {
     for (const [key, selector] of Object.entries(moneyFields)) $(selector).value = (draft.launch[key] / 10 ** digits).toFixed(digits);
     $('#launch-fields').open = true;
   }
-  message(''); renderSetup();
+  showListing(draft); message(''); renderSetup();
 }
 async function refresh() {
   const drafts = await listDrafts();
@@ -106,7 +178,7 @@ async function refresh() {
   for (const draft of drafts) {
     const button = document.createElement('button'), title = document.createElement('span'), time = document.createElement('small');
     button.type = 'button'; button.setAttribute('aria-current', String(draft.id === selected?.id));
-    title.textContent = draft.title; time.textContent = 'Updated ' + new Date(draft.updatedAt).toLocaleDateString(displayLocale, { month: 'short', day: 'numeric', year: 'numeric' });
+    title.textContent = (isArchived(draft) ? 'Archived · ' : '') + draft.title; time.textContent = 'Updated ' + new Date(draft.updatedAt).toLocaleDateString(displayLocale, { month: 'short', day: 'numeric', year: 'numeric' });
     button.append(title, time);
     button.addEventListener('click', () => {
       if (busy || !mayLeave()) return;
@@ -130,7 +202,8 @@ async function run(operation) {
   }
   finally {
     busy = false; for (const element of controls()) element.disabled = false;
-    renderSetup();
+    renderSetup(); listingControls();
+    if (listingErrorField) listingInputs.get(listingErrorField)?.focus();
   }
 }
 $('#draft-form').addEventListener('input', edited);
@@ -138,6 +211,7 @@ $('#draft-form').addEventListener('submit', event => {
   event.preventDefault();
   const input = { id: selected?.id, title: $('#title').value, description: $('#description').value, price: $('#price').value };
   void run(async () => {
+    input.listing = readListing();
     input.launch = parseLaunchInput(rawLaunch());
     const saved = await saveDraft(input, selected?.revision ?? null);
     show(saved); await refresh(); message('Saved privately on this device.'); changed();
@@ -166,6 +240,7 @@ $('#review-launch').addEventListener('click', () => void run(async () => {
 }));
 $('#prepare-listing').addEventListener('click', () => void run(async () => {
   if (!selected || dirty) throw Error('Save this draft before preparing a listing.');
+  if (isArchived(selected)) throw Error('Restore this listing before preparing its workflow.');
   const current = (await listDrafts()).find(draft => draft.id === selected.id);
   if (!current || current.revision !== selected.revision) { stale = true; throw Error('This draft changed. Reopen the saved version first.'); }
   const { openWorkflow } = await import('./workflow.js');
@@ -257,3 +332,4 @@ window.addEventListener('beforeunload', event => { if (dirty) { event.preventDef
 void refresh().catch(error => { actionFailed = true; message(error.message, true); renderSetup(); });
 $('#editor-fields').disabled = false; $('#import').disabled = false; $('#export').disabled = false;
 renderSetup();
+listingControls();
