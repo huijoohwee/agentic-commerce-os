@@ -23,12 +23,12 @@ export async function checkDashboardEditor(page, url) {
   await button.click(); await start.click();
   await panel.getByLabel('Layout admin key').fill('b'.repeat(64));
   await panel.getByRole('button', {name:'Unlock layout editing'}).click();
-  await expect(panel.getByRole('status')).toHaveText('Layout admin key refused.');
+  await expect(panel.getByText('Layout admin key refused.', {exact:true})).toBeVisible();
   await panel.getByLabel('Layout admin key').fill(key);
   await panel.getByRole('button', {name:'Unlock layout editing'}).click();
-  const fields = panel.locator('select'), save = panel.getByRole('button', {name:'Save layout'});
+  const fields = panel.locator('select:not(#workspace-tool)'), save = panel.getByRole('button', {name:'Save layout'});
   await chooseDropdown(fields.nth(0), 'shop'); await chooseDropdown(fields.nth(1), '1');
-  await save.click(); await expect(panel.getByRole('status')).toHaveText('Layout saved.');
+  await save.click(); await expect(panel.getByText('Layout saved.', {exact:true})).toBeVisible();
   expect(saved).toEqual({revision:1, columns:{shop:1}});
   await chooseDropdown(fields.nth(0), 'vendor');
   await expect(fields.nth(1).locator('+ button')).toHaveText('Dashboard default');
@@ -36,7 +36,8 @@ export async function checkDashboardEditor(page, url) {
   await expect(fields.nth(1).locator('+ button')).toHaveText('1');
   await chooseDropdown(fields.nth(1), ''); await save.click();
   await expect.poll(() => saved).toEqual({revision:2, columns:{}});
-  await page.keyboard.press('Escape'); await button.click();
+  await panel.getByRole('button', {name:'Close', exact:true}).click();
+  await expect(panel).toBeHidden(); await button.click();
   await expect(start).toBeVisible(); await expect(save).toHaveCount(0);
   await page.keyboard.press('Escape');
   await page.getByRole('navigation', {name:'Workspace Toolbar'}).getByRole('link', {name:'Shopper', exact:true}).click();
