@@ -567,9 +567,10 @@
   "metadataArtifactExclusion": {
     "paths": [
       ".agentic-os-delivery-dispositions.json",
+      ".github/workflows/ci.yml",
       "docs/reports/listing-entry-production-20261114.json"
     ],
-    "reason": "The exact paths .agentic-os-delivery-dispositions.json and docs/reports/listing-entry-production-20261114.json are excluded from the product artifact: neither is an input to the local-first Worker bundle or public browser asset allowlist. This evidence change requires source integration only; it does not rebuild or redeploy the approved runtime."
+    "reason": "The exact paths .agentic-os-delivery-dispositions.json, .github/workflows/ci.yml and docs/reports/listing-entry-production-20261114.json are excluded from the product artifact. The workflow selects the existing standard Ubuntu 24.04 CI runner; none of these paths is an input to the local-first Worker bundle or public browser assets. The change requires protected source integration and does not rebuild or redeploy the approved runtime."
   },
   "limitations": [
     "No actual hosted payment, customer revenue, operator acceptance, external participant identity or listing consent was supplied.",
@@ -583,5 +584,6 @@
     "action": "Run one consenting human usability trial, then evaluate the prepared owner/agent and broker pilots",
     "condition": "Actual participant identity, channel and consented reference supplied; no outbound message or charge is authorized by this report",
     "check": "Record observed completion time, help, field confusion, explicit acceptance and actual payment separately"
-  }
+  },
+  "ciCloseout": {"previousCandidate":"7314b14b9cf2d78ce81001390a4093346f562cc1","runId":43521688891,"attempts":2,"functionalResult":"All functional checks including 21 browser tests and one Dev paid-loop pass; both attempts fail rootless Podman cleanup with permission denied","observedRetryImage":"ubuntu-26.04 20261111.196.1","upstreamIssue":"https://github.com/actions/runner-images/issues/15182","correction":"Pin the existing Integration workflow to supported standard ubuntu-24.04; preserve rootless isolation, teardown assertions, check set and timeout","validation":"The revised candidate requires its own green Integration Gate; that SHA-bound external receipt is recorded by native source closeout, not predicted in committed bytes"}
 }

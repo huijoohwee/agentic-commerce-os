@@ -59,7 +59,7 @@
       "deploymentReceiptDigest": "e26052c1496c4964b07243f349a8bdbced1bec4a93dd51d918e4886574e4ef2d",
       "runtimeVerificationReceiptDigest": "c93389e3f2553012823b33dc3a5de0b71df17dfa0d29d896b73ffeedd038e60c",
       "evidencePath": "docs/reports/listing-entry-production-20261114.json",
-      "evidenceDigest": "adf468bdca904f83b7afe4d9737dbd330bdcd4f95fa3af75868be0b6a69d4d4f",
+      "evidenceDigest": "cb5d9bcdf0cc73d4b525f8399041b5cc596b7cc658d2f69a20543dfe5fad260e",
       "decisionRef": "https://github.com/huijoohwee/agentic-commerce-os/actions/runs/43469342102",
       "reason": null
     },
@@ -83,7 +83,7 @@
       "deploymentReceiptDigest": "e26052c1496c4964b07243f349a8bdbced1bec4a93dd51d918e4886574e4ef2d",
       "runtimeVerificationReceiptDigest": "c93389e3f2553012823b33dc3a5de0b71df17dfa0d29d896b73ffeedd038e60c",
       "evidencePath": "docs/reports/listing-entry-production-20261114.json",
-      "evidenceDigest": "adf468bdca904f83b7afe4d9737dbd330bdcd4f95fa3af75868be0b6a69d4d4f",
+      "evidenceDigest": "cb5d9bcdf0cc73d4b525f8399041b5cc596b7cc658d2f69a20543dfe5fad260e",
       "decisionRef": "https://github.com/huijoohwee/agentic-commerce-os/actions/runs/43469342102",
       "reason": null
     },
@@ -143,5 +143,5 @@
       "reason": "The exact follow-up paths docs/prd-tad-adr-mvp-gtm-storage-management-route-preserving-live.md and docs/reports/storage-management-static-route-release-43015411359.json are excluded from the Commerce Worker and static public product artifact; the follow-up changes no runtime input and requires no deployment."
     }
   ],
-  "receiptDigest": "a741023a615f4f49d3d325c1169bbdc8fb03389b81a8e5471403abfb5867db8d"
+  "receiptDigest": "a712835a79410550ce2620c49547fa7a6e5da2a23fdcbe3b7ecc1504f85037b1"
 }
