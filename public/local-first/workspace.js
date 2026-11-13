@@ -165,7 +165,7 @@ function renderNativeTable(container, offers, role, label = role === 'vendor' ? 
     await module.mountCommerceTable(view, offers, { status: offer => stateLabel(stateOf(offer)), state: stateOf, price, reason: reviewReason, monogram, merchantName }, {
       label, display: role === 'vendor' ? 'cards' : 'table', editLabel: role === 'admin' ? 'Review offer ↗' : 'Edit offer ↗',
       open: offer => void openOffer(offer.id, stateOf(offer) === 'draft' ? 'merchant-id' : stateOf(offer) === 'revise' ? 'sale-price' : 'title').catch(message),
-      inspect: offer => void openAgentTools({ name: 'commerce.workspace.offer.review', input: { offerId: offer.id, expectedRevision: offer.revision }, label: 'Offer · ' + offer.title + ' · v' + offer.revision }),
+      inspect: (offer, trigger) => void openAgentTools({ name: 'commerce.workspace.offer.review', input: { offerId: offer.id, expectedRevision: offer.revision }, label: 'Offer · ' + offer.title + ' · v' + offer.revision }, trigger),
     });
   }).catch(error => {
     if (ticket !== container.dataset.graphGeneration) return;
@@ -572,8 +572,8 @@ function agentContext() {
   }
   return { name: 'commerce.workspace.projects.list', input: {}, label: 'Workspace · Projects on this device' };
 }
-async function openAgentTools(preset) {
-  pendingAgentPreset = preset; agentTrigger = document.activeElement;
+async function openAgentTools(preset, trigger = document.activeElement) {
+  pendingAgentPreset = preset; agentTrigger = trigger?.isConnected ? trigger : document.activeElement;
   openCommercePanel('agent-tools', { trigger: agentTrigger, focus: false });
   syncAgentPanel();
 }

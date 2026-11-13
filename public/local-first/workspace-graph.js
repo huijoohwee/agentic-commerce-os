@@ -165,7 +165,7 @@ export async function mountCommerceTable(container, offers, presentation, action
       applyBaseTheme(detailHost);
       const edit = el('a', actions.editLabel, 'button secondary'); edit.href = '#vendor-editor';
       edit.addEventListener('click', event => { event.preventDefault(); actions.open(offer); }); controls.append(edit);
-      if (actions.inspect) { const inspect = el('button', 'Inspect with tools', 'secondary'); inspect.type = 'button'; inspect.setAttribute('aria-label', 'Inspect ' + offer.title + ' with agent tools'); inspect.addEventListener('click', () => actions.inspect(offer)); controls.append(inspect); }
+      if (actions.inspect) { const inspect = el('button', 'Inspect with tools', 'secondary'); inspect.type = 'button'; inspect.setAttribute('aria-label', 'Inspect ' + offer.title + ' with agent tools'); inspect.addEventListener('click', () => actions.inspect(offer, inspect)); controls.append(inspect); }
       details.replaceChildren(header, note, detailHost, controls); details.hidden = false; layout.classList.add('has-selection');
       try {
         const adapter = native || await loadBaseAdapter();
