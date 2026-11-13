@@ -8,9 +8,9 @@ const TERMS_KEYS = [...LAUNCH_ID_FIELDS, ...LAUNCH_DESCRIPTION_FIELDS, 'currency
 const DATABASE = 'agentic-commerce-local-drafts';
 const SCHEMA = 'commerce.local-drafts/v3';
 const LEGACY_KEYS = ['createdAt', 'description', 'id', 'price', 'revision', 'title', 'updatedAt'];
-const V2_KEYS = [...LEGACY_KEYS, 'launch'].sort();
-const KEYS = [...V2_KEYS, 'workflow'].sort();
-const V4_KEYS = [...KEYS, 'listing'].sort();
+const V2_KEYS = /* @__PURE__ */ [...LEGACY_KEYS, 'launch'].sort();
+const KEYS = /* @__PURE__ */ [...V2_KEYS, 'workflow'].sort();
+const V4_KEYS = /* @__PURE__ */ [...KEYS, 'listing'].sort();
 const LISTING_SCHEMA = 'commerce.local-drafts/v4';
 const WORKFLOW_KEYS = 'description,inputRevision,outputDigest,reviewedDigest,runId,status,text,title';
 export function validWorkflow(value) {
@@ -64,26 +64,29 @@ export function launchFieldIssues(value) {
 export function validLaunchTerms(value) { return invalidLaunchFields(value).length === 0; }
 
 // One optional listing contract shared by the existing editor, store and backup reader.
-export const LISTING_FIELDS = Object.freeze([
-  ['category', 'Category', 'text', 120], ['country', 'Country code', 'text', 2], ['region', 'Region / district', 'text', 120],
-  ['currency', 'Listing currency', 'text', 3], ['askingPriceMinor', 'Asking price', 'money'],
-  ['monthlyRevenueMinor', 'Monthly revenue', 'money'], ['monthlyProfitMinor', 'Monthly profit / loss', 'money'],
-  ['monthlyRentMinor', 'Monthly rent', 'money'], ['establishedYear', 'Established year', 'integer'],
-  ['leaseEndsOn', 'Lease end', 'date'], ['areaSqFt', 'Premises area (sq ft)', 'number'],
-  ['employees', 'Staff count', 'integer'], ['sourceUrl', 'Source URL', 'url', 2048], ['asOf', 'Facts as of', 'date'],
-].map(([key, label, type, maxLength]) => Object.freeze({ key, label, type, maxLength })));
-const LISTING_KEYS = ['schemaVersion', 'status', ...LISTING_FIELDS.map(field => field.key)].sort().join();
+export const LISTING_FIELDS = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ [
+  ['category', 'text', 120], ['country', 'text', 2], ['region', 'text', 120], ['currency', 'text', 3],
+  ['askingPriceMinor', 'money'], ['monthlyRevenueMinor', 'money'], ['monthlyProfitMinor', 'money'], ['monthlyRentMinor', 'money'],
+  ['establishedYear', 'integer'], ['leaseEndsOn', 'date'], ['areaSqFt', 'number'], ['employees', 'integer'],
+  ['sourceUrl', 'url', 2048], ['asOf', 'date'],
+].map(([key, type, maxLength]) => Object.freeze({ key, type, maxLength })));
+// Presentation metadata is excluded from headless validation bundles.
+export const LISTING_LABELS = /* @__PURE__ */ Object.freeze({ category: 'Category', country: 'Country code', region: 'Region / district',
+  currency: 'Listing currency', askingPriceMinor: 'Asking price', monthlyRevenueMinor: 'Monthly revenue', monthlyProfitMinor: 'Monthly profit / loss',
+  monthlyRentMinor: 'Monthly rent', establishedYear: 'Established year', leaseEndsOn: 'Lease end', areaSqFt: 'Premises area (sq ft)',
+  employees: 'Staff count', sourceUrl: 'Source URL', asOf: 'Facts as of' });
+const listingKeys = () => ['schemaVersion', 'status', ...LISTING_FIELDS.map(field => field.key)].sort().join();
 export function isArchived(draft) { return draft?.listing?.status === 'archived'; }
 export function validCalendarDate(value) {
   return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/u.test(value)
     && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
 }
-export function listingFieldIssues(value) {
+function invalidListingFields(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)
-    || Object.keys(value).sort().join() !== LISTING_KEYS || value.schemaVersion !== 1
-    || !['draft', 'archived'].includes(value.status)) return [{ field: 'listing', message: 'Use the supported listing fields and version.' }];
+    || Object.keys(value).sort().join() !== listingKeys() || value.schemaVersion !== 1
+    || !['draft', 'archived'].includes(value.status)) return ['listing'];
   const issues = [];
-  for (const { key, label, type, maxLength } of LISTING_FIELDS) {
+  for (const { key, type, maxLength } of LISTING_FIELDS) {
     const item = value[key]; let valid;
     if (type === 'money') valid = item === null || Number.isSafeInteger(item)
       && item >= (key === 'monthlyProfitMinor' ? -MAXIMUM_AMOUNT_MINOR : key === 'askingPriceMinor' ? 1 : 0) && item <= MAXIMUM_AMOUNT_MINOR;
@@ -98,14 +101,18 @@ export function listingFieldIssues(value) {
       try { const url = new URL(item); valid = ['https:', 'http:'].includes(url.protocol) && !url.username && !url.password; }
       catch { valid = false; }
     }
-    if (!valid) issues.push({ field: key, message: type === 'date' ? `${label}: use a real calendar date.`
-      : key === 'sourceUrl' ? 'Source URL: use HTTP or HTTPS without credentials.'
-        : key === 'currency' ? 'Listing currency: use a three-letter currency code.'
-          : `${label}: use a valid value within the supported limits.` });
+    if (!valid) issues.push(key);
   }
   return issues;
 }
-export function validListing(value) { return listingFieldIssues(value).length === 0; }
+export function validListing(value) { return invalidListingFields(value).length === 0; }
+export function listingFieldIssues(value) {
+  return invalidListingFields(value).map(field => ({ field, message: field === 'listing' ? 'Use the supported listing fields and version.'
+    : field === 'sourceUrl' ? 'Source URL: use HTTP or HTTPS without credentials.'
+      : ['asOf', 'leaseEndsOn'].includes(field) ? `${LISTING_LABELS[field]}: use a real calendar date.`
+        : field === 'currency' ? 'Listing currency: use a three-letter currency code.'
+          : `${LISTING_LABELS[field]}: use a valid value within the supported limits.` }));
+}
 export function listingSourceKey(draft) {
   if (!draft.listing?.sourceUrl) return null;
   const url = new URL(draft.listing.sourceUrl); url.hash = ''; return url.href;
@@ -271,7 +278,8 @@ export async function exportDrafts() {
 
 export function groupProjects(drafts) {
   const projects = new Map();
-  for (const draft of drafts.filter(draft => !isArchived(draft))) {
+  for (const draft of drafts) {
+    if (isArchived(draft)) continue;
     const id = draft.launch ? 'store:' + draft.launch.merchantId : 'local:unassigned';
     if (!projects.has(id)) projects.set(id, { id, name: draft.launch?.merchantId || 'Personal workspace', offers: [] });
     projects.get(id).offers.push(draft);

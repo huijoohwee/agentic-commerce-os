@@ -1,4 +1,4 @@
-import { listDrafts, saveDraft, importDrafts, exportDrafts, LIMITS, LISTING_FIELDS, listingFieldIssues, isArchived } from './drafts.js';
+import { listDrafts, saveDraft, importDrafts, exportDrafts, LIMITS, LISTING_FIELDS, LISTING_LABELS, listingFieldIssues, isArchived } from './drafts.js';
 import { inspectLaunchInput, parseLaunchInput, evaluateOfferSetup, parseMoney } from './launch.js';
 
 const $ = selector => document.querySelector(selector);
@@ -48,7 +48,7 @@ const listingInputs = new Map();
 let listingErrorField;
 for (const field of LISTING_FIELDS) {
   const label = document.createElement('label'), input = document.createElement('input');
-  label.htmlFor = input.id = 'listing-' + field.key; label.textContent = field.label;
+  label.htmlFor = input.id = 'listing-' + field.key; label.textContent = LISTING_LABELS[field.key];
   input.type = field.type === 'money' ? 'text' : field.type === 'integer' ? 'number' : field.type === 'text' ? 'text' : field.type;
   if (field.type === 'money' || field.type === 'number') input.inputMode = 'decimal';
   if (field.type === 'integer') { input.step = '1'; input.min = field.key === 'establishedYear' ? '1600' : '0'; }

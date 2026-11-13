@@ -1,4 +1,4 @@
-import { LISTING_FIELDS, isArchived } from './drafts.js';
+import { LISTING_FIELDS, LISTING_LABELS, isArchived } from './drafts.js';
 import { formatMoney } from './launch.js';
 // Commerce owns record projection and actions; Agentic Base owns the portable table.
 const mounts = new WeakMap();
@@ -39,8 +39,8 @@ export function projectOfferDetail(offer, presentation) {
   const labels = ['Offer', 'Merchant', 'Review status', 'Planned price', 'Buyer', 'Outcome', 'Review guidance', 'Saved revision'];
   const cells = [offer.title, offer.launch?.merchantId || 'Store not set', presentation.status(offer), presentation.price(offer),
     offer.launch?.audience || 'Not set', offer.launch?.outcome || 'Not set', presentation.reason(offer), String(offer.revision)];
-  if (offer.listing) for (const { key, label, type } of LISTING_FIELDS) {
-    const value = offer.listing[key]; labels.push(label + (type === 'money' ? ' · supplied' : ''));
+  if (offer.listing) for (const { key, type } of LISTING_FIELDS) {
+    const value = offer.listing[key]; labels.push(LISTING_LABELS[key] + (type === 'money' ? ' · supplied' : ''));
     cells.push(value === null || value === '' ? 'Not provided' : type === 'money' ? formatMoney(value, offer.listing.currency) : String(value));
   }
   return { columns: labels.map((name, i) => ({ id: 'detail-' + i, name })), rows: [{ id: offer.id, cells }] };
