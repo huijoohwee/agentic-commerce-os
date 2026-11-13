@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { chromium, expect } from '@playwright/test';
 import { chooseDropdown } from './dropdown-menu-browser.mjs';
 
@@ -113,7 +114,8 @@ try {
   await expect(denied.locator('#title')).toHaveValue('Text retained when storage is denied');
   await deniedContext.close(); console.log('PASS storage-denied save fails visibly and retains editor text');
   assert.deepEqual(errors, []);
-  fs.writeFileSync(path.join(output, 'result.json'), JSON.stringify({ source: 'uncommitted-worktree', base, viewports: [1280, 360],
-    assertions: 'create/edit/reload/validation/CAS/archive/search/restore/offline/backup/import/duplicate-race', errors, state: final }, null, 2));
+  fs.writeFileSync(path.join(output, 'result.json'), JSON.stringify({ source: 'local-worktree', sourceRevision: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
+    workingTreeClean: !execFileSync('git', ['status', '--porcelain'], { encoding: 'utf8' }).trim(), base, viewports: [1280, 360],
+    assertions: 'create/edit/reload/validation/CAS/archive/search/restore/offline/backup/import/duplicate-race/storage-denied', errors, state: final }, null, 2));
   await context.close();
 } finally { await browser.close(); }
