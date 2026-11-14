@@ -26,6 +26,9 @@ test('Commerce consumes the pinned Design System panel profile and shell offline
   assert.match(panelCss, /\.agentic-panel-bottom\b/u);
   assert.match(panelCss, /\.agentic-base-floating-panel\s*\{/u);
   assert.match(panelCss, /background:\s*var\(--agentic-control-hover-background\)/u);
+  assert.match(panelCss,
+    /\.agentic-base-floating-panel:not\(\.agentic-panel-main\):not\(\.agentic-panel-bottom\)\s+:is\(\.agentic-panel-header,\s*\.agentic-base-floating-panel-header\)\s+\.agentic-floating-panel-tab:has\(>\s*\.agentic-icon\)\s*>\s*span,\s*\.agentic-base-floating-panel\[data-agentic-base-panel-minimized="true"\]\s+\.agentic-floating-panel-tab:has\(>\s*\.agentic-icon\)\s*>\s*span\s*\{\s*font-size:\s*0;\s*line-height:\s*0;/u,
+    'expanded FloatingPanel view tabs use icon-only presentation from the pinned Design System stylesheet');
   const shellHtml = fs.readFileSync('public/local-first/index.html', 'utf8');
   assert.match(shellHtml, /assets\/__RELEASE__\/shared-ui-profile\.css/u);
   assert.match(shellHtml, /assets\/__RELEASE__\/floating-panel\.css/u);
@@ -35,6 +38,22 @@ test('Commerce consumes the pinned Design System panel profile and shell offline
   const designSystemRelease = JSON.parse(fs.readFileSync('config/design-system-static-release.json', 'utf8'));
   assert.equal(floatingPanelPin.revision, designSystemRelease.source.revision);
   assert.equal(floatingPanelPin.sha256, digest(panelCss));
+  const toolbarPin = JSON.parse(fs.readFileSync('config/toolbar.pin.json', 'utf8'));
+  assert.equal(toolbarPin.revision, designSystemRelease.source.revision);
+  assert.equal(toolbarPin.sha256, digest(fs.readFileSync('public/local-first/toolbar.css')));
+  assert.equal(toolbarPin.iconsSha256, digest(fs.readFileSync('public/local-first/toolbar-icons.js')));
+  const commerceShell = fs.readFileSync('public/local-first/commerce-shell.css', 'utf8');
+  const panelRules = [...commerceShell.matchAll(/([^{}]+)\{([^{}]*)\}/gu)]
+    .filter(([, selector]) => /\.agentic-(?:base-floating-panel|panel-(?:main|bottom)|panel-control)/u.test(selector));
+  assert.ok(panelRules.length, 'Commerce keeps its panel host layout scoped to the shared panel classes');
+  assert.ok(panelRules.every(([, , declarations]) => !/(?:^|[;{])\s*(?:color|background(?:-[\w-]+)?|border(?:-[\w-]+)?|box-shadow|font(?:-[\w-]+)?)\s*:/u.test(declarations)),
+    'Commerce must not define a competing Design System panel appearance');
+  const commercePanelRule = commerceShell.match(/#commerce-workspace-panel > \.agentic-base-floating-panel\s*\{([^}]*)\}/u)?.[1] ?? '';
+  assert.ok(commercePanelRule, 'Commerce panel placement must remain scoped to the shared panel shell');
+  assert.doesNotMatch(commercePanelRule, /(?:inline-size|width|block-size|height|max-block-size|max-height)\s*:/u,
+    'Design System owns Commerce panel dimensions');
+  assert.doesNotMatch(commerceShell, /--agentic-floating-panel-available-height\s*:/u,
+    'Commerce must not calculate a competing panel height');
   const revision = 'f'.repeat(40);
   const env = {RELEASE_CANDIDATE_SHA:revision, ASSETS:{fetch(request) {
     assert.equal(new URL(request.url).pathname, '/shared-ui-profile.css');

@@ -2,6 +2,7 @@
 .agentic-base-floating-panel-root { position: relative; min-width: 0; min-height: 0; }
 .agentic-panel-surface,
 .agentic-base-floating-panel {
+  --agentic-panel-frame-stroke-width: 1px;
   position: relative; display: flex; box-sizing: border-box; min-width: 0; min-height: 0;
   max-width: calc(100vw - 2 * var(--agentic-menu-edge-gap)); max-height: calc(100dvh - 2 * var(--agentic-menu-edge-gap));
   overflow: hidden; pointer-events: auto; border: var(--agentic-panel-border);
@@ -24,10 +25,27 @@
   box-sizing: border-box; display: flex; min-width: 0; min-height: 0; flex-direction: column; gap: var(--agentic-control-padding-block);
   padding: var(--agentic-control-padding-inline);
 }
+.agentic-base-floating-panel-expanded > .agentic-base-floating-panel-header {
+  inline-size: calc(100% + 2 * var(--agentic-control-padding-inline));
+  margin-block: calc(-1 * var(--agentic-control-padding-inline)) var(--agentic-control-padding-inline);
+  margin-inline: calc(-1 * var(--agentic-control-padding-inline));
+}
+.agentic-panel-main--collapsed.agentic-panel-main,
+.agentic-panel-bottom--collapsed,
+.agentic-base-floating-panel[data-agentic-base-panel-minimized="true"] {
+  block-size: var(--agentic-toolbar-height); min-block-size: var(--agentic-toolbar-height); max-block-size: var(--agentic-toolbar-height);
+}
 .agentic-panel-main--collapsed > .agentic-base-floating-panel-inner,
 .agentic-panel-bottom--collapsed > .agentic-base-floating-panel-inner,
 .agentic-base-floating-panel[data-agentic-base-panel-minimized="true"] > .agentic-base-floating-panel-inner {
-  gap: 0; padding: 0;
+  gap: 0; padding: 0; inline-size: 100%;
+}
+.agentic-panel-main--collapsed :is(.agentic-panel-header, .agentic-base-floating-panel-header),
+.agentic-panel-bottom--collapsed :is(.agentic-panel-header, .agentic-base-floating-panel-header),
+.agentic-base-floating-panel[data-agentic-base-panel-minimized="true"] .agentic-base-floating-panel-header {
+  block-size: calc(var(--agentic-toolbar-height) - var(--agentic-panel-frame-stroke-width) - var(--agentic-panel-frame-stroke-width));
+  min-block-size: calc(var(--agentic-toolbar-height) - var(--agentic-panel-frame-stroke-width) - var(--agentic-panel-frame-stroke-width));
+  border-block-end: 0;
 }
 .agentic-base-floating-panel-expanded { width: 100%; height: 100%; }
 .agentic-base-floating-panel-draggable { cursor: move; }
@@ -43,9 +61,6 @@
   block-size: min(var(--agentic-panel-main-height), calc(100dvh - max(var(--agentic-menu-edge-gap), env(safe-area-inset-top)) - var(--agentic-toolbar-height) - var(--agentic-menu-edge-gap) - max(var(--agentic-menu-edge-gap), env(safe-area-inset-bottom))));
   max-block-size: min(var(--agentic-panel-main-max-height), calc(100dvh - max(var(--agentic-menu-edge-gap), env(safe-area-inset-top)) - var(--agentic-toolbar-height) - var(--agentic-menu-edge-gap) - max(var(--agentic-menu-edge-gap), env(safe-area-inset-bottom))));
 }
-.agentic-base-floating-panel-root[data-agentic-floating-panel-placement="viewport-overlay"] > .agentic-base-floating-panel[data-agentic-base-panel-minimized="true"] {
-  block-size: fit-content; height: auto; max-block-size: none; max-height: none;
-}
 .agentic-panel-main {
   grid-area: main;
   inline-size: min(var(--agentic-panel-main-width), calc(100vw - 2 * var(--agentic-menu-edge-gap)));
@@ -56,15 +71,11 @@
   block-size: min(var(--agentic-panel-main-height), calc(100dvh - 2 * var(--agentic-menu-edge-gap)));
   max-block-size: min(var(--agentic-panel-main-max-height), calc(100dvh - 2 * var(--agentic-menu-edge-gap)));
 }
-.agentic-panel-main--collapsed.agentic-panel-main {
-  block-size: fit-content; max-block-size: none;
-}
 .agentic-panel-bottom {
   grid-area: bottom; inline-size: min(calc(100% - 2 * var(--agentic-panel-gap)), var(--agentic-panel-main-max-width));
   max-inline-size: 100%; min-inline-size: 0; min-block-size: 0;
   block-size: min(var(--agentic-panel-bottom-height), 100%);
 }
-.agentic-panel-bottom--collapsed { block-size: fit-content; max-block-size: none; }
 .agentic-panel-main-dock {
   position: fixed; z-index: var(--agentic-floating-panel-layer, 4);
   inset-block: max(var(--agentic-menu-edge-gap), env(safe-area-inset-top)) max(var(--agentic-menu-edge-gap), env(safe-area-inset-bottom));
@@ -97,6 +108,8 @@
   box-sizing: border-box; display: flex; flex: none; align-items: center; justify-content: flex-end;
   min-inline-size: 0; gap: var(--agentic-menu-gap);
 }
+.agentic-base-floating-panel:not(.agentic-panel-main):not(.agentic-panel-bottom) :is(.agentic-panel-header, .agentic-base-floating-panel-header) .agentic-floating-panel-tab:has(> .agentic-icon) > span,
+.agentic-base-floating-panel[data-agentic-base-panel-minimized="true"] .agentic-floating-panel-tab:has(> .agentic-icon) > span { font-size: 0; line-height: 0; }
 .agentic-base-floating-panel .agentic-floating-panel-tab {
   box-sizing: border-box; display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center;
   min-inline-size: var(--agentic-control-height); block-size: var(--agentic-toolbar-height);
@@ -108,14 +121,19 @@
   background: var(--agentic-control-hover-background);
   box-shadow: none; transform: none; filter: none;
 }
-.agentic-base-floating-panel :is(.agentic-floating-panel-tab, .agentic-base-floating-panel-close):has(> .agentic-icon:only-child) {
+.agentic-base-floating-panel :is(.agentic-floating-panel-tab, .agentic-base-floating-panel-close):has(> .agentic-icon:only-child),
+.agentic-base-floating-panel[data-agentic-base-panel-minimized="true"] .agentic-floating-panel-tab:has(> .agentic-icon),
+.agentic-base-floating-panel:not(.agentic-panel-main):not(.agentic-panel-bottom) :is(.agentic-panel-header, .agentic-base-floating-panel-header) .agentic-floating-panel-tab:has(> .agentic-icon) {
   inline-size: max(var(--agentic-control-height), var(--agentic-icon-size-default));
   min-inline-size: max(var(--agentic-control-height), var(--agentic-icon-size-default));
   block-size: max(var(--agentic-control-height), var(--agentic-icon-size-default));
-  min-block-size: max(var(--agentic-control-height), var(--agentic-icon-size-default)); padding: 0;
+  min-block-size: max(var(--agentic-control-height), var(--agentic-icon-size-default)); gap: 0; padding: 0;
 }
+.agentic-base-floating-panel[data-agentic-base-panel-minimized="true"] .agentic-floating-panel-tab:has(> .agentic-icon) > span { font-size: 0; line-height: 0; }
 @media (pointer: coarse) {
-  .agentic-base-floating-panel :is(.agentic-floating-panel-tab, .agentic-base-floating-panel-close):has(> .agentic-icon:only-child) {
+  .agentic-base-floating-panel :is(.agentic-floating-panel-tab, .agentic-base-floating-panel-close):has(> .agentic-icon:only-child),
+  .agentic-base-floating-panel[data-agentic-base-panel-minimized="true"] .agentic-floating-panel-tab:has(> .agentic-icon),
+  .agentic-base-floating-panel:not(.agentic-panel-main):not(.agentic-panel-bottom) :is(.agentic-panel-header, .agentic-base-floating-panel-header) .agentic-floating-panel-tab:has(> .agentic-icon) {
     inline-size: max(var(--agentic-control-height-touch), var(--agentic-icon-size-default));
     min-inline-size: max(var(--agentic-control-height-touch), var(--agentic-icon-size-default));
     block-size: max(var(--agentic-control-height-touch), var(--agentic-icon-size-default));
@@ -161,6 +179,14 @@
 .agentic-base-floating-panel-root[data-agentic-floating-panel-placement="dock"] > .agentic-base-floating-panel { height: 100%; }
 .agentic-floating-panel-dock:has(> [hidden]),
 .agentic-base-floating-panel-root[data-agentic-floating-panel-placement="dock"]:has(> [hidden]) { display: none; }
+/* A minimized dock keeps its width, but its frame always collapses to one toolbar row. */
+.agentic-floating-panel-dock > .agentic-base-floating-panel[data-agentic-base-panel-minimized="true"],
+.agentic-base-floating-panel-root[data-agentic-floating-panel-placement="dock"] > .agentic-base-floating-panel[data-agentic-base-panel-minimized="true"],
+.agentic-base-floating-panel-root[data-agentic-floating-panel-placement="viewport-overlay"] > .agentic-base-floating-panel[data-agentic-base-panel-minimized="true"] {
+  block-size: var(--agentic-toolbar-height);
+  min-block-size: var(--agentic-toolbar-height);
+  max-block-size: var(--agentic-toolbar-height);
+}
 @media (max-width: 768px) {
   .agentic-editor-workspace {
     grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(8rem, 1fr) minmax(8rem, 0.8fr) minmax(7rem, min(30vh, var(--agentic-panel-bottom-height)));

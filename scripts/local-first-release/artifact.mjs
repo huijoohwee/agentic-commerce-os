@@ -349,9 +349,15 @@ export function verifySharedUiIconProfile(directory = 'public/local-first') {
     if (artifactPin.owner !== sharedUiPin.owner || !/^[a-f0-9]{40}$/.test(artifactPin.revision)
       || artifactPin.path !== 'site/' + file || !FILES.includes(file) || digest(bytes) !== artifactPin.sha256)
       throw Error('Commerce differs from the pinned Design System shell: ' + file);
-    if (name === 'floating-panel' && artifactPin.revision !== readDesignSystemStaticRelease().revision)
-      throw Error('Commerce FloatingPanel must use the pinned Design System revision');
+    if (name !== 'dashboard-columns' && artifactPin.revision !== readDesignSystemStaticRelease().revision)
+      throw Error('Commerce panel and toolbar must use one pinned Design System revision');
   }
+  const panelShell = fs.readFileSync(path.join(directory, 'commerce-shell.css'), 'utf8');
+  const panelRules = [...panelShell.matchAll(/([^{}]+)\{([^{}]*)\}/gu)]
+    .filter(([, selector]) => /\.agentic-(?:base-floating-panel|panel-(?:main|bottom)|panel-control)/u.test(selector));
+  const appearance = /(?:^|[;{])\s*(?:color|background(?:-[\w-]+)?|border(?:-[\w-]+)?|box-shadow|font(?:-[\w-]+)?)\s*:/u;
+  if (panelRules.some(([, , declarations]) => appearance.test(declarations)))
+    throw Error('Commerce must not override Design System panel appearance');
   const shell = fs.readFileSync(path.join(directory, 'workspace-shell.css'), 'utf8');
   const rule = shell.match(/\.workspace-shell>\.sidebar \.console-search>svg\s*\{([^}]*)\}/u)?.[1] ?? '';
   if (!shell.startsWith('@import "./shared-ui-profile.css";')
