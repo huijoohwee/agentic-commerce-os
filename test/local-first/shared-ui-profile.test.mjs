@@ -54,8 +54,10 @@ test('Commerce consumes the pinned Design System panel profile and shell offline
   assert.ok(panelRules.length, 'Commerce keeps its panel host layout scoped to the shared panel classes');
   assert.ok(panelRules.every(([, , declarations]) => !/(?:^|[;{])\s*(?:color|background(?:-[\w-]+)?|border(?:-[\w-]+)?|box-shadow|font(?:-[\w-]+)?)\s*:/u.test(declarations)),
     'Commerce must not define a competing Design System panel appearance');
-  const commercePanelRule = commerceShell.match(/#commerce-workspace-panel > \.agentic-base-floating-panel\s*\{([^}]*)\}/u)?.[1] ?? '';
-  assert.ok(commercePanelRule, 'Commerce panel placement must remain scoped to the shared panel shell');
+  const commercePanelRule = commerceShell.match(/\.commerce-workspace-panel\s*\{([^}]*)\}/u)?.[1] ?? '';
+  assert.ok(commercePanelRule, 'Commerce must scope its workspace offset to the shared panel root');
+  assert.match(commercePanelRule, /--agentic-floating-panel-block-start-offset:/u,
+    'Commerce may provide its app chrome offset through the Design System placement token');
   assert.doesNotMatch(commercePanelRule, /(?:inline-size|width|block-size|height|max-block-size|max-height)\s*:/u,
     'Design System owns Commerce panel dimensions');
   assert.doesNotMatch(commerceShell, /--agentic-floating-panel-available-height\s*:/u,
