@@ -2,7 +2,7 @@
   "schema": "agentic-commerce-design-system-static-release/v1",
   "source": {
     "repository": "github.com/huijoohwee/agentic-design-system",
-    "revision": "79c909e227fe506ffc7ca59a3a38fdd5af4996fa"
+    "revision": "7fae5884f7024c1ddd029ef058a3e7758614f73b"
   },
   "route": "https://airvio.co/agentic-design-system/",
   "files": [
@@ -33,8 +33,8 @@
     },
     {
       "path": "floating-panel.css",
-      "bytes": 14114,
-      "sha256": "19e57685c31c5edded42d21faaef2691bc2d40c55857a34f102237a625b9f1e4"
+      "bytes": 16358,
+      "sha256": "15395dd5e9d54026edaa0d9199713831cf8e7f27df938eaec9b45a05592710cc"
     },
     {
       "path": "icons.json",
@@ -127,15 +127,15 @@
       "id": "shared-ui",
       "owner": "github.com/huijoohwee/agentic-design-system",
       "sourceRevision": "9862a2f89b47be3496c72ed9ca28576c992873f4",
-      "registryRevision": "85ad931bf4cb9808765ed0a20fde56976a0aa7ae",
+      "registryRevision": "0e45c8c420a2f4773a890cbbbf859956c03de73a",
       "sourcePath": "site/tokens/shared-ui-profile.json",
       "sourceSha256": "sha256:cff7692142b9a744a9f01d0fe91c1b62afaf57b028c901b298b411d5cdb1f098",
       "projectionPath": "site/vendor/shared-ui-profile.css",
       "projectionSha256": "sha256:5396a794b984c505960807e419f2bfd4504c1006af96533d710d7e433af26063"
     }
   },
-  "totalBytes": 200757,
-  "payloadDigest": "b0c44eb11011e76fa6b71763e3e80c5606c74687bc2a4c41e8eec01acce6c3ea",
+  "totalBytes": 203001,
+  "payloadDigest": "7b9d350e3204c3fae515a836505a512f22fc7277a8dd843e7fd6342a846173fe",
   "excluded": [
     "registry/",
     "site/review-inventory.json",

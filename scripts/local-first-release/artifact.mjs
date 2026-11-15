@@ -198,15 +198,21 @@ export function verifyGraphDataView() {
   }
   const owners = [pin.entry, 'canvas/scripts/build-data-view-adapter.mjs', 'node_modules/@agentic-base/views-react/packages/views-react/src/table/TableCore.tsx', 'node_modules/@agentic-base/views-react/packages/views-react/src/browser/DataViewBrowserAdapter.tsx',
     'canvas/src/features/sequence/sequenceGuideBrowserAdapter.tsx', 'canvas/src/features/sequence/SequenceInspectorView.tsx',
-    'canvas/src/features/sequence/SequenceFlow.css', 'node_modules/@agentic-base/views-react/packages/views-react/src/panels/FloatingPanelShell.tsx', 'node_modules/@agentic-base/views-react/packages/views-react/src/panels/FloatingPanelCloseButton.tsx', 'canvas/src/lib/ui/floatingPanelGeometry.ts',
+    'canvas/src/features/sequence/SequenceFlow.css', 'node_modules/agentic-design-system/packages/react-panels/src/FloatingPanelShell.tsx',
+    'node_modules/agentic-design-system/packages/react-panels/src/FloatingPanelCloseButton.tsx',
+    'node_modules/agentic-design-system/packages/react-panels/src/FloatingPanelTabs.tsx',
+    'node_modules/agentic-design-system/packages/react-panels/src/PanelControlButton.tsx',
+    'node_modules/agentic-design-system/packages/react-panels/src/PanelControlGroup.tsx',
+    'node_modules/agentic-design-system/site/floating-panel.css',
+    'node_modules/agentic-design-system/site/toolbar.css',
+    'node_modules/agentic-design-system/site/icons.json',
     'canvas/src/index.css', 'canvas/src/styles/responsive-toolbar.css', 'grph-shared/src/ui/themeTokens.ts',
     'grph-shared/src/ui/kgTokens.ts', 'grph-shared/src/ui/typography.ts',
     'grph-shared/src/ui/graph-profile.json', 'grph-shared/src/ui/graph-profile.pin.json', 'grph-shared/src/ui/design-runtime-profile.json',
     'canvas/src/styles/shared-ui-profile.pin.json', 'canvas/src/styles/kgTokens.generated.css',
-    'node_modules/@agentic-base/views-react/packages/views-react/src/controls/icons.json',
-    'node_modules/@agentic-base/views-react/packages/views-react/src/controls/icons.pin.json'];
+    'node_modules/@agentic-base/views-react/packages/views-react/src/controls/icons.json'];
   if (totalInputBytes > 8000000 || owners.some(owner => !paths.has(owner))) throw Error('Graph data view native owner missing or over budget');
-  const panelSource = pin.inputs.find(input => input.path === 'node_modules/@agentic-base/views-react/packages/views-react/src/panels/floatingPanelShell.css');
+  const panelSource = pin.inputs.find(input => input.path === 'node_modules/agentic-design-system/site/floating-panel.css');
   if (panelSource?.sha256 !== digest(fs.readFileSync('public/local-first/floating-panel.css')))
     throw Error('The Graph browser export and native Workspace Pack Console must use the same FloatingPanel');
   const names = ['graph-data-view.js', 'graph-data-view.css', 'graph-ui-tokens.css'];
@@ -349,9 +355,15 @@ export function verifySharedUiIconProfile(directory = 'public/local-first') {
     if (artifactPin.owner !== sharedUiPin.owner || !/^[a-f0-9]{40}$/.test(artifactPin.revision)
       || artifactPin.path !== 'site/' + file || !FILES.includes(file) || digest(bytes) !== artifactPin.sha256)
       throw Error('Commerce differs from the pinned Design System shell: ' + file);
-    if (name === 'floating-panel' && artifactPin.revision !== readDesignSystemStaticRelease().revision)
-      throw Error('Commerce FloatingPanel must use the pinned Design System revision');
+    if (name !== 'dashboard-columns' && artifactPin.revision !== readDesignSystemStaticRelease().revision)
+      throw Error('Commerce panel and toolbar must use one pinned Design System revision');
   }
+  const panelShell = fs.readFileSync(path.join(directory, 'commerce-shell.css'), 'utf8');
+  const panelRules = [...panelShell.matchAll(/([^{}]+)\{([^{}]*)\}/gu)]
+    .filter(([, selector]) => /\.agentic-(?:base-floating-panel|panel-(?:main|bottom)|panel-control)/u.test(selector));
+  const appearance = /(?:^|[;{])\s*(?:color|background(?:-[\w-]+)?|border(?:-[\w-]+)?|box-shadow|font(?:-[\w-]+)?)\s*:/u;
+  if (panelRules.some(([, , declarations]) => appearance.test(declarations)))
+    throw Error('Commerce must not override Design System panel appearance');
   const shell = fs.readFileSync(path.join(directory, 'workspace-shell.css'), 'utf8');
   const rule = shell.match(/\.workspace-shell>\.sidebar \.console-search>svg\s*\{([^}]*)\}/u)?.[1] ?? '';
   if (!shell.startsWith('@import "./shared-ui-profile.css";')

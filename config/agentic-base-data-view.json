@@ -2,13 +2,13 @@
   "schema": "agentic-base/consumer-artifact/v1",
   "source": {
     "repository": "github.com/huijoohwee/agentic-base",
-    "revision": "cb192c70b8cd1249b117b26dc594aae196c84c07",
+    "revision": "67a31bdc121793408becbcd84427d5f7c0b651d0",
     "sourceDirty": false,
     "package": "@agentic-base/views-react",
     "packageVersion": "0.1.0",
     "packagePath": "packages/views-react",
     "buildManifest": "packages/views-react/dist/browser-data-view.manifest.json",
-    "buildManifestSha256": "b5f81cce3a7d2efab5598be7d55089eab421babea24e5536499ffb9cbf3cb20d"
+    "buildManifestSha256": "2c539d1fe6018fe0281ca84a0efd61c59a0a0e9eb0bcb9adb14f34b8c74fef2c"
   },
   "contract": {
     "source": "agentic-base/browser-data-view/v1",
@@ -73,7 +73,7 @@
     {
       "path": "packages/views-react/src/browser/shared-ui-profile.pin.json",
       "bytes": 1024,
-      "sha256": "a8f1feb3a71967021eee3e566a6bab3623387efe8cd418381347ab66cbe7ee3e"
+      "sha256": "9c040847da2fa3fe3435df96b966c98f3e2d3b7ab142b30c92821ad20ac636e7"
     },
     {
       "path": "packages/views-react/src/controls/MenuControls.tsx",
@@ -93,7 +93,7 @@
     {
       "path": "packages/views-react/src/controls/icons.pin.json",
       "bytes": 285,
-      "sha256": "430164c60ae5235396f52359c6fbd384ef21756c0d6b679edaa2efb2f1582cdc"
+      "sha256": "4b5c1aed6fa725ac6280e0a5df718c55ac9cfa294383f9bed13325e7c6df3a91"
     },
     {
       "path": "packages/views-react/src/controls/nativeSelect.ts",
@@ -165,7 +165,7 @@
     {
       "path": "agentic-base-data-view.js",
       "bytes": 241621,
-      "sha256": "45078a8a5257d0ac96b0b16035aaefcb07eded2cae449cd9ff790799f2521816",
+      "sha256": "0c4bf2d4ed1bedcfd92bc359085d37b7eaaa5b2340d86ecfd2d2694e6a152e52",
       "sourcePath": "browser-data-view.js"
     },
     {

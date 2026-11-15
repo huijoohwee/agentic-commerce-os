@@ -26,6 +26,15 @@ test('Commerce consumes the pinned Design System panel profile and shell offline
   assert.match(panelCss, /\.agentic-panel-bottom\b/u);
   assert.match(panelCss, /\.agentic-base-floating-panel\s*\{/u);
   assert.match(panelCss, /background:\s*var\(--agentic-control-hover-background\)/u);
+  assert.match(panelCss,
+    /\.agentic-base-floating-panel\s+\.agentic-floating-panel-tab:not\(\[aria-selected="true"\]\):not\(:hover\):not\(:focus-visible\):has\(>\s*\.agentic-icon\)\s*>\s*span\s*\{\s*font-size:\s*0;\s*line-height:\s*0;/u,
+    'only inactive, unhovered, unfocused FloatingPanel tabs collapse their labels');
+  assert.match(panelCss,
+    /\.agentic-base-floating-panel\s+\.agentic-floating-panel-tab\[aria-selected="true"\]\s*\{[^}]*color:\s*var\(--agentic-control-selected-foreground\)[^}]*background:\s*var\(--agentic-control-selected-background\)/u,
+    'the selected icon-plus-label state comes from the pinned Design System stylesheet');
+  assert.match(panelCss,
+    /\.agentic-base-floating-panel\s+\.agentic-floating-panel-tab:hover\s*\{[^}]*background:\s*var\(--agentic-control-hover-background\)/u,
+    'hovered icon-plus-label state comes from the pinned Design System stylesheet');
   const shellHtml = fs.readFileSync('public/local-first/index.html', 'utf8');
   assert.match(shellHtml, /assets\/__RELEASE__\/shared-ui-profile\.css/u);
   assert.match(shellHtml, /assets\/__RELEASE__\/floating-panel\.css/u);
@@ -35,6 +44,24 @@ test('Commerce consumes the pinned Design System panel profile and shell offline
   const designSystemRelease = JSON.parse(fs.readFileSync('config/design-system-static-release.json', 'utf8'));
   assert.equal(floatingPanelPin.revision, designSystemRelease.source.revision);
   assert.equal(floatingPanelPin.sha256, digest(panelCss));
+  const toolbarPin = JSON.parse(fs.readFileSync('config/toolbar.pin.json', 'utf8'));
+  assert.equal(toolbarPin.revision, designSystemRelease.source.revision);
+  assert.equal(toolbarPin.sha256, digest(fs.readFileSync('public/local-first/toolbar.css')));
+  assert.equal(toolbarPin.iconsSha256, digest(fs.readFileSync('public/local-first/toolbar-icons.js')));
+  const commerceShell = fs.readFileSync('public/local-first/commerce-shell.css', 'utf8');
+  const panelRules = [...commerceShell.matchAll(/([^{}]+)\{([^{}]*)\}/gu)]
+    .filter(([, selector]) => /\.agentic-(?:base-floating-panel|panel-(?:main|bottom)|panel-control)/u.test(selector));
+  assert.ok(panelRules.length, 'Commerce keeps its panel host layout scoped to the shared panel classes');
+  assert.ok(panelRules.every(([, , declarations]) => !/(?:^|[;{])\s*(?:color|background(?:-[\w-]+)?|border(?:-[\w-]+)?|box-shadow|font(?:-[\w-]+)?)\s*:/u.test(declarations)),
+    'Commerce must not define a competing Design System panel appearance');
+  const commercePanelRule = commerceShell.match(/\.commerce-workspace-panel\s*\{([^}]*)\}/u)?.[1] ?? '';
+  assert.ok(commercePanelRule, 'Commerce must scope its workspace offset to the shared panel root');
+  assert.match(commercePanelRule, /--agentic-floating-panel-block-start-offset:/u,
+    'Commerce may provide its app chrome offset through the Design System placement token');
+  assert.doesNotMatch(commercePanelRule, /(?:inline-size|width|block-size|height|max-block-size|max-height)\s*:/u,
+    'Design System owns Commerce panel dimensions');
+  assert.doesNotMatch(commerceShell, /--agentic-floating-panel-available-height\s*:/u,
+    'Commerce must not calculate a competing panel height');
   const revision = 'f'.repeat(40);
   const env = {RELEASE_CANDIDATE_SHA:revision, ASSETS:{fetch(request) {
     assert.equal(new URL(request.url).pathname, '/shared-ui-profile.css');
@@ -215,7 +242,7 @@ test('Base browser controls reuse the central shared border utility', () => {
   const profile = fs.readFileSync('public/agentic-design-system/vendor/shared-ui-profile.css', 'utf8');
   const css = fs.readFileSync('public/local-first/agentic-base-data-view.css', 'utf8');
   const profileDigest = digest(profile);
-  assert.equal(pin.source.revision, 'cb192c70b8cd1249b117b26dc594aae196c84c07');
+  assert.equal(pin.source.revision, '67a31bdc121793408becbcd84427d5f7c0b651d0');
   assert.equal(pin.inputs.find(input => input.path === 'packages/views-react/src/browser/shared-ui-profile.css')?.sha256,
     profileDigest);
   assert.match(profile, /--agentic-control-border:\s*1px solid var\(--agentic-base-border,/u);
