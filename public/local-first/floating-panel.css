@@ -55,7 +55,7 @@
 .agentic-base-floating-panel-root[data-agentic-floating-panel-placement="viewport-overlay"] > .agentic-base-floating-panel { pointer-events: auto; }
 .agentic-base-floating-panel-root[data-agentic-floating-panel-placement="viewport-overlay"] > .agentic-base-floating-panel {
   --agentic-floating-panel-effective-block-start-offset: var(--agentic-floating-panel-block-start-offset, calc(max(var(--agentic-menu-edge-gap), env(safe-area-inset-top)) + var(--agentic-toolbar-height) + var(--agentic-menu-edge-gap)));
-  --agentic-floating-panel-available-block-size: max(0px, calc(100dvh - var(--agentic-floating-panel-effective-block-start-offset) - max(var(--agentic-menu-edge-gap), env(safe-area-inset-bottom))));
+  --agentic-floating-panel-available-block-size: max(0px, calc(100dvh - var(--agentic-floating-panel-effective-block-start-offset) - var(--agentic-floating-panel-bottom-offset, 0px) - max(var(--agentic-menu-edge-gap), env(safe-area-inset-bottom))));
   position: absolute;
   inset-block-start: var(--agentic-floating-panel-effective-block-start-offset);
   inset-inline-end: max(var(--agentic-menu-edge-gap), env(safe-area-inset-right));

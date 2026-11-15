@@ -2,7 +2,7 @@
   "schema": "agentic-commerce-design-system-static-release/v1",
   "source": {
     "repository": "github.com/huijoohwee/agentic-design-system",
-    "revision": "58a1cbe5c28819c8a3955e5b0dc5235952fdb326"
+    "revision": "7fae5884f7024c1ddd029ef058a3e7758614f73b"
   },
   "route": "https://airvio.co/agentic-design-system/",
   "files": [
@@ -33,8 +33,8 @@
     },
     {
       "path": "floating-panel.css",
-      "bytes": 16307,
-      "sha256": "62c7e76b8335201ae1cef018bff0538d4ed1a0f624b3e6e56582a53c4ecd9b34"
+      "bytes": 16358,
+      "sha256": "15395dd5e9d54026edaa0d9199713831cf8e7f27df938eaec9b45a05592710cc"
     },
     {
       "path": "icons.json",
@@ -134,8 +134,8 @@
       "projectionSha256": "sha256:5396a794b984c505960807e419f2bfd4504c1006af96533d710d7e433af26063"
     }
   },
-  "totalBytes": 202950,
-  "payloadDigest": "2f516e9d0daa73d36b4d06116778b79f2d1ceb7b37a1a620f038bc0833e0e8c7",
+  "totalBytes": 203001,
+  "payloadDigest": "7b9d350e3204c3fae515a836505a512f22fc7277a8dd843e7fd6342a846173fe",
   "excluded": [
     "registry/",
     "site/review-inventory.json",

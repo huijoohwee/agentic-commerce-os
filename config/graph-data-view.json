@@ -1,6 +1,6 @@
 {
   "schema": "agentic-graph/data-view-artifact/v1",
-  "sourceRevision": "19fd89210ddb2dbf5f3d59b830ffbad23bcdf4b6",
+  "sourceRevision": "675d0ad10eea5d57fe101c1fb5d4318a804a7ff5",
   "sourceDirty": false,
   "entry": "canvas/src/features/markdown/ui/dataViewBrowserAdapter.tsx",
   "browserExport": "mountDataView",
@@ -51,12 +51,12 @@
       "license": "MIT"
     }
   ],
-  "inputDigest": "fe7d7d36b6ee693a51eae0b12e65d4ecd5aa71714ff1a15a4d87f488ba642371",
+  "inputDigest": "18bc7a12720afdd3fa6b447c1b2c06b0fec4405cfcccf41a3a784039e0d92b90",
   "inputs": [
     {
       "path": "canvas/package.json",
       "bytes": 14011,
-      "sha256": "d3ebcf76b53c03bab50efcf9d7dee7572f061e10b550ff35ed626036c81a3ac7"
+      "sha256": "9cf1c424853b5081cc7eb4ecb459f7cb8f04080a4024e0f13b1c2dc3781cd2ae"
     },
     {
       "path": "canvas/scripts/build-data-view-adapter.mjs",
@@ -190,8 +190,8 @@
     },
     {
       "path": "node_modules/@agentic-base/views-react/package.json",
-      "bytes": 2827,
-      "sha256": "ff73d88c27e028151111ce92b72f870314cb6cf6eeb95c2b1852d18dd084de70"
+      "bytes": 2776,
+      "sha256": "129d7e589486912afc31bac380d25d230b124b4443f2140002cde9c1aa5b7fe9"
     },
     {
       "path": "node_modules/@agentic-base/views-react/packages/views-react/dist/browser-data-view.css",
@@ -211,7 +211,7 @@
     {
       "path": "node_modules/@agentic-base/views-react/packages/views-react/src/browser/shared-ui-profile.pin.json",
       "bytes": 1024,
-      "sha256": "fe9df009996571d05ab2c67bc39fe8e83053605d152e8d0b94b0a6dc22f8e7ea"
+      "sha256": "a8f1feb3a71967021eee3e566a6bab3623387efe8cd418381347ab66cbe7ee3e"
     },
     {
       "path": "node_modules/@agentic-base/views-react/packages/views-react/src/controls/MenuControls.tsx",
@@ -220,8 +220,8 @@
     },
     {
       "path": "node_modules/@agentic-base/views-react/packages/views-react/src/controls/dropdownMenu.ts",
-      "bytes": 9118,
-      "sha256": "e3a08bfa7fec688b43ab2c77acc73cda72450bd54ad9f914adbdf5fb00fe8944"
+      "bytes": 9255,
+      "sha256": "8a5899cffed4637b42a6f293e8c0c2cffcc64d339202d9f76602ba93bdd32f5f"
     },
     {
       "path": "node_modules/@agentic-base/views-react/packages/views-react/src/controls/icons.json",
@@ -330,8 +330,8 @@
     },
     {
       "path": "node_modules/agentic-design-system/site/floating-panel.css",
-      "bytes": 16307,
-      "sha256": "62c7e76b8335201ae1cef018bff0538d4ed1a0f624b3e6e56582a53c4ecd9b34"
+      "bytes": 16358,
+      "sha256": "15395dd5e9d54026edaa0d9199713831cf8e7f27df938eaec9b45a05592710cc"
     },
     {
       "path": "node_modules/agentic-design-system/site/icons.json",
@@ -640,8 +640,8 @@
     },
     {
       "path": "package-lock.json",
-      "bytes": 638153,
-      "sha256": "dc7b4171123311902b5403526d538be243a3781d9407ed738df923076234968c"
+      "bytes": 638146,
+      "sha256": "a82c81782469ba1060db7535bf3a8abb998b30d91fa6c145c8e99d43cd2123f3"
     },
     {
       "path": "package.json",
@@ -652,13 +652,13 @@
   "outputs": [
     {
       "path": "graph-data-view.js",
-      "bytes": 295205,
-      "sha256": "9fc35d8fc4ed00028118f0adbf195938732f4adf648455f707d9e12ec37e132c"
+      "bytes": 295225,
+      "sha256": "5e3c99ac8b8589e93412e08faeada6b5bcc1ecad56f52d073df20537f4e144eb"
     },
     {
       "path": "graph-data-view.css",
-      "bytes": 104508,
-      "sha256": "351a82b39032feaaea5d6bd5f4922f65a5a022d2e479d7195d9d4ebbb0d03be8"
+      "bytes": 104559,
+      "sha256": "8b2f32c020172f70ce8aae25bdb36c9471c1ab95feb0b665795a3805fc756cb4"
     },
     {
       "path": "graph-ui-tokens.css",
