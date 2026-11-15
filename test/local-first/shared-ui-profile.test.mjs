@@ -27,8 +27,14 @@ test('Commerce consumes the pinned Design System panel profile and shell offline
   assert.match(panelCss, /\.agentic-base-floating-panel\s*\{/u);
   assert.match(panelCss, /background:\s*var\(--agentic-control-hover-background\)/u);
   assert.match(panelCss,
-    /\.agentic-base-floating-panel:not\(\.agentic-panel-main\):not\(\.agentic-panel-bottom\)\s+:is\(\.agentic-panel-header,\s*\.agentic-base-floating-panel-header\)\s+\.agentic-floating-panel-tab:has\(>\s*\.agentic-icon\)\s*>\s*span,\s*\.agentic-base-floating-panel\[data-agentic-base-panel-minimized="true"\]\s+\.agentic-floating-panel-tab:has\(>\s*\.agentic-icon\)\s*>\s*span\s*\{\s*font-size:\s*0;\s*line-height:\s*0;/u,
-    'expanded FloatingPanel view tabs use icon-only presentation from the pinned Design System stylesheet');
+    /\.agentic-base-floating-panel\s+\.agentic-floating-panel-tab:not\(\[aria-selected="true"\]\):not\(:hover\):not\(:focus-visible\):has\(>\s*\.agentic-icon\)\s*>\s*span\s*\{\s*font-size:\s*0;\s*line-height:\s*0;/u,
+    'only inactive, unhovered, unfocused FloatingPanel tabs collapse their labels');
+  assert.match(panelCss,
+    /\.agentic-base-floating-panel\s+\.agentic-floating-panel-tab\[aria-selected="true"\]\s*\{[^}]*color:\s*var\(--agentic-control-selected-foreground\)[^}]*background:\s*var\(--agentic-control-selected-background\)/u,
+    'the selected icon-plus-label state comes from the pinned Design System stylesheet');
+  assert.match(panelCss,
+    /\.agentic-base-floating-panel\s+\.agentic-floating-panel-tab:hover\s*\{[^}]*background:\s*var\(--agentic-control-hover-background\)/u,
+    'hovered icon-plus-label state comes from the pinned Design System stylesheet');
   const shellHtml = fs.readFileSync('public/local-first/index.html', 'utf8');
   assert.match(shellHtml, /assets\/__RELEASE__\/shared-ui-profile\.css/u);
   assert.match(shellHtml, /assets\/__RELEASE__\/floating-panel\.css/u);
@@ -234,7 +240,7 @@ test('Base browser controls reuse the central shared border utility', () => {
   const profile = fs.readFileSync('public/agentic-design-system/vendor/shared-ui-profile.css', 'utf8');
   const css = fs.readFileSync('public/local-first/agentic-base-data-view.css', 'utf8');
   const profileDigest = digest(profile);
-  assert.equal(pin.source.revision, 'cb192c70b8cd1249b117b26dc594aae196c84c07');
+  assert.equal(pin.source.revision, '67a31bdc121793408becbcd84427d5f7c0b651d0');
   assert.equal(pin.inputs.find(input => input.path === 'packages/views-react/src/browser/shared-ui-profile.css')?.sha256,
     profileDigest);
   assert.match(profile, /--agentic-control-border:\s*1px solid var\(--agentic-base-border,/u);
