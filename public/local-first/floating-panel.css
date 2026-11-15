@@ -54,12 +54,14 @@
 }
 .agentic-base-floating-panel-root[data-agentic-floating-panel-placement="viewport-overlay"] > .agentic-base-floating-panel { pointer-events: auto; }
 .agentic-base-floating-panel-root[data-agentic-floating-panel-placement="viewport-overlay"] > .agentic-base-floating-panel {
+  --agentic-floating-panel-effective-block-start-offset: var(--agentic-floating-panel-block-start-offset, calc(max(var(--agentic-menu-edge-gap), env(safe-area-inset-top)) + var(--agentic-toolbar-height) + var(--agentic-menu-edge-gap)));
+  --agentic-floating-panel-available-block-size: max(0px, calc(100dvh - var(--agentic-floating-panel-effective-block-start-offset) - max(var(--agentic-menu-edge-gap), env(safe-area-inset-bottom))));
   position: absolute;
-  inset-block-start: calc(max(var(--agentic-menu-edge-gap), env(safe-area-inset-top)) + var(--agentic-toolbar-height) + var(--agentic-menu-edge-gap));
+  inset-block-start: var(--agentic-floating-panel-effective-block-start-offset);
   inset-inline-end: max(var(--agentic-menu-edge-gap), env(safe-area-inset-right));
   inline-size: min(var(--agentic-panel-width), calc(100vw - 2 * var(--agentic-menu-edge-gap)));
-  block-size: min(var(--agentic-panel-main-height), calc(100dvh - max(var(--agentic-menu-edge-gap), env(safe-area-inset-top)) - var(--agentic-toolbar-height) - var(--agentic-menu-edge-gap) - max(var(--agentic-menu-edge-gap), env(safe-area-inset-bottom))));
-  max-block-size: min(var(--agentic-panel-main-max-height), calc(100dvh - max(var(--agentic-menu-edge-gap), env(safe-area-inset-top)) - var(--agentic-toolbar-height) - var(--agentic-menu-edge-gap) - max(var(--agentic-menu-edge-gap), env(safe-area-inset-bottom))));
+  block-size: min(var(--agentic-panel-main-height), var(--agentic-floating-panel-available-block-size));
+  max-block-size: min(var(--agentic-panel-main-max-height), var(--agentic-floating-panel-available-block-size));
 }
 .agentic-panel-main {
   grid-area: main;
@@ -205,8 +207,8 @@
     max-block-size: calc(100dvh - 2 * var(--agentic-menu-edge-gap));
   }
   .agentic-base-floating-panel-root[data-agentic-floating-panel-placement="viewport-overlay"] > .agentic-base-floating-panel {
-    block-size: min(var(--agentic-panel-main-height-mobile), calc(100dvh - max(var(--agentic-menu-edge-gap), env(safe-area-inset-top)) - var(--agentic-toolbar-height) - var(--agentic-menu-edge-gap) - max(var(--agentic-menu-edge-gap), env(safe-area-inset-bottom))));
-    max-block-size: calc(100dvh - max(var(--agentic-menu-edge-gap), env(safe-area-inset-top)) - var(--agentic-toolbar-height) - var(--agentic-menu-edge-gap) - max(var(--agentic-menu-edge-gap), env(safe-area-inset-bottom)));
+    block-size: min(var(--agentic-panel-main-height-mobile), var(--agentic-floating-panel-available-block-size));
+    max-block-size: min(var(--agentic-panel-main-max-height), var(--agentic-floating-panel-available-block-size));
   }
   .agentic-panel-bottom-dock { max-block-size: min(var(--agentic-panel-bottom-height), 45dvh); }
   .agentic-floating-panel-dock,
