@@ -12,7 +12,7 @@ export function authoredAssets(revision, checkout = 'sandbox') {
     let path = file === 'index.html' ? '' : file;
     if (packAsset) path = file === 'workspace-pack.html' ? `assets/${revision}/services/workspace-pack/` : 'services/workspace-pack/' + file;
     return { path, bytes: bytes.length, digest: digest(bytes),
-      contentType: file.endsWith('.js') ? /(?:application|text)\/javascript/ : file.endsWith('.css') ? /text\/css/
+      contentType: /\.m?js$/u.test(file) ? /(?:application|text)\/javascript/ : file.endsWith('.css') ? /text\/css/
         : file.endsWith('.json') ? /application\/json/ : file.endsWith('.svg') ? /image\/svg\+xml/ : /text\/html/,
       sourceHeaderRequired: true };
   });

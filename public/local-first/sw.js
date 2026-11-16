@@ -7,7 +7,7 @@ const packPath = 'services/workspace-pack/'
 const PACK_FILES = ['', 'workspace-pack.js', 'workspace-pack.console.js', 'workspace-pack.simulation.js', 'workspace-pack.css',
   'workspace-layout.js', 'dashboard-columns.js', 'toolbar-icons.js', 'icons.json', 'commerce-toolbar.js', 'dropdown-menus.js', 'graph-ui-tokens.css', 'shared-ui-profile.css',
   'commerce-theme.css', 'commerce-shell.css', 'floating-panel.css', 'toolbar.css'];
-const LAZY_FILES = ['graph-gantt-timeline.js', 'graph-gantt-timeline.css', 'housing-comparison.js', 'housing-engine.js', 'housing-sample.js', 'housing-comparison.css', 'sme-workflow-editor.js', 'sme-pack-dictionary.js'];
+const LAZY_FILES = ['listing-geo.js', 'agentic-geo-core.mjs', 'graph-gantt-timeline.js', 'graph-gantt-timeline.css', 'housing-comparison.js', 'housing-engine.js', 'housing-sample.js', 'housing-comparison.css', 'sme-workflow-editor.js', 'sme-pack-dictionary.js'];
 const assetUrl = file => new URL(file.startsWith('services/') || file === 'favicon.svg' ? file : file ? `assets/${RELEASE}/${file}` : '', SCOPE);
 const PATHS = new Set(FILES.map(file => assetUrl(file).pathname));
 const LAZY_PATHS = new Set([...LAZY_FILES.map(file => assetUrl(file).pathname),
