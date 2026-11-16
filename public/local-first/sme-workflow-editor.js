@@ -1,9 +1,12 @@
+import { applySmePatch, baselineProposal, confirmBaseline, validateDecisionPolicy, sameDecisionPolicy } from './sme-business-pack-core.js?v=business-plan-contract-v6'
 export function createSmeWorkflowEditor({
   workflowEditor, inputFields, evidenceEditor, heading, note, evidenceHeading, parameterDetails,
   workflowStatus, getFields, getProtocol, getMode, getSlots, getSelectedSlot, getEvidenceField, setEvidenceField,
-  node, option, enumLabel, formatFieldValue, formatMoney, invalidate,
+  node, option, enumLabel, formatFieldValue, formatMoney, invalidate, getDecision, setDecision, getReports,
 }) {
-  let activeParameter = null
+  let activeParameter = null, proposal = null, policyField = 'price_per_unit'
+  const decisionPanel = document.createElement('section'); decisionPanel.id = 'sme-decision-panel'; decisionPanel.className = 'decision-panel'
+  inputFields.before(decisionPanel)
   let showParameter = () => {}
   inputFields.addEventListener('focusin', event => {
     const field = getFields().find(row => row.name === event.target?.dataset.input)
@@ -167,7 +170,8 @@ export function createSmeWorkflowEditor({
     const item = getSlots().find(row => row.slot === getSelectedSlot()), fields = getFields(), protocol = getProtocol()
     workflowEditor.hidden = !item
     inputFields.replaceChildren(); evidenceEditor.replaceChildren()
-    if (!item) return
+    if (!item) { decisionPanel.replaceChildren(); return }
+    renderDecision()
     const mode = getMode(), scope = `${mode?.row_label ?? 'Plan option'} ${item.slot}`
     heading.textContent = `Edit · ${scope}`
     note.textContent = `Edit every table field for this ${mode?.row_label?.toLowerCase() ?? 'plan option'}. Blank stays unknown; values and evidence records stay in this tab and are not authenticated.`
@@ -183,9 +187,12 @@ export function createSmeWorkflowEditor({
       writeValue(field, prefix, item.inputs[field.name], control)
       for (const input of control.querySelectorAll('input, select')) input.addEventListener(input instanceof HTMLSelectElement ? 'change' : 'input', () => {
         const value = readValue(field, prefix, control)
-        if (value === undefined) delete item.inputs[field.name]; else item.inputs[field.name] = value
-        if (field.name === 'buy_build_path') render()
-        invalidate()
+        try {
+          const next = applySmePatch(item, { [field.name]: value === undefined ? null : value }, getDecision(),
+            { revision: item.revision, policy_revision: getDecision()?.policy_revision ?? 0 }, fields)
+          Object.assign(item, next); invalidate()
+          if (field.name === 'buy_build_path') render()
+        } catch (error) { writeValue(field, prefix, item.inputs[field.name], control); showRefusal(error) }
       })
       grid.append(control)
     }
@@ -193,5 +200,109 @@ export function createSmeWorkflowEditor({
     renderEvidence(item, fields, protocol)
   }
 
-  return { render }
+  function describeRefusal(error) {
+    const meanings = { protected: 'is protected', outside_bounds: 'is outside its permitted range', invalid_value: 'has an invalid value',
+      stale: 'changed after the request; review it again', stale_or_unconfirmed: 'changed after the request; review it again',
+      invalid_bounds: 'needs a valid minimum and maximum', invalid_policy: 'needs a valid owner policy' }
+    return error.reasons?.map(row => `${getFields().find(field => field.name === row.field)?.label ?? (row.field === 'baseline' ? 'Baseline' : 'Decision policy')} ${meanings[row.reason] ?? 'needs review'}`).join(' · ') || 'Review the current inputs and policy.'
+  }
+  function showRefusal(error) { workflowStatus.textContent = 'Change refused. ' + describeRefusal(error) }
+  function renderDecision() {
+    decisionPanel.replaceChildren()
+    const rows = getSlots(), selected = getSelectedSlot(), policy = getDecision(), reports = getReports()
+    const report = reports?.slots.find(row => row.slot === selected)?.report
+    const button = (label, id, action) => {
+      const element = node('button', label, 'secondary'); element.type = 'button'; element.id = id; element.addEventListener('click', action); return element
+    }
+    const current = () => getSlots().map(({ slot, inputs, evidence, revision }) => ({ slot, inputs, evidence, revision }))
+    const title = node('h3', 'Decision rehearsal'), status = node('p', policy ? `Baseline ${policy.baseline} · policy revision ${policy.policy_revision}` : 'No baseline selected. Build a plan, select its row, then request a baseline.')
+    status.id = 'sme-baseline-status'
+    const actions = node('div', undefined, 'actions')
+    if (getMode()?.id === 'scenario' || policy) {
+      const request = button('Request selected row as baseline', 'sme-baseline-request', () => {
+        try { proposal = baselineProposal(selected, current(), getDecision()); renderDecision(); decisionPanel.querySelector('#sme-baseline-confirm')?.focus() } catch (error) { showRefusal(error) }
+      })
+      request.disabled = !report || report.check.completeness.invalid_fields.length > 0
+      actions.append(request)
+      if (policy) actions.append(button('Clear baseline and protections', 'sme-decision-clear', () => { proposal = null; setDecision(null); renderDecision() }))
+      decisionPanel.append(title, status, actions)
+      if (proposal) {
+        const review = node('section', undefined, 'decision-review'); review.setAttribute('aria-label', 'Baseline change review')
+        review.append(node('p', `Use row ${proposal.slot} as the baseline? Review the current facts and policy before confirming. This changes only this local worksheet.`),
+          button('Confirm baseline', 'sme-baseline-confirm', () => {
+            try { setDecision(confirmBaseline(proposal, current(), getDecision(), true)); proposal = null; renderDecision(); decisionPanel.querySelector('#sme-baseline-request')?.focus() }
+            catch (error) { proposal = null; renderDecision(); showRefusal(error) }
+          }), button('Decline baseline change', 'sme-baseline-decline', () => { proposal = null; renderDecision(); decisionPanel.querySelector('#sme-baseline-request')?.focus(); workflowStatus.textContent = 'Baseline change declined. Current facts and baseline are retained.' }))
+        decisionPanel.append(review)
+      }
+      if (policy) {
+        const fields = getFields(), picker = node('select'); picker.id = 'sme-protected-field'; picker.setAttribute('aria-label', 'Decision policy field')
+        for (const field of fields) option(picker, field.name, field.label)
+        if (fields.some(field => field.name === policyField)) picker.value = policyField
+        picker.addEventListener('change', () => { policyField = picker.value })
+        const low = node('input'), high = node('input')
+        for (const [input, label] of [[low, 'Minimum permitted value'], [high, 'Maximum permitted value']]) {
+          input.type = 'number'; input.min = '0'; input.max = '1000000000'; input.step = '0.0001'; input.setAttribute('aria-label', label)
+        }
+        const editPolicy = change => {
+          try {
+            const next = structuredClone(getDecision()); change(next, picker.value); next.policy_revision++
+            validateDecisionPolicy(next, fields, rows.map(row => row.slot)); setDecision(next); renderDecision()
+          } catch (error) { showRefusal(error) }
+        }
+        const fieldLabel = node('label', 'Constraint field'), minimum = node('label', 'Minimum permitted value'), maximum = node('label', 'Maximum permitted value')
+        fieldLabel.append(picker); minimum.append(low); maximum.append(high)
+        const editor = node('fieldset', undefined, 'decision-policy'); editor.append(node('legend', 'Owner constraints'), fieldLabel,
+          button('Protect field', 'sme-protect-field', () => editPolicy((next, key) => { if (!next.protected_fields.includes(key)) next.protected_fields.push(key) })),
+          button('Unlock field', 'sme-unlock-field', () => editPolicy((next, key) => { next.protected_fields = next.protected_fields.filter(value => value !== key) })),
+          minimum, maximum, button('Set permitted range', 'sme-bound-field', () => {
+            if (!low.value.trim() || !high.value.trim()) { workflowStatus.textContent = 'Enter both permitted bounds; a blank bound is unknown.'; return }
+            editPolicy((next, key) => { next.bounds[key] = { min: Number(low.value), max: Number(high.value) } })
+          }), button('Remove permitted range', 'sme-bound-clear', () => editPolicy((next, key) => { delete next.bounds[key] })))
+        const fieldLabelFor = key => fields.find(field => field.name === key)?.label ?? key
+        const details = node('p', `Protected: ${policy.protected_fields.map(fieldLabelFor).join(', ') || 'none'}. Permitted ranges: ${Object.entries(policy.bounds).map(([key, value]) => `${fieldLabelFor(key)} ${value.min}–${value.max}`).join('; ') || 'none'}. Bounds use the field’s declared unit. Unknown facts are never zero.`)
+        details.id = 'sme-policy-status'; editor.append(details); decisionPanel.append(editor)
+      }
+    }
+    const working = node('details'); working.id = 'sme-working'
+    working.append(node('summary', 'Show calculation working'))
+    if (!report) working.append(node('p', 'Build the current plan to inspect its working.'))
+    else {
+      working.append(node('p', report.working.range_basis + ' · Evidence is user-recorded and not authenticated.'))
+      const deltas = reports.decision?.rows.find(row => row.slot === selected)?.deltas
+      const deltaText = delta => !delta.value ? 'Unknown' : `${delta.value.low === delta.value.high ? delta.value.low : delta.value.low + ' to ' + delta.value.high} ${delta.unit}`
+      for (const output of getProtocol().model_outputs) {
+        const entry = report.working.outputs[output.id], section = node('details'), delta = deltas?.[output.id]
+        const change = delta ? ` · Change from baseline ${reports.decision.baseline}: ${deltaText(delta)}` : ''
+        const summary = node('summary', `${output.label}: ${report.model_display[output.id]}${change}`)
+        section.append(summary, node('p', `${entry.formula} · Unit: ${entry.unit} · Period: ${entry.period} · ${enumLabel(entry.status)}`))
+        if (deltas?.[output.id]) {
+          const delta = deltas[output.id], value = delta.value
+          section.append(node('p', `Change from baseline ${reports.decision.baseline}: ${deltaText(delta)} · ${enumLabel(delta.status)}`))
+        }
+        const list = node('ul')
+        for (const key of entry.fields) {
+          const operand = report.working.operands[key], field = getFields().find(row => row.name === key)
+          const value = operand.value === null ? 'Unknown' : formatFieldValue(field, operand.value, report.model.currency_code)
+          const sources = operand.evidence.map(row => `${row.provenance}, ${row.date}, ${row.observer_role}, value ${JSON.stringify(row.value)}`).join('; ') || 'No dated evidence recorded'
+          list.append(node('li', `${field?.label ?? key}: ${value} · ${sources}`))
+        }
+        section.append(list); working.append(section)
+      }
+    }
+    decisionPanel.append(working)
+  }
+  function validateImport(worksheets) {
+    const policy = getDecision()
+    if (!policy) return
+    if (worksheets.some(sheet => !sameDecisionPolicy(sheet.decision, policy))) throw Error('sme_pack_decision_refused')
+    for (const [index, item] of getSlots().entries()) {
+      const sheet = worksheets[index]
+      if (!sheet) throw Error('sme_pack_decision_refused')
+      const patch = Object.fromEntries(getFields().map(field => [field.name, sheet.inputs[field.name] ?? null]))
+      applySmePatch(item, patch, policy, { revision: item.revision, policy_revision: policy.policy_revision }, getFields())
+    }
+  }
+  return { render, describeRefusal, refreshDecision: renderDecision, validateImport, resetDecision: () => { proposal = null } }
+
 }

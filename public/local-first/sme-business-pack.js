@@ -1,11 +1,10 @@
 import { prepareViewStylesheet } from './workspace-view-styles.js'
-import { invokeSmePackTool, PACK_INDEX, TOOL_SCHEMAS, readSmeWorksheets, serializeSmeWorksheets } from './sme-business-pack-core.js?v=business-plan-contract-v6'
+import { invokeSmePackTool, smePackFailure, PACK_INDEX, TOOL_SCHEMAS, readSmeWorksheets, serializeSmeWorksheets } from './sme-business-pack-core.js?v=business-plan-contract-v6'
 import { getOrCreateSingleton } from './workspace-singleton.js'
 import { createSmeWorkflowEditor } from './sme-workflow-editor.js'
 import { createSmeReviewWorkflow } from './sme-review-workflow.js'
 
 export const prepareSmeBusinessPackStyles = prepareViewStylesheet(new URL('./sme-business-pack.css?v=business-plan-table-v2', import.meta.url))
-
 
 export function mountSmeBusinessPack() {
   return getOrCreateSingleton('sme-business-pack-mount', createSmeBusinessPack)
@@ -26,15 +25,16 @@ async function createSmeBusinessPack() {
   const runtimeMode = $('#runtime-mode'), runtimeStatus = $('#runtime-status')
   let currentFields = [], currentProtocol, registration, active = false, previousScrollRestoration = null,
     comparisonGeneration = 0, workflowGeneration = 0, packGeneration = 0, importGeneration = 0, comparisonPending = false, tableOrientation = 'rows',
-    comparisonValue = null, selectedWorkflowSet = null, selectedEvidenceField = null,
+    decisionPolicy = null, previousCount = '1', comparisonValue = null, selectedWorkflowSet = null, selectedEvidenceField = null,
     tableAdapter = null, dictionaryModule = null, dictionaryOrientation = 'rows'
-  const comparisonSlotElements = ['A', 'B', 'C'].map(slot => ({ slot, inputs: {}, evidence: [] }))
+  const comparisonSlotElements = ['A', 'B', 'C'].map(slot => ({ slot, inputs: {}, evidence: [], revision: 1 }))
   const workflowTableMount = { handle: null, ready: null, generation: 0 }
   const dictionaryTableMount = { handle: null, ready: null, generation: 0 }
   const node = (tag, text, className) => { const element = document.createElement(tag); if (text !== undefined) element.textContent = text; if (className) element.className = className; return element }
   const option = (select, value, label) => { const item = node('option', label); item.value = value; select.append(item) }
   const enumLabel = value => value.replaceAll('_', ' ').replace(/^\w/, letter => letter.toUpperCase())
   const readInputs = item => ({ ...item.inputs })
+  const decisionArgs = () => decisionPolicy ? { decision: structuredClone(decisionPolicy) } : {}
   const formatMoney = (value, currency) => {
     const amount = new Intl.NumberFormat(document.documentElement.lang || 'en', { maximumFractionDigits: 4 }).format(value)
     return /^[A-Z]{3}$/u.test(currency ?? '') ? `${currency} ${amount}` : amount
@@ -74,6 +74,8 @@ async function createSmeBusinessPack() {
     getSlots: () => comparisonSlotElements.slice(0, Number(comparisonCount.value)), getSelectedSlot: () => selectedWorkflowSet,
     getEvidenceField: () => selectedEvidenceField, setEvidenceField: value => { selectedEvidenceField = value },
     node, option, enumLabel, formatFieldValue, formatMoney, invalidate: invalidateComparison,
+    getDecision: () => decisionPolicy, getReports: () => comparisonValue,
+    setDecision: value => { decisionPolicy = value; invalidateComparison() },
   })
   function renderWorkflowEditor() { workflowEditorView.render() }
   const review = createSmeReviewWorkflow({ root,
@@ -163,7 +165,10 @@ async function createSmeBusinessPack() {
         return `${complete}/${rows.length} outputs have their required inputs`
       })),
       ...modelOutputs.map(output => ({ id: `model-${output.id}`, name: `Model › Calculated outputs › ${output.label} [${output.id}]`, read: slot =>
-        reportValue(slot, report => report.model_display[output.id]) })),
+        reportValue(slot, report => {
+          const delta = comparisonValue?.decision?.rows.find(row => row.slot === slot.slot)?.deltas[output.id]
+          return report.model_display[output.id] + (delta ? ` · Δ vs ${comparisonValue.decision.baseline}: ${delta.value ? formatMoney(delta.value.low, delta.unit) + (delta.value.low === delta.value.high ? '' : '–' + formatMoney(delta.value.high, delta.unit)) : 'Unknown'} · ${enumLabel(delta.status)}` : '')
+        }) })),
       ...pitchRoles.map(role => ({ id: `pitch-${role.id}`, name: `Pitch › Slide ${role.slide} › ${role.label} [${role.id}]`, read: slot =>
         reportValue(slot, report => report.pitch_deck_outline.find(row => row.id === role.id)?.content ?? 'Role output unavailable.') })),
       workflowColumn('next-checks', slot => reportValue(slot, report => report.next_checks.length
@@ -212,13 +217,13 @@ async function createSmeBusinessPack() {
     return ok || !current()
   }
   async function runPlan(item = comparisonSlotElements[0]) {
-    return invokeSmePackTool('business.plan.build', { pack_id: packSelect.value, mode: planModeSelect.value, inputs: readInputs(item), evidence: structuredClone(item.evidence) })
+    return invokeSmePackTool('business.plan.build', { pack_id: packSelect.value, mode: planModeSelect.value, inputs: readInputs(item), evidence: structuredClone(item.evidence), revision: item.revision, ...decisionArgs() })
   }
   async function worksheetReports() {
     const generation = comparisonGeneration, pack = currentProtocol.pack, mode = planModeSelect.value
     const sets = comparisonSlotElements.slice(0, Number(comparisonCount.value)).map(item => ({ pack_id: pack.id, pack_version: pack.version,
-      inputs: readInputs(item), evidence: structuredClone(item.evidence) }))
-    const reports = sets.length === 1 ? [await runPlan()] : (await invokeSmePackTool('business.plan.compare', { mode, plan_sets: sets })).slots.flatMap(slot => slot.report ? [slot.report] : [])
+      inputs: readInputs(item), evidence: structuredClone(item.evidence), revision: item.revision }))
+    const reports = sets.length === 1 ? [await runPlan()] : (await invokeSmePackTool('business.plan.compare', { mode, plan_sets: sets, ...decisionArgs() })).slots.flatMap(slot => slot.report ? [slot.report] : [])
     if (generation !== comparisonGeneration || document.body.dataset.workspaceRole !== 'sme') throw Error('sme_pack_worksheet_cancelled')
     if (reports.some(report => report.check.completeness.invalid_fields.length)) throw Error('sme_pack_worksheet_invalid')
     return reports
@@ -237,9 +242,11 @@ async function createSmeBusinessPack() {
       throw error
     }
     if (!isCurrent()) throw Error('sme_pack_worksheet_cancelled')
+    workflowEditorView.validateImport(worksheets)
+    decisionPolicy = worksheets[0].decision ? structuredClone(worksheets[0].decision) : null
     planModeSelect.value = worksheets[0].mode; comparisonCount.value = String(worksheets.length)
     for (const [index, item] of comparisonSlotElements.entries()) {
-      item.inputs = { ...(worksheets[index]?.inputs ?? {}) }
+      item.inputs = { ...(worksheets[index]?.inputs ?? {}) }; item.revision = Math.max(item.revision + 1, worksheets[index]?.row_revision ?? 1)
       item.evidence = structuredClone(worksheets[index]?.evidence ?? [])
     }
     selectedWorkflowSet = 'A'; updateModePresentation(); invalidateComparison()
@@ -265,6 +272,7 @@ async function createSmeBusinessPack() {
       if (index >= count) { item.inputs = {}; item.evidence.length = 0 }
     }
     if (selectedWorkflowSet && !comparisonSlotElements.slice(0, count).some(item => item.slot === selectedWorkflowSet)) selectedWorkflowSet = 'A'
+    previousCount = comparisonCount.value
     renderWorkflowEditor()
     compareButton.textContent = count === 1 ? 'Build local plan' : `Compare ${count} ${pluralRows()} locally`
   }
@@ -285,15 +293,16 @@ async function createSmeBusinessPack() {
   function invalidateComparison() {
     ++comparisonGeneration
     comparisonPending = false; compareButton.disabled = false
-    comparisonValue = null
+    comparisonValue = null; workflowEditorView.refreshDecision()
     workflowStatus.textContent = 'Inputs changed. Build the local plan to refresh model and readiness columns.'
     void renderWorkflowTable()
   }
   function clearComparison() {
+    decisionPolicy = null; workflowEditorView.resetDecision()
     review.clear()
     comparisonCount.value = '1'
     for (const item of comparisonSlotElements) {
-      item.inputs = {}; item.evidence.length = 0
+      item.inputs = {}; item.evidence.length = 0; item.revision++
     }
     selectedWorkflowSet = null; renderWorkflowEditor()
     updateComparisonSlotVisibility(); invalidateComparison()
@@ -361,7 +370,7 @@ async function createSmeBusinessPack() {
     const count = Number(comparisonCount.value), identity = PACK_INDEX.find(pack => pack.id === packSelect.value)
     if (!identity) { workflowStatus.textContent = 'Check refused. The selected pack is unavailable.'; return }
     const planSets = comparisonSlotElements.slice(0, count).map(item => ({ pack_id: identity.id, pack_version: identity.version,
-      inputs: readInputs(item), ...(item.evidence.length ? { evidence: structuredClone(item.evidence) } : {}) }))
+      inputs: readInputs(item), revision: item.revision, ...(item.evidence.length ? { evidence: structuredClone(item.evidence) } : {}) }))
     const generation = ++comparisonGeneration
     comparisonPending = true; compareButton.disabled = true; comparisonValue = null
     workflowStatus.textContent = count === 1 ? 'Building plan locally…' : `Comparing ${pluralRows()} locally…`
@@ -371,10 +380,10 @@ async function createSmeBusinessPack() {
       const pending = count === 1 ? runPlan(comparisonSlotElements[0])
         .then(report => ({ schema: 'sme-business-plan/comparison/v2', pack: currentProtocol.pack,
           mode: report.mode, slots: [{ slot: 'A', status: 'included', report }], persisted: false, inference_tokens: 0 }))
-        : invokeSmePackTool('business.plan.compare', { mode: planModeSelect.value, plan_sets: planSets })
+        : invokeSmePackTool('business.plan.compare', { mode: planModeSelect.value, plan_sets: planSets, ...decisionArgs() })
       const value = await Promise.race([pending, new Promise((_, reject) => { deadline = setTimeout(() => { timedOut = true; reject(Error('sme_pack_comparison_deadline')) }, 2000) })])
       if (generation !== comparisonGeneration || document.body.dataset.workspaceRole !== 'sme') return
-      comparisonValue = value
+      comparisonValue = value; workflowEditorView.refreshDecision()
       if (!await renderWorkflowTable()) throw Error('shared_table_unavailable')
       const modeLabel = currentMode().id === 'scenario' ? 'scenario' : currentMode().label
       workflowStatus.textContent = count === 1 ? `Local ${modeLabel} plan built · inputs and report stay in this tab`
@@ -388,6 +397,7 @@ async function createSmeBusinessPack() {
             ? 'Enter the same ISO 4217 currency code in every row before comparing.'
             : code === 'sme_pack_comparison_identity_mismatch'
               ? 'Comparison requires the same plan contract and currency code across rows.'
+              : code === 'sme_pack_decision_refused' ? 'Plan refused. ' + workflowEditorView.describeRefusal(error)
               : code === 'sme_pack_response_too_large' || code === 'sme_pack_arguments_invalid'
                 ? 'Plan limit reached (32 KB request; 64 KB response). Inputs are kept; shorten evidence or use fewer rows.'
                 : code === 'shared_table_unavailable' ? workflowStatus.textContent : 'Plan refused. Review entered values and the shared protocol.'
@@ -410,7 +420,10 @@ async function createSmeBusinessPack() {
   updateWorkflowOrientationCopy()
   workflowPivot.addEventListener('click', () => setWorkflowOrientation(tableOrientation === 'rows' ? 'columns' : 'rows'))
   void renderWorkflowTable()
-  comparisonCount.addEventListener('change', () => { updateComparisonSlotVisibility(); invalidateComparison() })
+  comparisonCount.addEventListener('change', () => {
+    if (decisionPolicy && ['A', 'B', 'C'].indexOf(decisionPolicy.baseline) >= Number(comparisonCount.value)) { comparisonCount.value = previousCount; workflowStatus.textContent = 'Keep the baseline row or explicitly clear the baseline and protections first.'; return }
+    updateComparisonSlotVisibility(); invalidateComparison()
+  })
   planModeSelect.addEventListener('change', () => { updateModePresentation(); invalidateComparison() })
   packSelect.addEventListener('change', async () => {
     const generation = ++packGeneration
@@ -423,12 +436,13 @@ async function createSmeBusinessPack() {
   })
   form.addEventListener('submit', event => { event.preventDefault(); void runComparison() })
   $('#sample').addEventListener('click', () => {
+    if (decisionPolicy) { workflowStatus.textContent = 'Clear the baseline and protections before replacing facts with illustrative inputs.'; return }
     const sample = currentProtocol.illustrative_inputs
     if (!sample || !Object.keys(sample).length) {
       workflowStatus.textContent = 'No illustrative inputs are declared by this plan contract.'; return
     }
     comparisonCount.value = '1'; updateComparisonSlotVisibility()
-    const item = comparisonSlotElements[0]; item.inputs = {}
+    const item = comparisonSlotElements[0]; item.inputs = {}; item.revision++
     for (const field of currentFields) {
       const value = sample[field.name]
       if (value === undefined) continue
@@ -487,7 +501,9 @@ async function createSmeBusinessPack() {
   importInput.addEventListener('change', async () => {
     const file = importInput.files?.[0]; if (!file) return
     try { await importWorksheet(file) }
-    catch (error) { if (error.message !== 'sme_pack_worksheet_cancelled') workflowStatus.textContent = error.message === 'sme_pack_worksheet_identity'
+    catch (error) { if (error.message !== 'sme_pack_worksheet_cancelled') workflowStatus.textContent = error.message === 'sme_pack_decision_refused'
+      ? 'Worksheet import refused. ' + workflowEditorView.describeRefusal(error)
+      : error.message === 'sme_pack_worksheet_identity'
       ? 'Worksheet contract or version does not match. Current inputs are kept; use a worksheet for the selected contract version.'
       : 'Worksheet import refused. Current inputs are kept; check values, row identity and the 64 KB file limit.' }
     finally { importInput.value = '' }
@@ -509,9 +525,14 @@ async function createSmeBusinessPack() {
         execute: async (input, options) => {
           const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(2500), ...(options?.signal ? [options.signal] : [])])
           if (signal.aborted) throw Error('sme_pack_browser_tool_cancelled')
-          const value = await invokeSmePackTool(tool.name, input)
-          if (signal.aborted) throw Error('sme_pack_browser_tool_cancelled')
-          return { content: [{ type: 'text', text: JSON.stringify(value) }] }
+          try {
+            const value = await invokeSmePackTool(tool.name, input)
+            if (signal.aborted) throw Error('sme_pack_browser_tool_cancelled')
+            return { content: [{ type: 'text', text: JSON.stringify(value) }] }
+          } catch (error) {
+            if (signal.aborted) throw Error('sme_pack_browser_tool_cancelled')
+            const failure = smePackFailure(error); return { isError: true, structuredContent: failure, content: [{ type: 'text', text: JSON.stringify(failure) }] }
+          }
         },
       }, { signal: controller.signal }))), new Promise((_, reject) => { deadline = setTimeout(() => reject(Error('timeout')), 2000) })])
       if (active && !controller.signal.aborted) $('#webmcp-status').textContent = `${TOOL_SCHEMAS.length} optional pack tools registered.`

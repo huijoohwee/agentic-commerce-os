@@ -1,3 +1,4 @@
+import { checkSmeDecisionBrowser } from './sme-decision-browser.mjs'
 import { chooseDropdown } from './dropdown-menu-browser.mjs';
 import assert from 'node:assert/strict'
 import path from 'node:path'
@@ -345,6 +346,7 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   }, null, 2) + '\n')
   await context.close()
   await checkTakeoverOffline(browser, url, output)
+  await checkSmeDecisionBrowser({ browser, url, output })
 
   await page.setViewportSize({ width: 360, height: 780 })
   await page.goto(url + '#sme-workflow')

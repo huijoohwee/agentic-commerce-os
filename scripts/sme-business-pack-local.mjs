@@ -1,7 +1,7 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
-import { invokeSmePackTool, TOOL_SCHEMAS } from '../public/local-first/sme-business-pack-core.js'
+import { invokeSmePackTool, smePackFailure, smeToolResult, TOOL_SCHEMAS } from '../public/local-first/sme-business-pack-core.js'
 
 const server = new Server({ name: 'sme-business-pack', version: '0.9.2' }, { capabilities: { tools: {} } })
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
@@ -12,11 +12,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 server.setRequestHandler(CallToolRequestSchema, async ({ params }) => {
   try {
     const value = await invokeSmePackTool(params.name, params.arguments ?? {})
-    return { content: [{ type: 'text', text: JSON.stringify(value) }], structuredContent: value }
+    return smeToolResult(value)
   } catch (error) {
-    const code = error instanceof Error && /^sme_pack_[a-z_]+$/u.test(error.message)
-      ? error.message : 'sme_pack_request_refused'
-    return { isError: true, content: [{ type: 'text', text: code }] }
+    const failure = smePackFailure(error)
+    return { isError: true, structuredContent: failure, content: [{ type: 'text', text: failure.reasons ? JSON.stringify(failure) : failure.code }] }
   }
 })
 
