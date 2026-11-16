@@ -4,6 +4,26 @@
   "dispositions": [
     {
       "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/commerce-decision-release",
+      "laneHead": "184265f55af32eb9c42c14c953ab490927750790",
+      "paths": [
+        ".agentic-os-delivery-dispositions.json",
+        "docs/prd-tad-adr-mvp-gtm-agentic-commerce-os.md",
+        "docs/reports/commerce-decision-release-20261116.json"
+      ],
+      "disposition": "no-deploy",
+      "candidateRevision": "7b0f41ec7d5c51e6cf7cf3e81d6caeb105f43730",
+      "candidateDigest": "c74a2c3617cdf8ceb5fd1cc3ef68e34b2f60c9eba87d43f1bf8ad77b7a270859",
+      "sourceReleaseReceiptDigest": null,
+      "deploymentReceiptDigest": null,
+      "runtimeVerificationReceiptDigest": null,
+      "evidencePath": "docs/reports/commerce-decision-release-20261116.json",
+      "evidenceDigest": "782179a457b18964fdaa7742c73cb5acb7f8873d5c548eac2b81c69bf9f7123c",
+      "decisionRef": "https://github.com/huijoohwee/agentic-commerce-os/pull/281",
+      "reason": "The exact paths .agentic-os-delivery-dispositions.json, docs/prd-tad-adr-mvp-gtm-agentic-commerce-os.md and docs/reports/commerce-decision-release-20261116.json are excluded from the product artifact. None is a local-first Worker or public browser asset input. This receipt follow-up requires protected source integration and no runtime rebuild or redeployment."
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/commerce-native-decision-plan",
       "laneHead": "4a9dc17ffe8b499a73ec889155f95c6f19ffb261",
       "paths": [
@@ -194,5 +214,5 @@
       "reason": "The exact follow-up paths docs/prd-tad-adr-mvp-gtm-storage-management-route-preserving-live.md and docs/reports/storage-management-static-route-release-43015411359.json are excluded from the Commerce Worker and static public product artifact; the follow-up changes no runtime input and requires no deployment."
     }
   ],
-  "receiptDigest": "89f6b929183a87a74500cce73727d1016a780bca52ce6b23333038ce63181e3c"
+  "receiptDigest": "bd797f88ae2b373c5de218a49dd82e65fe3624f7f025c9d4053ab0ce91be214b"
 }
