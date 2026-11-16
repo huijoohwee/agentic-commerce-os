@@ -126,6 +126,13 @@
                       <label class="review-approval"><input id="listing-enabled" type="checkbox">Add structured listing facts</label>
                       <fieldset id="listing-inputs" class="terms-grid" disabled><legend class="sr-only">Optional listing facts</legend></fieldset>
                       <p id="listing-state" class="footnote" role="status"></p><button id="archive-listing" class="secondary" type="button" hidden>Archive listing</button>
+                      <details id="listing-geo-preview"><summary>Preview region longitudes</summary>
+                        <p class="footnote">Check a region's longitude span on this device. This temporary preview is cleared when you switch drafts and is excluded from saved listing facts and backups.</p>
+                        <label for="listing-longitudes">Longitudes, separated by commas or spaces</label>
+                        <textarea id="listing-longitudes" rows="2" maxlength="24000" placeholder="179, -179" aria-describedby="listing-geo-result"></textarea>
+                        <button id="preview-listing-geo" type="button" class="secondary">Preview longitude span</button>
+                        <output id="listing-geo-result" role="status" aria-live="polite"></output>
+                      </details>
                     </details>
                     <details id="launch-fields"><summary>Prepare for a first sale</summary>
                       <p class="muted">Start with one buyer and one outcome. Enter your estimated costs explicitly, including zero. No provider fee or demand is assumed.</p>

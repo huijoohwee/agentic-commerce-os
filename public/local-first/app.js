@@ -45,6 +45,31 @@ function renderAudienceSuggestions(drafts) {
   audienceSuggestions.hidden = values.length === 0;
 }
 const listingInputs = new Map();
+let listingGeoGeneration = 0;
+function clearListingGeoPreview() {
+  listingGeoGeneration++;
+  $('#listing-longitudes').value = '';
+  $('#listing-longitudes').removeAttribute('aria-invalid');
+  $('#listing-geo-result').textContent = '';
+}
+$('#listing-longitudes').addEventListener('input', () => {
+  listingGeoGeneration++;
+  $('#listing-longitudes').removeAttribute('aria-invalid');
+  $('#listing-geo-result').textContent = '';
+});
+$('#preview-listing-geo').addEventListener('click', async () => {
+  const generation = ++listingGeoGeneration, text = $('#listing-longitudes').value;
+  try {
+    const { previewListingLongitudes } = await import('./listing-geo.js');
+    if (generation !== listingGeoGeneration) return;
+    const span = previewListingLongitudes(text);
+    $('#listing-geo-result').textContent = `Center ${span.center}° · width ${span.spanDegrees}° · west ${span.west}° · east ${span.east}°. East may exceed 180° across the date line.`;
+  } catch (error) {
+    if (generation !== listingGeoGeneration) return;
+    $('#listing-longitudes').setAttribute('aria-invalid', 'true');
+    $('#listing-geo-result').textContent = error.message || 'The preview could not load. Your listing is unchanged.';
+  }
+});
 let listingErrorField;
 for (const field of LISTING_FIELDS) {
   const label = document.createElement('label'), input = document.createElement('input');
@@ -71,8 +96,11 @@ function listingControls() {
   $('#archive-listing').disabled = busy;
   $('#archive-listing').textContent = isArchived(selected) ? 'Restore listing' : 'Archive listing';
   $('#listing-state').textContent = selected?.listing ? isArchived(selected) ? 'Archived · private on this device' : 'Private listing draft' : '';
+  $('#listing-longitudes').disabled = busy || !$('#listing-enabled').checked;
+  $('#preview-listing-geo').disabled = busy || !$('#listing-enabled').checked;
 }
 function showListing(draft) {
+  clearListingGeoPreview();
   clearListingIssues(); $('#listing-enabled').checked = Boolean(draft?.listing);
   $('#listing-fields').open = Boolean(draft?.listing);
   const currency = draft?.listing?.currency;
@@ -206,7 +234,7 @@ async function run(operation) {
     if (listingErrorField) listingInputs.get(listingErrorField)?.focus();
   }
 }
-$('#draft-form').addEventListener('input', edited);
+$('#draft-form').addEventListener('input', event => { if (event.target !== $('#listing-longitudes')) edited(); });
 $('#draft-form').addEventListener('submit', event => {
   event.preventDefault();
   const input = { id: selected?.id, title: $('#title').value, description: $('#description').value, price: $('#price').value };
@@ -333,7 +361,7 @@ document.addEventListener('commerce:panel-state', event => {
   if (event.detail?.open && event.detail?.view === 'setup-guide') void openSetupGuide();
 });
 window.addEventListener('hashchange', () => {
-  if (location.hash !== '#vendor-editor') { setupGeneration++; setupGuide?.close(false); }
+  if (location.hash !== '#vendor-editor') { setupGeneration++; setupGuide?.close(false); clearListingGeoPreview(); }
 });
 window.addEventListener('beforeunload', event => { if (dirty) { event.preventDefault(); event.returnValue = ''; } });
 void refresh().catch(error => { actionFailed = true; message(error.message, true); renderSetup(); });

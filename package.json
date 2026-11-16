@@ -78,11 +78,13 @@
     "check:integration:all": "node node_modules/agentic-os/bin/agentic-os-validation.mjs run --all --fresh",
     "build:durable-host": "node scripts/local-host/build.ts --listing",
     "start:durable-host": "node node_modules/.cache/commerce-listing-host/commerce-listing-host.mjs",
-    "check:admission": "node --test test/admission/*.test.mjs"
+    "check:admission": "node --test test/admission/*.test.mjs",
+    "check:geo": "node scripts/agentic-geo-projection.mjs && node --test test/local-first/listing-geo.test.mjs"
   },
   "dependencies": {
     "@cloudflare/sandbox": "0.12.9",
     "@modelcontextprotocol/sdk": "1.30.0",
+    "agentic-geo": "github:huijoohwee/agentic-geo#3256385c98864dbfde7a4e3fd1a1e5901f20f294",
     "zod": "4.4.3"
   },
   "devDependencies": {

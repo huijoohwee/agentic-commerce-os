@@ -1,0 +1,9 @@
+{
+  "schema": "commerce/agentic-geo-core-projection/v1",
+  "owner": "github.com/huijoohwee/agentic-geo",
+  "revision": "3256385c98864dbfde7a4e3fd1a1e5901f20f294",
+  "export": "agentic-geo/core",
+  "path": "src/core.mjs",
+  "bytes": 2037,
+  "sha256": "845caf87d5e6e01a5be9747969fe29104be2d3a693e35ec7e82d41cd5cf13123"
+}
