@@ -1,19 +1,19 @@
 ---
-title: "Commerce Workspaces and Shared Shell"
+title: "Reference Implementation — Commerce Workspace and Decision Rehearsal"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.2.0"
-revision: "0.2.0"
-date: "2026-10-31"
-updated_date: "2026-10-31"
+version: "0.3.0"
+revision: "0.3.0"
+date: "2026-11-16"
+updated_date: "2026-11-16"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Commerce product function"
 continuity_id: "COMMERCE-CONTROL-PLANE-001"
-prd_revision: "0.2.0"
-tad_revision: "0.2.0"
-adr_revision: "0.2.0"
-mvp_revision: "0.2.0"
-gtm_revision: "0.2.0"
+prd_revision: "0.3.0"
+tad_revision: "0.3.0"
+adr_revision: "0.3.0"
+mvp_revision: "0.3.0"
+gtm_revision: "0.3.0"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -22,300 +22,387 @@ parent: "docs/prd-tad-adr-mvp-gtm-edge-commerce-agent.md"
 parent_version: "0.23.0"
 companion: "docs/prd-tad-adr-mvp-gtm-commerce-workspaces.md"
 companion_revision: "0.25.0"
-guideline_revision: "3.4.0"
-guideline_sha256: "8f0eda9aaf4d0b1e2bcc7388e15d19d95e6ba88fe158dbbbb53c2c0d4225d87a"
-template_revision: "1.5.0"
-template_sha256: "862369425974a704529164c02973a7ccb98b94d9a4eea73e347c8b4b57aa7966"
-worktree_id: "device-0232231d4a19--commerce-shell-asbuilt-reference"
+guideline_revision: "3.5.0"
+guideline_source_revision: "99ea1f49211361528256045719b54f1634eee41a"
+guideline_sha256: "4c7b9cfce239e0fba3b1ef560aba81e634dbea7d18213a2d1c7d7261736d8541"
+template_revision: "1.6.0"
+template_sha256: "0aaa79cfc4e6ead44514e2c1264879ae4445e252a1590ac6c5241ad4dfec15e4"
+worktree_id: "device-0232231d4a19--commerce-native-decision-plan"
 agent_id: "codex"
-source_revision: "2fb00defb2f9a057eaaa659338500c2b6b07aafc"
+source_revision: "25f4c8e221ad0a60b63c4fb432b2bbe9d44423d2"
 lifecycle_status: "proposed"
 load_policy: "on-demand"
 runtime_readiness_policy: "fail-closed"
+agenticOsCanvasRenderMode: "2d"
+agenticOsCanvas2dRenderer: "flowchart"
 ---
 
-# Commerce Workspaces and Shared Shell
+# Reference implementation — Commerce workspace and decision rehearsal
 
-**Join:** `COMMERCE-CONTROL-PLANE-001@0.2.0`. This parent-level specification covers one persistent workspace shell across Shopper, Vendor, Admin and the SME pack. The feature companion continues to own its workspace details; the first-dollar learning record remains the sole owner of validation/payment learnings. Source revision `2fb00def` already mounts the SME view in the shared app document. This is code-level evidence only: COM-01..08 have not been run or satisfied, and no delivery claim is made.
+**Join:** `COMMERCE-CONTROL-PLANE-001@0.3.0`. Update the existing shared-shell plan in place. Keep COM-01–08 and ADR-01; extend the same SME workflow with DEC-01–06 and ADR-02. This is the sole editable owner of this increment. Existing commerce, workspace, transfer, housing and first-dollar plans retain their own scopes. No second app, planner, roadmap, capability registry, design system or payment ledger is introduced.
 
-**Revision 0.2.0 (2026-10-31):** replaces the older separate-document source observation with the current same-document SME mount. Records the exact code baseline and keeps route, browser, responsive, offline and production acceptance unverified.
+**Revision outcome:** source and deployed UI inspection establish reusable scenario planning, not completed enhancement acceptance. This request authorizes specification authoring and live UI inspection. Product implementation, publication of customer content, deployment, payment and outreach remain separately gated. `spec-complete` describes this specification; the proposed DEC criteria have no implementation verdict, and delivered readiness for this increment remains `undocumented`.
 
-**Objective:** switching workspace roles or opening the SME pack changes the active view while one app document keeps the shared header, navigation rail, contextual side panel and footer mounted. Route, focus, scroll and responsive state remain coherent, including direct entry, reload, back/forward and offline use.
+**Context:** the pinned source already builds and compares local plans in a shared workspace. **Intent:** an owner can inspect one proposed business change against an explicit baseline, understand the calculation and retain control of protected facts. **Directive:** extend the native scenario contract and workflow, reuse existing shared owners, define bounded acceptance and record live evidence without creating parallel implementations. **Role:** Commerce product function. **Action / SVO:** the product function specifies the native decision rehearsal. **Outcome:** one source-grounded, reviewable joined specification. **Check:** owner source checks, continuity/link review and diagram projection check; product acceptance remains separate.
 
-## Reference implementation — Agentic Commerce OS
+## Reference implementation — ownership and grounding
 
-The reference section pins the source snapshot; following sections label code-level observations separately from unverified acceptance.
+All concrete repository, protocol and source identifiers in this artifact describe the selected reference implementation. Paths below resolve in the declared repository at its exact revision. Consumer pins, not sibling checkout HEADs, select runtime bytes. Source inspection, historical receipts and live observations are distinct evidence classes.
 
-| Source / revision | Exact observation | Product consequence |
-|---|---|---|
-| `agentic-commerce-os` / `2fb00defb2f9a057eaaa659338500c2b6b07aafc` | `public/local-first/index.html` contains the role views, shared shell and SME section. `workspace.js` resolves the SME hash route and lazy-loads `sme-business-pack.js`; that module mounts into `#sme .workspace-content`. The artifact manifest includes its JS, CSS and core modules, not a separate SME HTML document. | Same-document SME integration is present in source. Route history, focus, offline, responsive and race acceptance remain unverified. This supersedes the separate-document observation in 0.1.0. |
-| Same revision | `style.css`, `workspace.js`, `workspace-navigation.js`, `graph-ui-tokens.css` and `scripts/local-first-release/artifact.mjs` define current shell, navigation, style and artifact owners. | Reuse these owners; do not build a second shell, router, token profile or SME page. |
-| Same revision | `docs/prd-tad-adr-mvp-gtm-edge-commerce-agent.md` (`edge-commerce-agent-mvp@0.23.0`) owns product/commerce capability contracts; `docs/prd-tad-adr-mvp-gtm-commerce-workspaces.md` (`0.25.0`) is an implementation companion. `docs/prd-tad-adr-mvp-gtm-20260909T1320Z-solopreneur-mvp-gtm.md` owns first-dollar learning. | Keep this as shell/route continuity; do not fork the roadmap, capability registry, payment ledger or learning owner. |
-| `agentic-os` / `3405dc1246a1b32cfb10c044602505c4cf169c48` | Runtime policy and ADLC contracts require exact scoped source and delivery evidence; no policy grants UI code authority to publish or settle. | Role navigation is presentation state only; existing capability/effect owners remain authoritative. |
+| ID / claim | Inspected source and contract | Disposition / implication | Named check / next action |
+|---|---|---|---|
+| G1: one shared host | Commerce `25f4c8e221ad0a60b63c4fb432b2bbe9d44423d2`; `public/local-first/index.html`, `workspace.js`, `workspace-navigation.js`, `workspace-singleton.js`, `workspace-view-styles.js` | confirmed: existing roles, hash navigation and lazy SME mount; retain COM-01–08 | Existing `test/local-first/workspace-shell-browser.mjs`, `workspace-browser.mjs`; full criteria still open |
+| G2: scenario comparison | Same source; `sme-business-pack-core.js`: `invokeSmePackTool`, `TOOL_SCHEMAS`, `comparePlans`; `sme-pack-business-plan.js`: `PACK` v2.3.0 | confirmed: 2–3 rows, same contract/version/currency, entry order, `ranking:null`, `winner:null`, deterministic monthly range arithmetic | `npm run test:unit -- test/shared/sme-business-pack.test.ts`; extend its existing cases for DEC |
+| G3: local editing and portability | Same source; `sme-business-pack.js`, `sme-workflow-editor.js`, core `serializeSmeWorksheets` / `readSmeWorksheets` | confirmed: tab-local inputs/evidence, JSON/CSV/Markdown worksheet transfer; no automatic persistence | `test/local-first/sme-comparison-browser.mjs`; verify old worksheet compatibility before version change |
+| G4: constrained rehearsal and explanations | Same source, bounded inspection of SME core, pack and editor | absent in inspected scenario contract: explicit baseline identity, protected-field policy and per-output calculation lineage. Existing model output values and evidence coverage are present | New DEC behavior belongs in these owners; absence is a planned gap, not a claim about every repository |
+| G5: agent and human routing | Same source; `scripts/sme-business-pack-local.mjs`, `src/invocation/catalog.ts`, `public/local-first/workspace-tools.js` | confirmed: four SME schemas share local evaluator; separate workspace read tools and invocation metadata exist. Remote readiness/parity not established | `check:invocation-surface`, `check:webmcp`, shared tool and browser tests |
+| G6: no generic extraction justified | G2/G3 are concrete current consumers of the SME domain contract | confirmed: UI and local tool adapter already call one evaluator; no measured repeated need for another simulation package | Retain domain arithmetic locally; extraction requires two independent consumers and a successor ADR |
+| G7: deployed state | Public UI observed 2026-11-16 13:24–13:26 UTC; DOM/source and readiness report `acaae50534077ec0890c6597ed2966c0b8257604` | confirmed live observation; differs from source baseline. It cannot satisfy exact-candidate release acceptance | ER-LIVE below; refresh live identity at any delivery decision |
 
-### Native design adoption record
+The prior 0.2.0 snapshot at `2fb00defb2f9a057eaaa659338500c2b6b07aafc` remains history. Its source observation of a same-document SME mount is retained, without inheriting an unrun acceptance verdict. No external code, content, datasets, dependencies or brand assets are adopted by this increment.
 
-These are current single owners at the inspected source revision, not claims of completed parity.
+### Reference implementation — pinned shared utilities
 
-| Concern | Native owner at exact revision | Reused surface or utility | Acceptance check and result | Gap / next check |
-|---|---|---|---|---|
-| Identity and illustration | `public/local-first/index.html` at `2fb00defb2f9a057eaaa659338500c2b6b07aafc` | Existing product brand and inline assets | `commerce-shell-singleton-check` — not run | Inventory asset rights before any new use. |
-| Settings and preferences | `public/local-first/workspace.js` at the same revision | Existing navigation/view state | `commerce-route-history-check` — not run | Do not add a second preferences store. |
-| Tokens and render adapters | `public/local-first/graph-ui-tokens.css` plus `style.css` at the same revision | Existing generated token projection | `commerce-shell-singleton-check` — not run | Verify source digest and all role views. |
-| Typography and ideograms | `style.css` and `index.html` at the same revision | Current type and icon treatment | `commerce-responsive-shell-check` — not run | Contrast, font fallback and icon labels need browser evidence. |
-| Editor surface | SME view in `index.html`, mounted by `workspace.js` into `#sme .workspace-content` | Existing single-document workspace and lazy view module | `commerce-shell-continuity-check` — not run | Source mount is observed; route/history/visual parity is not yet verified. |
-| Status and evidence | Existing status/readiness owners projected through `workspace.js` at the same revision | Preserve loading, stale, empty and failure states | `commerce-route-race-check` — not run | Runtime observation source and human comprehension require separate evidence. |
+This is a projection of existing manifests, not a replacement lock. Keep exact manifests/digests authoritative. No new package or cross-repository pin change is part of this authoring task.
+
+| Owner / revision and export | Current consumer / native reuse | Decision and smallest delta | Check / boundary |
+|---|---|---|---|
+| `agentic-design-system`: shared UI source `9862a2f89b47be3496c72ed9ca28576c992873f4`; registry `0e45c8c420a2f4773a890cbbbf859956c03de73a`; `site/tokens/shared-ui-profile.json` → `site/vendor/shared-ui-profile.css` | Commerce `config/shared-ui-profile.pin.json`, `shared-ui-profile.css`; Base and Graph projections consume the same profile | reuse tokens, focus, typography and semantic states; no palette fork or per-role overrides | `test/local-first/shared-ui-profile.test.mjs`; artifact digest validation; profile projection SHA-256 `5396a794b984c505960807e419f2bfd4504c1006af96533d710d7e433af26063` |
+| Same owner, toolbar/panel `7fae5884f7024c1ddd029ef058a3e7758614f73b`; `site/toolbar.css`, `site/floating-panel.css` | `config/toolbar.pin.json`, `floating-panel.pin.json`; existing toolbar and console | reuse current controls/panel for baseline and review; change owner only for a demonstrated shared gap | Existing pinned asset hashes and shared UI tests; no copied component |
+| `agentic-base` `67a31bdc121793408becbcd84427d5f7c0b651d0`; `@agentic-base/views-react`, `mountDataView`, `agentic-base/browser-data-view/v1` | `config/agentic-base-data-view.json`; SME workflow/dictionary use current browser artifact and pivot | reuse one multidimensional table, menus, keyboard/row selection and theme slots; add projected fields, not another table | `verifyAgenticBaseDataView` in `scripts/local-first-release/artifact.mjs`; existing SME browser suite; retain Shadow DOM boundary |
+| `agentic-graph` `675d0ad10eea5d57fe101c1fb5d4318a804a7ff5`; `canvas/src/features/markdown/ui/dataViewBrowserAdapter.tsx`, `mountDataView` / `mountSequenceGuide` | `config/graph-data-view.json`; existing graph/guide projections | reuse current guide only when it explains the selected decision; no embedded second editor | Artifact hashes; `test/local-first/workspace-graph.test.mjs` and browser suite |
+| Same owner, timeline `33a48a80862357f77fad4cda8b90ac717e1a8116`; `mountGanttTimeline` | `config/graph-gantt-timeline.json`, `sme-review-workflow.js` | reuse existing review schedule when applicable; timeline is not a stochastic trading model | Existing review-workflow tests and timeline verifier; lazy load only on its view |
+| `agentic-canvas-os` inspected `6913ec5e323b4aa73cc3f5622ea301d278735cca`; `agent-api/src/tool-search.js` re-exports `createToolSearchRuntime` from the OS owner | Commerce uses versioned docs protocol `agentic-canvas-os-docs-routing/v1` through its existing invocation client; no direct Canvas package dependency observed | reuse protocol/discovery owner; retain contract-only transport. A source observation does not mean this export is installed in Commerce | `src/invocation/catalog.ts` digest/limit/refusal checks; any new consumer pin needs export proof first; no sibling source import |
+| `agentic-geo` `3256385c98864dbfde7a4e3fd1a1e5901f20f294`; `agentic-geo/core`, `src/core.mjs` | `config/agentic-geo-core.pin.json`, `listing-geo.js`, `agentic-geo-core.mjs`; listing facts | reuse coordinate validation for optional existing location context; do not infer demand, footfall or financial assumptions from a coordinate | `npm run check:geo`; exact 2,037-byte core projection and existing listing-geo tests |
+| `agentic-os` `73bf77869d75c60eff687a7e7dbec72ae39be2b2`; `agentic-os/invocation` and existing ADLC CLI | Installed Commerce development tool and invocation serializer; central lifecycle source | reuse parsing/serialization, lane, check and release controls; no second controller, registry or authorization schema | `npm run check`, `check:invocation-surface`; accepted package/lock unchanged |
+
+License evidence stays with the existing owner package/artifact manifests. A dependency change requires fresh license, size, exact revision and compatible export verification. No remote fetch is required for local discovery, arithmetic or reading the prepared plan.
 
 ## PRD
 
-### User, pain and evidence
+### Pain, people and minimum outcome
 
-**P1 — route continuity, user impact unvalidated:** the earlier separate-document route is no longer current. At source revision `2fb00def`, `workspace.js` resolves the SME hash route and mounts its lazy view into the existing document. User impact, back/forward behavior, focus continuity, task loss and time remain unmeasured; source integration alone does not prove acceptance.
+**0:** source already offers local comparison and shared-shell navigation; buyer pain intensity, frequency, time lost, willingness to pay and repeat use are unvalidated. **1:** one merchant completes a baseline → one changed case → explanation → retained worksheet journey within five minutes, with protected facts intact and unknowns visible. Five observed tasks are the proposed acceptance sample; no such study is claimed.
 
-| Role | Job | Evidence state |
+| Persona / job | User story / value | Evidence |
 |---|---|---|
-| Shopper | Browse a local offer preview and understand its current state. | Existing role view observed; user study absent. |
-| Seller / Vendor | Prepare and inspect a product or offer. | Existing role view and draft boundary observed; willingness to pay unknown. |
-| Operator / Admin | Navigate projects and inspect bounded environment evidence. | Existing view observed; complete operational product not claimed. |
-| SME pack user | Check a listing and understand gaps without saving input. | View is mounted in the shared document at source; user acceptance absent. |
-| Maintainer | Change a view once while preserving shared shell behavior. | Target job; integration cost not measured. |
+| Owner / operator | As an owner, I want to compare one price, volume or cost change against today's declared inputs so I can explain the difference before acting | hypothesis; native arithmetic and comparison exist |
+| Collaborator / agent | As a collaborator, I want proposed changes to respect the owner's protected facts so I can explore within agreed bounds | gap in inspected SME scenario contract; no buyer validation |
+| Reviewer | As a reviewer, I want each result traced to dated inputs and a formula so I can distinguish an assumption from an observed fact | existing provenance/evidence fields; calculation lineage proposed |
+| Shopper, vendor, administrator | As a workspace user, I want routes, drafts and focus retained as I move between views | COM baseline; complete route acceptance remains open |
 
-### Pain-to-feature, journey and criteria
-
-| Pain / rank | Hook → break → fix → close | Minimum change and value hypothesis |
+| Pain / rank | Hook → break → fix → close | Reuse / minimum value hypothesis |
 |---|---|---|
-| P1, rank 1: route continuity remains unverified | Select SME pack → existing code swaps to its lazy view inside the same document → verify route/history/focus/input/offline behavior → return to the same role/context. | Reuse the existing shell, hash route, lazy module and style owner; fix only observed gaps. Measure transition time and focus continuity before savings claims. |
-| P2, rank 2: role-specific shell drift | Switch role → header/rail spacing or control position differs → shared semantic layout tokens and one component owner → compare same viewport and shell state. | Reuse current theme token mapping; do not impose another product’s palette. |
-| P3, rank 3: mobile navigation inconsistency | Collapse/expand side rail → ARIA state or content width disagrees → one state owner with ellipsis on constrained labels → keyboard/touch path stays reachable. | Reuse the existing navigation owner; no duplicate mobile variant. |
+| P1 / first: explain one business change | Enter today's inputs → compare absolute totals without an explicit baseline → show baseline-relative deltas and working → retain a decision worksheet | Existing scenario model, same table and exports; lowest additional domain surface |
+| P2 / second: prevent accidental assumption changes | Protect a cost or operating constraint → proposal/import changes it silently → refuse the whole patch with field reasons → owner deliberately revises policy | Existing validation/editor/evaluator, no independent policy engine |
+| P3 / third: retain decision context | Switch role, direct link or device → route/context or private facts can be lost → shared shell plus explicit worksheet transfer → review locally | Existing hash routing, tab-local worksheet and shared views; no automatic sync |
 
-**Journey:** enter any role or direct URL → resolve route in the shared host → keep shell mounted → replace only the workspace slot → retain or deliberately reset local state by a documented rule → return via browser history. A route transition must never masquerade as a network failure or erase local drafts.
+All ranks are hypotheses because no validated pain outranks another yet. P1 wins the current technical tie by near-built reuse and the shortest priced-review experiment; revisit upon stronger buyer evidence.
 
-| VCC | Given / when / then | Named check | Constraint |
-|---|---|---|---|
-| COM-01 | Given Shop, Vendor, Admin or SME pack route, when changing route, then one shell root/header/nav/side panel/footer remains mounted and only the workspace slot changes. | `commerce-shell-continuity-check` | No full document navigation or duplicated shell DOM. |
-| COM-02 | Given direct `#sme` entry, reload and browser back/forward, when the route resolves, then the same shell and intended view appear with the correct app URL. | `commerce-route-history-check` | Preserve existing hash/history conventions; no separate SME document. |
-| COM-03 | Given a role switch at one viewport, when shell views are compared, then header, rail, side panel, footer, spacing and shared controls use one owner and consistent geometry. | `commerce-shell-singleton-check` | Role content may differ; shell has no per-role layout override. |
-| COM-04 | Given 320/360/390/768/1280 CSS px and 200% text zoom, when using every role and the pack, then content reflows, labels ellipsize safely, controls remain reachable and no page-level horizontal overflow occurs. | `commerce-responsive-shell-check` | Inner data tables may scroll in labelled regions. |
-| COM-05 | Given keyboard, touch and reduced-motion use, when navigating/opening/closing side panel, then focus, expanded state, Escape and ≥44 px targets are correct. | `commerce-shell-accessibility-check` | Do not claim human or physical-device acceptance from automation alone. |
-| COM-06 | Given a route transition or slow pack module, when loading, failing or cancelling, then shell remains usable, error is explicit, input remains local and late results cannot overwrite the active route. | `commerce-route-race-check` | No automatic destructive retry or hidden state loss. |
-| COM-07 | Given a primed local-first cache without network, when opening and navigating the views, then local views remain available and runtime-dependent facts show unknown/stale accurately. | `commerce-shell-offline-check` | Offline does not imply settlement, publication or live readiness. |
-| COM-08 | Given any role or pack action, when exposed in human and agent surfaces, then existing invocation schema/effect owners stay unchanged; shell navigation creates no capability or authority. | `commerce-capability-boundary-check` | Reads/preparation do not grant writes or payments. |
+### Journey and verifiable criteria
 
-**Must:** one mounted shell and route slot, stable direct routes/history, one responsive navigation/side panel/footer owner, accurate loading/error states, offline local behavior, existing role and effect boundaries. **Should:** transition analytics stored only as opt-in local pilot observations. **Could:** unified deep-link catalog after route contract settles. **Won't:** new role-specific shells, automatic synchronization, new identity or settings service, remote telemetry, new payment/order authority, paid service or model calls.
+Journey: open existing SME workspace → select Scenario → supply baseline A and candidate B (optional C) → protect agreed inputs → build locally → inspect deltas, constraints and working → accept or decline a baseline change deliberately → explicitly export/import on another device. Navigation alone never confirms a decision or authorizes commerce effects.
 
-The Agentic OS-ready status surface, AI Agent-ready discovery/execution surface, and MCP Gateway-ready federation remain unchanged. This shell increment grants no invocation, model, approval, publication or payment capability and does not promote any of those readiness dimensions.
-
-### Metrics and TTV
-
-| Metric | Baseline | Target / window |
+| ID | Given / when / then: one observable end state | Named check and constraint |
 |---|---|---|
-| Role-to-pack route continuity | Same-document mount observed in source revision `2fb00def`; no timed task baseline. | Verify direct route/back-forward behavior; time five user tasks before any savings claim. |
-| Shared shell drift | Not exhaustively measured. | Zero duplicated shell owners and zero per-role layout override at candidate release. |
-| Task completion / TTV | Unknown. | Measure open role → pack → review report; ≤60 seconds is a hypothesis, not acceptance evidence until five observed tasks. |
-| Mobile reach | Existing browser coverage is not complete parity proof. | 320/360/390/768/1280 plus 200% zoom and keyboard/touch checks; human-device acceptance open. |
-| Incremental spend/tokens | Current infrastructure spend is separately owned. | $0 new recurring spend; 0 model calls/tokens; fail closed on unknown quota/cost. |
+| COM-01 | Given any role and SME route, when navigating, then one shell/header/navigation/panel/footer stays mounted | `commerce-shell-continuity-check`: existing workspace and shell browser groups; no full document replacement |
+| COM-02 | Given direct `#sme`, reload and back/forward, when resolving, then the intended view uses the existing app URL | `commerce-route-history-check`: existing workspace/SME browser cases; no second router |
+| COM-03 | Given the same viewport across roles, when comparing, then shared geometry uses one owner | `commerce-shell-singleton-check`: shell browser + shared UI profile tests; role content may differ |
+| COM-04 | Given 320/360/390/768/1280 CSS px and 200% text zoom, when using views, then controls are reachable without page overflow | `commerce-responsive-shell-check`: shell/SME browser suite; labelled inner table scrolling allowed |
+| COM-05 | Given keyboard, touch and reduced motion, when navigating and closing a panel, then focus, Escape, ARIA and ≥44 px targets hold | `commerce-shell-accessibility-check`: shell browser tests and physical-device review; automated evidence stays bounded |
+| COM-06 | Given slow, failed or superseded work, when a route changes, then late results cannot replace active content or erase input | `commerce-route-race-check`: existing SME/workspace generation and failure tests |
+| COM-07 | Given a warmed cache without network, when navigating local views, then they remain usable and runtime facts show stale/unknown | `commerce-shell-offline-check`: owner offline/browser group; open-tab arithmetic alone is insufficient |
+| COM-08 | Given a role/pack action on any surface, when invoked, then existing capability and authority boundaries remain enforced | `commerce-capability-boundary-check`: invocation/WebMCP and workspace-tool tests; navigation grants no effect |
+| DEC-01 | Given compatible baseline A and B/C, when comparing, then declared monthly outputs include traceable candidate-minus-baseline deltas | Extend `test/shared/sme-business-pack.test.ts` and SME browser suite; preserve row order, unknowns, currency and no-winner contract |
+| DEC-02 | Given protected fields or declared limits, when a human/agent/import patch violates them, then all changes are refused with field-specific reasons | Extend same evaluator/editor tests: locked, out-of-range, stale-policy, malformed and mixed-validity patches leave original bytes unchanged |
+| DEC-03 | Given a displayed output, when opening its working, then formula, operand values/ranges, units, period, provenance/date and unknown dependencies reconcile to that output | Extend core tests with independent arithmetic fixtures; no second formula implementation in the view |
+| DEC-04 | Given a built candidate, when requesting baseline replacement, then only explicit current owner confirmation changes the baseline | Extend same browser suite: approve, decline, stale-revision and repeated-request cases; agents may prepare only |
+| DEC-05 | Given a versioned worksheet and two devices, when exporting/importing, then accepted baseline, policy, evidence and candidate meaning survive validation | Extend existing serializer/import corpus and offline/mobile browser suite; atomic refusal, size limits and old worksheet behavior preserved |
+| DEC-06 | Given the same admitted build/compare request, when using UI, local tool adapter or supported WebMCP, then semantic output and refusal reasons agree | Extend existing shared-tool and browser tests; canonical output compared excluding documented timestamps; cancellation and unsupported modes explicit |
 
-## Market, offer and alternatives
+**Must:** COM-01–08 retained; DEC-01–06 as the smallest dependency-closed enhancement, with owner confirmation and old worksheet compatibility. **Should:** optional local task timing and compact input-difference summary. **Could:** explicit user-authored sensitivity grid after baseline acceptance. **Won't (this increment):** stochastic demand/queue simulation, wage/tax libraries, industry defaults, live market feeds, autonomous baseline promotion, optimization/winner selection, auto-sync, new storage, accounts, remote telemetry, paid models/services or new checkout/payment behavior.
 
-Initial geography hypothesis: Singapore micro and small merchants. SingStat reports 371.0k enterprises and 369.5k SMEs in 2025; this is an upper population bound, not the addressable market. IMDA’s 2026 refreshed retail plan describes 2,095 eligible/interested retail enterprises for a sector-specific solution; that is not observed demand for a persistent commerce workspace. SingStat’s S$435.2B 2024 e-commerce-services revenue is transaction activity, not software spend.
+### Metrics, market and economics
 
-| Sizing method | Formula / population | Evidence and limitation |
+| Metric | Baseline | Proposed target / observation window |
 |---|---|---|
-| Population top-down | TAM = eligible merchant organizations × observed annual product price; use the 371.0k broad ceiling, then narrow only with segment evidence. | Price and fit unknown; monetary TAM unresolved. Retail’s 2,095 population is a contextual bound only. |
-| Capacity-based bottom-up | SOM = reachable qualified merchants × observed paid conversion × collected price, limited by onboarding/support capacity and cycle length. | No prospect list, conversion, price, cycle or service capacity sample; SOM unresolved. |
+| First useful comparison | Source supports comparison; timed buyer baseline unknown | ≤5 minutes and ≤6 deliberate stages for five observed owner tasks in first pilot window |
+| Explainability / input safety | Per-output lineage and protected policy absent in bounded inspection | All displayed deltas reconcile; zero protected-field changes in accepted test corpus |
+| Integration friction | UI and local adapter already share evaluator; savings unknown | Record failed/repeated actions, implementation minutes and support minutes for the same journey before/after |
+| Demand / cash | No buyer interviews or new collection evidence in this task | Proposed five interviews and three priced walkthroughs over seven days; stop condition in GTM |
+| Serving resources | No model needed for local planning | 0 inference tokens, $0 incremental external spend, existing bounded arithmetic and cached assets |
 
-Current alternatives: keep separate local pages; use manual links between tools; build no combined workspace; or use a FOSS route/shell adapter around existing capabilities. The manual/no-change path costs the least today. A hosted subscription, take-rate or paid setup is not selected absent evidence. The first-dollar owner keeps its existing ranked hypotheses: concierge setup/recovery, recurring hosting, then take-rate; none is validated by this proposal. No contact or payment occurs as part of this spec.
+Target segment hypothesis: independent merchants or small service operators who already have operating inputs and must explain a proposed change. The buyer may be the owner or an implementation partner; geography and industry do not select defaults. Existing spreadsheets/manual notes and doing nothing are the principal alternatives to test.
+
+Top-down sizing = verified eligible operators in a selected geography × observed annual price. Bottom-up sizing = reachable qualified prospects × observed paid conversion × collected price, constrained by onboarding/support capacity. Those inputs and reconciliation are unknown; no population, monetary TAM/SAM/SOM, growth or adoption claim is made. Review input rights, customer-data handling, local commercial obligations and offer terms before any external pilot; this specification supplies no legal or financial advice.
 
 ## TAD
 
-### One shell and routing contract
+### Single host and decision contract
 
-At source revision `2fb00def`, `index.html` contains the shared shell and SME view; `workspace.js` resolves the existing hash route, increments a navigation generation, lazy-loads the SME module and mounts it into `#sme .workspace-content`. The release artifact includes the SME module, styles and core, not a separate SME HTML document. This is source inspection, not browser acceptance.
+TAD consumes PRD `0.3.0`. Extend the existing SME mode, schema, evaluator, workflow editor and worksheet serializer; the one shared shell remains mounted. The existing 2–3-slot comparison is the canonical row set. A baseline is a reference to a row at a revision, not a copy of every row in another store. The calculation result remains a derived report; no payment, order or published listing follows from it.
 
-The app document owns one `WorkspaceShell`: header, role/workspace navigation, single side panel, content slot and shared footer. Preserve the existing hash/history route conventions and load the SME module into the slot. Do not add a second router, a dedicated SME page or a path adapter for this feature. Role changes update route and current-view state; asynchronous work remains generation-bound and late results cannot overwrite the active route.
-
-Maintain one shell DOM identity across route changes. Preserve user input and scroll when returning to a view unless the view’s existing contract explicitly resets it; restore focus to the destination heading or initiating control. Native hash navigation must support direct entry, reload and back/forward; do not replace it with a second history owner. Guard awaited route work with the existing navigation generation and discard stale results; add cancellation only where the owner supports it. A missing route is explicit and recoverable in the same shell.
-
-| Component / owner | Single responsibility | Boundary / recovery |
+| Element / criterion | Native owner | Smallest planned delta / recovery |
 |---|---|---|
-| Shell | Owns stable structure, shared spacing, responsive states and shared controls. | One instance; role views provide data and accessible labels, not shell CSS overrides. |
-| Route resolver | Maps approved pathname/hash/query to one view. | No auth/effect decisions; unknown route returns shell-contained not-found state. |
-| Workspace slot | Mounts/unmounts the selected role or pack view. | Lazy-load pack module; abort stale loads; preserve local source contracts. |
-| Side panel | One overlay/panel surface with content supplied by current context. | One focus trap/state; return focus on close; no per-role duplicate implementation. |
-| Theme adapter | Reads existing product semantic tokens and generates shared shell CSS. | One token source and output digest; product-specific values remain native. |
-| Effect/invocation owners | Existing capability and release/payment boundaries. | Navigation cannot invoke or authorize effects. |
+| T1 shell / COM-01–07 | Existing document, navigation, generation and view-style owners | Fix only evidenced continuity gaps; preserve hash/history/focus semantics and local input rules |
+| T2 economics / DEC-01,03 | `sme-business-pack-core.js`, existing monthly model | Add baseline-relative projection and formula descriptors beside the current arithmetic; output lineage references current operands, never a second calculation engine |
+| T3 policy / DEC-02,04 | Same domain evaluator and `sme-workflow-editor.js` | Validate one bounded proposed patch against expected row/policy revision before atomic commit. Confirmation binds exact proposed inputs and policy; stale/unknown is refused |
+| T4 view / DEC-01–04 | `sme-business-pack.js` with current shared table/panel | Project deltas and working; controls dispatch same domain action as supported tools; no separate dashboard/state store |
+| T5 portability / DEC-05 | Core serializer/import and current worksheet schema | Version only if required; legacy input is reviewed with no silently inferred baseline/protection. Unknown future versions fail before mutation |
+| T6 adapters / COM-08,DEC-06 | Existing SME schemas/local adapter/WebMCP; invocation client | Update owner schema once, project supported actions only; no second registry or agent-specific financial logic |
+| T7 status / COM-07,08 | Existing environment observation and toolbar status owner | ER-LIVE sampled a startup status transition; verify its timing at that owner before proposing a repair. Do not label all capabilities healthy from one local module being usable |
 
-### Five flows
+**Math:** reuse declared monthly calculations: revenue = unit price × units; contribution = revenue − variable unit cost × units; operating result = contribution − fixed cost − payroll. Retain current break-even and runway status distinctions. Candidate delta = candidate output − baseline output only for comparable contract/version/currency/units/period. For ranges, use existing interval arithmetic: difference bounds `[candidate.low − baseline.high, candidate.high − baseline.low]`; identical inputs share the same expression and yield zero change. Non-identical interval deltas are conservative bounds, not a probability, confidence interval or forecast. Missing operands produce explicit unknown dependencies, never zero.
 
-**D1 — Shared route journey:** direct entry or role navigation retains the mounted shell.
+**Policy:** proposed baseline reference, protected field keys and optional bounds live in the existing worksheet envelope at its new reviewed version, if needed. Typed input differences are evaluated against current protected values before any write. Policy authoring/unlocking and baseline acceptance belong to explicit human actions; tool annotations alone provide no enforcement. Persisted offer facts, secrets and financial authority remain outside this planning envelope.
+
+**Safety and races:** retain pack/contract/comparison generations, response bounds, cancellation and route-exit clearing. Pending proposals bind expected row and policy revisions; reject after edits, contract switches or baseline replacement. Import parses and validates all rows before swapping tab-local state. Reject prototype keys, unexpected fields, non-finite/oversized values, invalid dates, mixed currencies and incompatible contracts. Render user text as text. Retain existing CSP and offline/service-worker boundaries; no telemetry or remote upload of inputs.
+
+**Limits:** existing tool request ≤32,768 B, response ≤65,536 B, 2–3 comparison rows and ≤40 evidence records per input set remain upper bounds. Reuse current serializer limits rather than inventing a larger transfer contract. Browser-safe utilities carry no filesystem, secret, provider SDK or effect authority. A generic shared extraction needs an ADR and two real independent consumers; UI plus its adapter alone do not justify a new package.
+
+### Reference implementation — invocation projection
+
+This table references the existing Invocation Register and owning schema; it introduces no names. `/` is a command, `@` a binding and `#` semantic scope. Discovery is metadata and creates no authority.
+
+| Surface | Existing identity / owner | Current mode / enhancement boundary |
+|---|---|---|
+| Human UI | `#sme`, `#sme-workflow`, `#sme-dictionary`; existing SME view | build/compare local inputs; add protected proposal review in the same view |
+| Local MCP | `npm run sme:local`; `pack.list`, `pack.protocol`, `business.plan.build`, `business.plan.compare` | deterministic discovery/build/compare; add compatible fields only after schema/version review; baseline commit unsupported |
+| WebMCP | Same `TOOL_SCHEMAS` and `invokeSmePackTool` in active SME view | browser support conditional; fallback is normal UI. Test registration/cancellation/route disposal; unavailable API is explicit |
+| HTTP | Existing `/services/sme-business-pack` adapter | server parity and availability unverified here; explicit request snapshots only, no access to another tab's private state |
+| `/`, `@`, `#` | `src/invocation/catalog.ts`, `agentic-os/invocation`, existing docs gateway | read-only resolution to existing capability IDs; no invented scenario aliases; new aliases deferred until owner declaration/check |
+| Skills / commands | Existing entrypoints consume the same owner schemas | orchestrate supported prepare/read calls only; no baseline approval, publishing or money authority |
+| Geo / Graph context | Existing listing and graph adapters | optional contextual read; neither selects a financial assumption nor authorizes a decision |
+
+Build/release dependencies stay acyclic: portable contracts/tokens → domain evaluator and owner exports → exact consumer pins → transport adapters → views. Versioned request/reply between services is not permission for cyclic package imports. No source import from a sibling checkout is allowed.
+
+### Applicable flows and topology
+
+Each feature group classifies all five canonical flow types. All are applicable here: user journey (owner comparison), workflow (patch/review), data (worksheet/report), orchestration (existing bounded checks and human gate), topology (local browser plus optional read-only adapter). DEC features use D1–D5 with T2–T6; COM features use the same host path with T1/T7. No new agent orchestration is required.
+
+**D1 — User journey, conceptual, v2:** an owner reviews a local change.
 ```mermaid
 flowchart LR
-  entry[Role link or direct pack URL] --> resolve[Resolve same app route]
-  resolve --> shell[Keep common shell mounted]
-  shell --> slot[Mount selected workspace view]
-  slot --> action[Complete local task]
-  action --> history[Back/forward returns to prior view]
+  entry[Enter existing workspace]
+  baseline[Declare baseline]
+  candidate[Change one case]
+  inspect[Inspect deltas and working]
+  retain[Confirm or decline and export]
+  entry -->|select| baseline
+  baseline -->|propose| candidate
+  candidate -->|compare| inspect
+  inspect -->|decide| retain
 ```
 
-**D2 — Route workflow:** state, loading, focus and history change in a bounded sequence.
+**D2 — Workflow, conceptual, v2:** invalid or stale proposals leave state intact.
 ```mermaid
 flowchart TD
-  intent[User navigation intent] --> route[Resolve canonical route]
-  route --> state[Update URL and view state]
-  state --> load[Lazy-load view if needed]
-  load -->|current generation| mount[Mount in shell slot]
-  load -->|stale/failure| preserve[Keep shell and show safe state]
-  mount --> focus[Move focus and restore view context]
-  focus --> back[Support history and reload]
+  proposal[Typed proposed patch]
+  policy[Check protected fields and revision]
+  retain[Retain original state with reasons]
+  calculate[Run existing evaluator]
+  review[Review exact candidate]
+  commit[Replace baseline reference]
+  proposal -->|validate| policy
+  policy -->|refuse| retain
+  policy -->|accept| calculate
+  calculate -->|stage| review
+  review -->|human confirmation| commit
 ```
 
-**D3 — Route/data flow:** URL selects a view over existing data owners.
+**D3 — Data flow, conceptual, v2:** one domain model produces every projection.
 ```mermaid
 flowchart LR
-  url[Path + hash + query] --> router[Route resolver]
-  router --> view[View module]
-  view --> local[Existing local draft/data owner]
-  view --> observation[Existing bounded runtime observation]
-  local --> shell[Shared shell renders state]
-  observation --> shell
-  shell -. no new persistence .-> url
+  input[Versioned worksheet inputs]
+  model[Existing domain evaluator]
+  report[Values deltas and lineage]
+  table[Shared table and working panel]
+  backup[Local worksheet file]
+  input -->|validate| model
+  model -->|derive| report
+  report -->|project| table
+  input -->|explicit transfer| backup
+  backup -->|atomic import| input
 ```
 
-**D4 — Validation orchestration:** verify source, browser checks and delivery separately.
-```mermaid
-flowchart TD
-  change[Edit scoped view or shell owner] --> bounds[Check file, byte, module and time caps]
-  bounds --> named[Run route, shell and responsive named checks]
-  named --> candidate[Seal exact source revision]
-  candidate --> ci[Protected source gate]
-  ci --> merge[Authorized source integration]
-  merge --> deploy[Separate delivery owner and instruction]
-  deploy --> readback[Exact route, asset and rollback readback]
-```
-
-**D5 — Host topology:** one app document and shell serve role and pack modules.
+**D4 — Orchestration, conceptual, v2:** source and delivery require different evidence.
 ```mermaid
 flowchart LR
-  browser[Mobile / desktop browser] --> host[Existing local or edge host]
-  host --> document[Single app document]
-  document --> shell[One shared shell]
-  shell --> role[Shopper / Vendor / Admin view]
-  shell --> pack[Lazy SME pack view]
-  role --> owner[Existing capability/data owners]
-  pack --> owner
+  scope[Admitted scoped lane]
+  checks[Affected owner checks]
+  source[Exact source candidate]
+  protected[Protected source revision]
+  delivery[Delivery and rollback readback]
+  scope -->|verify| checks
+  checks -->|seal| source
+  source -->|authorized integration| protected
+  protected -->|separate authority| delivery
 ```
 
-| Diagram | Class | Notation | Surface | Projects | Nodes / edges / clusters | Version |
-|---|---|---|---|---|---|---|
-| D1 | conceptual | Mermaid flowchart LR | This specification | no | 0 / 0 / 0 | 1.0 |
-| D2 | conceptual | Mermaid flowchart TD | This specification | no | 0 / 0 / 0 | 1.0 |
-| D3 | conceptual | Mermaid flowchart LR | This specification | no | 0 / 0 / 0 | 1.0 |
-| D4 | conceptual | Mermaid flowchart TD | This specification | no | 0 / 0 / 0 | 1.0 |
-| D5 | conceptual | Mermaid flowchart LR | This specification | no | 0 / 0 / 0 | 1.0 |
+**D5 — Topology, conceptual, v2:** local planning needs no remote runtime.
+```mermaid
+flowchart LR
+  device[Mobile or desktop browser]
+  shell[One cached app document]
+  local[SME evaluator and shared views]
+  file[Local worksheet]
+  adapter[Optional local tool transport]
+  device -->|loads| shell
+  shell -->|lazy mount| local
+  local -->|explicit export| file
+  adapter -->|same contract| local
+```
 
-### Responsive, offline and privacy contract
-
-Use one fluid shell grid with a shared navigation width/collapse token, shared header block size and a single content minimum. At narrow widths collapse the rail to one accessible navigation disclosure; use ellipsis for long labels with full accessible names, never wrap the shell into competing layouts. A side panel becomes a modal sheet on narrow screens but retains the same component/state owner. Preserve one visual token mapping from existing Commerce tokens; no copied palette or role-specific geometry overrides.
-
-All local page assets must stay under the existing local-first artifact root. The pack remains local-only and does not persist seller-entered facts. A warmed cache may render offline views; any runtime observations show source time and stale/unavailable. Do not fetch or expose remote private data. Respect CSP, escaped user input, no credentials in local storage, and cancellation/disposal on route change. Existing authentication, offer review, checkout, publication and payment confirmation stay with their current owners.
-
-**Budgets:** reuse the current shell, token generator and local-first release checker; ≤3 new runtime modules, ≤25 changed paths, ≤90 active minutes, ≤100 kB incremental uncompressed authored client bytes, 0 model tokens, $0 external spend. Lazy-load the pack module and styles only when entered. Keep files <600 lines and generated/browser chunks <500 kB. Stop at cap and record a blocker; refresh on source drift.
-
-## ADR-01 — Route the pack inside the mounted app
-
-**Status:** implemented in source revision `2fb00def`; acceptance remains unverified. **Decision:** keep the existing application document, shared shell, hash route and lazy SME module. Preserve the module boundary and do not add a separate SME page or path adapter. This decision records source architecture; it does not establish browser or production behavior.
-
-| Alternative | Benefit | Cost / decision |
-|---|---|---|
-| Keep standalone document | Isolated assets and independent entry. | Older design state; current source already mounts the SME view in the shared document. Do not restore. |
-| Hash route in the shared document | Reuses the existing shell, history convention and view owner. | Current source choice; COM-01/02 still need browser evidence. |
-| Add a dedicated path resolver | Could provide another URL form. | Not needed for the existing `#sme` route; adds routing and host fallback work. Reject for this increment. |
-| Rebuild the app in a new SPA framework | Familiar routing ecosystem. | Paid/free-tier risk, migration, duplicated state and bundle cost without need. Reject. |
-
-Recovery: if a future route change regresses, revert that exact route change, retain the SME modules and verify `#sme`, back/forward and prior role navigation. No data migration is needed. Revisit only if the existing hash route cannot resolve reliably within the $0 cap. Self-hosted local artifact remains preferred; managed deployment cost is unknown and not selected.
-
-| TCO dimension | Chosen: existing static/local FOSS | Best alternative: keep two local documents | Evidence state |
+| Diagram | Primary surface / ingest | Expected nodes / edges / clusters | Projection check |
 |---|---|---|---|
-| External infrastructure / egress | $0 incremental target; shared-host allocation unknown | $0 incremental target | No new service selected. |
-| Model/token cost | $0; no model calls | $0 | Fixed by scope. |
-| Labor / support | Unknown; measure implementation and pilot time | Unknown; measure route friction and upkeep | No savings claim. |
-| 12-month total | Unknown until allocated hosting and labor are measured | Unknown until labor is measured | Reconcile monthly; cap new cash spend at $0. |
+| D1 | flowchart / fenced body | 5 / 4 / 0 | shared `check-diagram-canvas-render.mjs` |
+| D2 | flowchart / fenced body | 6 / 5 / 0 | same checker |
+| D3 | flowchart / fenced body | 5 / 5 / 0 | same checker |
+| D4 | flowchart / fenced body | 5 / 4 / 0 | same checker |
+| D5 | flowchart / fenced body | 5 / 4 / 0 | same checker |
+
+Topology: the browser owns ephemeral private inputs; the explicit worksheet is user-controlled storage; the edge supplies existing immutable assets/configuration, not remote scenario persistence; optional local adapters evaluate supplied snapshots. A baseline confirmation is a local owner gate. No diagram arrow creates a deploy, network-write or payment grant.
+
+### Native design adoption and resource bounds
+
+| Concern | Reused owner | Acceptance / gap |
+|---|---|---|
+| Identity/assets | Existing document and native assets | No new illustrations, brand or asset dependency; existing rights unchanged |
+| Settings/preferences | Existing navigation and view state | No new global preference store; policy belongs to worksheet, not theme settings |
+| Tokens/typography/icons | Pinned design profile, toolbar/panel and shared artifacts | Existing source digests plus contrast, text zoom and labels; no font download |
+| Table/editor | Existing Base table, pivot and SME editor | One active editor; keyboard/touch/focus and route-exit tests |
+| Status/evidence | Existing status and environment owners | Show local computation separately from runtime availability; ER-LIVE startup timing unverified |
+
+Authoring sprint: ETA/cap 30 active minutes, one existing Markdown file, ≤60,000 B total, <600 lines, zero runtime modules/dependencies/pin changes, zero added always-load bytes, 0 inference/serving tokens, $0 new external spend. Session authoring tokens/time are reported only if measured; no fabricated usage receipt.
+
+Proposed implementation, after authorization: two bounded 90-minute slices, ≤10 existing runtime/contract paths plus their owner tests, ≤60 kB total incremental authored browser bytes, zero new runtime modules preferred, every authored file <600 lines and every chunk <500,000 B. Current core is 508 lines and main view 556; extend/factor existing owner modules before reaching the cap. Reuse an existing module, never evade the limit by adding another evaluator. Refresh scope/budgets on drift. Keep explanations/review assets lazy beyond active workspace; no new always-load instruction.
+
+## ADR-01 — Retain the single mounted shell
+
+**Decision retained:** preserve the existing document/hash router/lazy SME mount and shared panel. Source implementation exists; complete COM-01–08 acceptance remains open. Alternatives: a separate document loses continuity; a new path router adds unneeded host work; a framework rebuild duplicates near-built capability. Recover by reverting only an evidenced route regression and checking direct URLs/history/focus; preserve drafts. Revisit only if the current route cannot meet acceptance.
+
+## ADR-02 — Extend deterministic scenarios and explicit owner review
+
+**Status:** proposed; binds PRD/TAD `0.3.0`. Constraint gate: $0 external spend, no new data service, no model dependency, protected facts, deterministic results, portable worksheets and one owner. Existing deterministic comparison meets those constraints. A contract-only adapter is acceptable for transport differences but cannot contain calculation or authority logic.
+
+| Alternative | Argument / feasibility | Outranking and consequence |
+|---|---|---|
+| Direct native reuse plus owner extensions | Existing arithmetic, 2–3 rows, UI/tool schemas and exports; missing deltas/policy/lineage stay with owner | selected: smallest gap and no runtime service; must version compatibility deliberately |
+| Keep current absolute comparisons | Zero implementation cost and a viable fallback | second: no new value claim; select if five-task experiment shows no comparison pain |
+| Add independent simulator/package | More features, but new state/formulas, invalid domain assumptions and bundle/support cost | rejected for this increment; requires repeated evidenced need and successor ADR |
+| Copy UI logic into tool adapters | Quick prototype but inconsistent refusals and duplicate ownership | rejected; all surfaces call existing evaluator |
+| Add stochastic operational model | Needs calibrated data, distributions and domain validation unavailable here | deferred; no seeds, percentile bands or queue/waste estimates are implied by interval ranges |
+
+Policy and explanation metadata remain in the domain owner; generic encoding/grammar remains in shared utilities. Before replacement or schema promotion, test accepted/refused inputs, canonical bytes/digests, errors, bounds, cancellation, revision races, deterministic outputs and idempotent preparation. Remove superseded local behavior in the same accepted replacement; a compatibility shim needs actual callers, a retirement trigger and a check.
+
+Rollback restores exact prior source/pins and disables the new optional projection while preserving user-exported worksheets. Reject unsupported future versions without data mutation; baseline rollback never replays a payment or changes a live offer. Revisit on failed compatibility, repeated >5-minute buyer task, or a measured independent second consumer.
+
+Deployment TCO comparison: existing cached local browser has $0 incremental infrastructure/model target and unknown labor/support; an optional self-hosted adapter uses existing device resources with allocation unknown; hosted shared execution has unknown quota/headroom and is not selected. No 12-month TCO or savings figure is evidenced. Any new provider effect requires current hard-$0/deny-at-quota proof; unknown cost blocks that effect only.
 
 ## MVP
 
-**MVP:** the current source already places the SME pack view inside the shared document and shell. Retain this code path; verify route/history, responsive navigation, side panel, focus, offline and failure states, and fix only evidenced gaps. No new commerce capability or authority. The source mount is not acceptance proof.
+### Accepted slice, checks and readiness
 
-| VCC | Evidence Reference | Local rung | Delivered rung |
+MVP consumes COM-01–08, DEC-01–06, T1–T7 and ADR-01/02 at `0.3.0`. It is one enhancement inside the current SME workspace. Existing source/liveness evidence reduces discovery work; it does not satisfy the proposed enhancement or grant baseline changes.
+
+| Criteria | Current evidence | Completion boundary |
+|---|---|---|
+| COM-01–08 | G1 source and ER-LIVE bounded navigation/layout; full matrix not executed here | retain existing owner browser groups; all route/focus/race/offline/device cases required for closure |
+| DEC-01–06 | G2/G3 provide reusable foundation; G4 identifies gaps | proposed, not implemented or satisfied; affected unit/property/browser/tool equivalence checks must cover every criterion |
+| Authoring | One joined owner, exact grounding/pins, addressed five roles and flow source | source checks/projection/link/continuity evidence; no product rung advancement |
+
+**Traceability:** COM → T1/T6/T7 → ADR-01 → existing shell/workspace/tool checks; DEC-01/03 → T2/T4 → ADR-02 → SME core/browser; DEC-02/04 → T3/T4 → ADR-02 → protected patch/confirmation cases; DEC-05 → T5 → ADR-02 → import/export corpus; DEC-06 → T6 → ADR-02 → adapter parity/refusal corpus. Future implementation extends these existing suites instead of creating a parallel check controller. Independent owner runners judge outcomes; author assertions do not satisfy VCCs.
+
+**Demo skeleton:** Hook: owner asks what one price change does → Probe: declare baseline and one candidate, protecting a cost → Reveal = DEC-01/03 reconcile the result and its working → challenge a protected edit (DEC-02 refusal) → Close: decline/confirm deliberately and export the worksheet. Proposed ≤3-minute demo plus five ≤5-minute tasks; not yet timed. Core functionality, theme/innovation, technical integration and usefulness/agent experience are all **unassessed** for this enhancement; require source-bound checks and buyer comparison before ratings.
+
+### Roadmap and bounded RAO steps
+
+One product roadmap under this join; the existing first-dollar record alone owns payment and validation learnings.
+
+| Step / phase | Role, one action and observable outcome | Prerequisite / exit | Bounds / stop / recovery |
 |---|---|---|---|
-| COM-01–08 | None; criteria specified, not yet executed or satisfied. | spec-complete | undocumented |
+| R0 / specification | Product function specifies one owner-grounded increment → this artifact | User authoring request; continuity, links, projection and affected checks | 30 min, one file ≤60 kB, zero runtime delta; retain exact draft if release authority unavailable |
+| R1 / contract | Domain maintainer extends current scenario/worksheet contract → compatible baseline/policy/lineage | Implementation authorization; DEC contract and legacy-corpus checks | First 90 min slice with R2; ≤60 kB total delta, no added service; stop before schema ambiguity or file cap |
+| R2 / projection | UI maintainer projects the accepted contract in existing table/editor → one coherent view | R1 export/schema first; DEC unit/browser acceptance | Same first slice; zero second store/router; revert optional fields on incompatibility |
+| R3 / verification | Existing evaluator runners verify the exact candidate → evidence for COM/DEC | R1/R2; full affected negative/race/offline/mobile/parity cases | Second 90 min slice; ≤3 correction cycles, stop after two without blocker reduction |
+| R4 / delivery | Product release owner promotes exact protected candidate → separate Dev/Prod/rollback receipts | Source integration, provider cost proof and explicit effect authority | External wait: recheck on exact approval/receipt; no deployment ETA or assumed grant |
+| R5 / learning | GTM function records priced pilot outcome → successor context in existing learning owner | Usable accepted slice and contact/payment authority | Proposed seven-day observation window; stop/pivot below; no outreach in this task |
 
-**Demo Skeleton:** Hook (open `#sme` from the workspace) → Probe (observe the one document and shell while the lazy view mounts) → Reveal=COM-01 (source behavior confirmed; browser check pending) → back/forward, resize and reload → Close (show route, state and offline boundary); ≤2 minutes, not timed. Domain-object rubric: unassessed; independent route and visual review remain open.
-
-### Roadmap
-
-**Owner and join:** product function · `COMMERCE-CONTROL-PLANE-001@0.2.0`; the existing first-dollar record remains the owner of validation and payment learning.
-
-| Phase | Rank / reuse | Exit condition and cap | Stop / recovery |
-|---|---|---|---|
-| A: source baseline and task measure | P1 first; source already shows same-document hash routing and lazy SME mount. | Record document count, shell geometry, focus, route and five task times; ≤20 min. | Stop on unowned behavior or dirty source; preserve exact baseline. |
-| B: route/shell acceptance | Reuse current shell, pack logic and release artifact; no duplicate adapter. | Verify COM-01/02/06 on the exact candidate; any source fix stays within ≤3 modules, ≤25 paths, ≤100 kB, ≤90 min. | Revert only an evidenced route fix; no store changes. |
-| C: responsive parity | Reuse shared tokens and navigation owner. | COM-03/04/05 across named widths/zoom and keyboard/touch. | Keep known-good route; fix one shared owner. |
-| D: delivery decision | Existing delivery owner only. | COM-07/08 and exact candidate, route, asset, rollback receipts. | No deployment until explicit promotion instruction. |
+Source order is owner contract/checks → compatible export/version → exact pin/lock if changed → adapter/view projection → affected checks. Any upstream shared-owner change follows that dependency order in its own scope; no opportunistic dependency upgrades.
 
 ## GTM
 
-The target segment is Singapore micro/small merchants and the buyer may be the merchant or implementation partner; neither is validated. The closest first-dollar mechanism stays with the existing first-dollar sprint. This proposal adds no paid offer or sales action. A no-contact internal usability task is the first experiment; external outreach requires its own authorization.
+GTM consumes PRD/TAD/ADR/MVP `0.3.0`; it creates no new feature requirement. Proposed offer: an owner-guided setup and explanation of one existing baseline/candidate worksheet. The existing first-dollar plan remains the only payment/learning record. No buyer, paid price, payment mechanism outcome, recognized revenue or collection is evidenced by this authoring task.
 
-| Revenue stream | Rank | Mechanism | Demand evidence | Cash |
-|---|---|---|---|---|
-| Concierge setup / recovery | Existing owner ranks first; not executed here. | Unvalidated. | None. | No new receipt. |
-| Recurring hosting | Existing owner ranks second; not chosen by this spec. | Unvalidated. | None. | None. |
-| Take-rate | Later, transaction capability and repeat demand required. | Not implemented by shell. | None. | None. |
-
-Assumptions: qualified prospects, conversion, price, support load, retention and infrastructure cost are unknown. Unit contribution = collected price − payment fees − delivery labor − serving/hosting − support; no numeric result is supportable. Record bookings, invoicing, recognized revenue, collections, refunds and taxes separately. **Income statement:** price × paid units less attributable COGS and operating expenses, all unknown. **Cash flow:** opening cash + collections − cash payments + financing, unknown. **Balance sheet:** assets − liabilities − equity must reconcile to zero once records exist; currently unavailable. Closing cash must reconcile to the cash-flow statement after working-capital, tax and noncash adjustments. Base/downside/upside, runway, break-even and capitalization remain unresolved; no ask or revenue claim is made. Keep FOSS/free-tier usage within a verified $0 cap and fail closed if quota headroom is unknown.
-
-| Scenario | Stress drivers | Revenue / cash / contribution / runway |
+| Stream / rank | Constraints → argument → decision | Evidence / next experiment |
 |---|---|---|
-| Base | Qualified demand, price and conversion all unknown. | Unknown; no forecast. |
-| Downside | Zero paid conversion; retain measured support and hosting costs if collected. | No revenue assumption; cash timing unknown. |
-| Upside | Capacity-limited qualified demand and conversion only after observed evidence. | Unknown; no extrapolated market share. |
+| 1 / assisted setup and decision review | Reuses current local workflow; no new hosting or provider. Shortest credible path if owner pain exists | hypothesis; five interviews then three priced walkthroughs. A US$1-equivalent local-currency collection is a validation threshold, not a selected price or revenue claim |
+| 2 / recurring support | Needs repeated use and measured support load; greater trust/retention burden | deferred until two repeat-use observations and positive contribution evidence |
+| 3 / hosted subscription or transaction take-rate | Needs separately authorized reliable serving/settlement and verified zero-cost bounds | Won't this increment; not proven by a static demo or tool registration |
 
-Acquisition channel, sales cycle, activation-to-paid conversion, repeat-use cohort and support capacity remain unknown. The first experiment measures completion of five internal tasks; channel and retention experiments wait for observed pain and explicit outreach authority.
+**Experiment:** after authorized contact, ask five qualified owners about their latest real comparison, workaround, frequency and time cost; show the same priced offer to three qualified walkthrough participants over seven days. Log actual time-to-result, explanation comprehension, protected-edit refusal, explicit offer acceptance/decline, support minutes and repeat request. Price comes from willingness-to-pay evidence, not this plan. Success hypothesis: ≥3/5 report the same recent pain, ≥2/3 complete the task, and ≥1 deliberately purchases a permitted fulfilled service. Mechanism proof and demand validation stay separate; a synthetic test payment proves neither. Stop/pivot after 0/5 recent pain or 0/3 offer acceptance; retain the current free comparison and record the successor rather than add scope. Unreachable buyers are an external blocker, rechecked on a qualified prospect, not an inferred failure or an ETA.
 
-Operations reuse existing source and release owners. Support classifies route/history, storage, offline and shell accessibility failures; no telemetry is added. Incident recovery reverts the exact route and shell candidate, retains local drafts and verifies the direct hash URL/back-forward. Delivery, deployment and rollback require their own receipts and authority.
+Contribution = collected service price − payment fees − delivery labor − allocated serving/hosting − support/refunds. Record recognized revenue separately from cash collected, tax and reversals. Price, conversion, labor rate, CAC, LTV, retention and total hosting allocation are unknown. Income statement, cash flow and balance sheet are not produced from invented inputs; future finance projections must reconcile collections, working capital and closing cash at this join. Base/downside/upside remain input-driven scenarios, not a forecast: downside includes zero conversion; upside is capped by measured delivery capacity. $0 bootstrap capital, no funding ask and no claim of break-even/runway.
+
+Operations: existing product owner triages route, import, input-policy, arithmetic and readiness incidents; retain explicit customer consent and redacted evidence. No private worksheet telemetry. Recovery restores known-good source/pins and preserves exportable facts. New customer obligations, data retention or regulated use require a scoped decision before that dependent pilot. Pitch deck, full business plan and financial model are deferred until an actual audience decision needs sourced projections.
 
 ## C01–C16 coverage
 
-**Join:** `COMMERCE-CONTROL-PLANE-001@0.2.0` · **As of:** 2026-10-31 · **Owner:** Commerce product function. **0:** same-document SME routing is observed in source; user pain, route acceptance, price and demand remain unmeasured. **1:** one person opens the pack, completes a report, and returns with shell, route and focus retained within 60 seconds; no observation yet.
+Join `COMMERCE-CONTROL-PLANE-001@0.3.0`, as of 2026-11-16. A covered row means the specification addresses it, not that implementation or the business is validated.
 
-| Domain | Decision | Source section@revision | Evidence / gap | Owner | Next check / trigger |
-|---|---|---|---|---|---|
-| C01 Purpose, customer, pain | covered | PRD@0.2.0 | Same-document route observed in source; user impact unmeasured | Product | Five timed tasks before baseline sign-off |
-| C02 Market, timing | covered | GTM@0.2.0 | Population sources cited; price/fit unknown | Product | Segment and offer evidence before TAM claim |
-| C03 Offer, alternatives | covered | GTM/ADR@0.2.0 | Manual/no-change/FOSS options; offer unvalidated | Product | Revisit after repeated pain evidence |
-| C04 Product, experience | covered | PRD@0.2.0 | Route, mobile, accessibility/offline VCCs defined | UX | Run COM-01–07 with human review |
-| C05 Architecture, data | covered | TAD@0.2.0 | Existing shell/hash route and data boundaries recorded; parity unverified | Architecture | Verify browser history, focus and route identity |
-| C06 Quality, security, AI | covered | TAD@0.2.0 | Race, privacy, offline and $0 bounds; no acceptance proof | Security | Run COM-06–08 before candidate |
-| C07 Decisions, tradeoffs | covered | ADR@0.2.0 | Existing same-document route retained; recovery stated | Architecture | Revisit only if host route cannot serve the app document |
-| C08 Smallest validated slice | covered | MVP@0.2.0 | Source integration observed; no checks passed | Product | Execute COM-01/02/04 |
-| C09 Acquisition, retention | covered | GTM@0.2.0 | Existing learning owner; no channel/payment evidence | GTM | Review internal task outcomes first |
-| C10 Operations | covered | TAD/GTM@0.2.0 | Support/recovery and accountable owners named | Operations | Review first route incident or pilot |
-| C11 Organization, obligations | covered | TAD/ADR@0.2.0 | Existing authority/privacy boundaries retained; legal review open | Product counsel | Check before new hosted or customer data scope |
-| C12 Financial viability | covered | GTM@0.2.0 | Formulae stated; input and statements unresolved | Finance | Populate from exact payment/cost receipts |
-| C13 Capital, milestones | covered | Roadmap@0.2.0 | $0 bootstrap target; no ask or funding evidence | Product | Revisit if verified free limit fails |
-| C14 ADLC execution | covered | Roadmap@0.2.0 | Authoring lane scoped; release/deploy separated | ADLC owner | Exact source integration and no-deploy disposition |
-| C15 Audience projections | deferred | Venture@0.2.0 | Depends on validated demand and sourced financial inputs; audience claims are not yet evidenced | Product | Revisit after those inputs exist |
-| C16 Learning, next increment | covered | MVP/GTM@0.2.0 | Five-task experiment and successor trigger defined | Product | Record outcome in existing learning owner |
+| Domain | Disposition / section | Evidence or gap / accountable function / revisit |
+|---|---|---|
+| C01 purpose/customer/pain | covered / PRD | Hypotheses and source gaps; Product; five-task/pain experiment |
+| C02 market/timing | covered / PRD | Two sizing formulae, inputs unknown; Product; qualified segment evidence |
+| C03 offer/alternatives | covered / ADR/GTM | Native/no-change alternatives and priced-test plan; Product; offer acceptance |
+| C04 product/experience | covered / PRD | COM/DEC VCCs, mobile/accessibility and demo; UX; criterion acceptance |
+| C05 architecture/data | covered / TAD | One domain/state owner, exact pins and flows; Architecture; contract/schema change |
+| C06 quality/security/AI | covered / TAD | Negative/race/privacy cases, zero inference; Security; affected checks |
+| C07 decisions/tradeoffs | covered / ADR | Native extension selected; stochastic model deferred; Architecture; failed constraints |
+| C08 smallest validated slice | covered / MVP | Dependency-closed target; enhancement acceptance open; Product; R3 evidence |
+| C09 acquisition/retention | covered / GTM | Existing learning owner, bounded pilot and repeat-use trigger; GTM; authorized observations |
+| C10 operations | covered / TAD/GTM | Incident/recovery and live readiness gap; Operations; next exact live readback |
+| C11 organization/obligations | covered / PRD/GTM | One accountable function, private inputs and scoped gates; Product; external pilot/data change |
+| C12 financial viability | covered / GTM | Contribution formula, price/cost/cash unknown; Finance; actual receipts |
+| C13 capital/milestones | covered / MVP/GTM | $0 bootstrap, no ask, bounded phase exits; Product; verified quota/capacity failure |
+| C14 ADLC execution | covered / release boundary | Exact lane/candidate, checks and per-effect receipts; ADLC owner; publication/integration |
+| C15 audience projections | deferred / GTM | No audience decision or sourced finance; Product; qualified audience request |
+| C16 learning/successor | covered / GTM | Thresholds, stop/pivot and existing learning owner; Product; pilot result or material assumption drift |
 
-**Coverage:** 16/16 dispositioned; 15/15 applicable covered; 1 deferred; 0 not applicable. This is specification coverage, not implementation readiness. Revisit at baseline, MVP acceptance and audience handoff.
+Coverage: 16/16 dispositioned, 15 addressed, one deferred. Full authoring-rule coverage ratio and independent conformance verdict are not computed by this table. No complete guideline certification is claimed.
 
-## ADLC and release boundary
+## Live UI evidence and remaining findings
 
-This lane changes one planning document only. It does not change the app, local-first artifact, Worker, route config, package, consumer pin or runtime. Local authoring checks do not imply product acceptance. The exact `docs/prd-tad-adr-mvp-gtm-agentic-commerce-os.md` path is docs-only and receives no runtime deployment disposition after source integration. Source merge, artifact delivery, runtime promotion and rollback remain distinct owner-controlled effects. No deployment instruction is included; delivered readiness remains `undocumented`.
+**ER-LIVE, reference implementation:** public `https://airvio.co/agentic-commerce-os/#sme`, isolated anonymous browser, 2026-11-16 13:24–13:33 UTC (21:24–21:33 Singapore). Inspected accessibility tree, visible screenshot and DOM/readiness JSON; performed only navigation and local illustrative-input actions. No hosted payment/session submission or customer-data write was performed. Screenshot was visually inspected inline; filesystem screenshot export was refused by the browser tool, so no saved-image receipt is claimed.
+
+| Observation / check | Recorded result | Scope and limit |
+|---|---|---|
+| Desktop entry / local Scenario action, 1510×905 | PASS sampled action: `#sme`, local protocol v2.3.0, Scenario selection, illustrative inputs, “Local scenario plan built”; no page-level overflow; local storage keys empty | One row built; no 2–3-row end-to-end comparison or DEC behavior claimed |
+| Mobile entry / local build, 390×844 | PASS sampled action: visible shared toolbar, plan mode/contract form, local-computation disclosure; illustrative Buy/Build plan built; no page overflow | Emulated touch/mobile screenshot, not physical-device, 200%-zoom or complete COM-04/05 acceptance |
+| Responsive/state transition | Changing browser emulation returned the plan to its initial local state | Cause unverified: possible tool reload or app lifecycle. Do not call this proven responsive-state preservation or loss; owner browser suite must distinguish them |
+| Offline attempt | INCONCLUSIVE: emulation changed page identity/state, old element refs expired, and readback still reported `navigator.onLine:true` | No offline/reload acceptance credited; rerun controlled owner offline suite |
+| Exact public identity | DOM and readiness source `acaae50534077ec0890c6597ed2966c0b8257604`; Worker version `51c2d0b1-e420-49e9-bec9-a08decd6c31d` | Different from inspected local `25f4c8e…`; source check and live sample cannot be joined into candidate delivery proof |
+| Readiness / status consistency | `/readyz` HTTP 503: `ok:false`, configured-capabilities, fulfillment unavailable; initial toolbar showed “Service ready”, final 1280×900 screenshot/readback at 13:33 UTC showed “Service unavailable” | Final status agrees. Startup duration/cause unverified; do not infer a persistent bug. Local arithmetic is distinct from fulfillment; test startup before repair |
+| Payment configuration | Readiness reported checkout live / `realMoney:true` | Configuration observation only, not successful transaction, revenue, demand or permission to exercise checkout |
+
+Open acceptance gaps: Product owns DEC-01–06 through R1–R3 after implementation authorization; QA owns exact-candidate and controlled offline evidence; Operations owns investigation of T7 startup status timing. These are product/evidence gaps, not self-issued conformance verdicts or satisfied criteria. Independent full alignment is still required before implementation baseline promotion. If that review raises a conformance finding, record the shared six fields: Finding Type, Severity, exact Rule ID, artifact reference, bounded verbatim evidence and one remediation.
+
+## ADLC, release boundary and handoff
+
+START admitted `agent/device-0232231d4a19/commerce-native-decision-plan` at base `25f4c8e221ad0a60b63c4fb432b2bbe9d44423d2`, write scope only `docs/prd-tad-adr-mvp-gtm-agentic-commerce-os.md`. Canonical checkout is read-only. This artifact is excluded from `scripts/local-first-release/artifact.mjs` asset inputs; no app, Worker, host, package, shared pin or deployed asset changes in this task. Documentation release needs source checks and its exact source receipt; no runtime promotion is necessary for these bytes.
+
+Follow central START/ADLC/RELEASE and the product's `docs/production-runtime.md` / `docs/deploy-boundary-register.json` for their actual effect scopes. Authoring → mirror → delivery boundaries remain closed absent a scoped operator grant. LAND may prepare/publish the exact source candidate through the native owner; protected Integration Gate, merge authority, sync and cleanup each retain independent receipt requirements. Source publication or a green local command proves no protected integration, deployment or rollback. Do not trigger a runtime release for this document.
+
+Any later product delivery requires exact protected source/artifact identity, current provider hard-$0/quota denial proof, Dev readback, explicit Production promotion, source/route/asset/version acceptance and retained rollback predecessor/rehearsal. Restore exact compatible source/pins and validate existing user data; do not infer data/payment recovery from a source revert. Existing approvals apply only to their bound scope, candidate and effect.
+
+Handoff includes this diff, checks/results, exact source/PR/integration receipts when available, ER-LIVE limitations, actual measured resources or unknowns, and the next bounded owner action. Next product action is R1 only after its concrete implementation scope is authorized; independent checks then decide DEC satisfaction. External CI/authority/host waits retain blocker, unblock condition and event recheck, never a completion ETA. No implementation permission is requested by this authoring artifact.
 
 ## Evidence and references
 
-- PRD/TAD/ADR/MVP/GTM guideline 3.4.0 and templates 1.5.0; hashes recorded in frontmatter.
-- Singapore enterprise landscape: [SingStat](https://www.singstat.gov.sg/find-data/explore-data-themes/industry/enterprises-and-corporate-sector).
-- Retail population context: [IMDA refreshed Retail Industry Digital Plan](https://www.imda.gov.sg/resources/press-releases-factsheets-and-speeches/factsheets/2026/refreshed-industry-digital-plan-to-support-retailers).
-- E-commerce-services revenue is not software TAM: [SingStat 2024 e-commerce in services](https://www.singstat.gov.sg/news/e-commerce-in-the-services-sector-2024).
+Authoring owner: [guidelines](https://github.com/huijoohwee/huijoohwee.github.io/blob/99ea1f49211361528256045719b54f1634eee41a/guidelines/prd-tad-adr-mvp-gtm-guidelines.md) 3.5.0; [templates](https://github.com/huijoohwee/huijoohwee.github.io/blob/99ea1f49211361528256045719b54f1634eee41a/guidelines/prd-tad-adr-mvp-gtm-templates.md) 1.6.0. Exact content digests are in frontmatter. Central lifecycle source: `agentic-os@73bf77869d75c60eff687a7e7dbec72ae39be2b2`, `guides/SYSTEM-PROMPT-RUNTIME.md`, `docs/START-WORKFLOW.md`, `docs/adlc-guidelines.md`, `docs/RELEASE-WORKFLOW.md` and `guides/DEPLOY-WORKFLOW.md`.
+
+Existing product owners: [edge commerce](prd-tad-adr-mvp-gtm-edge-commerce-agent.md), [workspaces](prd-tad-adr-mvp-gtm-commerce-workspaces.md), [runtime](production-runtime.md), [composition](commerce-graph-runtime.md), [first-dollar learning](prd-tad-adr-mvp-gtm-20260909T1320Z-solopreneur-mvp-gtm.md), [native utility reuse](prd-tad-adr-mvp-gtm-native-commerce-shared-utils.md). Follow each record's own revision and scope; historical evidence never silently upgrades this increment.
+
+**Source validation checkpoint (2026-11-16):** `npm run test:unit -- test/shared/sme-business-pack.test.ts` PASS, 17 tests, 391 ms; source behavior only. Shared diagram projection check PASS: five projecting diagrams, 26 nodes, 22 edges, zero clusters/findings, zero inference tokens. `check:authored-limits` PASS, 620 files scanned; `git diff --check` PASS. Guideline/template digests match their recorded committed source.
+
+Initial `npm run check` selected 3/11 owner groups for this one changed path: ADLC PASS (2.64 s), evidence-contract PASS (0.30 s), named FAIL (13.28 s). Named local-first tests passed 287/288; `fulfillment-build.test.mjs` refused with `listing_source_must_be_exact_and_clean` because this draft was uncommitted. This is a source-cleanliness prerequisite, not evidence of an arithmetic regression; later named groups and aggregate evidence were not reached. Native validation receipt is retained under this lane's Git metadata, `agentic-os-tests/validation-last.json`; measured aggregate 20.95 s, named peak single-process RSS 329,105,408 B, provider cost unknown. Seal via native LAND and rerun against the clean exact candidate; retain separate provider check/integration receipts. No full-green or product acceptance claim is made by these partial results. Actual session tokens and labor cost remain unknown.
