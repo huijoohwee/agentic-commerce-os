@@ -135,7 +135,7 @@ function readListing() {
   }
   return listing;
 }
-$('#listing-enabled').addEventListener('change', listingControls);
+$('#listing-enabled').addEventListener('change', () => { clearListingGeoPreview(); listingControls(); });
 $('#archive-listing').addEventListener('click', () => void run(async () => {
   if (!selected?.listing || dirty) throw Error('Save or reopen your listing before changing its archive state.');
   const archived = isArchived(selected), saved = await saveDraft({ ...selected,

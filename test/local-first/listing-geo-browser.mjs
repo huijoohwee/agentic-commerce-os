@@ -34,6 +34,7 @@ export async function checkListingGeo({ browser, url, output, revision }) {
   assert.equal(target.pathname, '/agentic-commerce-os/');
   assert(!target.username && !target.password && !target.search && !target.hash);
   assert(target.protocol === 'https:' || target.protocol === 'http:' && target.hostname === '127.0.0.1');
+  assert(/^[a-f0-9]{40}$/u.test(revision) || target.hostname === '127.0.0.1' && revision === 'local-unreleased');
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const errors = [], requests = [];
   await context.route('**/*', route => route.request().method() === 'GET'
