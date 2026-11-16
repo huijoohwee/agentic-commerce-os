@@ -15,9 +15,16 @@ const el = (tag, text, className) => {
   return item;
 };
 export const OFFER_COLUMNS = Object.freeze(['Offer', 'Merchant', 'Review status', 'Planned price', 'Updated'].map((name, i) => ({ id: 'offer-' + i, name })));
-/** Only already-public launch fields enter the shared view. No draft notes or workflow output. */
+/** Private management summary; never used by shopper or agent projections. */
+export function listingSummary(offer) {
+  if (!offer.listing) return '';
+  const facts = offer.listing, asking = facts.askingPriceMinor === null ? 'Not provided' : formatMoney(facts.askingPriceMinor, facts.currency);
+  return [`${LISTING_LABELS.askingPriceMinor} · supplied: ${asking}`, ...[facts.category, facts.country, facts.region].filter(Boolean)].join(' · ');
+}
+function managementTitle(offer) { const summary = listingSummary(offer); return offer.title + (summary ? '\n' + summary : ''); }
+/** Explicit management fields only. No draft notes, source URL or workflow output. */
 export function projectOfferRows(offers, presentation) {
-  return offers.map(offer => ({ id: offer.id, cells: [offer.title, offer.launch?.merchantId || 'Store not set',
+  return offers.map(offer => ({ id: offer.id, cells: [managementTitle(offer), offer.launch?.merchantId || 'Store not set',
     presentation.status(offer), presentation.price(offer), new Date(offer.updatedAt).toLocaleDateString(displayLocale)] }));
 }
 function responsiveOfferView(offers, presentation, width) {
@@ -28,10 +35,10 @@ function responsiveOfferView(offers, presentation, width) {
       : count === 3 ? [OFFER_COLUMNS[0], OFFER_COLUMNS[1], { id: 'offer-review', name: 'Review' }]
         : OFFER_COLUMNS.slice(0, 4);
   const rows = offers.map(offer => {
-    const merchant = offer.launch?.merchantId || 'Store not set', status = presentation.status(offer), price = presentation.price(offer);
-    const cells = count === 1 ? [`${offer.title}\n${merchant} · ${status} · ${price}`]
-      : count === 2 ? [offer.title, `${merchant}\n${status}\n${price}`]
-        : count === 3 ? [offer.title, merchant, `${status}\n${price}`] : [offer.title, merchant, status, price];
+    const merchant = offer.launch?.merchantId || 'Store not set', status = presentation.status(offer), price = presentation.price(offer), title = managementTitle(offer);
+    const cells = count === 1 ? [`${title}\n${merchant} · ${status} · ${price}`]
+      : count === 2 ? [title, `${merchant}\n${status}\n${price}`]
+        : count === 3 ? [title, merchant, `${status}\n${price}`] : [title, merchant, status, price];
     return { id: offer.id, cells };
   });
   return { columns, rows };
@@ -81,9 +88,10 @@ function mountOfferCards(target, offers, presentation, selectedId, activate) {
     const meta = el('span', undefined, 'vendor-offer-card-meta'), merchant = el('span', presentation.merchantName?.(offer.launch?.merchantId) || offer.launch?.merchantId || 'Store not set', 'vendor-offer-merchant');
     const state = el('span', presentation.status(offer), 'vendor-offer-state'); state.dataset.state = offer.launch ? presentation.state(offer) : 'draft'; meta.append(merchant, state);
     const title = el('span', offer.title, 'vendor-offer-title');
-    const outcome = el('span', offer.launch?.outcome || 'Add a buyer and outcome to complete setup.', 'vendor-offer-outcome');
+    const outcome = el('span', listingSummary(offer) || offer.launch?.outcome || 'Add a buyer and outcome to complete setup.', 'vendor-offer-outcome');
+    if (offer.listing) { outcome.dataset.listing = ''; button.dataset.listing = ''; }
     const updatedAt = new Date(offer.updatedAt), updated = Number.isNaN(updatedAt.valueOf()) ? 'Recently saved' : 'Updated ' + updatedAt.toLocaleDateString(displayLocale, { month: 'short', day: 'numeric' });
-    const footer = el('span', undefined, 'vendor-offer-card-footer'); footer.append(el('span', presentation.price(offer), 'vendor-offer-price'), el('span', updated, 'vendor-offer-updated'));
+    const footer = el('span', undefined, 'vendor-offer-card-footer'); footer.append(el('span', (offer.listing ? 'Planned price: ' : '') + presentation.price(offer), 'vendor-offer-price'), el('span', updated, 'vendor-offer-updated'));
     button.append(cover, meta, title, outcome, footer); item.append(button); list.append(item);
   }
   target.replaceChildren(list);

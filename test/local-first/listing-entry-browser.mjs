@@ -71,6 +71,11 @@ export async function checkListingEntry({ browser, url: base, output, revision, 
   await page.getByRole('link', { name: 'Back to offers', exact: true }).click();
   await expect(page.locator('#vendor-table')).not.toContainText(original.title); await expect(page.locator('#vendor-total')).toHaveText('0');
   await chooseDropdown(page.locator('#vendor-state'), 'archived');
+  await page.locator('#vendor-query').fill(original.listing.sourceUrl);
+  const listingCard = page.getByRole('button', { name: 'Open details for ' + original.title, exact: true });
+  await expect(listingCard).toContainText('Asking price · supplied:');
+  await expect(listingCard).toContainText('85,000.00');
+  await expect(listingCard).toContainText('Planned price: Not set');
   await page.locator('#vendor-query').fill('East');
   await page.getByRole('button', { name: 'Open details for ' + original.title, exact: true }).click();
   await expect(page.locator('#vendor-table')).toContainText('Monthly profit / loss');
@@ -78,6 +83,25 @@ export async function checkListingEntry({ browser, url: base, output, revision, 
   await page.locator('#archive-listing').click(); await expect(page.locator('#listing-state')).toHaveText('Private listing draft');
   assert.equal((await records(page))[0].revision, 5); assert.equal((await records(page))[0].listing.status, 'draft');
   console.log('PASS archive, active projection exclusion, category/location search and native detail/restore');
+
+  for (const width of [1280, 360]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const role of ['vendor', 'admin']) {
+      await page.goto(base + (role === 'vendor' ? '#vendor' : '#admin-reviews'));
+      await chooseDropdown(page.locator('#' + role + '-state'), '');
+      await page.locator('#' + role + '-query').fill(original.listing.sourceUrl);
+      await expect(page.getByText('Asking price · supplied:', { exact: false }).first()).toBeVisible();
+      await expect(page.locator('#' + role + '-count')).toContainText('1 offer');
+      if (role === 'vendor') assert(await page.locator('.vendor-offer-outcome').evaluate(element => element.scrollHeight <= element.clientHeight + 1
+        && element.getBoundingClientRect().bottom <= element.parentElement.querySelector('.vendor-offer-card-footer').getBoundingClientRect().top));
+      assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+      await page.screenshot({ path: path.join(output, `listing-management-${role}-${width}.png`), fullPage: true });
+      await page.locator('#' + role + '-query').fill('https://example.invalid/not-this-entry');
+      await expect(page.locator('#' + role + '-table')).toContainText('No matching offers');
+    }
+  }
+  await page.goto(base + '#vendor-editor'); await open(page, original.title);
+  console.log('PASS supplied asking-price summary and private source lookup in both management views at 1280px/360px');
 
   await page.setViewportSize({ width: 360, height: 800 });
   const overflow = await page.evaluate(() => ({ width: innerWidth, scroll: document.documentElement.scrollWidth }));

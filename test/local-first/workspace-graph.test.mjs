@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { createHash } from 'node:crypto';
 import worker from '../../src/local-first/worker.ts';
-import { OFFER_COLUMNS, projectOfferRows, projectOfferDetail } from '../../public/local-first/workspace-graph.js';
+import { OFFER_COLUMNS, projectOfferRows, projectOfferDetail, listingSummary } from '../../public/local-first/workspace-graph.js';
 import { FILES, verifyAgenticBaseDataView, verifyGraphDataView } from '../../scripts/local-first-release/artifact.mjs';
 
 const baseAssets = ['agentic-base-data-view.js', 'agentic-base-data-view.css', 'dropdown-menus.js'];
@@ -16,6 +16,21 @@ const offer = Object.freeze({ id: 'offer-one', title: literal, revision: 7, upda
   description: 'PRIVATE-DRAFT-NOTES', price: 'PRIVATE-PRICE-NOTES', workflow: { output: 'PRIVATE-WORKFLOW-OUTPUT' },
   launch: Object.freeze({ merchantId: 'public-store', audience: 'Public audience', outcome: 'Public outcome', priceMinor: 1200 }) });
 const presentation = Object.freeze({ status: () => 'Needs human review', price: () => '$12.00', reason: () => 'Review the saved offer' });
+
+test('private listing summary keeps supplied asking price distinct from launch price and unknown from zero', () => {
+  const listing = { ...offer, listing: { category: literal, country: 'SG', region: 'East', currency: 'SGD', askingPriceMinor: 8500000,
+    sourceUrl: 'https://example.invalid/PRIVATE-SOURCE', monthlyProfitMinor: 12345 } };
+  const summary = listingSummary(listing), rows = projectOfferRows([listing, offer], presentation);
+  assert.match(summary, /Asking price · supplied: .*85,000\.00/u);
+  assert(summary.includes(literal)); assert(summary.includes('SG · East'));
+  assert.equal(rows[0].cells[0], listing.title + '\n' + summary);
+  assert.equal(rows[0].cells[3], '$12.00');
+  assert.equal(rows[0].cells.length, OFFER_COLUMNS.length);
+  assert.equal(rows[1].cells[0], offer.title); assert.equal(listingSummary(offer), '');
+  assert.doesNotMatch(JSON.stringify(rows), /PRIVATE|12345|monthlyProfit|sourceUrl/u);
+  assert.match(listingSummary({ ...listing, listing: { ...listing.listing, askingPriceMinor: null } }), /Asking price · supplied: Not provided/u);
+  assert.match(listingSummary({ ...listing, listing: { ...listing.listing, currency: 'JPY', askingPriceMinor: 500 } }), /500/u);
+});
 
 test('Graph projections pass only explicit public fields and preserve literal strings', () => {
   const rows = projectOfferRows([offer], presentation);
