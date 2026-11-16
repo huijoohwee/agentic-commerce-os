@@ -62,7 +62,7 @@ function art(draft) {
   visual.append(image); return visual;
 }
 function price(draft) { return draft.launch ? launch.formatMoney(draft.launch.priceMinor, draft.launch.currency) : 'Not set'; }
-function matches(draft, query) { return [draft.title, draft.listing?.category, draft.listing?.country, draft.listing?.region, draft.launch?.merchantId, merchantName(draft.launch?.merchantId), draft.launch?.outcome, draft.launch?.audience].join(' ').toLowerCase().includes(query); }
+function matches(draft, query, management = false) { return [draft.title, draft.listing?.category, draft.listing?.country, draft.listing?.region, management ? draft.listing?.sourceUrl : '', draft.launch?.merchantId, merchantName(draft.launch?.merchantId), draft.launch?.outcome, draft.launch?.audience].join(' ').toLowerCase().includes(query); }
 function openDetail(dialog, heading) { heading.tabIndex = -1; dialog.showModal(); heading.focus({ preventScroll: true }); }
 function showDetail(draft) { if (draft === 'sandbox') { detailId = null; const dialog = $('#offer-detail'), header = $('#shop-sandbox header'), illustration = $('#shop-sandbox .live-offer-art svg').cloneNode(true), artwork = node('figure', undefined, 'product-art'), heading = node('h2', $('#shop-sandbox header h3').textContent), action = node('a', $('#shop-checkout-action').textContent, 'button'); illustration.setAttribute('class', 'detail-sandbox-art'); artwork.append(illustration); heading.id = 'detail-heading'; action.href = $('#shop-checkout-action').getAttribute('href'); $('#detail-content').replaceChildren(artwork, node('small', 'Airvio · Sandbox'), heading, node('p', header.querySelector('p:not(.footnote)').textContent), node('p', $('#shop-offer-note').textContent, 'muted'), node('p', $('#shop-checkout-price').textContent, 'preview-price'), node('p', `${$('#shop-checkout-badge').textContent} · ${$('#shop-checkout-note').textContent}`, 'muted'), action); dialog.classList.add('detail-split'); openDetail(dialog, heading); return; }
   const current = drafts.find(item => item.id === draft.id && item.revision === draft.revision); if (!current?.launch) return;
@@ -118,7 +118,7 @@ function renderTable(role) { if (role === 'vendor') { const search = document.qu
   if (unavailableDrafts($('#' + role + '-table'))) { if (role === 'vendor') $('#create-offer').hidden = false; $('#' + role + '-count').textContent = 'Saved offer count unknown'; return; }
   const filters = $('#' + role + '-query').closest('.table-tools'); filters.hidden = drafts.length === 0; if (!drafts.length) { $('#' + role + '-query').value = ''; $('#' + role + '-state').value = ''; }
   const query = $('#' + role + '-query').value.trim().toLowerCase(), state = $('#' + role + '-state').value;
-  const filtered = drafts.filter(draft => matches(draft, query) && (state ? stateOf(draft) === state : !isArchived(draft)));
+  const filtered = drafts.filter(draft => matches(draft, query, true) && (state ? stateOf(draft) === state : !isArchived(draft)));
   if (role === 'vendor') $('#create-offer').hidden = false;
   const pages = Math.max(1, Math.ceil(filtered.length / 10)); tablePages[role] = Math.min(tablePages[role], pages - 1);
   const container = $('#' + role + '-table'); clearNativeTable(container);
