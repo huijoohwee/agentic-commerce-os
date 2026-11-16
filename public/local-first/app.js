@@ -60,7 +60,9 @@ $('#listing-longitudes').addEventListener('input', () => {
 $('#preview-listing-geo').addEventListener('click', async () => {
   const generation = ++listingGeoGeneration, text = $('#listing-longitudes').value;
   try {
-    const { previewListingLongitudes } = await import('./listing-geo.js');
+    const { previewListingLongitudes } = await import('./listing-geo.js').catch(() => {
+      throw new Error('Reconnect and reload this page to prepare longitude preview for offline use. Your listing is unchanged.');
+    });
     if (generation !== listingGeoGeneration) return;
     const span = previewListingLongitudes(text);
     $('#listing-geo-result').textContent = `Center ${span.center}° · width ${span.spanDegrees}° · west ${span.west}° · east ${span.east}°. East may exceed 180° across the date line.`;
