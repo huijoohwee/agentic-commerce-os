@@ -1,0 +1,405 @@
+{
+  "schema": "commerce.decision-production-delivery/v1",
+  "observedAt": "2026-11-16T16:31:12.443Z",
+  "continuity": "COMMERCE-CONTROL-PLANE-001@0.4.0",
+  "scope": "DEC-01–06 native SME decision rehearsal; existing browser-local MVP. Broader COM requirements and GTM validation remain independent.",
+  "source": {
+    "repository": "huijoohwee/agentic-commerce-os",
+    "ref": "agent/device-0232231d4a19/commerce-native-decision-plan",
+    "head": "4a9dc17ffe8b499a73ec889155f95c6f19ffb261",
+    "pr": "https://github.com/huijoohwee/agentic-commerce-os/pull/280",
+    "mergedAt": "2026-11-16T16:06:06Z",
+    "integratedRevision": "b545861f6c0f74cd516f362cec26c702913e5c64",
+    "paths": [
+      "docs/prd-tad-adr-mvp-gtm-agentic-commerce-os.md",
+      "public/local-first/sme-business-pack-core.js",
+      "public/local-first/sme-business-pack.css",
+      "public/local-first/sme-business-pack.js",
+      "public/local-first/sme-decision-contract.js",
+      "public/local-first/sme-workflow-editor.js",
+      "public/local-first/sw.js",
+      "scripts/local-first-release/artifact.mjs",
+      "scripts/sme-business-pack-local.mjs",
+      "src/local-first/sme-business-pack.ts",
+      "src/local-first/worker.ts",
+      "test/local-first/sme-comparison-browser.mjs",
+      "test/local-first/sme-decision-browser.mjs",
+      "test/shared/sme-business-pack.test.ts"
+    ],
+    "requiredChecks": [
+      {
+        "name": "Integration Gate",
+        "conclusion": "SUCCESS",
+        "url": "https://github.com/huijoohwee/agentic-commerce-os/actions/runs/43894152622/job/133393147765"
+      }
+    ],
+    "nativeSourceReceipt": {
+      "head": "4a9dc17ffe8b499a73ec889155f95c6f19ffb261",
+      "ref": "agent/device-0232231d4a19/commerce-native-decision-plan",
+      "value": {
+        "authority": false,
+        "head": "4a9dc17ffe8b499a73ec889155f95c6f19ffb261",
+        "mergeCommit": "b545861f6c0f74cd516f362cec26c702913e5c64",
+        "schema": "agentic-os/authorized-source-promotion/v1",
+        "state": "merged"
+      }
+    },
+    "sourceReleaseReceiptDigest": "29534ac17c1b17447198ec6368315861c930372a0a2949c4f1d22233ba5a4d7f",
+    "authority": "Explicit user merge, deploy, promote request; native per-effect controls. Digests and observations grant no new authority."
+  },
+  "development": {
+    "sourceCheck": "Integration Gate 43894152622 passed for exact clean source 4a9dc17ffe8b499a73ec889155f95c6f19ffb261; 288/288 local-first tests and complete owner browser suite passed.",
+    "localLimitation": "Local aggregate npm run check stopped at the separate full-container Podman workerd-override prerequisite; check:evidence was not reached locally. Protected Linux CI passed its required check surface.",
+    "nativeFixture": {
+      "sourceRevision": "b545861f6c0f74cd516f362cec26c702913e5c64",
+      "scope": "local-fixture",
+      "readerProofDigest": "46df11e1834e6a9db9e5aa72cc0442f107601855f10ec348bd657e2ed2665ff1",
+      "liveProofDigest": "27f43f8266334e1b52297f9b7f8cce17462eb23c59137f92923a3052be34c76f",
+      "payments": "simulated fixture only"
+    },
+    "lowerStage": {
+      "owner": "Native local-first live-reader profile on existing public route; no separate cloud environment created",
+      "runId": 43904555981,
+      "url": "https://github.com/huijoohwee/agentic-commerce-os/actions/runs/43904555981",
+      "status": "production-complete",
+      "checkout": "live-reader",
+      "sourceRevision": "b545861f6c0f74cd516f362cec26c702913e5c64",
+      "artifactDigest": "3ab03a553755de93285eb9d414478420a3da828bd7aebea7a02ca9c75eaada79",
+      "deployment": {
+        "deploymentId": "b9995145-f857-4e35-86b1-0a6e9c25c48c",
+        "versionId": "6a70818b-1a0d-44f1-bb53-e2db031f950d"
+      },
+      "receiptDigest": "8ed8e0cf9122e64270491a5eaed65c6a022de6362ecfeff0c8c9a084a79adb81",
+      "decisionUi": {
+        "source": "b545861f6c0f74cd516f362cec26c702913e5c64",
+        "baseline": "B",
+        "staleConfirmationRefused": true,
+        "protectedAtomicImportRefused": true,
+        "working": true,
+        "transport": "WebMCP contract fixture",
+        "nativeWebMcpAvailability": "not claimed",
+        "privateNetworkWrites": 0,
+        "offlineReloadAndImport": true,
+        "widths": [
+          320,
+          360,
+          390,
+          768,
+          1280
+        ],
+        "textZoom": "200%"
+      }
+    },
+    "promotionContinuity": {
+      "sourceRevision": "b545861f6c0f74cd516f362cec26c702913e5c64",
+      "sourceTree": "b619393333de40e96c0f1333cc876a26c27faf8f",
+      "candidateDigest": "9169fae99f59f125ac59c2c3d2822e4e74ac2ae3dd52ddf1c13d8a75877bb99a",
+      "entryCount": 92,
+      "allSourceEntriesIdentical": true,
+      "readerArtifactDigest": "3ab03a553755de93285eb9d414478420a3da828bd7aebea7a02ca9c75eaada79",
+      "liveArtifactDigest": "b6d6726ff6626f9866b05c30881b9cebb9af6e2ceddd28b34ff812e013089428",
+      "profileDifference": "Native checkout activation metadata and exact retained reader reference; identical source inputs"
+    }
+  },
+  "production": {
+    "url": "https://github.com/huijoohwee/agentic-commerce-os/actions/runs/43906323414",
+    "approval": {
+      "submittedByAssistant": true,
+      "basedOn": "Explicit user merge, deploy, promote instruction; existing authenticated repository owner",
+      "records": [
+        {
+          "state": "approved",
+          "user": "huijoohwee",
+          "environments": [
+            "production"
+          ]
+        }
+      ]
+    },
+    "completion": {
+      "schema": "commerce.local-first-live-completion/v1",
+      "status": "production-complete",
+      "profile": "local-first",
+      "checkout": "live",
+      "sourceRevision": "b545861f6c0f74cd516f362cec26c702913e5c64",
+      "artifactDigest": "b6d6726ff6626f9866b05c30881b9cebb9af6e2ceddd28b34ff812e013089428",
+      "runId": 43906323414,
+      "worker": "agentic-commerce-edge-production",
+      "deployment": {
+        "deploymentId": "ba380a19-4a5f-4c7f-9845-d89f6d976865",
+        "versionId": "43619020-6186-4c1d-8578-a525fe7add42"
+      },
+      "route": {
+        "id": "4faa49c45eee4879b4ae660f50b1a636",
+        "pattern": "airvio.co/agentic-commerce-os*",
+        "script": "agentic-commerce-edge-production",
+        "state": "bound"
+      },
+      "fulfillment": {
+        "config": {
+          "schema": "commerce.fulfillment-release/v1",
+          "pins": {
+            "origin": "https://commerce-executor.airvio.co",
+            "bundleSha256": "8f7734144d8ae426fddf11b81ead8bab4c9284a849e8278504d53c338862dbdd",
+            "imageId": "adbc645ef5a186f4f3466a7d1eb77bd852fcd7eec5e366a277bc439cabe4238c",
+            "sourceRevision": "57418b3807a547de5083cdbd3254a19732f07c97"
+          },
+          "reader": {
+            "sourceRevision": "38662008dae8b3fc20905c7fb09d67036c878611",
+            "versionId": "1c04f403-9cc1-4b45-9dbb-a83e5f3ce7b4",
+            "runId": 34976120904
+          }
+        },
+        "readerVersion": {
+          "versionId": "1c04f403-9cc1-4b45-9dbb-a83e5f3ce7b4",
+          "sourceRevision": "38662008dae8b3fc20905c7fb09d67036c878611",
+          "bindingNames": [
+            "ASSETS",
+            "CF_VERSION_METADATA",
+            "CHECKOUT_MODE",
+            "RELEASE_CANDIDATE_SHA",
+            "STOREFRONT_SESSION_SECRET",
+            "STRIPE_TEST_SECRET_KEY"
+          ],
+          "fulfillmentPins": null
+        },
+        "host": {
+          "ok": true,
+          "contract": "commerce.listing-host/v1",
+          "availability": "device-session",
+          "bundleSha256": "8f7734144d8ae426fddf11b81ead8bab4c9284a849e8278504d53c338862dbdd",
+          "imageId": "adbc645ef5a186f4f3466a7d1eb77bd852fcd7eec5e366a277bc439cabe4238c",
+          "sourceRevision": "57418b3807a547de5083cdbd3254a19732f07c97",
+          "definitionRevision": "listing-5439419095688b5bd4da547f123c6ff3353f4336c630bd7d63d1182bed3181a3",
+          "modelSha256": "9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031"
+        },
+        "verifiedAt": "2026-11-16T16:24:49.410Z"
+      },
+      "livePrerequisites": {
+        "schema": "commerce.live-release-prerequisites/v1",
+        "checkout": "live",
+        "profileDigest": "b809cda2e0c3adff95b3acc9cd6fe3f5797b3b2da05ebdda2c54648ebd36233e",
+        "webhookId": "we_1UN1uuGzH0w0k4VUO6XEixhU",
+        "provisioningDigest": "d68fb8ffee7bdd50b54e9d3978fbfad910f986b358985f68a730a833a6d88d62",
+        "secretSetDigest": "2ff03add7d96b81e5d6f0da47e289b79d7c7d9b94d2658053bd57a949a0dc5ae",
+        "offer": {
+          "accountId": "acct_1TKGGUGzH0w0k4VU",
+          "priceId": "price_1TeXU4GzH0w0k4VUqOmX4aTn",
+          "amountMinor": 800,
+          "currency": "sgd",
+          "livemode": true,
+          "salesCapable": true
+        },
+        "readerProof": {
+          "reader": {
+            "sourceRevision": "b545861f6c0f74cd516f362cec26c702913e5c64",
+            "versionId": "6a70818b-1a0d-44f1-bb53-e2db031f950d",
+            "runId": 43904555981,
+            "receiptDigest": "8ed8e0cf9122e64270491a5eaed65c6a022de6362ecfeff0c8c9a084a79adb81"
+          },
+          "version": {
+            "versionId": "6a70818b-1a0d-44f1-bb53-e2db031f950d",
+            "sourceRevision": "b545861f6c0f74cd516f362cec26c702913e5c64",
+            "bindingNames": [
+              "ASSETS",
+              "CF_VERSION_METADATA",
+              "CHECKOUT_LIVE_PROFILE_SHA256",
+              "CHECKOUT_MODE",
+              "CHECKOUT_RECOVERY_SECRET",
+              "CHECKOUT_SECRET_SET_SHA256",
+              "LISTING_HOST_BEARER",
+              "LISTING_HOST_PINS_JSON",
+              "RELEASE_CANDIDATE_SHA",
+              "STOREFRONT_SESSION_SECRET",
+              "STRIPE_LIVE_SECRET_KEY",
+              "STRIPE_LIVE_WEBHOOK_SECRET",
+              "STRIPE_TEST_SECRET_KEY"
+            ],
+            "fulfillmentPins": {
+              "origin": "https://commerce-executor.airvio.co",
+              "bundleSha256": "8f7734144d8ae426fddf11b81ead8bab4c9284a849e8278504d53c338862dbdd",
+              "imageId": "adbc645ef5a186f4f3466a7d1eb77bd852fcd7eec5e366a277bc439cabe4238c",
+              "sourceRevision": "57418b3807a547de5083cdbd3254a19732f07c97"
+            },
+            "checkout": "live-reader",
+            "profileDigest": "b809cda2e0c3adff95b3acc9cd6fe3f5797b3b2da05ebdda2c54648ebd36233e",
+            "secretSetDigest": "2ff03add7d96b81e5d6f0da47e289b79d7c7d9b94d2658053bd57a949a0dc5ae"
+          },
+          "receiptDigest": "8ed8e0cf9122e64270491a5eaed65c6a022de6362ecfeff0c8c9a084a79adb81"
+        },
+        "verifiedAt": "2026-11-16T16:24:50.794Z"
+      },
+      "rollbackProofDigest": null,
+      "completedAt": "2026-11-16T16:26:02.451Z",
+      "browserProofDigest": "0209a29efe2986890f81518e73b8157ef4c7602330d4ca4246b0f755aeb1c2dd",
+      "receiptDigest": "5e41f0a8b7a42dbfd20a5b1801f6d3b21888369e1cce3876e12ea952b73e4f4a"
+    }
+  },
+  "runtime": {
+    "url": "https://airvio.co/agentic-commerce-os/#sme",
+    "readiness": {
+      "httpStatus": 200,
+      "identity": {
+        "ok": true,
+        "readinessScope": "configured-capabilities",
+        "fulfillment": "ready",
+        "profile": "local-first",
+        "checkout": "live",
+        "storage": "browser-only",
+        "paymentStorage": "stripe-live",
+        "paymentProvider": "stripe",
+        "realMoney": true,
+        "sourceRevision": "b545861f6c0f74cd516f362cec26c702913e5c64",
+        "workerVersionId": "43619020-6186-4c1d-8578-a525fe7add42"
+      }
+    },
+    "decisionUi": {
+      "source": "b545861f6c0f74cd516f362cec26c702913e5c64",
+      "baseline": "B",
+      "staleConfirmationRefused": true,
+      "protectedAtomicImportRefused": true,
+      "working": true,
+      "transport": "WebMCP contract fixture",
+      "nativeWebMcpAvailability": "not claimed",
+      "privateNetworkWrites": 0,
+      "offlineReloadAndImport": true,
+      "widths": [
+        320,
+        360,
+        390,
+        768,
+        1280
+      ],
+      "textZoom": "200%"
+    },
+    "transports": {
+      "schema": "commerce.decision-live-transport-proof/v1",
+      "ok": true,
+      "observedAt": "2026-11-16T16:27:11.986Z",
+      "sourceRevision": "b545861f6c0f74cd516f362cec26c702913e5c64",
+      "observations": [
+        {
+          "route": "/api",
+          "status": 200,
+          "bytes": 24003
+        },
+        {
+          "route": "/mcp",
+          "status": 200,
+          "bytes": 6783
+        },
+        {
+          "route": "/api",
+          "status": 200,
+          "bytes": 59428
+        },
+        {
+          "route": "/mcp",
+          "status": 200,
+          "bytes": 59572
+        },
+        {
+          "route": "/api",
+          "status": 422,
+          "bytes": 121
+        },
+        {
+          "route": "/mcp",
+          "status": 200,
+          "bytes": 371
+        }
+      ],
+      "tools": [
+        "pack.list",
+        "pack.protocol",
+        "business.plan.build",
+        "business.plan.compare"
+      ],
+      "threeRowDecisionParity": true,
+      "monthlyRevenueDelta": 1200,
+      "protectedRefusal": true,
+      "ranking": null,
+      "winner": null,
+      "persistence": "none",
+      "inferenceTokens": 0,
+      "inputSource": "Repository-owned illustrative inputs only",
+      "payments": false,
+      "cspEnforced": true,
+      "decisionAssetSha256": "18cec36aaf885e90917971040a71abc9a20e991fa4974de1602ada7b04576b81"
+    },
+    "runtimeVerificationReceiptDigest": "0209a29efe2986890f81518e73b8157ef4c7602330d4ca4246b0f755aeb1c2dd",
+    "visualInspection": "Delivered desktop and mobile offline screenshots inspected; native table, working and controls remain readable. Native WebMCP availability is not claimed by the injected contract fixture."
+  },
+  "cost": {
+    "observedAt": "2026-11-16T16:14:53.526Z",
+    "surface": "Authenticated Cloudflare account dashboard",
+    "accountId": "170e89fdb8679ff2fcc2900e25ed04f4",
+    "utcDay": "2026-11-16",
+    "requestsUsed": 1636,
+    "requestLimit": 100000,
+    "observabilityEventsUsed": 514,
+    "observabilityEventLimit": 200000,
+    "currentPlan": "Workers Free",
+    "newPaidResources": 0,
+    "price": "$0",
+    "currentPlanVerifiedAt": "2026-11-16T16:16:05.163Z",
+    "planSurface": "https://dash.cloudflare.com/170e89fdb8679ff2fcc2900e25ed04f4/workers/plans",
+    "requestHeadroomObserved": 98364,
+    "eventHeadroomObserved": 199486,
+    "routeRequestLimitFailOpen": false,
+    "quotaFailure": "Cloudflare 1027; no automatic paid overage on Workers Free",
+    "documentation": "https://developers.cloudflare.com/workers/platform/limits/"
+  },
+  "recovery": {
+    "reader": {
+      "sourceRevision": "b545861f6c0f74cd516f362cec26c702913e5c64",
+      "versionId": "6a70818b-1a0d-44f1-bb53-e2db031f950d",
+      "runId": 43904555981,
+      "receiptDigest": "8ed8e0cf9122e64270491a5eaed65c6a022de6362ecfeff0c8c9a084a79adb81"
+    },
+    "predecessorBeforeReader": {
+      "ok": true,
+      "readinessScope": "configured-capabilities",
+      "fulfillment": "ready",
+      "profile": "local-first",
+      "checkout": "live",
+      "storage": "browser-only",
+      "paymentStorage": "stripe-live",
+      "paymentProvider": "stripe",
+      "realMoney": true,
+      "sourceRevision": "acaae50534077ec0890c6597ed2966c0b8257604",
+      "workerVersionId": "51c2d0b1-e420-49e9-bec9-a08decd6c31d"
+    },
+    "rollbackProofDigest": null,
+    "disposition": "Retain the verified same-source no-new-sales reader and all buyer recovery secrets. Native live-profile controller does not execute a new actual-job rollback rehearsal; rollbackProofDigest is null. No rollback or payment was performed.",
+    "worksheetCompatibility": "Retain v3 exports and the compatible b545861 reader. Older readers explicitly refuse v3 rather than discarding decision protections."
+  },
+  "sourceCleanup": {
+    "mode": "explicit-local-user-consent-recovery",
+    "result": "quarantined",
+    "receiptSha256": "1494f6eb928b8d1625cac99c313809e1f7d1e4a6a9e5054168eaff018b1729fb",
+    "providerAuthority": false,
+    "claimRetired": false,
+    "disposition": "Native explicit local user-consent quarantine; source branches, objects and all bytes retained. This is not provider claim-retirement proof."
+  },
+  "metadataArtifactExclusion": {
+    "paths": [
+      ".agentic-os-delivery-dispositions.json",
+      "docs/prd-tad-adr-mvp-gtm-agentic-commerce-os.md",
+      "docs/reports/commerce-decision-release-20261116.json"
+    ],
+    "reason": "The exact paths .agentic-os-delivery-dispositions.json, docs/prd-tad-adr-mvp-gtm-agentic-commerce-os.md and docs/reports/commerce-decision-release-20261116.json are excluded from the product artifact. None is a local-first Worker or public browser asset input. This receipt follow-up requires protected source integration and no runtime rebuild or redeployment."
+  },
+  "planningHandoff": {
+    "preparedContext": "commerce-decision-production-release",
+    "producerArtifact": "commerce-decision-release-20261116/planning/commerce-decision-production-release.md",
+    "status": "Prepared locally; workspace TODO append/publication remains blocked",
+    "blocker": "Native START in the private workspace returned blocked-repository-trust-missing. Its primary checkout is on an unrelated Graph handoff lane; existing bytes and authority were preserved.",
+    "recheck": "Workspace owner restores its exact repository trust anchor and canonical admission, then appends the prepared immutable Context through native START/check/LAND."
+  },
+  "remaining": [
+    "Run one consenting human usability trial and record completion time, help, field confusion and explicit acceptance.",
+    "No verified customer payment, revenue, WTP, independent evaluator enrollment or whole-platform completion is established.",
+    "Fulfillment remains device-session availability; offline SME computation does not establish always-on execution."
+  ]
+}

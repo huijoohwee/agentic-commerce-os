@@ -4,6 +4,37 @@
   "dispositions": [
     {
       "schema": "agentic-os/delivery-disposition/v1",
+      "ref": "agent/device-0232231d4a19/commerce-native-decision-plan",
+      "laneHead": "4a9dc17ffe8b499a73ec889155f95c6f19ffb261",
+      "paths": [
+        "docs/prd-tad-adr-mvp-gtm-agentic-commerce-os.md",
+        "public/local-first/sme-business-pack-core.js",
+        "public/local-first/sme-business-pack.css",
+        "public/local-first/sme-business-pack.js",
+        "public/local-first/sme-decision-contract.js",
+        "public/local-first/sme-workflow-editor.js",
+        "public/local-first/sw.js",
+        "scripts/local-first-release/artifact.mjs",
+        "scripts/sme-business-pack-local.mjs",
+        "src/local-first/sme-business-pack.ts",
+        "src/local-first/worker.ts",
+        "test/local-first/sme-comparison-browser.mjs",
+        "test/local-first/sme-decision-browser.mjs",
+        "test/shared/sme-business-pack.test.ts"
+      ],
+      "disposition": "deployed",
+      "candidateRevision": "b545861f6c0f74cd516f362cec26c702913e5c64",
+      "candidateDigest": "b6d6726ff6626f9866b05c30881b9cebb9af6e2ceddd28b34ff812e013089428",
+      "sourceReleaseReceiptDigest": "29534ac17c1b17447198ec6368315861c930372a0a2949c4f1d22233ba5a4d7f",
+      "deploymentReceiptDigest": "5e41f0a8b7a42dbfd20a5b1801f6d3b21888369e1cce3876e12ea952b73e4f4a",
+      "runtimeVerificationReceiptDigest": "0209a29efe2986890f81518e73b8157ef4c7602330d4ca4246b0f755aeb1c2dd",
+      "evidencePath": "docs/reports/commerce-decision-release-20261116.json",
+      "evidenceDigest": "782179a457b18964fdaa7742c73cb5acb7f8873d5c548eac2b81c69bf9f7123c",
+      "decisionRef": "https://github.com/huijoohwee/agentic-commerce-os/pull/280",
+      "reason": null
+    },
+    {
+      "schema": "agentic-os/delivery-disposition/v1",
       "ref": "agent/device-0232231d4a19/commerce-storage-management-static-route",
       "laneHead": "f430f3c6aa05b20c977509edd817bffee1c0baf0",
       "paths": [
@@ -163,5 +194,5 @@
       "reason": "The exact follow-up paths docs/prd-tad-adr-mvp-gtm-storage-management-route-preserving-live.md and docs/reports/storage-management-static-route-release-43015411359.json are excluded from the Commerce Worker and static public product artifact; the follow-up changes no runtime input and requires no deployment."
     }
   ],
-  "receiptDigest": "8de719b7e77216330e02cde35bb74c3b6e102ab395e7d662e7647c6e7bba1419"
+  "receiptDigest": "89f6b929183a87a74500cce73727d1016a780bca52ce6b23333038ce63181e3c"
 }

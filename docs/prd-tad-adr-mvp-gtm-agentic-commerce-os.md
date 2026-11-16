@@ -424,4 +424,21 @@ The focused `test/local-first/sme-decision-browser.mjs` exercises explicit/decli
 
 **Budgets:** nine existing runtime/contract paths plus one new pure domain module, approximately 27.5 kB net runtime source growth before final measurement; no dependency, package-pin, hosted-resource or always-load instruction change. All authored files remain below 600 lines, including the existing 599-line browser owner which delegates the new bounded scenarios. Serving inference remains zero; session tokens, labor cost and attributable provider cost are unknown. Source checks grant no effect authority.
 
-Initial broad local-first execution passed 287/288 tests and stopped on the existing clean-source host-build prerequisite while these edits were uncommitted. Focused feature checks do not substitute for that gate. Seal with native LAND, run the clean exact-candidate owner checks and retain their receipts; the protected Linux Integration Gate supplies the separately verified full-container prerequisite. Local container preflight still requires a matching verified workerd override, as documented by the existing runtime owner. The next action is exact-candidate source acceptance, followed only by separately authorized integration/delivery and the retained GTM experiment.
+Initial broad execution passed 287/288 tests before the clean-source prerequisite. Subsequent clean source passed 288/288 local-first tests and the complete owner browser suite. The local aggregate stopped at its separate Podman workerd-override prerequisite; protected Linux Integration Gate 43894152622 passed for `4a9dc17ffe8b499a73ec889155f95c6f19ffb261`. These observations retain their separate check scopes.
+
+## Verified decision-slice release — 2026-11-16 UTC
+
+The explicit user instruction “merge, deploy, promote” authorized native release. [PR #280](https://github.com/huijoohwee/agentic-commerce-os/pull/280) merged as `b545861f6c0f74cd516f362cec26c702913e5c64`. Native reader run **43904555981** and live promotion **43906323414** succeeded with all 92 source entries identical. Production Worker **43619020-6186-4c1d-8578-a525fe7add42** reports that source and fulfillment ready. [Bound receipts](reports/commerce-decision-release-20261116.json) distinguish source, fixture, reader, promotion, runtime, cost and recovery proof.
+
+| Feature | Delivered evidence |
+| --- | --- |
+| DEC-01 baseline and deltas | Explicit B baseline; independent monthly deltas; no winner |
+| DEC-02 owner constraints | Protected edits and atomic invalid imports refused |
+| DEC-03 calculation working | Delivered formulas, units and missing-evidence states |
+| DEC-04 guarded review | Declined and stale confirmations preserve the baseline |
+| DEC-05 portable worksheets | v3 export/import and mobile offline reload passed |
+| DEC-06 shared transports | Three-row HTTP/MCP parity and refusal reasons passed; four existing tools |
+
+Delivered desktop/mobile inspection, widths 320–1280, 200% text zoom, zero private UI writes, enforced CSP and the exact decision asset digest passed. WebMCP uses a contract fixture; native browser support and physical-device acceptance remain unclaimed. Workers Free $0, current headroom and fail-closed quota routing were reobserved. Retain same-source reader **6a70818b-1a0d-44f1-bb53-e2db031f950d** and v3 files; the native live-profile controller records no new actual-job rollback rehearsal or payment.
+
+This observation-only checkpoint preserves the `0.4.0` requirements and conservative whole-artifact rungs. The next product action is one consenting usability trial; WTP and revenue remain unverified. The immutable workspace Context is prepared locally; native publication is blocked by its missing repository trust anchor. Metadata-only receipt paths are excluded from the deployed artifact and require no redeployment.
