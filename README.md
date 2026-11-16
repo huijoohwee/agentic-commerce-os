@@ -141,26 +141,13 @@ silently promoted to completion or deployment readiness.
 
 ## Repository lifecycle
 
-This repository consumes the universal ADLC contracts pinned from `agentic-os`.
-Prefer the human-facing path:
-
-```bash
-npm run release:common -- start <intent> --write=<paths>
-npm run release:common -- publish --message="<message>"
-npm run release:common -- complete --ref=<lane>
-```
-
-Use `npm run lane`, `npm run land`, and `npm run reap` as underlying primitives
-for diagnostics or bounded recovery. `npm run sync:canonical` only plans a
-guarded synchronization of a clean canonical checkout; applying that plan
-requires its printed authorization and exclusive-operation tokens.
-
-The repository profile permits owner-authenticated quarantine of only the exact
-worktree projection and its registration. A green check, merged pull request,
-or successful `reap` result is evidence, not cleanup authority. Remote-tracking
-refs, local and remote branches, and unreachable objects remain retained;
-quarantine still requires target-specific clean-detachment and no-remaining-value
-receipts.
+Follow the pinned `node_modules/agentic-os/docs/START-WORKFLOW.md` and
+`node_modules/agentic-os/docs/RELEASE-WORKFLOW.md`. Finish authorized unfinished
+work and affected checks, LAND/publish, then END; clean worktrees can still have
+unpublished commits. Parking requires an explicit owner decision.
+`npm run release:common` delegates directly to that shared owner. Integration,
+canonical sync and exact recoverable cleanup require their separate authority
+and receipts; the repository profile retains branches, refs and objects.
 Product deployment, rollback, and Production authorization remain governed by
 the Commerce runtime contracts below.
 

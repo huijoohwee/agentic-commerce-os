@@ -111,7 +111,9 @@ export async function checkCommerceToolbar(browser, url, width) {
       await expect(toolbar.locator('#connection')).toHaveAccessibleName('Local workspace · Online');
       await page.unroute(pack + 'service.json');
       await context.setOffline(true);
+      await expect(toolbar.locator('#connection')).toHaveAccessibleName('Offline · Drafts available');
       await context.setOffline(false);
+      await expect(toolbar.locator('#connection')).toHaveAccessibleName('Local workspace · Online');
       await expect(service).toHaveText('Service ready');
       await checkDashboardEditor(page, url);
     }

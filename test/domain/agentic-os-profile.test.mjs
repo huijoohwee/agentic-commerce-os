@@ -35,7 +35,7 @@ test('package scripts and dependency pin the exact governing runtime', async () 
   const pkg = JSON.parse(await readFile(new URL('package.json', root), 'utf8'));
 
   assert.equal(pkg.devDependencies['agentic-os'],
-    'https://codeload.github.com/huijoohwee/agentic-os/tar.gz/d6ee6e3a514f26c8d36d9ddc14f78e5e877e3b3f');
+    'https://codeload.github.com/huijoohwee/agentic-os/tar.gz/73bf77869d75c60eff687a7e7dbec72ae39be2b2');
   const lock = JSON.parse(await readFile(new URL('package-lock.json', root), 'utf8'));
   assert.equal(lock.packages[''].devDependencies['agentic-os'], pkg.devDependencies['agentic-os']);
   assert.equal(lock.packages['node_modules/agentic-os'].resolved, pkg.devDependencies['agentic-os']);
@@ -45,6 +45,7 @@ test('package scripts and dependency pin the exact governing runtime', async () 
     doctor: pkg.scripts.doctor,
     lane: pkg.scripts.lane,
     land: pkg.scripts.land,
+    release: pkg.scripts['release:common'],
     status: pkg.scripts.status,
     reap: pkg.scripts.reap,
     sync: pkg.scripts['sync:canonical'],
@@ -54,6 +55,7 @@ test('package scripts and dependency pin the exact governing runtime', async () 
     doctor: 'agentic-os doctor',
     lane: 'agentic-os start',
     land: 'agentic-os land',
+    release: 'agentic-os release-common',
     status: 'agentic-os status',
     reap: 'agentic-os reap',
     sync: 'agentic-os canonical-sync',
