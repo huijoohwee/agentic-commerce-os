@@ -92,7 +92,8 @@ export async function checkListingEntry({ browser, url: base, output, revision, 
       await page.locator('#' + role + '-query').fill(original.listing.sourceUrl);
       await expect(page.getByText('Asking price · supplied:', { exact: false }).first()).toBeVisible();
       await expect(page.locator('#' + role + '-count')).toContainText('1 offer');
-      if (role === 'vendor') assert(await page.locator('.vendor-offer-outcome').evaluate(element => element.scrollHeight <= element.clientHeight + 1));
+      if (role === 'vendor') assert(await page.locator('.vendor-offer-outcome').evaluate(element => element.scrollHeight <= element.clientHeight + 1
+        && element.getBoundingClientRect().bottom <= element.parentElement.querySelector('.vendor-offer-card-footer').getBoundingClientRect().top));
       assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
       await page.screenshot({ path: path.join(output, `listing-management-${role}-${width}.png`), fullPage: true });
       await page.locator('#' + role + '-query').fill('https://example.invalid/not-this-entry');

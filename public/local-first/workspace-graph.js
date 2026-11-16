@@ -89,7 +89,7 @@ function mountOfferCards(target, offers, presentation, selectedId, activate) {
     const state = el('span', presentation.status(offer), 'vendor-offer-state'); state.dataset.state = offer.launch ? presentation.state(offer) : 'draft'; meta.append(merchant, state);
     const title = el('span', offer.title, 'vendor-offer-title');
     const outcome = el('span', listingSummary(offer) || offer.launch?.outcome || 'Add a buyer and outcome to complete setup.', 'vendor-offer-outcome');
-    if (offer.listing) outcome.dataset.listing = '';
+    if (offer.listing) { outcome.dataset.listing = ''; button.dataset.listing = ''; }
     const updatedAt = new Date(offer.updatedAt), updated = Number.isNaN(updatedAt.valueOf()) ? 'Recently saved' : 'Updated ' + updatedAt.toLocaleDateString(displayLocale, { month: 'short', day: 'numeric' });
     const footer = el('span', undefined, 'vendor-offer-card-footer'); footer.append(el('span', (offer.listing ? 'Planned price: ' : '') + presentation.price(offer), 'vendor-offer-price'), el('span', updated, 'vendor-offer-updated'));
     button.append(cover, meta, title, outcome, footer); item.append(button); list.append(item);

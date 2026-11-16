@@ -318,6 +318,7 @@ figure{margin:0}
 #vendor .vendor-offer-title{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;grid-column:2;color:var(--commerce-ink);font-size:1.02rem;font-weight:650;line-height:var(--agentic-line-height-body);letter-spacing:-.02em;overflow-wrap:anywhere}
 #vendor .vendor-offer-outcome{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;grid-column:2;color:var(--commerce-text-muted);font-size:var(--agentic-font-size-body);line-height:var(--agentic-line-height-body);overflow-wrap:anywhere}
 #vendor .vendor-offer-outcome[data-listing]{display:block;-webkit-line-clamp:unset}
+#vendor .vendor-offer-card-open[data-listing]{height:auto;grid-template-rows:auto auto auto auto}
 #vendor .vendor-offer-card-footer{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:10px;border-top:1px solid var(--commerce-border);font-size:var(--agentic-font-size-body);line-height:var(--agentic-line-height-body)}
 #vendor .vendor-offer-price{color:var(--commerce-action);font-weight:650;font-variant-numeric:tabular-nums}
 #vendor .vendor-offer-updated{color:var(--commerce-text-muted);text-align:right}
