@@ -1,3 +1,5 @@
+import { DECISION_SCHEMA, applyDecisionPatch, validateDecisionPolicy, validateDecisionRows, projectWorking, projectDeltas, monthlyDependencies, sameDecisionPolicy } from './sme-decision-contract.js'
+export { baselineProposal, confirmBaseline, validateDecisionPolicy, sameDecisionPolicy } from './sme-decision-contract.js'
 export const PACK_PATH = '/agentic-commerce-os/services/sme-business-pack'
 const PACK_REGISTRY = Object.freeze([
   Object.freeze({ metadata: Object.freeze({ id: 'sme.business-plan', label: 'General business plan',
@@ -52,10 +54,11 @@ const evidenceSchema = { type: 'array', maxItems: 40, items: { type: 'object', r
   properties: { field_key: { type: 'string', maxLength: 64, pattern: keyPattern }, provenance: { type: 'string', enum: provenanceTypes },
     observer_role: { type: 'string', enum: observerRoles }, date: { type: 'string', format: 'date' }, value: inputValueSchema }, additionalProperties: false } }
 const modeSchema = { type: 'string', enum: ['buy_build', 'scenario'], default: 'buy_build' }
-const buildSchema = { type: 'object', required: ['pack_id', 'inputs'], properties: { pack_id: packIdSchema, mode: modeSchema, inputs: inputsSchema, evidence: evidenceSchema }, additionalProperties: false }
-const compareSchema = { type: 'object', required: ['plan_sets'], properties: { mode: modeSchema, plan_sets: { type: 'array', minItems: 2, maxItems: 3,
+const revisionSchema = { type: 'integer', minimum: 1, maximum: 100000000 }
+const buildSchema = { type: 'object', required: ['pack_id', 'inputs'], properties: { pack_id: packIdSchema, mode: modeSchema, inputs: inputsSchema, evidence: evidenceSchema, decision: DECISION_SCHEMA, revision: revisionSchema }, additionalProperties: false }
+const compareSchema = { type: 'object', required: ['plan_sets'], properties: { mode: modeSchema, decision: DECISION_SCHEMA, plan_sets: { type: 'array', minItems: 2, maxItems: 3,
   items: { type: 'object', required: ['pack_id', 'pack_version', 'inputs'], properties: {
-    pack_id: packIdSchema, pack_version: { type: 'string', minLength: 1, maxLength: 32 }, inputs: inputsSchema, evidence: evidenceSchema,
+    pack_id: packIdSchema, pack_version: { type: 'string', minLength: 1, maxLength: 32 }, inputs: inputsSchema, evidence: evidenceSchema, revision: revisionSchema,
   }, additionalProperties: false } } }, additionalProperties: false }
 const inputs = Object.freeze({
   'pack.list': { type: 'object', properties: {}, additionalProperties: false },
@@ -133,10 +136,11 @@ function validEvidence(pack, evidence) {
 }
 async function validateInput(args) {
   if (!isRecord(args)) fail('sme_pack_arguments_invalid')
-  const keys = ['pack_id', 'inputs', ...(Object.hasOwn(args, 'mode') ? ['mode'] : []), ...(Object.hasOwn(args, 'evidence') ? ['evidence'] : [])]
+  const keys = ['pack_id', 'inputs', ...(Object.hasOwn(args, 'mode') ? ['mode'] : []), ...(Object.hasOwn(args, 'evidence') ? ['evidence'] : []), ...['decision', 'revision'].filter(key => Object.hasOwn(args, key))]
   assertExactKeys(args, keys)
   if (typeof args.pack_id !== 'string' || !packEntry(args.pack_id) || !isRecord(args.inputs)
     || new TextEncoder().encode(JSON.stringify(args)).byteLength > 32768) fail('sme_pack_arguments_invalid')
+  if (args.revision !== undefined && (!Number.isSafeInteger(args.revision) || args.revision < 1 || args.revision > 100000000)) fail('sme_pack_arguments_invalid')
   const pack = await loadPack(args.pack_id), mode = modeFor(pack, args.mode), fields = definitions(pack), inputs = Object.create(null), invalid = []
   if (Object.keys(args.inputs).length > pack.input_fields.length) fail('sme_pack_unknown_field')
   for (const [key, value] of Object.entries(args.inputs)) {
@@ -274,18 +278,7 @@ function monthlyModel(inputs, mode) {
   if (initialOutlay && cash && months && burn && burn.high === 0) fundingGap = positivePart(finiteRange(initialOutlay.low - cash.high, initialOutlay.high - cash.low))
   else if (initialOutlay && cash && months && burn) fundingGap = positivePart(subtract(add(initialOutlay, multiply(burn, months)), cash))
   const requestedAgainstGap = requested && fundingGap ? subtract(requested, fundingGap) : null
-  const gaps = {
-    monthly_revenue: ['price_per_unit', 'units_per_month'],
-    monthly_variable_cost: ['variable_cost_per_unit', 'units_per_month'],
-    monthly_contribution: ['price_per_unit', 'units_per_month', 'variable_cost_per_unit'],
-    monthly_operating_costs: ['fixed_costs_per_month', 'payroll_per_month'],
-    monthly_operating_result: ['price_per_unit', 'units_per_month', 'variable_cost_per_unit', 'fixed_costs_per_month', 'payroll_per_month'],
-    break_even_units: ['price_per_unit', 'variable_cost_per_unit', 'fixed_costs_per_month', 'payroll_per_month'],
-    runway: ['cash_available', 'price_per_unit', 'units_per_month', 'variable_cost_per_unit', 'fixed_costs_per_month', 'payroll_per_month'],
-    funding_gap: fundingInputs,
-    funding_requested_difference: ['funding_requested', ...fundingInputs],
-  }
-  if (path === 'undecided') gaps.funding_gap = [...fundingInputs, 'buy_build_path']
+  const gaps = monthlyDependencies(inputs, mode)
   return { currency_code: inputs.currency_code ?? null, buy_build_path: path ?? null, revenue_per_month: revenue, variable_cost_per_month: variable,
     contribution_per_month: contribution, operating_costs_per_month: operatingCosts, operating_result_per_month: operatingResult,
     break_even_units: breakEven, runway, funding_gap: fundingGap, funding_requested_difference: requestedAgainstGap,
@@ -360,6 +353,7 @@ function nextChecks(pack, inputs, missing, model, operatingComparable) {
 }
 function csvCell(value) { return '"' + String(value ?? '').replaceAll('"', '""') + '"' }
 const worksheetMeta = ['schema', 'pack_id', 'pack_version', 'mode', 'currency_code']
+const decisionMeta = ['decision', 'row_revision']
 const worksheetCsvHeader = ['plan', 'kind', 'key', 'value', 'provenance', 'observer_role', 'date']
 export function serializeSmeWorksheets(worksheets, format) {
   if (!Array.isArray(worksheets) || !worksheets.length || worksheets.length > 3) fail('sme_pack_worksheet_invalid')
@@ -368,7 +362,7 @@ export function serializeSmeWorksheets(worksheets, format) {
   if (format === 'csv') {
     const rows = [worksheetCsvHeader]
     worksheets.forEach((sheet, index) => {
-      for (const key of worksheetMeta) rows.push([index, 'meta', key, JSON.stringify(sheet[key]), '', '', ''])
+      for (const key of [...worksheetMeta, ...decisionMeta.filter(key => Object.hasOwn(sheet, key))]) rows.push([index, 'meta', key, JSON.stringify(sheet[key]), '', '', ''])
       for (const [key, value] of Object.entries(sheet.inputs)) rows.push([index, 'input', key, JSON.stringify(value), '', '', ''])
       for (const row of sheet.evidence) rows.push([index, 'evidence', row.field_key, JSON.stringify(row.value), row.provenance, row.observer_role, row.date])
     })
@@ -405,7 +399,7 @@ function parseWorksheetCsv(text) {
     if (row.length !== 7 || !/^[0-2]$/u.test(index) || Number(index) > sheets.length) fail('sme_pack_worksheet_invalid')
     const sheet = sheets[index] ??= { inputs: Object.create(null), evidence: [] }
     if (kind === 'evidence') sheet.evidence.push({ field_key: key, value: JSON.parse(value), provenance, observer_role, date })
-    else if ((kind === 'meta' && worksheetMeta.includes(key) || kind === 'input' && new RegExp(keyPattern).test(key)) && !provenance && !observer_role && !date) {
+    else if ((kind === 'meta' && [...worksheetMeta, ...decisionMeta].includes(key) || kind === 'input' && new RegExp(keyPattern).test(key)) && !provenance && !observer_role && !date) {
       const target = kind === 'meta' ? sheet : sheet.inputs
       if (Object.hasOwn(target, key)) fail('sme_pack_worksheet_invalid')
       Object.defineProperty(target, key, { value: JSON.parse(value), enumerable: true })
@@ -425,22 +419,27 @@ export async function readSmeWorksheets(text, format, identity) {
   if (!sheets.length || sheets.length > 3) fail('sme_pack_worksheet_invalid')
   const pack = await loadPack(identity.id)
   for (const sheet of sheets) {
-    assertExactKeys(sheet, [...worksheetMeta, 'inputs', 'evidence'])
-    if (sheet.schema !== 'sme-business-plan/worksheet/v2' || sheet.pack_id !== pack.id || sheet.pack_version !== pack.version
+    assertExactKeys(sheet, [...worksheetMeta, 'inputs', 'evidence', ...(sheet.schema === 'sme-business-plan/worksheet/v3' ? decisionMeta : [])])
+    if (!['sme-business-plan/worksheet/v2', 'sme-business-plan/worksheet/v3'].includes(sheet.schema) || sheet.pack_id !== pack.id || sheet.pack_version !== pack.version
       || identity.version !== pack.version || sheet.mode !== sheets[0].mode || !isRecord(sheet.inputs)
       || !Array.isArray(sheet.evidence) || sheet.currency_code !== (sheet.inputs.currency_code ?? null)) fail('sme_pack_worksheet_identity')
     const checked = await validateInput({ pack_id: sheet.pack_id, mode: sheet.mode, inputs: sheet.inputs, evidence: sheet.evidence })
     if (checked.invalid.length) fail('sme_pack_worksheet_invalid')
     sheet.inputs = clone(checked.inputs)
   }
+  const decision = sheets[0].decision
+  if (sheets.some(sheet => !sameDecisionPolicy(sheet.decision, decision) || sheet.schema !== sheets[0].schema
+    || decision && (!Number.isSafeInteger(sheet.row_revision) || sheet.row_revision < 1 || sheet.row_revision > 100000000))) fail('sme_pack_worksheet_identity')
+  if (decision) validateDecisionRows(decision, sheets, pack.input_fields)
   const sets = sheets.map(sheet => ({ pack_id: sheet.pack_id, pack_version: sheet.pack_version, inputs: sheet.inputs, evidence: sheet.evidence }))
-  if (sets.length > 1) await invokeSmePackTool('business.plan.compare', { mode: sheets[0].mode, plan_sets: sets })
+  if (sets.length > 1) await invokeSmePackTool('business.plan.compare', { mode: sheets[0].mode, plan_sets: sets, ...(decision ? { decision } : {}) })
   else await invokeSmePackTool('business.plan.build', { pack_id: pack.id, mode: sheets[0].mode, inputs: sheets[0].inputs, evidence: sheets[0].evidence })
   return sheets
 }
-function makeWorksheet(pack, mode, inputs, evidence, model, outline, checks) {
+function makeWorksheet(pack, mode, inputs, evidence, model, outline, checks, decision, revision) {
   const worksheet = { schema: 'sme-business-plan/worksheet/v2', pack_id: pack.id, pack_version: pack.version,
-    mode: mode.id, currency_code: inputs.currency_code ?? null, inputs: clone(inputs), evidence: clone(evidence) }
+    mode: mode.id, currency_code: inputs.currency_code ?? null, inputs: clone(inputs), evidence: clone(evidence),
+    ...(decision ? { schema: 'sme-business-plan/worksheet/v3', decision: clone(decision), row_revision: revision } : {}) }
   const modelRows = modelText(model)
   const json = JSON.stringify(worksheet, null, 2), csv = serializeSmeWorksheets([worksheet], 'csv')
   const context = [`Mode: ${mode.label}`, inputs.venture_stage ? `Stage: ${inputs.venture_stage}` : null,
@@ -456,13 +455,31 @@ function makeWorksheet(pack, mode, inputs, evidence, model, outline, checks) {
   ].join('\n')
   return { json, csv, markdown }
 }
-async function buildPlan(args, now, operatingComparable) {
+export function smeToolResult(value) {
+  const result = { content: [{ type: 'text', text: JSON.stringify(value) }], structuredContent: value }
+  const oversized = item => new TextEncoder().encode(JSON.stringify(item)).byteLength > 65000
+  if (oversized(result)) delete result.structuredContent
+  if (oversized(result)) { result.structuredContent = value; result.content[0].text = 'The complete local result is in structuredContent.' }
+  if (oversized(result)) fail('sme_pack_response_too_large')
+  return result
+}
+export function smePackFailure(error) {
+  const code = error instanceof Error && /^sme_pack_[a-z_]+$/u.test(error.message) ? error.message : 'sme_pack_request_refused'
+  return { ok: false, code, ...(code === 'sme_pack_decision_refused' && Array.isArray(error.reasons)
+    ? { reasons: error.reasons.slice(0, 228).map(({ field, reason, slot }) => ({ field: String(field).slice(0, 64), reason: String(reason).slice(0, 64), ...(slot ? { slot } : {}) })) } : {}) }
+}
+export function applySmePatch(item, patch, policy, expected, fields) {
+  if (policy) validateDecisionPolicy(policy, fields, ['A', 'B', 'C'])
+  return applyDecisionPatch(item, patch, policy, expected, fields, validFieldValue)
+}
+async function buildPlan(args, now, operatingComparable, context) {
   const input = await validateInput(args), pack = input.pack
   const model = pack.calculation_model === 'takeover-cash/v1'
     ? takeoverCashModel(input.inputs) : monthlyModel(input.inputs, input.mode)
   const pitch = pitchDeckOutline(pack, input.inputs, model), checks = nextChecks(pack, input.inputs, input.missing, model, operatingComparable)
   const coverage = projectionCoverage(pack, input.inputs), evidence = evidenceCoverage(pack, input.evidence)
-  const worksheet = makeWorksheet(pack, input.mode, input.inputs, input.evidence, model, pitch, checks)
+  const decision = context?.policy ?? (args.decision ? validateDecisionRows(args.decision, [{ inputs: input.inputs }], pack.input_fields) : null)
+  const worksheet = makeWorksheet(pack, input.mode, input.inputs, input.evidence, model, pitch, checks, decision, context?.revision ?? args.revision ?? 1)
   const required = pack.input_fields.filter(field => requiredForMode(field, input.mode, input.inputs))
   return { schema: 'sme-business-plan/report/v2', pack: clone(summary(pack)), mode: clone(input.mode), label: 'Planning draft · not verified',
     disclaimer: 'User-supplied facts and assumptions only. Missing values stay unknown. This deterministic planning aid is not a forecast, valuation, accounting statement, legal, tax, investment, or financing advice.',
@@ -470,18 +487,20 @@ async function buildPlan(args, now, operatingComparable) {
       supplied: required.filter(field => Object.hasOwn(input.inputs, field.name)).length,
       missing_fields: input.missing, invalid_fields: input.invalid }, evidence_count: input.evidence.length,
       evidence_status: 'user-recorded; not authenticated' },
+    working: projectWorking(pack, input.mode, input.inputs, input.evidence, model),
     model, model_display: modelText(model), projection_coverage: coverage, evidence_coverage: evidence,
     pitch_deck_outline: pitch, next_checks: checks, worksheet,
     as_of: new Date(now).toISOString(), inference_tokens: 0, persisted: false }
 }
 async function comparePlans(args, now) {
-  assertExactKeys(args, Object.hasOwn(args ?? {}, 'mode') ? ['mode', 'plan_sets'] : ['plan_sets'])
+  assertExactKeys(args, ['plan_sets', ...['mode', 'decision'].filter(key => Object.hasOwn(args ?? {}, key))])
   if (!Array.isArray(args.plan_sets) || args.plan_sets.length < 2 || args.plan_sets.length > 3
     || new TextEncoder().encode(JSON.stringify(args)).byteLength > 32768) fail('sme_pack_arguments_invalid')
   const sets = args.plan_sets
   for (const set of sets) {
-    const keys = Object.hasOwn(set ?? {}, 'evidence') ? ['pack_id', 'pack_version', 'inputs', 'evidence'] : ['pack_id', 'pack_version', 'inputs']
+    const keys = ['pack_id', 'pack_version', 'inputs', ...['evidence', 'revision'].filter(key => Object.hasOwn(set ?? {}, key))]
     assertExactKeys(set, keys)
+    if (set.revision !== undefined && (!Number.isSafeInteger(set.revision) || set.revision < 1 || set.revision > 100000000)) fail('sme_pack_arguments_invalid')
     if (typeof set.pack_id !== 'string' || typeof set.pack_version !== 'string' || !isRecord(set.inputs)) fail('sme_pack_arguments_invalid')
   }
   const identity = sets[0]
@@ -496,13 +515,14 @@ async function comparePlans(args, now) {
     validFieldValue(basis, set.inputs.financial_basis) && set.inputs.financial_basis !== 'unknown'
     && validFieldValue(period, set.inputs.financial_period_months)
     && set.inputs.financial_basis === identity.inputs.financial_basis && set.inputs.financial_period_months === identity.inputs.financial_period_months)
+  const decision = args.decision ? validateDecisionRows(args.decision, sets, pack.input_fields) : null
   const slots = []
   for (const [index, set] of sets.entries()) {
-    const report = await buildPlan({ pack_id: set.pack_id, mode: mode.id, inputs: set.inputs, ...(set.evidence ? { evidence: set.evidence } : {}) }, now, operatingComparable)
+    const report = await buildPlan({ pack_id: set.pack_id, mode: mode.id, inputs: set.inputs, ...(set.evidence ? { evidence: set.evidence } : {}) }, now, operatingComparable, { policy: decision, revision: set.revision ?? 1 })
     slots.push({ slot: ['A', 'B', 'C'][index], status: 'included', report })
   }
   if (slots.length === 2) slots.push({ slot: 'C', status: 'not_supplied', report: null })
   const result = { schema: 'sme-business-plan/comparison/v2', pack: clone(summary(pack)), mode: clone(mode), currency_code: identity.inputs.currency_code,
-    slots, ranking: null, winner: null, conversion_applied: false, inference_tokens: 0, persisted: false }
+    slots, ...(decision ? { decision: projectDeltas(decision, slots, subtract, operatingComparable) } : {}), ranking: null, winner: null, conversion_applied: false, inference_tokens: 0, persisted: false }
   return boundedResponse(result)
 }

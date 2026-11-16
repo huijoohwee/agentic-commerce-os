@@ -92,3 +92,14 @@
 #sme .review-date-editor input { display: inline-block; max-width: 100%; width: auto; margin: 0 16px 8px 8px; }
 
 #sme .comparison-table-scroll[data-view="gantt"] { height: auto; min-height: 0; overflow: visible; }
+
+#sme .decision-panel { margin-block: 16px; border-block: 1px solid var(--commerce-border); padding-block: 12px; overflow-wrap: anywhere; }
+#sme .decision-panel details { margin-block: 8px; padding: 8px; border: 1px solid var(--commerce-border); border-radius: 8px; }
+#sme .decision-panel summary { cursor: pointer; min-height: 44px; display: list-item; padding-block: 8px; }
+#sme .decision-panel :is(button, input, select, .agentic-select-trigger) { min-height: var(--agentic-control-height); max-width: 100%; }
+#sme .decision-policy { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; margin-block: 12px; }
+#sme .decision-policy :is(p, legend) { flex-basis: 100%; }
+#sme .decision-review { padding: 12px; background: var(--commerce-surface-subtle); }
+@media (max-width: 560px) { #sme .decision-panel :is(button, input, select, .agentic-select-trigger) { width: 100%; } }
+
+#sme .decision-policy label { display: grid; gap: 4px; flex: 1 1 12rem; min-width: 0; }

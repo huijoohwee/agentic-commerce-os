@@ -3,7 +3,7 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprot
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js'
 import { isHttpFailure, isRecord, readJsonObject } from '../shared/http.ts'
 // @ts-expect-error The browser-safe JavaScript module is shared by the UI and the Worker.
-import { invokeSmePackTool, PACK_INDEX, PACK_PATH, TOOL_SCHEMAS } from '../../public/local-first/sme-business-pack-core.js'
+import { invokeSmePackTool, smePackFailure, smeToolResult, PACK_INDEX, PACK_PATH, TOOL_SCHEMAS } from '../../public/local-first/sme-business-pack-core.js'
 
 export const SME_PACK_LIMITS = Object.freeze({ requestBytes: 32768, responseBytes: 65536, deadlineMs: 2000 })
 const descriptions: Record<string, string> = {
@@ -17,11 +17,8 @@ export const SME_PACK_TOOLS = Object.freeze(TOOL_SCHEMAS.map((tool: any) => Obje
   description: descriptions[tool.name]!, inputSchema: tool.inputSchema, annotations: tool.annotations,
 })))
 
-function failure(status: number, code: string) {
-  return Response.json({ ok: false, code }, { status, headers: { 'cache-control': 'no-store' } })
-}
-function safeCode(error: unknown) {
-  return error instanceof Error && /^sme_pack_[a-z_]+$/u.test(error.message) ? error.message : 'sme_pack_request_refused'
+function failure(status: number, code: string, details = {}) {
+  return Response.json({ ok: false, code, ...details }, { status, headers: { 'cache-control': 'no-store' } })
 }
 function responseWithinLimit(response: Response): Promise<Response> {
   return response.text().then(text => new TextEncoder().encode(text).byteLength > SME_PACK_LIMITS.responseBytes
@@ -67,15 +64,15 @@ export async function handleSmeBusinessPackRequest(request: Request, sourceRevis
         return failure(400, 'sme_pack_arguments_invalid')
       }
       try { return await responseWithinLimit(Response.json(await invokeSmePackTool(body.tool, body.arguments))) }
-      catch (error) { return failure(422, safeCode(error)) }
+      catch (error) { return failure(422, smePackFailure(error).code, smePackFailure(error)) }
     }
     server = new Server({ name: 'sme-business-pack', version: '1.0.0' }, { capabilities: { tools: {} } })
     server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: toolSchemas() }))
     server.setRequestHandler(CallToolRequestSchema, async ({ params }) => {
       try {
         const value = await invokeSmePackTool(params.name, params.arguments ?? {})
-        return { content: [{ type: 'text' as const, text: JSON.stringify(value) }], structuredContent: value }
-      } catch (error) { return { isError: true, content: [{ type: 'text' as const, text: safeCode(error) }] } }
+        return smeToolResult(value)
+      } catch (error) { const failure = smePackFailure(error); return { isError: true, structuredContent: failure, content: [{ type: 'text' as const, text: failure.reasons ? JSON.stringify(failure) : failure.code }] } }
     })
     transport = new WebStandardStreamableHTTPServerTransport({ enableJsonResponse: true })
     await server.connect(transport)
@@ -86,6 +83,6 @@ export async function handleSmeBusinessPackRequest(request: Request, sourceRevis
     const response = await transport.handleRequest(mcpRequest, { parsedBody: body })
     return await responseWithinLimit(response)
   } catch (error) {
-    return failure(signal.aborted ? 504 : 422, signal.aborted ? 'sme_pack_deadline_or_cancelled' : safeCode(error))
+    return failure(signal.aborted ? 504 : 422, signal.aborted ? 'sme_pack_deadline_or_cancelled' : smePackFailure(error).code)
   } finally { clearTimeout(timer); await server?.close(); await transport?.close() }
 }

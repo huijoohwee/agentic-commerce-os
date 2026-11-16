@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 // @ts-expect-error The browser-safe JavaScript module is shared by the Worker and UI.
-import { invokeSmePackTool, PACK_INDEX, PACK_PATH, TOOL_NAMES, TOOL_SCHEMAS, readSmeWorksheets, serializeSmeWorksheets } from '../../public/local-first/sme-business-pack-core.js'
+import { invokeSmePackTool, applySmePatch, baselineProposal, confirmBaseline, PACK_INDEX, PACK_PATH, TOOL_NAMES, TOOL_SCHEMAS, readSmeWorksheets, serializeSmeWorksheets } from '../../public/local-first/sme-business-pack-core.js'
 import { handleSmeBusinessPackRequest } from '../../src/local-first/sme-business-pack'
 
 const packId = 'sme.business-plan'
@@ -356,4 +356,138 @@ describe('SME business plan contract', () => {
     }
   })
 
+})
+
+
+describe('native decision rehearsal', () => {
+  const policy = () => ({ baseline: 'A', policy_revision: 1, protected_fields: ['payroll_per_month'], bounds: { price_per_unit: { min: 0, max: 100 } } })
+  async function fixture(count = 2) {
+    const protocol = await invokeSmePackTool('pack.protocol', { pack_id: packId })
+    const sets = Array.from({ length: count }, (_, index) => ({ pack_id: packId, pack_version: protocol.pack.version,
+      inputs: { ...protocol.illustrative_inputs, price_per_unit: 20 + index * 2 }, revision: index + 1 }))
+    return { protocol, sets }
+  }
+  it('reconciles independently computed monthly values and baseline-relative deltas without selecting a winner', async () => {
+    const { sets } = await fixture()
+    const result = await invokeSmePackTool('business.plan.compare', { mode: 'scenario', plan_sets: sets, decision: policy() })
+    expect(result.slots.map((slot: any) => slot.slot)).toEqual(['A', 'B', 'C'])
+    expect(result).toMatchObject({ ranking: null, winner: null, persisted: false, inference_tokens: 0 })
+    const delta = result.decision.rows[1].deltas
+    expect(delta.monthly_revenue.value).toEqual({ low: 600, high: 600 })
+    expect(delta.monthly_contribution.value).toEqual({ low: 600, high: 600 })
+    expect(delta.monthly_operating_result.value).toEqual({ low: 600, high: 600 })
+    expect(delta.monthly_variable_cost.value).toEqual({ low: 0, high: 0 })
+    expect(delta.break_even_units.value).toEqual({ low: -30, high: -30 })
+    expect(delta.runway).toMatchObject({ value: null, status: 'unknown', unit: 'months' })
+    expect(result.slots[1].report.working.outputs.monthly_operating_result.value).toEqual({ low: 1100, high: 1100 })
+  })
+  it('uses conservative ranges while sharing identical operand expressions and retaining missing dependencies', async () => {
+    const { sets } = await fixture(3)
+    sets[0]!.inputs.price_per_unit = { low: 20, high: 22 }
+    sets[1]!.inputs.price_per_unit = { low: 20, high: 22 }
+    sets[2]!.inputs.price_per_unit = { low: 23, high: 25 }
+    const result = await invokeSmePackTool('business.plan.compare', { mode: 'scenario', plan_sets: sets, decision: policy() })
+    expect(result.decision.rows[1].deltas.monthly_revenue.value).toEqual({ low: 0, high: 0 })
+    expect(result.decision.rows[2].deltas.monthly_revenue.value).toEqual({ low: 300, high: 1500 })
+    delete sets[1]!.inputs.variable_cost_per_unit
+    const unknown = await invokeSmePackTool('business.plan.compare', { mode: 'scenario', plan_sets: sets, decision: policy() })
+    expect(unknown.decision.rows[1].deltas.monthly_operating_result.value).toBeNull()
+    expect(unknown.slots[1].report.working.outputs.monthly_operating_result.missing).toContain('variable_cost_per_unit')
+  })
+  it('keeps working tied to actual operand values, evidence dates and model output statuses', async () => {
+    const { protocol } = await fixture()
+    const evidence = [{ field_key: 'price_per_unit', value: 20, provenance: 'assumption', observer_role: 'author', date: '2026-11-16' }]
+    const result = await invokeSmePackTool('business.plan.build', { pack_id: packId, inputs: protocol.illustrative_inputs, evidence })
+    expect(result.working.operands.price_per_unit).toEqual({ value: 20, evidence: [{ value: 20, provenance: 'assumption', observer_role: 'author', date: '2026-11-16' }] })
+    expect(result.working.outputs.monthly_revenue).toMatchObject({ formula: 'price_per_unit × units_per_month', unit: 'USD', period: 'month', value: { low: 6000, high: 6000 } })
+    expect(result.working.evidence_status).toBe('user-recorded; not authenticated')
+    const takeover = await invokeSmePackTool('business.plan.build', { pack_id: takeoverId, inputs: takeoverInputs })
+    expect(takeover.working.outputs.cash_to_close.value).toEqual(takeover.model.cash_to_close)
+    expect(takeover.working.outputs.operating_difference_per_month.fields).toContain('financial_basis')
+  })
+  it('refuses the whole mixed patch and stale revisions while keeping original bytes', async () => {
+    const { protocol, sets } = await fixture(), item = { slot: 'A', inputs: sets[0]!.inputs, evidence: [], revision: 1 }
+    const before = JSON.stringify(item), expected = { revision: 1, policy_revision: 1 }
+    for (const patch of [{ price_per_unit: 25, payroll_per_month: 100 }, { price_per_unit: 101 }, { price_per_unit: { low: 90, high: 101 } },
+      { price_per_unit: null }, { price_per_unit: Infinity }, JSON.parse('{"__proto__":1}')]) {
+      expect(() => applySmePatch(item, patch, policy(), expected, protocol.input_fields)).toThrow('sme_pack_decision_refused')
+      expect(JSON.stringify(item)).toBe(before)
+    }
+    for (const stale of [{ revision: 0, policy_revision: 1 }, { revision: 1, policy_revision: 2 }])
+      expect(() => applySmePatch(item, { price_per_unit: 22 }, policy(), stale, protocol.input_fields)).toThrow('sme_pack_decision_refused')
+    const next = applySmePatch(item, { price_per_unit: 100 }, policy(), expected, protocol.input_fields)
+    expect(next).toMatchObject({ revision: 2, inputs: { price_per_unit: 100, payroll_per_month: 2500 } })
+    expect(JSON.stringify(item)).toBe(before)
+  })
+  it('enforces declared protections in the same evaluator used by UI, HTTP and tools', async () => {
+    const { sets } = await fixture(); sets[1]!.inputs.payroll_per_month = 1
+    const args = { mode: 'scenario', plan_sets: sets, decision: policy() }
+    let domain: any
+    try { await invokeSmePackTool('business.plan.compare', args) } catch (error) { domain = error }
+    expect(domain.reasons).toContainEqual({ field: 'payroll_per_month', reason: 'protected', slot: 'B' })
+    const response = await handleSmeBusinessPackRequest(request({ tool: 'business.plan.compare', arguments: args }), 'local-unreleased')
+    expect(response?.status).toBe(422)
+    expect(await response?.json()).toMatchObject({ ok: false, code: domain.message, reasons: domain.reasons })
+    sets[1]!.inputs.payroll_per_month = 2500
+    const direct = await invokeSmePackTool('business.plan.compare', args, 0)
+    const http = await handleSmeBusinessPackRequest(request({ tool: 'business.plan.compare', arguments: args }), 'local-unreleased')
+    expect((await http?.json() as Record<string, unknown>).decision).toEqual(direct.decision)
+    for (const invalid of [{ ...policy(), baseline: 'C' }, { ...policy(), policy_revision: 0 },
+      { ...policy(), protected_fields: ['missing'] }, { ...policy(), bounds: { venture_name: { min: 0, max: 1 } } },
+      { ...policy(), bounds: { price_per_unit: { min: 100, max: 1 } } }])
+      await expect(invokeSmePackTool('business.plan.compare', { ...args, decision: invalid })).rejects.toThrow('sme_pack_decision_refused')
+  })
+  it('requires explicit current confirmation and refuses stale or repeated baseline proposals', async () => {
+    const { sets } = await fixture(), rows = sets.map((set: any, index: number) => ({ slot: ['A', 'B'][index], inputs: set.inputs, evidence: [], revision: set.revision }))
+    const proposal = baselineProposal('B', rows, policy())
+    expect(() => confirmBaseline(proposal, rows, policy(), false)).toThrow('sme_pack_decision_refused')
+    expect(() => confirmBaseline(proposal, [{ ...rows[0], revision: 99 }, rows[1]], policy(), true)).toThrow('sme_pack_decision_refused')
+    const committed = confirmBaseline(proposal, rows, policy(), true)
+    expect(committed).toMatchObject({ baseline: 'B', policy_revision: 2, protected_fields: ['payroll_per_month'] })
+    expect(() => confirmBaseline(proposal, rows, committed, true)).toThrow('sme_pack_decision_refused')
+    expect(() => baselineProposal('C', rows, policy())).toThrow('sme_pack_decision_refused')
+    await expect(invokeSmePackTool('business.plan.confirm', {})).rejects.toThrow('sme_pack_tool_not_found')
+  })
+  it('retains real MCP results and refusal reasons without duplicating oversized reports', async () => {
+    const { sets } = await fixture(3)
+    const call = async (args: unknown) => {
+      const response = await handleSmeBusinessPackRequest(new Request(`https://local.test${PACK_PATH}/mcp`, { method: 'POST',
+        headers: { 'content-type': 'application/json', accept: 'application/json, text/event-stream' },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'business.plan.compare', arguments: args } }) }), 'local-unreleased')
+      expect(response?.status).toBe(200)
+      const text = await response!.text(); expect(new TextEncoder().encode(text).length).toBeLessThanOrEqual(65536)
+      return JSON.parse(text).result
+    }
+    const args = { mode: 'scenario', plan_sets: sets, decision: policy() }, result = await call(args)
+    const value = result.structuredContent ?? JSON.parse(result.content[0].text)
+    expect(value.decision.rows[2].deltas.monthly_revenue.value).toEqual({ low: 1200, high: 1200 })
+    sets[2]!.inputs.payroll_per_month = 1
+    const refused = await call(args)
+    expect(refused.isError).toBe(true)
+    expect(refused.structuredContent).toMatchObject({ code: 'sme_pack_decision_refused', reasons: [{ field: 'payroll_per_month', reason: 'protected', slot: 'C' }] })
+  })
+  it('does not manufacture a delta for operating figures from different declared bases or periods', async () => {
+    const sets = [6, 12].map(months => ({ pack_id: takeoverId, pack_version: '1.2.0', inputs: { ...takeoverInputs, financial_period_months: months } }))
+    const result = await invokeSmePackTool('business.plan.compare', { mode: 'scenario', plan_sets: sets,
+      decision: { baseline: 'A', policy_revision: 1, protected_fields: [], bounds: {} } })
+    expect(result.decision.rows[1].deltas.operating_difference_per_month).toMatchObject({ value: null, status: 'incomparable_basis' })
+  })
+  it('retains versioned policy, baseline, row revision, evidence and candidate meaning across bounded file formats', async () => {
+    const { protocol, sets } = await fixture(3), result = await invokeSmePackTool('business.plan.compare', { mode: 'scenario', plan_sets: sets, decision: policy() })
+    const sheets = result.slots.map((row: any) => JSON.parse(row.report.worksheet.json))
+    expect(sheets.map((sheet: any) => sheet.schema)).toEqual(Array(3).fill('sme-business-plan/worksheet/v3'))
+    expect(sheets.map((sheet: any) => sheet.row_revision)).toEqual([1, 2, 3])
+    for (const format of ['json', 'csv']) {
+      const serialized = serializeSmeWorksheets(sheets, format)
+      expect(new TextEncoder().encode(serialized).length).toBeLessThanOrEqual(65536)
+      expect(await readSmeWorksheets(serialized, format, protocol.pack)).toEqual(sheets)
+    }
+    const markdown = 'Review worksheet\n~~~json\n' + serializeSmeWorksheets(sheets, 'json') + '\n~~~\n'
+    expect(await readSmeWorksheets(markdown, 'md', protocol.pack)).toEqual(sheets)
+    const bad = structuredClone(sheets); bad[1].decision.baseline = 'B'
+    await expect(readSmeWorksheets(JSON.stringify(bad), 'json', protocol.pack)).rejects.toThrow('sme_pack_worksheet_identity')
+    bad[1] = structuredClone(sheets[1]); bad[1].schema = 'sme-business-plan/worksheet/v99'
+    await expect(readSmeWorksheets(JSON.stringify(bad), 'json', protocol.pack)).rejects.toThrow('sme_pack_arguments_invalid')
+    expect(JSON.stringify(sheets)).not.toContain('v99')
+  })
 })

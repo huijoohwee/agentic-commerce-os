@@ -1,19 +1,19 @@
 ---
 title: "Reference Implementation — Commerce Workspace and Decision Rehearsal"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.3.0"
-revision: "0.3.0"
+version: "0.4.0"
+revision: "0.4.0"
 date: "2026-11-16"
 updated_date: "2026-11-16"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Commerce product function"
 continuity_id: "COMMERCE-CONTROL-PLANE-001"
-prd_revision: "0.3.0"
-tad_revision: "0.3.0"
-adr_revision: "0.3.0"
-mvp_revision: "0.3.0"
-gtm_revision: "0.3.0"
+prd_revision: "0.4.0"
+tad_revision: "0.4.0"
+adr_revision: "0.4.0"
+mvp_revision: "0.4.0"
+gtm_revision: "0.4.0"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -29,7 +29,7 @@ template_revision: "1.6.0"
 template_sha256: "0aaa79cfc4e6ead44514e2c1264879ae4445e252a1590ac6c5241ad4dfec15e4"
 worktree_id: "device-0232231d4a19--commerce-native-decision-plan"
 agent_id: "codex"
-source_revision: "25f4c8e221ad0a60b63c4fb432b2bbe9d44423d2"
+source_revision: "37778153321b48a82480720b4880a519e09a62e5"
 lifecycle_status: "proposed"
 load_policy: "on-demand"
 runtime_readiness_policy: "fail-closed"
@@ -39,15 +39,15 @@ agenticOsCanvas2dRenderer: "flowchart"
 
 # Reference implementation — Commerce workspace and decision rehearsal
 
-**Join:** `COMMERCE-CONTROL-PLANE-001@0.3.0`. Update the existing shared-shell plan in place. Keep COM-01–08 and ADR-01; extend the same SME workflow with DEC-01–06 and ADR-02. This is the sole editable owner of this increment. Existing commerce, workspace, transfer, housing and first-dollar plans retain their own scopes. No second app, planner, roadmap, capability registry, design system or payment ledger is introduced.
+**Join:** `COMMERCE-CONTROL-PLANE-001@0.4.0`. Update the existing shared-shell plan in place. Keep COM-01–08 and ADR-01; extend the same SME workflow with DEC-01–06 and ADR-02. This is the sole editable owner of this increment. Existing commerce, workspace, transfer, housing and first-dollar plans retain their own scopes. No second app, planner, roadmap, capability registry, design system or payment ledger is introduced.
 
-**Revision outcome:** source and deployed UI inspection establish reusable scenario planning, not completed enhancement acceptance. This request authorizes specification authoring and live UI inspection. Product implementation, publication of customer content, deployment, payment and outreach remain separately gated. `spec-complete` describes this specification; the proposed DEC criteria have no implementation verdict, and delivered readiness for this increment remains `undocumented`.
+**Revision outcome:** the user's explicit 2026-11-16 IMPLEMENT instruction authorizes the native source changes for the preceding `0.3.0` plan. DEC-01–06 are implemented in the existing SME owners and their bounded decision helper; the implementation checkpoint records checks and remaining acceptance. Shared tokens, package pins, effect owners and four tool identities are retained. Runtime delivery, payment and outreach remain separately gated. Whole-artifact readiness stays conservative until the broader COM acceptance is closed; local implementation evidence is not a deployed product verdict.
 
 **Context:** the pinned source already builds and compares local plans in a shared workspace. **Intent:** an owner can inspect one proposed business change against an explicit baseline, understand the calculation and retain control of protected facts. **Directive:** extend the native scenario contract and workflow, reuse existing shared owners, define bounded acceptance and record live evidence without creating parallel implementations. **Role:** Commerce product function. **Action / SVO:** the product function specifies the native decision rehearsal. **Outcome:** one source-grounded, reviewable joined specification. **Check:** owner source checks, continuity/link review and diagram projection check; product acceptance remains separate.
 
 ## Reference implementation — ownership and grounding
 
-All concrete repository, protocol and source identifiers in this artifact describe the selected reference implementation. Paths below resolve in the declared repository at its exact revision. Consumer pins, not sibling checkout HEADs, select runtime bytes. Source inspection, historical receipts and live observations are distinct evidence classes.
+All concrete repository, protocol and source identifiers in this artifact describe the selected reference implementation. G1–G7 retain the inspected baseline; the implementation checkpoint below records the successor candidate without rewriting those historical source observations. Paths below resolve in the declared repository at its exact revision. Consumer pins, not sibling checkout HEADs, select runtime bytes. Source inspection, historical receipts and live observations are distinct evidence classes.
 
 | ID / claim | Inspected source and contract | Disposition / implication | Named check / next action |
 |---|---|---|---|
@@ -140,13 +140,13 @@ Top-down sizing = verified eligible operators in a selected geography × observe
 
 ### Single host and decision contract
 
-TAD consumes PRD `0.3.0`. Extend the existing SME mode, schema, evaluator, workflow editor and worksheet serializer; the one shared shell remains mounted. The existing 2–3-slot comparison is the canonical row set. A baseline is a reference to a row at a revision, not a copy of every row in another store. The calculation result remains a derived report; no payment, order or published listing follows from it.
+TAD consumes PRD `0.4.0`. Extend the existing SME mode, schema, evaluator, workflow editor and worksheet serializer; the one shared shell remains mounted. The existing 2–3-slot comparison is the canonical row set. A baseline is a reference to a row at a revision, not a copy of every row in another store. The calculation result remains a derived report; no payment, order or published listing follows from it.
 
 | Element / criterion | Native owner | Smallest planned delta / recovery |
 |---|---|---|
 | T1 shell / COM-01–07 | Existing document, navigation, generation and view-style owners | Fix only evidenced continuity gaps; preserve hash/history/focus semantics and local input rules |
 | T2 economics / DEC-01,03 | `sme-business-pack-core.js`, existing monthly model | Add baseline-relative projection and formula descriptors beside the current arithmetic; output lineage references current operands, never a second calculation engine |
-| T3 policy / DEC-02,04 | Same domain evaluator and `sme-workflow-editor.js` | Validate one bounded proposed patch against expected row/policy revision before atomic commit. Confirmation binds exact proposed inputs and policy; stale/unknown is refused |
+| T3 policy / DEC-02,04 | Same domain evaluator, `sme-decision-contract.js` and `sme-workflow-editor.js` | Validate one bounded proposed patch against expected row/policy revision before atomic commit. Confirmation binds exact proposed inputs and policy; stale/unknown is refused |
 | T4 view / DEC-01–04 | `sme-business-pack.js` with current shared table/panel | Project deltas and working; controls dispatch same domain action as supported tools; no separate dashboard/state store |
 | T5 portability / DEC-05 | Core serializer/import and current worksheet schema | Version only if required; legacy input is reviewed with no silently inferred baseline/protection. Unknown future versions fail before mutation |
 | T6 adapters / COM-08,DEC-06 | Existing SME schemas/local adapter/WebMCP; invocation client | Update owner schema once, project supported actions only; no second registry or agent-specific financial logic |
@@ -283,7 +283,7 @@ Proposed implementation, after authorization: two bounded 90-minute slices, ≤1
 
 ## ADR-02 — Extend deterministic scenarios and explicit owner review
 
-**Status:** proposed; binds PRD/TAD `0.3.0`. Constraint gate: $0 external spend, no new data service, no model dependency, protected facts, deterministic results, portable worksheets and one owner. Existing deterministic comparison meets those constraints. A contract-only adapter is acceptable for transport differences but cannot contain calculation or authority logic.
+**Status:** proposed; binds PRD/TAD `0.4.0`. Constraint gate: $0 external spend, no new data service, no model dependency, protected facts, deterministic results, portable worksheets and one owner. Existing deterministic comparison meets those constraints. A contract-only adapter is acceptable for transport differences but cannot contain calculation or authority logic.
 
 | Alternative | Argument / feasibility | Outranking and consequence |
 |---|---|---|
@@ -303,15 +303,15 @@ Deployment TCO comparison: existing cached local browser has $0 incremental infr
 
 ### Accepted slice, checks and readiness
 
-MVP consumes COM-01–08, DEC-01–06, T1–T7 and ADR-01/02 at `0.3.0`. It is one enhancement inside the current SME workspace. Existing source/liveness evidence reduces discovery work; it does not satisfy the proposed enhancement or grant baseline changes.
+MVP consumes COM-01–08, DEC-01–06, T1–T7 and ADR-01/02 at `0.4.0`. It is one enhancement inside the current SME workspace. Existing source/liveness evidence reduces discovery work; it does not satisfy the proposed enhancement or grant baseline changes.
 
 | Criteria | Current evidence | Completion boundary |
 |---|---|---|
 | COM-01–08 | G1 source and ER-LIVE bounded navigation/layout; full matrix not executed here | retain existing owner browser groups; all route/focus/race/offline/device cases required for closure |
-| DEC-01–06 | G2/G3 provide reusable foundation; G4 identifies gaps | proposed, not implemented or satisfied; affected unit/property/browser/tool equivalence checks must cover every criterion |
+| DEC-01–06 | G2/G3 provide reusable foundation; G4 identifies gaps | candidate implementation present; 26 unit/HTTP/MCP tests and focused desktop/mobile/offline browser checks cover DEC behavior. The full source gate and broader COM matrix remain separate evidence |
 | Authoring | One joined owner, exact grounding/pins, addressed five roles and flow source | source checks/projection/link/continuity evidence; no product rung advancement |
 
-**Traceability:** COM → T1/T6/T7 → ADR-01 → existing shell/workspace/tool checks; DEC-01/03 → T2/T4 → ADR-02 → SME core/browser; DEC-02/04 → T3/T4 → ADR-02 → protected patch/confirmation cases; DEC-05 → T5 → ADR-02 → import/export corpus; DEC-06 → T6 → ADR-02 → adapter parity/refusal corpus. Future implementation extends these existing suites instead of creating a parallel check controller. Independent owner runners judge outcomes; author assertions do not satisfy VCCs.
+**Traceability:** COM → T1/T6/T7 → ADR-01 → existing shell/workspace/tool checks; DEC-01/03 → T2/T4 → ADR-02 → SME core/browser; DEC-02/04 → T3/T4 → ADR-02 → protected patch/confirmation cases; DEC-05 → T5 → ADR-02 → import/export corpus; DEC-06 → T6 → ADR-02 → adapter parity/refusal corpus. The implementation extends these existing suites; the focused decision browser module is called by the existing SME browser owner, without a parallel check controller. Independent owner runners judge outcomes; author assertions do not satisfy VCCs.
 
 **Demo skeleton:** Hook: owner asks what one price change does → Probe: declare baseline and one candidate, protecting a cost → Reveal = DEC-01/03 reconcile the result and its working → challenge a protected edit (DEC-02 refusal) → Close: decline/confirm deliberately and export the worksheet. Proposed ≤3-minute demo plus five ≤5-minute tasks; not yet timed. Core functionality, theme/innovation, technical integration and usefulness/agent experience are all **unassessed** for this enhancement; require source-bound checks and buyer comparison before ratings.
 
@@ -332,7 +332,7 @@ Source order is owner contract/checks → compatible export/version → exact pi
 
 ## GTM
 
-GTM consumes PRD/TAD/ADR/MVP `0.3.0`; it creates no new feature requirement. Proposed offer: an owner-guided setup and explanation of one existing baseline/candidate worksheet. The existing first-dollar plan remains the only payment/learning record. No buyer, paid price, payment mechanism outcome, recognized revenue or collection is evidenced by this authoring task.
+GTM consumes PRD/TAD/ADR/MVP `0.4.0`; it creates no new feature requirement. Proposed offer: an owner-guided setup and explanation of one existing baseline/candidate worksheet. The existing first-dollar plan remains the only payment/learning record. No buyer, paid price, payment mechanism outcome, recognized revenue or collection is evidenced by this authoring task.
 
 | Stream / rank | Constraints → argument → decision | Evidence / next experiment |
 |---|---|---|
@@ -348,7 +348,7 @@ Operations: existing product owner triages route, import, input-policy, arithmet
 
 ## C01–C16 coverage
 
-Join `COMMERCE-CONTROL-PLANE-001@0.3.0`, as of 2026-11-16. A covered row means the specification addresses it, not that implementation or the business is validated.
+Join `COMMERCE-CONTROL-PLANE-001@0.4.0`, as of 2026-11-16. A covered row means the specification addresses it, not that implementation or the business is validated.
 
 | Domain | Disposition / section | Evidence or gap / accountable function / revisit |
 |---|---|---|
@@ -385,17 +385,19 @@ Coverage: 16/16 dispositioned, 15 addressed, one deferred. Full authoring-rule c
 | Readiness / status consistency | `/readyz` HTTP 503: `ok:false`, configured-capabilities, fulfillment unavailable; initial toolbar showed “Service ready”, final 1280×900 screenshot/readback at 13:33 UTC showed “Service unavailable” | Final status agrees. Startup duration/cause unverified; do not infer a persistent bug. Local arithmetic is distinct from fulfillment; test startup before repair |
 | Payment configuration | Readiness reported checkout live / `realMoney:true` | Configuration observation only, not successful transaction, revenue, demand or permission to exercise checkout |
 
-Open acceptance gaps: Product owns DEC-01–06 through R1–R3 after implementation authorization; QA owns exact-candidate and controlled offline evidence; Operations owns investigation of T7 startup status timing. These are product/evidence gaps, not self-issued conformance verdicts or satisfied criteria. Independent full alignment is still required before implementation baseline promotion. If that review raises a conformance finding, record the shared six fields: Finding Type, Severity, exact Rule ID, artifact reference, bounded verbatim evidence and one remediation.
+Open acceptance gaps: Product owns source acceptance for the implemented DEC-01–06 through R3; QA owns exact-candidate evidence and the broader COM physical-device matrix; Operations owns investigation of T7 startup status timing. These are product/evidence gaps, not self-issued conformance verdicts or satisfied criteria. Independent full alignment is still required before implementation baseline promotion. If that review raises a conformance finding, record the shared six fields: Finding Type, Severity, exact Rule ID, artifact reference, bounded verbatim evidence and one remediation.
 
 ## ADLC, release boundary and handoff
 
-START admitted `agent/device-0232231d4a19/commerce-native-decision-plan` at base `25f4c8e221ad0a60b63c4fb432b2bbe9d44423d2`, write scope only `docs/prd-tad-adr-mvp-gtm-agentic-commerce-os.md`. Canonical checkout is read-only. This artifact is excluded from `scripts/local-first-release/artifact.mjs` asset inputs; no app, Worker, host, package, shared pin or deployed asset changes in this task. Documentation release needs source checks and its exact source receipt; no runtime promotion is necessary for these bytes.
+Native START readmitted the existing open, unqueued `agent/device-0232231d4a19/commerce-native-decision-plan` lane at `37778153321b48a82480720b4880a519e09a62e5`, expanding exact reservations for the authorized implementation and tests. The user-selected plan and source history are retained in the same [PR #280](https://github.com/huijoohwee/agentic-commerce-os/pull/280); canonical remains read-only. The user grant covers implementation and verification, not customer publication, a new hosting service, payments, outreach or Production promotion.
 
-Follow central START/ADLC/RELEASE and the product's `docs/production-runtime.md` / `docs/deploy-boundary-register.json` for their actual effect scopes. Authoring → mirror → delivery boundaries remain closed absent a scoped operator grant. LAND may prepare/publish the exact source candidate through the native owner; protected Integration Gate, merge authority, sync and cleanup each retain independent receipt requirements. Source publication or a green local command proves no protected integration, deployment or rollback. Do not trigger a runtime release for this document.
+This increment now changes runtime artifacts: the core, view, editor, stylesheet and one domain helper, plus native asset allowlists/service-worker caching and two existing tool adapters. It no longer qualifies for the preceding documentation-only no-deploy disposition. Source publication, protected integration, runtime delivery and recovery each require their own authority and receipt. Follow central START/ADLC/RELEASE and the product's `docs/production-runtime.md` / `docs/deploy-boundary-register.json`; do not infer delivery from source tests or an open PR.
 
-Any later product delivery requires exact protected source/artifact identity, current provider hard-$0/quota denial proof, Dev readback, explicit Production promotion, source/route/asset/version acceptance and retained rollback predecessor/rehearsal. Restore exact compatible source/pins and validate existing user data; do not infer data/payment recovery from a source revert. Existing approvals apply only to their bound scope, candidate and effect.
+The helper is a bounded split within the current domain owner: input policy validation, formula metadata, baseline proposal binding and projections; all arithmetic stays in the existing evaluator. This single new module is justified by the core/view file budgets and is not a parallel evaluator, state store or registry. Module execution remains lazy through the existing SME mount; its small cache entry is included with the existing offline core so a primed workspace can enter SME offline. Shared package revisions, UI profiles and release authorities do not change.
 
-Handoff includes this diff, checks/results, exact source/PR/integration receipts when available, ER-LIVE limitations, actual measured resources or unknowns, and the next bounded owner action. Next product action is R1 only after its concrete implementation scope is authorized; independent checks then decide DEC satisfaction. External CI/authority/host waits retain blocker, unblock condition and event recheck, never a completion ETA. No implementation permission is requested by this authoring artifact.
+Any runtime release requires the exact protected source and artifact, current hard-$0/quota-denial proof, Dev readback, separately authorized Production promotion, route/asset/version acceptance and a retained rollback predecessor/rehearsal. The v3 decision worksheet preserves files and accepted v2 import behavior; old readers explicitly refuse v3, so retain exported files and a compatible new reader during rollback rather than discard protection metadata. Reverting source never reverses a payment or publishes a local baseline.
+
+Handoff includes the scoped diff, named checks, actual results, exact candidate/PR receipts, resource measurements and unresolved acceptance. R1/R2 are implemented; R3 requires the clean exact-candidate source gate and existing broad browser suite; R4 and R5 remain separately gated delivery and learning. External waits retain blocker, condition and event recheck, not an ETA.
 
 ## Evidence and references
 
@@ -403,11 +405,23 @@ Authoring owner: [guidelines](https://github.com/huijoohwee/huijoohwee.github.io
 
 Existing product owners: [edge commerce](prd-tad-adr-mvp-gtm-edge-commerce-agent.md), [workspaces](prd-tad-adr-mvp-gtm-commerce-workspaces.md), [runtime](production-runtime.md), [composition](commerce-graph-runtime.md), [first-dollar learning](prd-tad-adr-mvp-gtm-20260909T1320Z-solopreneur-mvp-gtm.md), [native utility reuse](prd-tad-adr-mvp-gtm-native-commerce-shared-utils.md). Follow each record's own revision and scope; historical evidence never silently upgrades this increment.
 
-**Source validation checkpoint (2026-11-16):** `npm run test:unit -- test/shared/sme-business-pack.test.ts` PASS, 17 tests, 391 ms; source behavior only. Shared diagram projection check PASS: five projecting diagrams, 26 nodes, 22 edges, zero clusters/findings, zero inference tokens. `check:authored-limits` PASS, 620 files scanned; `git diff --check` PASS. Guideline/template digests match their recorded committed source.
+## Implementation checkpoint — reference implementation
 
-Initial `npm run check` selected 3/11 owner groups for this one changed path: ADLC PASS (2.64 s), evidence-contract PASS (0.30 s), named FAIL (13.28 s). Named local-first tests passed 287/288; `fulfillment-build.test.mjs` refused with `listing_source_must_be_exact_and_clean` because this draft was uncommitted. This is a source-cleanliness prerequisite, not evidence of an arithmetic regression; later named groups and aggregate evidence were not reached. Native validation receipt is retained under this lane's Git metadata, `agentic-os-tests/validation-last.json`; measured aggregate 20.95 s, named peak single-process RSS 329,105,408 B, provider cost unknown. Seal via native LAND and rerun against the clean exact candidate; retain separate provider check/integration receipts. No full-green or product acceptance claim is made by these partial results. Actual session tokens and labor cost remain unknown.
+**Authorization and join:** implementation of `COMMERCE-CONTROL-PLANE-001@0.3.0` was explicitly requested on 2026-11-16; this coherent `0.4.0` successor records the resulting design and source. Earlier documentation-only candidates and their green source check remain historical in PR #280. This candidate adds product code and requires its own source proof.
 
+| Criterion / owner | Implemented behavior / current evidence |
+|---|---|
+| DEC-01 / existing core and shared table | Optional explicit baseline; positive/negative candidate-minus-baseline interval deltas, zero for shared identical expressions, unknown/incomparable states, row order and no-winner semantics retained. Unit fixtures independently reconcile monthly arithmetic. |
+| DEC-02 / domain policy and existing editor | Atomic protected/bounded patch refusal, row/policy revision checks, explicit owner lock/unlock and field-specific human messages. Imported policy cannot silently replace a current policy; rejected multi-field imports retain all facts. |
+| DEC-03 / current evaluator and editor | Working projects actual model results with formula descriptors, operand values/ranges, units, period, dates/provenance and missing dependencies. No second calculation implementation is introduced. |
+| DEC-04 / current local row state | Owner requests then confirms/declines an exact baseline proposal. Input/evidence/policy changes make a proposal stale; replay is refused and no tool can commit a baseline. |
+| DEC-05 / existing serializer/importer | Optional `sme-business-plan/worksheet/v3` carries policy, baseline and row revision in JSON/CSV/Markdown; v2 remains accepted without inventing a policy. Canonical policy equality, mixed/future-version refusal and atomic local import are checked. |
+| DEC-06 / existing four tool identities | Same schemas/evaluator across UI, WebMCP wiring, real HTTP/MCP handler and actual stdio MCP adapter. MCP retains full JSON text when it fits, or the complete `structuredContent` with compact text when JSON escaping would exceed the unchanged response budget. Consumers use structured content when present, otherwise decode the JSON text; WebMCP keeps its existing full JSON text contract. |
 
-**Clean-candidate checkpoint:** native LAND published `faba2ec9ec82e70d34e1cef119ef2cbc245b8468` as [PR #280](https://github.com/huijoohwee/agentic-commerce-os/pull/280). A clean-tree `npm run check` then passed ADLC, evidence-contract, all 288 local-first tests, the complete existing local-first browser proof (including SME comparison, mobile, offline, race, portability and sandbox checkout), and the subsequent offer-watch, sandbox-source, merge-agent, authored-limit and task-bound checks. The named group stopped at the separate full-container browser preflight with `podman_workerd_override_required`; aggregate `check:evidence` was not reached. Total validation elapsed 182.73 s; named group 172.66 s, peak single-process RSS 610,533,376 B. Receipt remains in the lane Git metadata. This clears the earlier dirty-tree prerequisite but does not prove the full container/paid Dev flow, all COM cases, proposed DEC behavior or deployment.
+**Observed local checks:** `npm run test:unit -- test/shared/sme-business-pack.test.ts` passes 26 tests including negative inputs, revisions, independent values, interval identity, worksheet formats, mismatched periods and real MCP payload/refusal cases. `npm run typecheck`, `check:webmcp` (6 assertions), `check:invocation-surface` (12 assertions), `check:authored-limits` (622 files), `bundle:production` and `git diff --check` passed. Dry-run production chunks remain below 500,000 B; observed maximum was 489,849 B before the final small adapter encoding adjustment, to be rechecked by the final source gate. No provider deployment was performed.
 
-The existing Linux protected Integration Gate provides the verified runtime prerequisite; its exact candidate result is an external wait. Recheck on that provider receipt and a current protected-integration observation, without bypassing the gate or replacing the runtime. PR publication alone is not merge authority. The source-only file remains reviewable in the retained lane; product implementation requires its separately scoped instruction. This checkpoint changes documentation evidence only; candidate runtime bytes and shared pins are unchanged.
+The focused `test/local-first/sme-decision-browser.mjs` exercises explicit/declined/stale baseline review, protected and bounded edits, atomic refusal, WebMCP contract-fixture parity, a second browser page, offline reload/import, 320/360/390/768/1280 widths and 200% text zoom. Native WebMCP availability and physical-device acceptance are not claimed. Its desktop/mobile images and JSON proof are generated by the existing browser owner in the existing evidence output directory. The local preview uses the existing local-first development profile. Replacing its staged asset directory during hot reload produced an app-entry 503; verification restarts that owned preview on its fresh local origin instead of mistaking this for a service-worker verdict.
+
+**Budgets:** nine existing runtime/contract paths plus one new pure domain module, approximately 27.5 kB net runtime source growth before final measurement; no dependency, package-pin, hosted-resource or always-load instruction change. All authored files remain below 600 lines, including the existing 599-line browser owner which delegates the new bounded scenarios. Serving inference remains zero; session tokens, labor cost and attributable provider cost are unknown. Source checks grant no effect authority.
+
+Initial broad local-first execution passed 287/288 tests and stopped on the existing clean-source host-build prerequisite while these edits were uncommitted. Focused feature checks do not substitute for that gate. Seal with native LAND, run the clean exact-candidate owner checks and retain their receipts; the protected Linux Integration Gate supplies the separately verified full-container prerequisite. Local container preflight still requires a matching verified workerd override, as documented by the existing runtime owner. The next action is exact-candidate source acceptance, followed only by separately authorized integration/delivery and the retained GTM experiment.
