@@ -69,5 +69,5 @@
 
 #sme .decision-panel { margin-block: 16px; border-block: 1px solid var(--commerce-border); padding-block: 12px; overflow-wrap: anywhere; }
 #sme .decision-panel details { margin-block: 8px; padding: 8px; border: 1px solid var(--commerce-border); border-radius: 8px; }
-#sme .decision-panel summary { cursor: pointer; min-height: 44px; display: list-item; padding-block: 8px; }
+
 #sme .decision-review { padding: 12px; background: var(--commerce-surface-subtle); }

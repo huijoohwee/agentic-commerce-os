@@ -1,3 +1,4 @@
+import { installPanelSections } from './panel-section.js';
 import { registerWebMcpTools, searchRegistry, validateRegistryContext } from "./registry-query.js?v=c104158";
 import { hydrateDesignIcons, hydratePanelControls } from "./toolbar-icons.js";
 import { installHoverLabels, createHoverPanel } from "./hover.js";
@@ -5,6 +6,19 @@ import { buildSettingsKeyTooltip, buildSettingsValueTooltip } from "./hover-text
 import { createKeyTypeValueRow, createKeyTypeValueRows } from "./key-type-value.js";
 
 hydratePanelControls(document);
+const sectionCss = document.createElement('link'); sectionCss.rel = 'stylesheet'; sectionCss.href = './panel-section.css'; document.head.append(sectionCss);
+installPanelSections(document);
+const sectionPreview = document.createElement('section'); sectionPreview.id = 'section-preview'; sectionPreview.className = 'agentic-panel-scroll-region'; sectionPreview.style.setProperty('--agentic-scroll-block-size', '18rem'); sectionPreview.tabIndex = 0; sectionPreview.setAttribute('aria-label', 'Shared section preview');
+for (const title of ['Section mechanics', 'Retained local inputs']) {
+  const section = document.createElement('details'); section.dataset.agenticSection = ''; section.open = true;
+  const summary = document.createElement('summary'); summary.textContent = title;
+  const body = document.createElement('section'); body.className = 'agentic-panel-section-body';
+  const label = document.createElement('label'); label.textContent = 'Local preview value'; const input = document.createElement('input'); input.type = 'text'; label.append(input); body.append(label);
+  for (let index = 0; index < 5; index++) { const line = document.createElement('p'); line.textContent = 'Scroll within this shared region. Collapse and reopen to retain your input.'; body.append(line); }
+  section.append(summary, body); sectionPreview.append(section);
+}
+document.querySelector('#catalog-grid').before(sectionPreview);
+
 hydrateDesignIcons(document);
 installHoverLabels(document);
 

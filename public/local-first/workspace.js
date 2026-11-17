@@ -1,14 +1,12 @@
-import { installHoverLabels } from './hover.js';
-import { isArchived } from './drafts.js';
+import { installPanelSections } from './panel-section.js'; import { installHoverLabels } from './hover.js';
 import { createPackRoute, isPackRoute } from './workspace-pack.route.js';
 import { enhanceSelects } from './dropdown-menus.js';
-import { listDrafts, groupProjects } from './drafts.js'; import { getOrCreateSingleton } from './workspace-singleton.js'; import { bindDemoOfferDetails, bindExampleFilters, offerDetailsButton } from './shopper-demo-detail.js';
+import { isArchived, listDrafts, groupProjects } from './drafts.js'; import { getOrCreateSingleton } from './workspace-singleton.js'; import { bindDemoOfferDetails, bindExampleFilters, offerDetailsButton } from './shopper-demo-detail.js';
 import { openCommercePanel, getCommercePanelView, isCommercePanelOpen, closeCommercePanel } from './commerce-toolbar.js';
 import { WORKSPACE_ROLES, bindWorkspaceNavigation, selectWorkspaceDestination, mountWorkspaceShell, mountWorkspaceSidebar } from './workspace-navigation.js?v=workspace-navigation-mobile-51';
-if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; await getOrCreateSingleton('workspace-application', async () => { installHoverLabels(document); mountWorkspaceShell(); const packRoute = createPackRoute(); enhanceSelects();
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; await getOrCreateSingleton('workspace-application', async () => { installHoverLabels(document); installPanelSections(document); mountWorkspaceShell(); const packRoute = createPackRoute(); enhanceSelects();
 const agentPanel = document.getElementById('commerce-panel-agent-tools'), packAgentPanel = document.getElementById('commerce-pack-agent-content');
-const agentPanelContent = document.getElementById('workspace-agent-content');
-if (!agentPanel || !packAgentPanel || !agentPanelContent) throw new Error('Commerce Agent tools panel is incomplete.');
+const agentPanelContent = document.getElementById('workspace-agent-content'); if (!agentPanel || !packAgentPanel || !agentPanelContent) throw new Error('Commerce Agent tools panel is incomplete.');
 agentPanel.append(agentPanelContent);
 const displayLocale = document.documentElement.lang || 'en'; const $ = selector => document.querySelector(selector); const monogram = title => { const words = title.trim().split(/\s+/u); return (words.length > 1 ? words.slice(0, 2).map(word => [...word][0]).join('') : [...words[0]].slice(0, 2).join('')).toUpperCase(); }; const merchantName = id => String(id || '').replace(/[-._]+/gu, ' ').replace(/(^|\s)\p{L}/gu, initial => initial.toUpperCase());
 const checkoutMode = document.querySelector('meta[name="commerce-checkout-mode"]')?.content, shopCheckoutNav = document.querySelector('#shop-navigation-content')?.content.querySelector('#shop-checkout-nav');

@@ -261,3 +261,9 @@ The Dev-only walkthrough is [docs/demo.md](docs/demo.md). The specification asks
 for the same file under `.kiro`, which is outside this admitted repository lane;
 that split-owner projection remains an explicit follow-up rather than an
 unauthorized cross-boundary write.
+
+Workspace and Housing disclosures consume the pinned Design System section
+owner. The source synchronizer reads exact committed Git blobs, preserving
+untracked planning documents and excluding all mutable working-tree bytes.
+Local expansion state remains in Commerce; the shared runtime and CSS are
+included in its release and offline asset inventories.

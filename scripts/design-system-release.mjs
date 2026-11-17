@@ -11,7 +11,7 @@ const CONFIG = join(ROOT, 'config/design-system-static-release.json');
 const PREFIX = '/agentic-design-system';
 const FILES = Object.freeze([
   ['LICENSE', 'LICENSE'],
-  ...['THIRD-PARTY-NOTICES.txt', 'app.js', 'catalog.json', 'catalog.schema.json', 'dashboard-columns.js', 'favicon.svg', 'floating-panel.css', 'icons.json', 'index.html', 'registry-query.js', 'registry.css', 'sw.js', 'tokens/base-profile.json', 'tokens/commerce-profile.json', 'tokens/graph-profile.json', 'tokens/shared-ui-profile.json', 'toolbar-icons.js', 'toolbar.css', 'key-type-value.js', 'hover.js', 'hover-text.js', 'hover.css', 'vendor/base-profile.css', 'vendor/commerce-theme.css', 'vendor/graph-profile.css', 'vendor/shared-ui-profile.css'].map(path => ['site/' + path, path]),
+  ...['THIRD-PARTY-NOTICES.txt', 'app.js', 'catalog.json', 'catalog.schema.json', 'dashboard-columns.js', 'favicon.svg', 'floating-panel.css', 'icons.json', 'index.html', 'registry-query.js', 'registry.css', 'sw.js', 'tokens/base-profile.json', 'tokens/commerce-profile.json', 'tokens/graph-profile.json', 'tokens/shared-ui-profile.json', 'toolbar-icons.js', 'toolbar.css', 'key-type-value.js', 'panel-section.js', 'panel-section.css', 'hover.js', 'hover-text.js', 'hover.css', 'vendor/base-profile.css', 'vendor/commerce-theme.css', 'vendor/graph-profile.css', 'vendor/shared-ui-profile.css'].map(path => ['site/' + path, path]),
 ]);
 
 function fail(code) { throw new Error(`design_system_release:${code}`); }
@@ -23,11 +23,8 @@ function json(file) {
 function gitHead(path) {
   return execFileSync('git', ['-C', path, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
 }
-function gitPathRevision(path, file) {
-  return execFileSync('git', ['-C', path, 'log', '-1', '--format=%H', '--', file], { encoding: 'utf8' }).trim();
-}
-function gitStatus(path) {
-  return execFileSync('git', ['-C', path, 'status', '--porcelain=v1', '--untracked-files=all'], { encoding: 'utf8' });
+function gitPathRevision(path, file, revision) {
+  return execFileSync('git', ['-C', path, 'log', '-1', '--format=%H', revision, '--', file], { encoding: 'utf8' }).trim();
 }
 function digestEntries(entries) {
   return hash(Buffer.from(`${JSON.stringify(entries)}\n`, 'utf8'));
@@ -83,30 +80,37 @@ function writeJson(path, value) {
 function syncSource(sourceRoot, expectedRevision) {
   const source = resolve(sourceRoot);
   if (!/^[0-9a-f]{40}$/u.test(expectedRevision ?? '') || gitHead(source) !== expectedRevision) fail('source_revision_mismatch');
-  if (gitStatus(source).trim()) fail('source_dirty');
+  // Read only immutable Git blobs. Untracked plans and another writer's working
+  // bytes cannot enter the projection or force a second checkout.
+  const blobs = new Map(FILES.map(([file]) => {
+    const mode = execFileSync('git', ['-C', source, 'ls-tree', expectedRevision, '--', file], { encoding: 'utf8' });
+    if (!mode.startsWith('100644 blob ')) fail('source_file_invalid');
+    const bytes = execFileSync('git', ['-C', source, 'show', `${expectedRevision}:${file}`], { maxBuffer: 500000 });
+    return [file, bytes];
+  }));
+  const sourceBytes = file => { const bytes = blobs.get(file); if (!bytes) fail('source_file_unadmitted'); return bytes; };
   const records = FILES.map(([from, to]) => {
-    const path = join(source, from), stat = lstatSync(path);
-    if (!stat.isFile() || stat.isSymbolicLink()) fail('source_file_invalid');
-    return { path: to, bytes: read(path).length, sha256: hash(read(path)) };
+    const bytes = sourceBytes(from);
+    return { path: to, bytes: bytes.length, sha256: hash(bytes) };
   }).sort((a, b) => a.path.localeCompare(b.path));
-  verifyStaticCsp(read(join(source, 'site/index.html')).toString('utf8'));
-  const license = read(join(source, 'LICENSE')).toString('utf8');
+  verifyStaticCsp(sourceBytes('site/index.html').toString('utf8'));
+  const license = sourceBytes('LICENSE').toString('utf8');
   if (!license.startsWith('MIT License\n')) fail('source_license_unverified');
-  const catalog = JSON.parse(read(join(source, 'site/catalog.json')).toString('utf8'));
+  const catalog = JSON.parse(sourceBytes('site/catalog.json').toString('utf8'));
   const sharedUi = catalog.registry?.profiles?.find(profile => profile.id === 'shared-ui');
   if (!sharedUi || sharedUi.owner !== 'github.com/huijoohwee/agentic-design-system'
     || !/^[0-9a-f]{40}$/u.test(sharedUi.revision ?? '')
     || sharedUi.source !== './tokens/shared-ui-profile.json'
     || sharedUi.projection?.path !== './vendor/shared-ui-profile.css') fail('shared_ui_profile_invalid');
-  const sharedUiSource = read(join(source, 'site', sharedUi.source.slice(2)));
-  const sharedUiProjection = read(join(source, 'site', sharedUi.projection.path.slice(2)));
+  const sharedUiSource = sourceBytes('site/' + sharedUi.source.slice(2));
+  const sharedUiProjection = sourceBytes('site/' + sharedUi.projection.path.slice(2));
   if (sharedUi.digest !== `sha256:${hash(sharedUiSource)}`
     || sharedUi.projection.digest !== `sha256:${hash(sharedUiProjection)}`) fail('shared_ui_profile_digest_mismatch');
   const sharedUiPin = {
     id: sharedUi.id,
     owner: sharedUi.owner,
     sourceRevision: sharedUi.revision,
-    registryRevision: gitPathRevision(source, 'site/catalog.json'),
+    registryRevision: gitPathRevision(source, 'site/catalog.json', expectedRevision),
     sourcePath: 'site/tokens/shared-ui-profile.json',
     sourceSha256: sharedUi.digest,
     projectionPath: 'site/vendor/shared-ui-profile.css',
@@ -118,24 +122,24 @@ function syncSource(sourceRoot, expectedRevision) {
   for (const [from, to] of FILES) {
     const target = join(PUBLIC, to);
     mkdirSync(dirname(target), { recursive: true });
-    copyFileSync(join(source, from), target);
+    writeFileSync(target, sourceBytes(from));
   }
   const localFirst = join(ROOT, 'public/local-first');
-  for (const file of ['floating-panel.css', 'icons.json', 'toolbar-icons.js', 'toolbar.css', 'key-type-value.js', 'hover.js', 'hover-text.js', 'hover.css']) {
-    copyFileSync(join(source, 'site', file), join(localFirst, file));
+  for (const file of ['floating-panel.css', 'icons.json', 'toolbar-icons.js', 'toolbar.css', 'key-type-value.js', 'panel-section.js', 'panel-section.css', 'hover.js', 'hover-text.js', 'hover.css']) {
+    writeFileSync(join(localFirst, file), sourceBytes('site/' + file));
   }
-  copyFileSync(join(source, 'site/vendor/shared-ui-profile.css'), join(localFirst, 'shared-ui-profile.css'));
+  writeFileSync(join(localFirst, 'shared-ui-profile.css'), sourceBytes('site/vendor/shared-ui-profile.css'));
   const sharedUiConsumerPin = json(join(ROOT, 'config/shared-ui-profile.pin.json'));
   sharedUiConsumerPin.profile = sharedUiPin;
   writeJson(join(ROOT, 'config/shared-ui-profile.pin.json'), sharedUiConsumerPin);
   const floatingPanelPin = json(join(ROOT, 'config/floating-panel.pin.json'));
   floatingPanelPin.revision = expectedRevision;
-  floatingPanelPin.sha256 = hash(read(join(source, 'site/floating-panel.css')));
+  floatingPanelPin.sha256 = hash(sourceBytes('site/floating-panel.css'));
   writeJson(join(ROOT, 'config/floating-panel.pin.json'), floatingPanelPin);
   const toolbarPin = json(join(ROOT, 'config/toolbar.pin.json'));
   toolbarPin.revision = expectedRevision;
-  toolbarPin.sha256 = hash(read(join(source, 'site/toolbar.css')));
-  toolbarPin.iconsSha256 = hash(read(join(source, 'site/toolbar-icons.js')));
+  toolbarPin.sha256 = hash(sourceBytes('site/toolbar.css'));
+  toolbarPin.iconsSha256 = hash(sourceBytes('site/toolbar-icons.js'));
   writeJson(join(ROOT, 'config/toolbar.pin.json'), toolbarPin);
   const payloadDigest = digestEntries(records.map(({ path, bytes, sha256 }) => ({ path, bytes, sha256 })));
   const manifest = {
