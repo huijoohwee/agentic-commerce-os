@@ -114,7 +114,7 @@ export async function fetchLocalFirst(request: Request, env: LocalFirstEnv, tran
     if (assetPath === '/sw.js' || assetPath === '/') {
       const source = env.RELEASE_CANDIDATE_SHA
       if (!/^(?:[0-9a-f]{40}|local-unreleased)$/u.test(source)) return finish(new Response('Invalid release', { status: 503 }))
-      const headers = new Headers({ 'content-type': assetPath === '/' ? 'text/html; charset=utf-8' : 'application/javascript; charset=utf-8' })
+      const headers = new Headers({ 'content-type': (assetPath === '/' ? 'text/html' : 'application/javascript') + '; charset=utf-8' })
       if (assetPath === '/sw.js') headers.set('service-worker-allowed', `${prefix}/`)
       return finish(new Response(renderStorefrontTemplate(await response.text(), source, env.CHECKOUT_MODE), { headers }))
     }
@@ -142,10 +142,8 @@ async function readiness(env: LocalFirstEnv, runtime: FulfillmentRuntime | undef
     storage: 'browser-only', paymentStorage: live ? 'stripe-live' : 'stripe-test', paymentProvider: 'stripe', realMoney: live,
     sourceRevision: env.RELEASE_CANDIDATE_SHA, workerVersionId: env.CF_VERSION_METADATA?.id ?? null }
 }
-const unavailableRuntime: FulfillmentRuntime = Object.freeze({
-  async ready() { throw Error('fulfillment_unavailable') },
-  async invoke() { throw Error('fulfillment_unavailable') },
-})
+const unavailable = async () => { throw Error('fulfillment_unavailable') }
+const unavailableRuntime: FulfillmentRuntime = Object.freeze({ ready: unavailable, invoke: unavailable })
 export default { fetch: async (request: Request, env: LocalFirstEnv) => {
   let runtime: FulfillmentRuntime | undefined
   try { runtime = createFulfillmentRelay(env) } catch { runtime = unavailableRuntime }
