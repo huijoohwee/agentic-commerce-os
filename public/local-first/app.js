@@ -1,4 +1,6 @@
 import { listDrafts, saveDraft, importDrafts, exportDrafts, LIMITS, LISTING_FIELDS, LISTING_LABELS, listingFieldIssues, isArchived } from './drafts.js';
+import { createKeyTypeValueRow } from './key-type-value.js';
+import { createDesignIcon } from './toolbar-icons.js';
 import { inspectLaunchInput, parseLaunchInput, evaluateOfferSetup, parseMoney } from './launch.js';
 
 const $ = selector => document.querySelector(selector);
@@ -43,6 +45,35 @@ function renderAudienceSuggestions(drafts) {
     option.value = value; option.textContent = value; return option;
   }));
   audienceSuggestions.hidden = values.length === 0;
+  audienceSelect.closest('.agentic-ktv-container').hidden = audienceSuggestions.hidden;
+}
+function offerType(control, declaredType) {
+  const type = declaredType || (control.tagName === 'SELECT' ? 'choice' : control.type);
+  const glyph = createDesignIcon(type === 'action' ? 'Play' : type === 'date' ? 'CalendarClock' : ['money', 'integer', 'number'].includes(type) ? 'Hash' : type === 'checkbox' ? 'CircleCheck' : 'Type');
+  glyph.removeAttribute('aria-hidden'); glyph.setAttribute('role', 'img');
+  glyph.setAttribute('aria-label', { action: 'Action', date: 'Date', money: 'Amount', integer: 'Whole number', number: 'Number', checkbox: 'Yes or no', choice: 'Choice' }[type] || 'Text');
+  return glyph;
+}
+function bindOfferFields() {
+  const editor = $('#draft-form').closest('.panel.editor');
+  for (const control of editor.querySelectorAll('input, textarea, select')) {
+    if (control.closest('.agentic-ktv-row')) continue;
+    const trigger = editor.querySelector('[data-agentic-select-for="' + control.id + '"]');
+    const label = editor.querySelector('label[for="' + (trigger?.id || control.id) + '"]') || control.closest('label');
+    if (!label) throw Error('offer_field_label_missing:' + control.id);
+    const marker = document.createElement('span'), value = document.createElement('section');
+    label.before(marker); label.htmlFor = trigger?.id || control.id; label.title = label.textContent.trim(); label.tabIndex = 0;
+    label.classList.remove('review-approval'); value.append(control); if (trigger) value.append(trigger);
+    const row = createKeyTypeValueRow({ keyNode: label, typeNode: offerType(control, Object.values(moneyFields).includes('#' + control.id) ? 'money' : undefined), valueNode: value });
+    row.hidden = label.hidden; marker.replaceWith(row);
+  }
+  for (const id of ['open-setup-guide', 'archive-listing', 'preview-listing-geo', 'save', 'review-launch', 'prepare-listing']) {
+    const control = $('#' + id), marker = document.createElement('span'), keyNode = document.createElement('span');
+    keyNode.textContent = control.textContent.trim(); keyNode.title = keyNode.textContent; keyNode.tabIndex = 0;
+    control.before(marker);
+    const row = createKeyTypeValueRow({ keyNode, typeNode: offerType(control, 'action'), valueNode: control });
+    row.hidden = control.hidden; marker.replaceWith(row);
+  }
 }
 const listingInputs = new Map();
 let listingGeoGeneration = 0;
@@ -85,7 +116,10 @@ for (const field of LISTING_FIELDS) {
   if (field.key === 'country') input.placeholder = 'Two-letter code';
   const error = document.createElement('small'); error.id = input.id + '-error';
   input.setAttribute('aria-describedby', error.id); input.autocomplete = 'off';
-  label.append(input, error); $('#listing-inputs').append(label); listingInputs.set(field.key, input);
+  const valueNode = document.createElement('section'); valueNode.append(input, error);
+  label.title = label.textContent; label.tabIndex = 0;
+  $('#listing-inputs').append(createKeyTypeValueRow({ keyNode: label, typeNode: offerType(input, field.type), valueNode }));
+  listingInputs.set(field.key, input);
 }
 function clearListingIssues() {
   listingErrorField = null;
@@ -95,6 +129,7 @@ function listingControls() {
   $('#listing-inputs').disabled = busy || !$('#listing-enabled').checked;
   $('#listing-enabled').disabled = busy || Boolean(selected?.listing);
   $('#archive-listing').hidden = !selected?.listing;
+  $('#archive-listing').closest('.agentic-ktv-container').hidden = !selected?.listing;
   $('#archive-listing').disabled = busy;
   $('#archive-listing').textContent = isArchived(selected) ? 'Restore listing' : 'Archive listing';
   $('#listing-state').textContent = selected?.listing ? isArchived(selected) ? 'Archived · private on this device' : 'Private listing draft' : '';
@@ -366,6 +401,7 @@ window.addEventListener('hashchange', () => {
   if (location.hash !== '#vendor-editor') { setupGeneration++; setupGuide?.close(false); clearListingGeoPreview(); }
 });
 window.addEventListener('beforeunload', event => { if (dirty) { event.preventDefault(); event.returnValue = ''; } });
+bindOfferFields();
 void refresh().catch(error => { actionFailed = true; message(error.message, true); renderSetup(); });
 $('#editor-fields').disabled = false; $('#import').disabled = false; $('#export').disabled = false;
 renderSetup();

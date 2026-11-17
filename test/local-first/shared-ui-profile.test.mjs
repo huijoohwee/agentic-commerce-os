@@ -73,15 +73,16 @@ test('Commerce consumes the pinned Design System panel profile and shell offline
   }
 })
 
-test('SME workflow actions reuse the shared responsive control geometry', () => {
+test('Commerce field layouts consume the central KTV owner without competing grids', () => {
   const css = fs.readFileSync('public/local-first/sme-business-pack.css', 'utf8');
-  const rule = css.match(/#sme \.workflow-toolbar button:not\(\.agentic-form-control\)\s*\{([^}]*)\}/u)?.[1];
-  assert.ok(rule, 'workflow actions must keep one owning rule');
-  assert.match(rule, /block-size:\s*var\(--agentic-control-height\)/u);
-  assert.match(rule, /min-block-size:\s*var\(--agentic-control-height\)/u);
-  assert.match(rule, /padding-block:\s*0/u);
-  assert.match(rule, /border-radius:\s*var\(--agentic-control-radius\)/u);
-  assert.doesNotMatch(rule, /(?:min-)?height:\s*44px|padding:\s*9px\s+13px/u);
+  const housing = fs.readFileSync('public/local-first/housing-comparison.css', 'utf8');
+  for (const source of ['app.js', 'housing-comparison.js', 'sme-workflow-editor.js']) {
+    const script = fs.readFileSync('public/local-first/' + source, 'utf8');
+    assert.match(script, /import \{ createKeyTypeValueRow(?:, createKeyTypeValueRows)? \} from '\.\/key-type-value.js'/u);
+    assert.doesNotMatch(script, /className\s*=\s*['"]agentic-ktv-row['"]/u);
+  }
+  assert.doesNotMatch(css, /\.(?:workflow-toolbar|workflow-control|workflow-parameter-grid|evidence-fields|decision-policy)\s*\{/u);
+  assert.doesNotMatch(housing, /\.housing-(?:field-grid|listing-grid|option-action-list|option-action|actions|option-actions|listing-filter|table-toolbar)\s*\{\s*display:/u);
 });
 
 test('Commerce actions and Workspace Pack reuse shared responsive control geometry', () => {
@@ -122,9 +123,9 @@ test('Commerce actions and Workspace Pack reuse shared responsive control geomet
   assert.match(pack, /button:where\(:not\(\[aria-pressed\], nav button\)\),\.button,summary\s*\{\s*min-block-size:\s*var\(--agentic-control-height\)/u);
 });
 
-test('housing priorities use the offline checkbox group with no local layout override', () => {
+test('housing priorities use individual central KTV rows with no local layout override', () => {
   const housing = fs.readFileSync('public/local-first/housing-comparison.js', 'utf8');
-  assert.match(housing, /<fieldset class="agentic-checkbox-group housing-field-wide"><legend>Priorities/);
+  assert.match(housing, /<fieldset class="agentic-ktv-container"><legend>Priorities/);
   const localCss = fs.readFileSync('public/local-first/housing-comparison.css', 'utf8');
   assert.doesNotMatch(localCss, /[.]housing-choice-list|[.]agentic-checkbox-group/);
 })
