@@ -1,4 +1,3 @@
-.housing-listing-editor>summary,.housing-portable-tools>summary{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;cursor:pointer;font-weight:650}
 .housing-listing-editor,.housing-portable-tools{margin-top:var(--commerce-space-md);padding-top:var(--commerce-space-md);border-top:1px solid var(--commerce-border)}
 .housing-listing-editor .housing-form,.housing-portable-tools .housing-actions{margin-top:var(--commerce-space-md)}
 .housing-comparison-table-scroll{box-sizing:border-box;width:100%;height:min(68vh,48rem);min-height:20rem}

@@ -1,6 +1,7 @@
 @import "./graph-ui-tokens.css";
 @import "./commerce-theme.css";
 @import "./shared-ui-profile.css";
+@import "./panel-section.css";
 @import "./commerce-shell.css";
 @import "./toolbar.css";
 
@@ -97,8 +98,6 @@ pre {
 .canvas-next p { color: var(--kg-text-secondary); }
 .canvas-next a { display: inline-flex; align-items: center; min-height: var(--commerce-touch-target); }
 .canvas-next strong { font-size: var(--agentic-font-size-body); }
-details:where(:not([data-dashboard-primitive])) { font-size: var(--kg-text-xs); line-height: 1.8; border-top: 1px solid var(--kg-border); margin-top: 18px; }
-details:where(:not([data-dashboard-primitive])) > summary { display: list-item; cursor: pointer; color: var(--commerce-action); padding: 13px 0; font-weight: 550; }
 details code { font: 11px var(--agentic-font-mono); overflow-wrap: anywhere; }
 #receipt { display: block; padding-bottom: 15px; }
 .service-details {

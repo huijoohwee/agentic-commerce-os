@@ -341,7 +341,7 @@ export function createSmeWorkflowEditor({
         details.id = 'sme-policy-status'; editor.append(details); decisionPanel.append(editor)
       }
     }
-    const working = node('details'); working.id = 'sme-working'
+    const working = node('details'); working.id = 'sme-working'; working.dataset.agenticSection = ''
     working.append(node('summary', 'Show calculation working'))
     const fact = (id, label, value, type) => ({ id: 'sme-working-' + id, ...readOnlyCells(label, value, type) })
     if (!report) working.append(createKeyTypeValueRows({ rows: [fact('status', 'Calculation status', 'Build the current plan to inspect its working.')] }))
@@ -352,7 +352,7 @@ export function createSmeWorkflowEditor({
       const deltaText = delta => !delta.value ? 'Unknown' : `${delta.value.low === delta.value.high ? delta.value.low : delta.value.low + ' to ' + delta.value.high} ${delta.unit}`
       for (const output of getProtocol().model_outputs) {
         const entry = report.working.outputs[output.id], delta = deltas?.[output.id], prefix = output.id + '-'
-        const group = node('section'), details = node('details')
+        const group = node('section'), details = node('details'); details.dataset.agenticSection = ''; details.dataset.agenticSticky = 'false'
         group.dataset.workingOutput = output.id; group.setAttribute('aria-label', output.label)
         const results = [fact(prefix + 'result', output.label, report.model_display[output.id], 'number')]
         if (delta) results.push(fact(prefix + 'delta', 'Change from baseline ' + reports.decision.baseline, deltaText(delta), 'number'),

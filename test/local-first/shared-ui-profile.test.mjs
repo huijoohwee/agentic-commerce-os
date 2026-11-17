@@ -155,7 +155,7 @@ test('Workspace Pack takes panel geometry and colors from the pinned stylesheets
   const css = fs.readFileSync('public/local-first/workspace-pack.css', 'utf8');
   const owners = [...css.matchAll(/@import\s+([^;]+);/gi)].map(match => match[1].trim());
   assert.match(fs.readFileSync('public/local-first/commerce-shell.css', 'utf8'), /@import "\.\/floating-panel\.css";/);
-  assert.deepEqual(owners, ['"./graph-ui-tokens.css"', '"./commerce-theme.css"', '"./shared-ui-profile.css"', '"./commerce-shell.css"', '"./toolbar.css"']);
+  assert.deepEqual(owners, ['"./graph-ui-tokens.css"', '"./commerce-theme.css"', '"./shared-ui-profile.css"', '"./panel-section.css"', '"./commerce-shell.css"', '"./toolbar.css"']);
   assert.match(html, /id="builder" class="agentic-dashboard-layout"/);
   assert.match(html, /class="agentic-dashboard-region">\s*<div class="agentic-dashboard-grid" data-columns="2" data-dashboard-columns-for="builder">/);
   assert.match(html, /id="formats" class="agentic-dashboard-layout"/);
@@ -272,4 +272,24 @@ test('native hover panel, palette and key/value text are exact shared projection
   const editor = fs.readFileSync('public/local-first/sme-workflow-editor.js', 'utf8');
   assert.ok(editor.includes("from './hover-text.js'"));
   assert.ok(editor.includes("defaultValueOverride: 'Not declared'"));
+});
+
+
+test('native section assets reuse immutable owner bytes and both workspace routes', async () => {
+  const release = JSON.parse(fs.readFileSync('config/design-system-static-release.json', 'utf8'));
+  assert.match(fs.readFileSync('public/local-first/workspace.js', 'utf8'), /installPanelSections\(document\)/);
+  for (const name of ['panel-section.js', 'panel-section.css']) {
+    const bytes = fs.readFileSync('public/local-first/' + name);
+    assert.deepEqual(bytes, fs.readFileSync('public/agentic-design-system/' + name));
+    assert.equal(digest(bytes), release.files.find(file => file.path === name).sha256);
+    assert(fs.readFileSync('public/local-first/sw.js', 'utf8').includes(name));
+    for (const prefix of ['', 'services/workspace-pack/']) {
+      const response = await worker.fetch(new Request('https://commerce.test/agentic-commerce-os/assets/local-unreleased/' + prefix + name),
+        { RELEASE_CANDIDATE_SHA: 'local-unreleased', ASSETS: { fetch: () => new Response(bytes) } });
+      assert.equal(response.status, 200, prefix + name);
+    }
+  }
+  assert.match(fs.readFileSync('public/local-first/housing-comparison.js', 'utf8'), /data-housing-section="context"/);
+  assert.doesNotMatch(fs.readFileSync('public/local-first/housing-comparison.css', 'utf8'), />summary\{/);
+  assert.doesNotMatch(fs.readFileSync('public/local-first/sme-business-pack.css', 'utf8'), /decision-panel summary/);
 });

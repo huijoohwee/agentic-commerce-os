@@ -1,7 +1,7 @@
-import { enhanceSelects } from './dropdown-menus.js';
+import { installPanelSections } from './panel-section.js'; import { enhanceSelects } from './dropdown-menus.js';
 import { mountCommerceChrome, observePackService, selectToolbarItem, PACK_TOOL, openCommercePanel, closeCommercePanel, getCommercePanelView, isCommercePanelOpen } from './commerce-toolbar.js';
 export function mountWorkspacePack({ root, toolbar, service, active, readiness }) {
-  enhanceSelects(root);
+  enhanceSelects(root); installPanelSections(root.ownerDocument || root);
   const mountPanelContent = (hostId, templateId) => {
     const host = document.getElementById(hostId), template = root.getElementById(templateId)
     if (!host || !(template instanceof HTMLTemplateElement)) throw new Error(`Commerce panel content is missing: ${templateId}`)

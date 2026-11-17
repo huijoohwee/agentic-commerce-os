@@ -114,8 +114,22 @@ export async function checkHousingWorkspace({ browser, url, output, observeConte
   await page.locator('[data-housing-workflow] > summary').click()
   const inputs = page.locator('[data-housing-inputs]')
   await expect(inputs.locator('.agentic-dashboard-card, [data-dashboard-columns-for]')).toHaveCount(0)
-  await expect(inputs.locator('.agentic-panel-section')).toHaveCount(2)
+  await expect(inputs.locator(':scope > .agentic-panel-section')).toHaveCount(2)
   await expect(inputs.locator('[data-housing-fact="Listing source"]')).toHaveCount(3)
+  const contextSection = inputs.locator('[data-housing-section="context"]')
+  await contextSection.locator('[name="budget"]').fill('1800')
+  await contextSection.locator(':scope > summary').press('Enter')
+  await expect(contextSection).not.toHaveAttribute('open', '')
+  await contextSection.locator(':scope > summary').press('Space')
+  await expect(contextSection.locator('[name="budget"]')).toHaveValue('1800')
+  assert.equal(await contextSection.locator(':scope > summary').evaluate(node => getComputedStyle(node).position), 'sticky')
+  await contextSection.locator(':scope > summary').press('PageDown')
+  await expect.poll(() => contextSection.locator(':scope > summary').evaluate(node =>
+    Math.round(node.getBoundingClientRect().top - document.querySelector('.topbar').getBoundingClientRect().bottom)),
+  { message: 'sticky context header clears the visible mobile toolbar without a navigation gap' }).toBe(0)
+
+  await contextSection.locator('[name="budget"]').fill('')
+
   await expect(inputs.locator('.agentic-ktv-value small')).toHaveCount(0)
   const assertHousingKtv = async () => {
     assert.deepEqual(await inputs.locator('input, select, textarea, [data-housing-fact]').evaluateAll(nodes => nodes.filter(node => !node.closest('[data-panel-field-row]')).map(node => node.id || node.name)), [])
