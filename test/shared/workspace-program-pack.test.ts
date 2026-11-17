@@ -133,19 +133,19 @@ describe('Workspace Pack browser tool lifecycle', () => {
     // This VM exercises WebMCP registration. Cross-page toolbar and service checks run in the browser.
     const source = moduleSource.replace(/^import .+ from '.+';$/gm, '')
       .replaceAll('import.meta.url', '"http://localhost/services/workspace-pack/workspace-pack.js"')
-      .replace('export function mountWorkspacePack', 'function mountWorkspacePack'), enhanceSelects = vi.fn()
+      .replace('export function mountWorkspacePack', 'function mountWorkspacePack'), enhanceSelects = vi.fn(), installPanelSections = vi.fn()
     const pending = runInNewContext(`(async () => {${source}\n})()`, {
       PACK_TOOL, mountCommerceChrome: () => ({ querySelectorAll: () => [], querySelector: () => null }),
       openCommercePanel() {}, closeCommercePanel() {}, selectToolbarItem() {},
       observePackService: async (_toolbar: unknown, changed: (available: boolean) => void) => changed(true),
-      HTMLTemplateElement: FakeHTMLTemplateElement, enhanceSelects,
+      HTMLTemplateElement: FakeHTMLTemplateElement, enhanceSelects, installPanelSections,
       document: { getElementById: node, createElement: element, addEventListener() {}, querySelectorAll: () => [],
         documentElement: element(), modelContext: registerTool ? { registerTool } : undefined },
       matchMedia: () => ({ matches: false }), navigator: { modelContext: legacy }, location: { href: 'http://localhost/services/workspace-pack/' },
       addEventListener: (name: string, action: () => void) => events.set(name, action),
       URL, TextEncoder, crypto: webcrypto, AbortController, AbortSignal, setTimeout, clearTimeout, fetch: fetcher,
     })
-    return { pending, node, events, fetcher, enhanceSelects }
+    return { pending, node, events, fetcher, enhanceSelects, installPanelSections }
   }
   it('awaits Document registration, prefers it to legacy hosts, shares verified API results and cancels on pagehide', async () => {
     let tool: any, signal: AbortSignal | undefined, complete: (() => void) | undefined
@@ -155,6 +155,8 @@ describe('Workspace Pack browser tool lifecycle', () => {
     expect(page.node('webmcp-status').textContent).not.toContain('registered')
     complete!(); await page.pending
     expect(page.enhanceSelects).toHaveBeenCalledTimes(2)
+    expect(page.installPanelSections).toHaveBeenCalledTimes(1)
+    expect(page.installPanelSections.mock.calls[0][0]).toHaveProperty('getElementById')
     expect(legacy.registerTool).not.toHaveBeenCalled()
     expect(page.node('webmcp-status').textContent).toBe('Browser WebMCP tool registered.')
     const output = await tool.execute(input(), {})
