@@ -2,13 +2,13 @@
   "schema": "agentic-base/consumer-artifact/v1",
   "source": {
     "repository": "github.com/huijoohwee/agentic-base",
-    "revision": "ff889d87a380f1e6f46575eb977448390f5c51d0",
+    "revision": "b36420f1e06c9d70569ac928e2b8b6ae882e7992",
     "sourceDirty": false,
     "package": "@agentic-base/views-react",
     "packageVersion": "0.1.0",
     "packagePath": "packages/views-react",
     "buildManifest": "packages/views-react/dist/browser-data-view.manifest.json",
-    "buildManifestSha256": "c91083cc288cdee26a8e179f2e4d77dac8488a9f5f237501879d519b9d03d46c"
+    "buildManifestSha256": "e1853c8b76ce9fe629899cff855721fb4b536c872216618032046df3d4d635c8"
   },
   "contract": {
     "source": "agentic-base/browser-data-view/v1",
@@ -67,13 +67,13 @@
     },
     {
       "path": "packages/views-react/src/browser/shared-ui-profile.css",
-      "bytes": 20507,
-      "sha256": "ed7f351a66f37acfebed742ce992b6ff5ed2a8bd75692c2bbaa67c35a75fb926"
+      "bytes": 21178,
+      "sha256": "2d79bcca25b00cd7ad6d2c09f360056f922594800922ef8a71c3925bb98cea9b"
     },
     {
       "path": "packages/views-react/src/browser/shared-ui-profile.pin.json",
       "bytes": 1024,
-      "sha256": "b099ca12d6ceff3dec8149309682526c3792113a404c803930a312ff834700d2"
+      "sha256": "53e1a634863f6419709e75f1dd1cbeb8c3d8825044ecf7f6b1d3240b059266e5"
     },
     {
       "path": "packages/views-react/src/controls/MenuControls.tsx",
@@ -93,7 +93,7 @@
     {
       "path": "packages/views-react/src/controls/icons.pin.json",
       "bytes": 285,
-      "sha256": "4e3d34a251c34a3cdee49593e1394afa832464f02d151b2397171175953cdb08"
+      "sha256": "e4cb17ea8f89ff5899e8b11eea0670a83af8270489a96d7bc47d34ee36eb1157"
     },
     {
       "path": "packages/views-react/src/controls/nativeSelect.ts",
@@ -165,7 +165,7 @@
     {
       "path": "agentic-base-data-view.js",
       "bytes": 241601,
-      "sha256": "4d84c8c91217e641394a0df57943e041cf76166f4e33b70b47a9bc230403feb5",
+      "sha256": "e3cae61509c19fb241d6a7e0ffc73d70563ba3f1ca43c7e3066865100dee1b30",
       "sourcePath": "browser-data-view.js"
     },
     {
@@ -176,8 +176,8 @@
     },
     {
       "path": "agentic-base-data-view.css",
-      "bytes": 35987,
-      "sha256": "6551d066bd056388d7686cf8153e38682ff9662bc4d26e4b08bdfe553a4f7f5c",
+      "bytes": 36658,
+      "sha256": "924fbfe75ce1564d7172b6905c73be0bcdf2bd097acabfdeddc2f7ca563fb6d7",
       "sourcePath": "browser-data-view.css"
     }
   ]

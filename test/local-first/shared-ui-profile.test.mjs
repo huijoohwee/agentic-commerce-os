@@ -242,10 +242,22 @@ test('Base browser controls reuse the central shared border utility', () => {
   const profile = fs.readFileSync('public/agentic-design-system/vendor/shared-ui-profile.css', 'utf8');
   const css = fs.readFileSync('public/local-first/agentic-base-data-view.css', 'utf8');
   const profileDigest = digest(profile);
-  assert.equal(pin.source.revision, 'ff889d87a380f1e6f46575eb977448390f5c51d0');
+  assert.equal(pin.source.revision, 'b36420f1e06c9d70569ac928e2b8b6ae882e7992');
   assert.equal(pin.inputs.find(input => input.path === 'packages/views-react/src/browser/shared-ui-profile.css')?.sha256,
     profileDigest);
   assert.match(profile, /--agentic-control-border:\s*1px solid var\(--agentic-base-border,/u);
   assert.match(css, /--agentic-control-border:\s*1px solid var\(--agentic-base-border,/u);
   assert.match(css, /\.agentic-form-control,[\s\S]+?border:\s*var\(--agentic-control-border\)/u);
+});
+
+test('native hover panel, palette and key/value text are exact shared projections', () => {
+  const manifest = JSON.parse(fs.readFileSync('config/design-system-static-release.json', 'utf8'));
+  for (const name of ['hover.js', 'hover-text.js', 'hover.css']) {
+    const entry = manifest.files.find(file => file.path === name);
+    assert.ok(entry, name + ' must be an owner projection');
+    assert.equal(digest(fs.readFileSync('public/local-first/' + name)), entry.sha256);
+  }
+  const editor = fs.readFileSync('public/local-first/sme-workflow-editor.js', 'utf8');
+  assert.ok(editor.includes("from './hover-text.js'"));
+  assert.ok(editor.includes("defaultValueOverride: 'Not declared'"));
 });
