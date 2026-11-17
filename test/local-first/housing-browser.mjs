@@ -123,6 +123,11 @@ export async function checkHousingWorkspace({ browser, url, output, observeConte
   await contextSection.locator(':scope > summary').press('Space')
   await expect(contextSection.locator('[name="budget"]')).toHaveValue('1800')
   assert.equal(await contextSection.locator(':scope > summary').evaluate(node => getComputedStyle(node).position), 'sticky')
+  await contextSection.locator(':scope > summary').press('PageDown')
+  await expect.poll(() => contextSection.locator(':scope > summary').evaluate(node =>
+    Math.round(node.getBoundingClientRect().top - document.querySelector('.topbar').getBoundingClientRect().bottom)),
+  { message: 'sticky context header clears the visible mobile toolbar without a navigation gap' }).toBe(0)
+
   await contextSection.locator('[name="budget"]').fill('')
 
   await expect(inputs.locator('.agentic-ktv-value small')).toHaveCount(0)

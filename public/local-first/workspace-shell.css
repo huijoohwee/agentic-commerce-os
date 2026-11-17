@@ -6,7 +6,7 @@
 /* Shared workspace layout owner for Shopper, Vendor, Admin, and SME surfaces. */
 :root {
   --agentic-control-focus: var(--commerce-focus);
-  --agentic-section-offset: var(--workspace-scroll-offset);
+  --agentic-section-offset: var(--workspace-header-height);
   --panel-bg: var(--commerce-surface);
   --workspace-header-height: var(--workspace-chrome-height);
   --workspace-sidebar-width: clamp(184px,19.07vw,216px);
@@ -80,7 +80,6 @@ body.console-mode main { max-width: none; margin: 0; padding: 0; }
 }
 @media (max-width: 950px) { .console-mode .global-status:not(:empty) { margin-left: 0; } .console-mode>.workspace-footer { margin-left: 0; } .console-mode.navigation-collapsed .global-status:not(:empty) { margin-left: 16px; } }
 @media(max-width:680px){
-  :root{--workspace-scroll-offset:calc(var(--workspace-header-height) + var(--workspace-sidebar-compact-min-height) + 12px)}
   .workspace-shell{display:block;width:100%;max-width:100%;min-width:0;min-height:0}
   .workspace-shell>.sidebar{position:sticky;top:var(--workspace-header-height);z-index:2;box-sizing:border-box;width:100%;max-width:100%;min-width:0;height:auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(72px,1fr));align-content:start;gap:4px;overflow:visible;padding:8px 12px;border-right:0;border-bottom:1px solid var(--commerce-border);background:var(--commerce-surface)}
   .workspace-shell>.sidebar .service-nav>.sidebar-label{grid-column:1/-1;align-self:center;display:block;margin:4px 2px 0;padding:0 4px;color:var(--commerce-text-muted);font-size:.65rem;letter-spacing:.08em;text-transform:uppercase}
