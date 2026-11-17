@@ -1,3 +1,5 @@
+import { createKeyTypeValueRow } from './key-type-value.js'
+import { createDesignIcon } from './toolbar-icons.js'
 import { prepareViewStylesheet } from './workspace-view-styles.js'
 import { assessListing, parseComparison, SAMPLE_PROFILE, serializeComparison, validateListing, validatePhotoBatch, validateProfile, validateSelection } from './housing-engine.js'
 import { SAMPLE_LISTINGS } from './housing-sample.js'
@@ -144,7 +146,7 @@ function updateComparisonDimensions() {
   const count = root.querySelector('[data-housing-dimension-count]')
   if (count) count.textContent = dimensionCountText(matched, all)
   const clear = root.querySelector('[data-action="clear-dimension-query"]')
-  if (clear) clear.hidden = !state.dimensionQuery.trim()
+  if (clear) { clear.hidden = !state.dimensionQuery.trim(); clear.closest('.agentic-ktv-container').hidden = clear.hidden }
   const region = root.querySelector('.housing-comparison-table-scroll')
   const empty = root.querySelector('[data-housing-table-empty]')
   if (!matched.length) {
@@ -208,7 +210,7 @@ function profilePanel() {
       <label>Guarantor available?<select name="guarantor"><option value="unknown"${profile.guarantor === 'unknown' ? ' selected' : ''}>Not sure</option><option value="yes"${profile.guarantor === 'yes' ? ' selected' : ''}>Yes</option><option value="no"${profile.guarantor === 'no' ? ' selected' : ''}>No</option></select></label>
       <label>Typical transport<select name="transport">${[['unknown','Not set'],['public','Public transit'],['walk','Walk'],['bike','Bike'],['car','Car']].map(([value,label]) => `<option value="${value}"${profile.transport === value ? ' selected' : ''}>${label}</option>`).join('')}</select></label>
       <label class="housing-field-wide">Optional campus label<input name="campus" maxlength="60" value="${escapeHtml(profile.campus)}" placeholder="Example: North campus"><small>Do not enter a street address.</small></label>
-      <fieldset class="agentic-checkbox-group housing-field-wide"><legend>Priorities</legend>${[['quiet','Quiet hours'],['furnished','Furnished space'],['privacy','Private room']].map(([value,label]) => `<label><input type="checkbox" name="priority" value="${value}"${selected.has(value) ? ' checked' : ''}><span>${label}</span></label>`).join('')}</fieldset>
+      <fieldset class="agentic-ktv-container"><legend>Priorities</legend>${[['quiet','Quiet hours'],['furnished','Furnished space'],['privacy','Private room']].map(([value,label]) => `<label><input type="checkbox" name="priority" value="${value}"${selected.has(value) ? ' checked' : ''}><span>${label}</span></label>`).join('')}</fieldset>
     </div><div class="housing-actions"><button type="submit">Apply context</button><button type="button" class="secondary" data-action="sample-profile">Use sample profile</button>${state.profile ? '<button type="button" class="secondary" data-action="clear-context">Clear context</button>' : ''}</div><p>Context stays in memory for this visit. No name, exact address, or document is collected.</p></form>
   </section>`
 }
@@ -337,11 +339,39 @@ function syncComparisonOrientation() {
   }
   if (status && tableHandle) status.textContent = orientationStatus(orientation)
 }
+function bindHousingRows() {
+  const labels = [...root.querySelectorAll('label')]
+  for (const [index, label] of labels.entries()) {
+    const control = label.querySelector('input, select, textarea') || (label.htmlFor && root.querySelector('#' + label.htmlFor))
+    if (!control) throw Error('housing_field_control_missing')
+    const marker = document.createElement('span'), valueNode = document.createElement('section')
+    label.before(marker)
+    control.id ||= 'housing-' + (control.closest('form')?.dataset.form || 'workspace') + '-' + (control.name || control.dataset.action || index) + '-' + index
+    label.htmlFor = control.id
+    valueNode.append(control, ...label.querySelectorAll('small'))
+    label.className = ''; label.title = label.textContent.trim(); label.tabIndex = 0
+    const type = control.tagName === 'SELECT' ? 'Choice' : control.type === 'date' ? 'Date' : control.type === 'number' ? 'Number' : control.type === 'checkbox' ? 'Yes or no' : control.type === 'file' ? 'File' : 'Text'
+    const typeNode = createDesignIcon({ Date: 'CalendarClock', Number: 'Hash', 'Yes or no': 'CircleCheck', File: 'FileInput' }[type] || 'Type')
+    typeNode.removeAttribute('aria-hidden'); typeNode.setAttribute('role', 'img'); typeNode.setAttribute('aria-label', type)
+    marker.replaceWith(createKeyTypeValueRow({ keyNode: label, typeNode, valueNode }))
+  }
+  for (const button of root.querySelectorAll('.housing-actions > button, .housing-option-actions > button, .housing-table-toolbar > button')) {
+    const marker = document.createElement('span'), keyNode = document.createElement('span'), typeNode = createDesignIcon('Play')
+    keyNode.textContent = button.closest('.housing-option-action')?.querySelector(':scope > strong')?.textContent || button.textContent
+    keyNode.title = keyNode.textContent; keyNode.tabIndex = 0
+    typeNode.removeAttribute('aria-hidden'); typeNode.setAttribute('role', 'img'); typeNode.setAttribute('aria-label', 'Action')
+    button.before(marker)
+    const row = createKeyTypeValueRow({ keyNode, typeNode, valueNode: button }); row.hidden = button.hidden; marker.replaceWith(row)
+  }
+  for (const heading of root.querySelectorAll('.housing-option-action > strong')) heading.remove()
+  for (const group of root.querySelectorAll('.housing-field-grid, .housing-listing-grid, .housing-actions, .housing-option-actions, .housing-option-action-list, .housing-listing-filter, .housing-table-toolbar')) group.classList.add('agentic-ktv-container')
+}
 function housingWorkspace() {
   const existingInputs = root.querySelector('[data-housing-workflow]')
   if (existingInputs) state.inputsOpen = existingInputs.open
   const reports = state.selected.map(currentListing).filter(Boolean).map(reportFor)
   root.innerHTML = comparisonPanel(reports)
+  bindHousingRows()
   filterChoices()
   if (reports.length) mountComparisonTable(reports, tableGeneration)
 }

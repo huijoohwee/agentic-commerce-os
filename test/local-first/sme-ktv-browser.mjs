@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import path from 'node:path'
 import { writeFile } from 'node:fs/promises'
 import { expect } from '@playwright/test'
+import { chooseDropdown } from './dropdown-menu-browser.mjs'
 import { invokeSmePackTool, PACK_INDEX } from '../../public/local-first/sme-business-pack-core.js'
 
 export async function checkSmeKtvBrowser({ browser, url, output }) {
@@ -34,6 +35,49 @@ export async function checkSmeKtvBrowser({ browser, url, output }) {
     assert.equal(await price.evaluate((node, original) => node === original, control), true, 'building retains the input node and its value')
     await expect(price).toHaveValue('25')
     await expect(page.locator('#sme-working')).toContainText('7,500')
+    const assertKtv = async selector => {
+      const region = page.locator(selector)
+      assert.deepEqual(await region.locator('input, select, textarea').evaluateAll(controls => controls.filter(control => !control.closest('[data-panel-field-row]')).map(control => control.id || control.name)), [], selector + ': every field uses central KTV')
+      for (const row of await region.locator('[data-panel-field-row]').all()) {
+        assert.deepEqual(await row.evaluate(node => [...node.children].map(cell => cell.tagName)), ['DT', 'DD', 'DD'])
+        assert.ok(await row.locator('input, select, textarea').count() <= 1, selector + ': one independent value per row')
+      }
+    }
+    await assertKtv('#sme-workflow')
+    await page.locator('#compare-a-venture_name').focus()
+    await expect(page.locator('#sme-workflow-parameter-details [data-panel-field-row]')).toHaveCount(6)
+    await page.locator('#compare-evidence-market_basis').fill('Observed test context')
+    await chooseDropdown(page.locator('#sme-evidence-provenance'), 'directly_observed')
+    await chooseDropdown(page.locator('#sme-evidence-role'), 'observer')
+    await page.locator('#sme-evidence-date').fill('2026-11-17')
+    await page.locator('#sme-evidence-add').click()
+    await expect(page.locator('.sme-evidence-list [data-panel-field-row]')).toHaveCount(5)
+    await page.getByRole('button', { name: 'Remove Market evidence or basis evidence', exact: true }).click()
+    await expect(page.locator('.sme-evidence-list li')).toHaveCount(0)
+    await page.goto(url + '#housing')
+    await page.locator('[data-housing-workflow] > summary').click()
+    await assertKtv('#housing-root')
+    await expect(page.locator('.housing-table-actions [data-panel-field-row]')).toHaveCount(3)
+    await page.getByRole('button', { name: 'Use sample profile', exact: true }).click()
+    await expect(page.locator('.housing-context-summary')).toContainText('Set for this visit')
+    await expect(page.locator('.housing-table-actions button[data-action="plan-open"]')).toHaveCount(3)
+    await page.locator('[name="dimension-query"]').fill('rent')
+    await expect(page.getByRole('button', { name: 'Clear table dimension search', exact: true })).toBeVisible()
+    await page.getByRole('button', { name: 'Clear table dimension search', exact: true }).click()
+    await expect(page.locator('[name="dimension-query"]')).toHaveValue('')
+    await assertKtv('#housing-root')
+    await page.screenshot({ path: path.join(output, 'housing-ktv-desktop.png') })
+    await page.goto(url + '#vendor-editor')
+    await page.locator('#title').waitFor({ state: 'visible' })
+    await expect(page.locator('#save')).toBeEnabled()
+    await assertKtv('#draft-form')
+    await page.locator('#title').fill('KTV verification offer')
+    await page.locator('#description').fill('An illustrative local draft to verify the existing save action.')
+    await page.locator('#save').click()
+    await expect(page.locator('#save-state')).toContainText('Saved')
+    await expect(page.locator('#title')).toHaveValue('KTV verification offer')
+    await page.screenshot({ path: path.join(output, 'vendor-ktv-desktop.png') })
+    await page.goto(url + '#sme')
     await rows.first().scrollIntoViewIfNeeded()
     await page.screenshot({ path: path.join(output, 'sme-ktv-desktop.png') })
     for (const width of [320, 390, 768, 1280]) {
@@ -55,7 +99,8 @@ export async function checkSmeKtvBrowser({ browser, url, output }) {
     assert.deepEqual(errors, [])
     await writeFile(path.join(output, 'sme-ktv-proof.json'), JSON.stringify({ schema: 'commerce.sme-ktv/v1',
       owner: 'agentic-design-system', revision: '98807b856ab35bac53c54987d4340cd37982d3ec', fields: protocol.input_fields.length,
-      rows: expectedRows, oneEditableValuePerRow: true,
+      rows: expectedRows, oneEditableValuePerRow: true, sections: ['metadata', 'evidence', 'housing context', 'listing actions', 'offer editor', 'workflow controls', 'launch inputs'],
+      evidenceAddRemove: true, housingContextAndSearch: true, vendorSave: true,
       semanticCells: ['DT', 'DD', 'DD'], namedTypeIcons: true, controlIdentityPreserved: true, revenueAfterPriceEdit: 7500,
       widths: [320, 390, 768, 1280], narrowValueStacks: true, textZoom: '200%', offlineReloadAndBuild: true, pageErrors: errors,
     }, null, 2) + '\n')

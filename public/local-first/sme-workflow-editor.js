@@ -35,15 +35,48 @@ export function createSmeWorkflowEditor({
         impact: 'Your recorded planning input; unknown facts remain unknown. Evidence is not authenticated.' })
     }
     wrap.title = wrap.querySelector('input, select')?.title || ''
-    const typeNode = createDesignIcon(['money', 'integer'].includes(field.type) ? 'Hash' : 'Type', wrap.ownerDocument)
+    const typeNode = createDesignIcon(['money', 'integer'].includes(field.type) ? 'Hash' : field.type === 'date' ? 'CalendarClock' : field.type === 'file' ? 'FileInput' : field.type === 'action' ? 'Play' : 'Type', wrap.ownerDocument)
     typeNode.removeAttribute('aria-hidden'); typeNode.setAttribute('role', 'img')
-    typeNode.setAttribute('aria-label', { money: 'Amount', integer: 'Whole number', enum: 'Choice', boolean: 'Yes or no', currency: 'Currency code', text: 'Text' }[field.type])
+    typeNode.setAttribute('aria-label', { money: 'Amount', integer: 'Whole number', enum: 'Choice', boolean: 'Yes or no', currency: 'Currency code', text: 'Text', date: 'Date', file: 'File', action: 'Action' }[field.type])
     return { keyNode, typeNode, valueNode: wrap }
   }
 
   function typedField(wrap, field) {
     return createKeyTypeValueRow({ ...fieldCells(wrap, field), ownerDocument: wrap.ownerDocument })
   }
+
+  function controlRow(control, text, type = 'text', existingLabel) {
+    const wrap = node('section', undefined, 'field')
+    const label = existingLabel ?? node(type === 'action' ? 'span' : 'label', text, type === 'action' ? 'field-label' : undefined)
+    const trigger = control.parentElement?.querySelector('[data-agentic-select-for="' + control.id + '"]')
+    if (type !== 'action') { control.id ||= 'sme-control-' + text.toLowerCase().replace(/[^a-z0-9]+/g, '-'); label.htmlFor = trigger?.id || control.id }
+    wrap.append(label, control); if (trigger) wrap.append(trigger)
+    return typedField(wrap, { name: control.id, label: text, type })
+  }
+
+  const form = workflowEditor.closest('form')
+  for (const [id, type] of [['sme-plan-mode', 'enum'], ['pack-id', 'enum'], ['sme-compare-count', 'enum'], ['sme-edit-slot', 'enum'],
+    ['sme-review-view', 'enum'], ['sme-review-start', 'date'], ['sme-review-end', 'date']]) {
+    const control = form.querySelector('#' + id), trigger = form.querySelector('[data-agentic-select-for="' + id + '"]'),
+      label = form.querySelector('label[for="' + (trigger?.id || id) + '"]'), marker = node('span')
+    if (!control || !label) throw Error('sme_workflow_control_missing:' + id)
+    label.before(marker); marker.replaceWith(controlRow(control, label.textContent, type, label))
+  }
+  for (const [id, text] of [['sme-compare-run', 'Plan calculation'], ['sample', 'Illustrative inputs'], ['sme-workflow-pivot', 'Field metadata'], ['sme-review-export', 'View notes']]) {
+    const control = form.querySelector('#' + id), marker = node('span')
+    control.before(marker); marker.replaceWith(controlRow(control, text, 'action'))
+  }
+
+  const workspace = workflowEditor.closest('.workspace-content')
+  for (const id of ['sme-review-import', 'sme-worksheet-import']) {
+    const control = workspace.querySelector('#' + id), label = workspace.querySelector('label[for="' + id + '"]'), marker = node('span')
+    label.before(marker); label.className = ''; control.classList.remove('file-input')
+    marker.replaceWith(controlRow(control, label.textContent, 'file', label))
+  }
+  for (const control of workspace.querySelectorAll('#sme-worksheet-actions button')) {
+    const marker = node('span'); control.before(marker); marker.replaceWith(controlRow(control, control.textContent, 'action'))
+  }
+  for (const group of workspace.querySelectorAll('.actions')) group.className = 'agentic-ktv-container'
 
   function inputControl(field, prefix, protocol, currencyCode, mode, inputs) {
     const wrap = node('section', undefined, 'field'), label = node('label', field.label + (field.unit ? ' · ' + field.unit : ''))
@@ -119,8 +152,13 @@ export function createSmeWorkflowEditor({
   }
 
   function guidance(field, protocol, mode, inputs) {
-    const details = node('dl', undefined, 'workflow-parameter-grid')
-    const add = (name, value) => { const row = node('div'); row.append(node('dt', name), node('dd', value)); details.append(row) }
+    const details = node('section', undefined, 'agentic-ktv-container')
+    const add = (name, value) => {
+      const keyNode = node('span', name), typeNode = createDesignIcon('Type'), valueNode = node('span', value)
+      keyNode.title = name; keyNode.tabIndex = 0
+      typeNode.removeAttribute('aria-hidden'); typeNode.setAttribute('role', 'img'); typeNode.setAttribute('aria-label', 'Text')
+      details.append(createKeyTypeValueRow({ keyNode, typeNode, valueNode, align: 'start' }))
+    }
     const target = protocol?.protocols?.find(row => row.field_key === field.name)
     const lines = (protocol?.model_outputs ?? []).filter(row => row.inputs.includes(field.name))
     const currency = protocol?.pack.currency ?? getSlots().find(row => row.slot === getSelectedSlot())?.inputs.currency_code
@@ -165,10 +203,10 @@ export function createSmeWorkflowEditor({
     const role = node('select'); role.id = 'sme-evidence-role'; option(role, '', 'Observer role…')
     for (const name of ['author', 'observer', 'reviewer']) option(role, name, name)
     const date = node('input'); date.type = 'date'; date.id = 'sme-evidence-date'
-    const metadata = node('div', undefined, 'evidence-fields')
+    const metadata = node('div', undefined, 'agentic-ktv-container')
     for (const [control, labelText] of [[provenance, 'Provenance'], [role, 'Observer'], [date, 'Date']]) {
       const wrap = node('section', undefined, 'field'), label = node('label', labelText)
-      label.htmlFor = control.id; wrap.append(label, control); metadata.append(wrap)
+      label.htmlFor = control.id; wrap.append(label, control); metadata.append(typedField(wrap, { name: control.id, label: labelText, type: control === date ? 'date' : 'enum' }))
     }
     const valuePrefix = 'compare-evidence', valueControl = inputControl(selected, valuePrefix, protocol, item.inputs.currency_code)
     const list = node('ul', undefined, 'sme-evidence-list'), add = node('button', 'Add evidence'); add.type = 'button'; add.id = 'sme-evidence-add'
@@ -176,10 +214,15 @@ export function createSmeWorkflowEditor({
       list.replaceChildren()
       item.evidence.forEach((row, index) => {
         if (row.field_key !== selected.name) return
-        const entry = node('li', `${formatFieldValue(selected, row.value, item.inputs.currency_code)} · ${row.provenance.replaceAll('_', ' ')} · ${row.observer_role.replaceAll('_', ' ')} · ${row.date}`)
+        const entry = node('li'), values = [['Value', formatFieldValue(selected, row.value, item.inputs.currency_code)],
+          ['Provenance', row.provenance.replaceAll('_', ' ')], ['Observer', row.observer_role.replaceAll('_', ' ')], ['Date', row.date]]
+        entry.append(createKeyTypeValueRows({ rows: values.map(([keyNode, valueNode], part) => {
+          const typeNode = createDesignIcon('Type'); typeNode.removeAttribute('aria-hidden'); typeNode.setAttribute('role', 'img'); typeNode.setAttribute('aria-label', 'Text')
+          return { id: 'sme-evidence-' + index + '-' + part, keyNode, typeNode, valueNode }
+        }) }))
         const remove = node('button', 'Remove'); remove.type = 'button'; remove.setAttribute('aria-label', `Remove ${selected.label} evidence`)
         remove.addEventListener('click', () => { item.evidence.splice(index, 1); invalidate(); render() })
-        entry.append(remove); list.append(entry)
+        entry.append(controlRow(remove, 'Remove evidence', 'action')); list.append(entry)
       })
     }
     add.addEventListener('click', () => {
@@ -191,7 +234,7 @@ export function createSmeWorkflowEditor({
       item.evidence.push({ field_key: selected.name, value, provenance: provenance.value, observer_role: role.value, date: date.value })
       invalidate(); render()
     })
-    evidenceEditor.append(fieldWrap, metadata, valueControl, add, list); renderRows()
+    evidenceEditor.append(typedField(fieldWrap, { name: fieldSelect.id, label: 'Evidence field', type: 'enum' }), metadata, valueControl, controlRow(add, 'Evidence record', 'action'), list); renderRows()
   }
 
   function render() {
@@ -246,7 +289,7 @@ export function createSmeWorkflowEditor({
     const title = node('h3', 'Decision rehearsal'), status = node('p', policy ? `Baseline ${policy.baseline} · policy revision ${policy.policy_revision}` : getMode()?.id === 'scenario'
       ? 'No baseline selected. Build a plan, select its row, then request a baseline.' : 'Build this plan to inspect its calculations. Choose Scenario mode to request a baseline and set owner constraints.')
     status.id = 'sme-baseline-status'
-    const actions = node('div', undefined, 'actions')
+    const actions = node('div', undefined, 'agentic-ktv-container')
     decisionPanel.append(title, status)
     if (getMode()?.id === 'scenario' || policy) {
       const request = button('Request selected row as baseline', 'sme-baseline-request', () => {
@@ -319,6 +362,13 @@ export function createSmeWorkflowEditor({
         }
         section.append(list); working.append(section)
       }
+    }
+    for (const label of decisionPanel.querySelectorAll('.decision-policy > label')) {
+      const control = label.querySelector('input, select'), marker = node('span'), text = label.firstChild.textContent
+      label.before(marker); marker.replaceWith(controlRow(control, text, control.tagName === 'SELECT' ? 'enum' : 'integer', label))
+    }
+    for (const control of decisionPanel.querySelectorAll('button')) {
+      const marker = node('span'); control.before(marker); marker.replaceWith(controlRow(control, control.textContent, 'action'))
     }
     decisionPanel.append(working)
   }

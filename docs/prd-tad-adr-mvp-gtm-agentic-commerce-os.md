@@ -1,19 +1,19 @@
 ---
 title: "Reference Implementation — Commerce Workspace and Decision Rehearsal"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.4.2"
-revision: "0.4.2"
+version: "0.4.3"
+revision: "0.4.3"
 date: "2026-11-16"
 updated_date: "2026-11-17"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Commerce product function"
 continuity_id: "COMMERCE-CONTROL-PLANE-001"
-prd_revision: "0.4.2"
-tad_revision: "0.4.2"
-adr_revision: "0.4.2"
-mvp_revision: "0.4.2"
-gtm_revision: "0.4.2"
+prd_revision: "0.4.3"
+tad_revision: "0.4.3"
+adr_revision: "0.4.3"
+mvp_revision: "0.4.3"
+gtm_revision: "0.4.3"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -27,9 +27,9 @@ guideline_source_revision: "99ea1f49211361528256045719b54f1634eee41a"
 guideline_sha256: "4c7b9cfce239e0fba3b1ef560aba81e634dbea7d18213a2d1c7d7261736d8541"
 template_revision: "1.6.0"
 template_sha256: "0aaa79cfc4e6ead44514e2c1264879ae4445e252a1590ac6c5241ad4dfec15e4"
-worktree_id: "device-0232231d4a19--atomic-ktv-rows"
+worktree_id: "device-0232231d4a19--commerce-ktv-completion"
 agent_id: "codex"
-source_revision: "37778153321b48a82480720b4880a519e09a62e5"
+source_revision: "07d3bd88684a18d6e28a75aa8bb7a7fe494404ba"
 lifecycle_status: "proposed"
 load_policy: "on-demand"
 runtime_readiness_policy: "fail-closed"
@@ -39,7 +39,7 @@ agenticOsCanvas2dRenderer: "flowchart"
 
 # Reference implementation — Commerce workspace and decision rehearsal
 
-**Join:** `COMMERCE-CONTROL-PLANE-001@0.4.1`. Update the existing shared-shell plan in place. Keep COM-01–08 and ADR-01; extend the same SME workflow with DEC-01–06 and ADR-02. This is the sole editable owner of this increment. Existing commerce, workspace, transfer, housing and first-dollar plans retain their own scopes. No second app, planner, roadmap, capability registry, design system or payment ledger is introduced.
+**Join:** `COMMERCE-CONTROL-PLANE-001@0.4.3`. Update the existing shared-shell plan in place. Keep COM-01–08 and ADR-01; extend the same SME workflow with DEC-01–06 and ADR-02. This is the sole editable owner of this increment. Existing commerce, workspace, transfer, housing and first-dollar plans retain their own scopes. No second app, planner, roadmap, capability registry, design system or payment ledger is introduced.
 
 **Revision outcome:** the user's explicit 2026-11-16 IMPLEMENT instruction authorizes the native source changes for the preceding `0.3.0` plan. DEC-01–06 are implemented in the existing SME owners and their bounded decision helper; the implementation checkpoint records checks and remaining acceptance. Shared tokens, package pins, effect owners and four tool identities are retained. Runtime delivery, payment and outreach remain separately gated. Whole-artifact readiness stays conservative until the broader COM acceptance is closed; local implementation evidence is not a deployed product verdict.
 
@@ -348,7 +348,7 @@ Operations: existing product owner triages route, import, input-policy, arithmet
 
 ## C01–C16 coverage
 
-Join `COMMERCE-CONTROL-PLANE-001@0.4.1`, as of 2026-11-16. A covered row means the specification addresses it, not that implementation or the business is validated.
+Join `COMMERCE-CONTROL-PLANE-001@0.4.3`, as of 2026-11-16. A covered row means the specification addresses it, not that implementation or the business is validated.
 
 | Domain | Disposition / section | Evidence or gap / accountable function / revisit |
 |---|---|---|
@@ -456,3 +456,24 @@ MVP evidence: live local UI observed 37 rows with exactly one native input/selec
 GTM/bounds: improve the existing free local planning journey; WTP remains unmeasured. No paid service, new dependency or runtime module. Shared sprint limits: 60 KB authored changes, 100 paths excluding generated projections, 45-minute initial pass, 500,000-byte chunks. Rollback restores exact prior Design System/consumer pins and editor source together; user inputs and worksheet schema remain unchanged.
 
 The final portable view binds integrated Graph `b8b569db962fe4b6061e7add32a267ae02dedb31` (PR #1981; Integration Gate run 44035007790 passed), sourceDirty=false, with all outputs below 500,000 bytes. Shared ownership remains Design System PR #58 and Base PR #83.
+
+
+## Reference implementation — complete shared KTV consumption (0.4.3)
+
+The seven marked Commerce regions still contained local field grids after the amount endpoint change. This increment consumes the existing pinned Design System native KTV factory directly in the existing product owners. Each independent read-only fact, input, selection or action occupies its own shared row. Product nodes, events, constraints, IDs and form membership remain owned by Commerce. No new renderer, runtime module, dependency, consumer geometry or cross-repository pin is introduced.
+
+| Marked region | Existing owner change | Acceptance |
+|---|---|---|
+| Selected field definitions | `sme-workflow-editor.js` calls the shared row factory for each definition | Separate semantic key/type/value cells; long descriptions remain available |
+| Evidence editor | Same owner binds field, provenance, observer, date, value, add/remove and recorded facts | Evidence add/remove updates the existing worksheet |
+| Housing workflow inputs | `housing-comparison.js` binds each original form control, including priorities, listing selection and transfer | Existing form data, local selection and validation retained |
+| Selected-listing actions | Same owner gives each action a shared row with its listing label | Sample context and three listing plans still work |
+| Offer editor | `app.js` binds original and generated listing controls | Save retains title, description, original IDs and error messages |
+| E2E workflow | SME owner binds mode, contract, count, edit selection, review dates, build/sample and worksheet actions | Shared dropdown trigger and native source move together; calculation remains local |
+| First-sale preparation | Offer owner binds buyer/outcome, identifiers, currency, each estimate and action | One independent value per row; existing launch evaluation retained |
+
+Competing field/action grids are removed from the consumer styles. The multidimensional comparison table remains with its existing Base owner. Design System, Base, Graph and Canvas keep their already integrated shared KTV contracts and source pins; this addresses remaining Commerce usage only.
+
+Bound: 40-minute initial sprint; 60 KB authored change, at most 20 paths, zero new runtime modules. Affected source checks and live desktop/mobile/offline evidence are recorded under the existing release process before source closure. Provider deployment and promotion are not selected by this correction. This checkpoint is bounded acceptance for the seven marked regions, not an assertion of whole-product parity.
+
+Verification checkpoint (2026-11-17): the extended `sme-ktv-browser.mjs` passes across all seven regions, with evidence add/remove, housing sample context/search/three plan actions, offer save, 320/390/768/1280-pixel overflow checks, 200% text and offline reload/build. Live browser inspection confirms no unbound fields in the marked workflow, Housing or vendor form and no row/page overflow at 320 pixels. The 23 affected source tests and authored-size check pass. Full exact-candidate validation remains required before integration; local dirty-tree fulfillment packaging correctly refuses an uncommitted source.

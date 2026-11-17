@@ -18,25 +18,12 @@
 #sme .sme-table-subheading { max-width: 900px; margin-bottom: 12px; }
 #sme .sme-table-subheading h2 { margin: 0 0 6px; }
 #sme .sme-table-subheading p:last-child { max-width: 720px; margin: 0; color: var(--commerce-text-muted); font-size: .75rem; line-height: 1.5; }
-#sme .workflow-toolbar { display: flex; align-items: end; flex-wrap: wrap; gap: 9px; margin: 13px 0; }
-#sme .workflow-control { flex: 1 1 210px; min-width: 0; }
-#sme .workflow-control label { display: block; margin: 5px 0; color: var(--commerce-ink); font-size: .74rem; font-weight: 600; }
-#sme .workflow-toolbar :is(select, .agentic-select-trigger), #sme .sme-workflow-editor :is(select, .agentic-select-trigger), #sme .review-controls :is(select, .agentic-select-trigger), #sme .review-date-editor input { width: 100%; border: 1px solid var(--commerce-control-border); background: var(--commerce-surface); color: var(--commerce-ink); }
-#sme .workflow-toolbar button:not(.agentic-form-control) { box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: var(--agentic-control-padding-block); block-size: var(--agentic-control-height); min-block-size: var(--agentic-control-height); padding-block: 0; padding-inline: var(--agentic-control-padding-inline); border: 1px solid var(--commerce-action); border-radius: var(--agentic-control-radius); background: var(--commerce-action); color: var(--commerce-surface); font: var(--agentic-font-size-body)/var(--agentic-line-height-body) var(--agentic-font-sans); font-weight: 600; cursor: pointer; text-decoration: none; }
-#sme .actions button:not(.agentic-form-control), #sme .button:not(.agentic-form-control).secondary, #sme .sme-workflow-editor button:not(.agentic-form-control) { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 9px 13px; border: 1px solid var(--commerce-action); border-radius: 9px; background: var(--commerce-action); color: var(--commerce-surface); font-size: .76rem; font-weight: 600; cursor: pointer; text-decoration: none; }
-#sme .workflow-toolbar button.secondary, #sme .actions button.secondary, #sme .button.secondary, #sme .sme-workflow-editor button.secondary { border-color: var(--commerce-border-strong); background: var(--commerce-surface); color: var(--commerce-action); }
-#sme .workflow-table-actions { display: flex; justify-content: flex-end; margin: 9px 0 6px; }
-#sme .workflow-table-actions button { min-height: 42px; padding: 8px 12px; border: 1px solid var(--commerce-border-strong); border-radius: 9px; background: var(--commerce-surface); color: var(--commerce-action); font-size: .75rem; font-weight: 600; cursor: pointer; }
-#sme .workflow-toolbar button:disabled { opacity: .55; cursor: wait; }
+#sme .sme-workflow-editor :is(select, .agentic-select-trigger), #sme .review-controls :is(select, .agentic-select-trigger), #sme .review-date-editor input { width: 100%; border: 1px solid var(--commerce-control-border); background: var(--commerce-surface); color: var(--commerce-ink); }
 #sme .sme-workflow-editor { margin-top: 14px; padding: 14px; border: 1px solid var(--commerce-border); border-radius: 10px; background: var(--commerce-surface-subtle); }
 #sme .sme-workflow-editor[hidden] { display: none; }
 #sme .sme-workflow-editor h3, #sme .sme-workflow-editor h4 { margin: 0 0 6px; font-size: .88rem; }
 #sme .sme-workflow-editor header p { margin: 0; color: var(--commerce-text-muted); font-size: .72rem; line-height: 1.45; }
 #sme .workflow-parameter-details { margin-top: 12px; padding: 11px; border: 1px solid var(--commerce-border); border-radius: 8px; background: var(--commerce-surface); }
-#sme .workflow-parameter-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px 14px; margin: 0; }
-#sme .workflow-parameter-grid > div { min-width: 0; }
-#sme .workflow-parameter-grid dt { color: var(--commerce-text-muted); font-size: .66rem; font-weight: 650; }
-#sme .workflow-parameter-grid dd { margin: 2px 0 0; color: var(--commerce-ink); font-size: .7rem; line-height: 1.4; overflow-wrap: anywhere; }
 #sme .workflow-edit-set { min-width: 0; margin: 0; padding: 8px 10px 12px; border: 1px solid var(--commerce-border); border-radius: 8px; }
 #sme .workflow-edit-set legend { padding: 0 4px; color: var(--commerce-action); font-size: .74rem; font-weight: 650; }
 #sme .field { min-width: 0; }
@@ -44,12 +31,7 @@
 #sme .field :is(select, .agentic-select-trigger), #sme .field input { width: 100%; min-width: 0; border: 1px solid var(--commerce-control-border); background: var(--commerce-surface); color: var(--commerce-ink); font-size: var(--agentic-font-size-body); }
 #sme .field-help { display: block; margin-top: 5px; color: var(--commerce-text-muted); font-size: .64rem; line-height: 1.35; }
 #sme .workflow-evidence { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--commerce-border); }
-#sme .evidence-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px 10px; }
-#sme .evidence-fields .field label { min-height: 0; }
 #sme .sme-evidence-list { display: grid; gap: 7px; margin: 10px 0 0; padding: 0; list-style: none; }
-#sme .sme-evidence-list li { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 8px; border-top: 1px solid var(--commerce-border); color: var(--commerce-text-muted); font-size: .7rem; overflow-wrap: anywhere; }
-#sme .actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 16px; }
-#sme .actions button:not(.agentic-form-control), #sme .button:not(.agentic-form-control).secondary { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 9px 13px; border: 1px solid var(--commerce-border-strong); border-radius: 9px; background: var(--commerce-surface); color: var(--commerce-action); font-size: .76rem; font-weight: 600; cursor: pointer; text-decoration: none; }
 #sme .worksheet-controls { margin-top: 18px; padding: 13px 0; border-top: 1px solid var(--commerce-border); }
 #sme .worksheet-controls h3 { margin: 0 0 8px; font-size: .84rem; }
 #sme .worksheet-controls p, #sme-agent-tools p { color: var(--commerce-text-muted); font-size: .72rem; line-height: 1.45; }
@@ -76,27 +58,16 @@
 }
 @media (max-width: 560px) {
   #sme :is(#sme-overview, #sme-workflow, #sme-agent-tools, #sme-workflow-editor, #sme-decision-panel, #sme-workflow-evidence, #sme-workflow-table-region, #sme-worksheet-actions) { scroll-margin-top: 104px; }
-  #sme .workflow-toolbar { align-items: stretch; }
-  #sme .workflow-control, #sme .workflow-toolbar button { flex: 1 1 100%; }
-  #sme .workflow-table-actions button { width: 100%; }
-  #sme .workflow-parameter-grid, #sme .evidence-fields { grid-template-columns: minmax(0, 1fr); }
 }
 
 #sme .review-controls { margin: 16px 0; }
 #sme .review-controls > p { color: var(--commerce-text-muted); font-size: .75rem; line-height: 1.5; }
 #sme .review-controls :is(select, .agentic-select-trigger) { width: auto; min-width: 180px; }
 #sme .review-date-editor { margin: 16px 0; border: 1px solid var(--commerce-border); border-radius: 10px; padding: 12px; }
-#sme .review-date-editor input { display: inline-block; max-width: 100%; width: auto; margin: 0 16px 8px 8px; }
 
 #sme .comparison-table-scroll[data-view="gantt"] { height: auto; min-height: 0; overflow: visible; }
 
 #sme .decision-panel { margin-block: 16px; border-block: 1px solid var(--commerce-border); padding-block: 12px; overflow-wrap: anywhere; }
 #sme .decision-panel details { margin-block: 8px; padding: 8px; border: 1px solid var(--commerce-border); border-radius: 8px; }
 #sme .decision-panel summary { cursor: pointer; min-height: 44px; display: list-item; padding-block: 8px; }
-#sme .decision-panel :is(button, input, select, .agentic-select-trigger) { min-height: var(--agentic-control-height); max-width: 100%; }
-#sme .decision-policy { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; margin-block: 12px; }
-#sme .decision-policy :is(p, legend) { flex-basis: 100%; }
 #sme .decision-review { padding: 12px; background: var(--commerce-surface-subtle); }
-@media (max-width: 560px) { #sme .decision-panel :is(button, input, select, .agentic-select-trigger) { width: 100%; } }
-
-#sme .decision-policy label { display: grid; gap: 4px; flex: 1 1 12rem; min-width: 0; }
