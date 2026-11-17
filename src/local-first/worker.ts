@@ -16,7 +16,7 @@ export type LocalFirstEnv = Readonly<CheckoutEnv & ListingRelayEnv & {
 }>
 const packDirectory = '/services/workspace-pack/'
 // A bounded, exact allowlist: shared files get the same asset at both route prefixes.
-const sharedPackFiles = 'panel-section.js panel-section.css commerce-shell.css workspace-layout.js dashboard-columns.js toolbar-icons.js icons.json commerce-toolbar.js dropdown-menus.js graph-ui-tokens.css commerce-theme.css shared-ui-profile.css floating-panel.css toolbar.css'.split(' ')
+const sharedPackFiles = 'markdown.js markdown-parser.js color.js rich-text.css panel-section.js panel-section.css commerce-shell.css workspace-layout.js dashboard-columns.js toolbar-icons.js icons.json commerce-toolbar.js dropdown-menus.js graph-ui-tokens.css commerce-theme.css shared-ui-profile.css floating-panel.css toolbar.css'.split(' ')
 const primaryFiles = [
   'app.js drafts.js listing-geo.js agentic-geo-core.mjs checkout.js launch.js workspace.js workspace-graph.js agentic-base-data-view.js agentic-base-data-view.css graph-data-view.js graph-data-view.css style.css sw.js workflow.js workspace-capabilities.js workspace-tools.js',
   ...(import.meta.commerceLiveCheckout === false ? ['dropdown-menus.js graph-ui-tokens.css'] : [
@@ -114,7 +114,7 @@ export async function fetchLocalFirst(request: Request, env: LocalFirstEnv, tran
     if (assetPath === '/sw.js' || assetPath === '/') {
       const source = env.RELEASE_CANDIDATE_SHA
       if (!/^(?:[0-9a-f]{40}|local-unreleased)$/u.test(source)) return finish(new Response('Invalid release', { status: 503 }))
-      const headers = new Headers({ 'content-type': assetPath === '/' ? 'text/html; charset=utf-8' : 'application/javascript; charset=utf-8' })
+      const headers = new Headers({ 'content-type': (assetPath === '/' ? 'text/html' : 'application/javascript') + '; charset=utf-8' })
       if (assetPath === '/sw.js') headers.set('service-worker-allowed', `${prefix}/`)
       return finish(new Response(renderStorefrontTemplate(await response.text(), source, env.CHECKOUT_MODE), { headers }))
     }
@@ -142,10 +142,8 @@ async function readiness(env: LocalFirstEnv, runtime: FulfillmentRuntime | undef
     storage: 'browser-only', paymentStorage: live ? 'stripe-live' : 'stripe-test', paymentProvider: 'stripe', realMoney: live,
     sourceRevision: env.RELEASE_CANDIDATE_SHA, workerVersionId: env.CF_VERSION_METADATA?.id ?? null }
 }
-const unavailableRuntime: FulfillmentRuntime = Object.freeze({
-  async ready() { throw Error('fulfillment_unavailable') },
-  async invoke() { throw Error('fulfillment_unavailable') },
-})
+const unavailable = async () => { throw Error('fulfillment_unavailable') }
+const unavailableRuntime: FulfillmentRuntime = Object.freeze({ ready: unavailable, invoke: unavailable })
 export default { fetch: async (request: Request, env: LocalFirstEnv) => {
   let runtime: FulfillmentRuntime | undefined
   try { runtime = createFulfillmentRelay(env) } catch { runtime = unavailableRuntime }

@@ -2,14 +2,14 @@
   "schema": "agentic-commerce-design-system-static-release/v1",
   "source": {
     "repository": "github.com/huijoohwee/agentic-design-system",
-    "revision": "27acab93cf99eac2b8b4f250840e01a2f61eb78b"
+    "revision": "67a8adb7e0089ddef7403e244f57be1e0842dce8"
   },
   "route": "https://airvio.co/agentic-design-system/",
   "files": [
     {
       "path": "app.js",
-      "bytes": 23382,
-      "sha256": "798a495fb3c7501a60b1256f1260167adb5e54528fdd0feaaa61d8619658356a"
+      "bytes": 24288,
+      "sha256": "b6a55c0e91714484963b3d1068f0357005a067701050b7a067d67c2349d3deec"
     },
     {
       "path": "catalog.json",
@@ -20,6 +20,11 @@
       "path": "catalog.schema.json",
       "bytes": 13998,
       "sha256": "9a97ac3167f89eaf8e9198969d3b0d7fa4e227670b0108290f4307270b090033"
+    },
+    {
+      "path": "color.js",
+      "bytes": 8196,
+      "sha256": "b5e848ff4e755009b97660fbdd1ffb3eb0cfd0bb6e99464416305e03a4cbb0b0"
     },
     {
       "path": "dashboard-columns.js",
@@ -72,6 +77,16 @@
       "sha256": "b2e476300173b31043c1222c840b5cd3a8c234d50ffc5f44f104fcbf66fc5ffe"
     },
     {
+      "path": "markdown-parser.js",
+      "bytes": 2020,
+      "sha256": "f53c3cb794e3da5d56c68ab6550050d02ef7003f86eed97bfc362e635e328f4f"
+    },
+    {
+      "path": "markdown.js",
+      "bytes": 13919,
+      "sha256": "313f97423e66834234d54b74ed5b2a67d610da14c8d3200b4693af7fc3ab387c"
+    },
+    {
       "path": "panel-section.css",
       "bytes": 2259,
       "sha256": "980e8431acbea5084e2c28f4b76c5c6713af2c7cb5dc3d90e7a88565be0fc723"
@@ -92,9 +107,14 @@
       "sha256": "60d49f3559ede3d0ba6d05f7a32cafbb9cd3382d7427054d45858f822abdb0aa"
     },
     {
+      "path": "rich-text.css",
+      "bytes": 2974,
+      "sha256": "ee3da59b4122f517a9da0f2c8a2924ff47eb74ddbefb48c9af591ca27a1a108a"
+    },
+    {
       "path": "sw.js",
-      "bytes": 2086,
-      "sha256": "eb6bed0caab68aedeab9a81936be49634e72ebd3f7d90191e3e077bbd359d389"
+      "bytes": 2170,
+      "sha256": "3ced45bc8af3a74b02c0dc0119cc851d25936208f9822084dfc87bacd9716a0c"
     },
     {
       "path": "THIRD-PARTY-NOTICES.txt",
@@ -164,8 +184,8 @@
       "projectionSha256": "sha256:2d79bcca25b00cd7ad6d2c09f360056f922594800922ef8a71c3925bb98cea9b"
     }
   },
-  "totalBytes": 250368,
-  "payloadDigest": "d1c4f79c73cec61843169ab1cbaf0f7e2c0cc52e7efb744110b2c985c3ba8955",
+  "totalBytes": 278467,
+  "payloadDigest": "f15c5697777f5e07439a6de173c0402588d6c99b42e65e8881ae379ae2673e30",
   "excluded": [
     "registry/",
     "site/review-inventory.json",
