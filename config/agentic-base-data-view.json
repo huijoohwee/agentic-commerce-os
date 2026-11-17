@@ -2,13 +2,13 @@
   "schema": "agentic-base/consumer-artifact/v1",
   "source": {
     "repository": "github.com/huijoohwee/agentic-base",
-    "revision": "67a31bdc121793408becbcd84427d5f7c0b651d0",
+    "revision": "ff889d87a380f1e6f46575eb977448390f5c51d0",
     "sourceDirty": false,
     "package": "@agentic-base/views-react",
     "packageVersion": "0.1.0",
     "packagePath": "packages/views-react",
     "buildManifest": "packages/views-react/dist/browser-data-view.manifest.json",
-    "buildManifestSha256": "2c539d1fe6018fe0281ca84a0efd61c59a0a0e9eb0bcb9adb14f34b8c74fef2c"
+    "buildManifestSha256": "c91083cc288cdee26a8e179f2e4d77dac8488a9f5f237501879d519b9d03d46c"
   },
   "contract": {
     "source": "agentic-base/browser-data-view/v1",
@@ -53,7 +53,7 @@
     {
       "path": "packages/views-react/src/browser/base-profile.pin.json",
       "bytes": 652,
-      "sha256": "a865db85c273a5ebb08b06e60cb2c8e4c8f62501ae03ed744feecb52a2d0ca75"
+      "sha256": "483213440bb06a8733585b1fadf28c10a844d014a156ff6d3f24082182738548"
     },
     {
       "path": "packages/views-react/src/browser/browserDataView.css",
@@ -67,23 +67,23 @@
     },
     {
       "path": "packages/views-react/src/browser/shared-ui-profile.css",
-      "bytes": 20496,
-      "sha256": "5396a794b984c505960807e419f2bfd4504c1006af96533d710d7e433af26063"
+      "bytes": 20507,
+      "sha256": "ed7f351a66f37acfebed742ce992b6ff5ed2a8bd75692c2bbaa67c35a75fb926"
     },
     {
       "path": "packages/views-react/src/browser/shared-ui-profile.pin.json",
       "bytes": 1024,
-      "sha256": "9c040847da2fa3fe3435df96b966c98f3e2d3b7ab142b30c92821ad20ac636e7"
+      "sha256": "b099ca12d6ceff3dec8149309682526c3792113a404c803930a312ff834700d2"
     },
     {
       "path": "packages/views-react/src/controls/MenuControls.tsx",
-      "bytes": 10903,
-      "sha256": "4a36fe6d414936fe407a1177383ea447f13914895afeceb51440da727f915893"
+      "bytes": 9808,
+      "sha256": "cef335d346617edd185439028e0dca52c3d2cd03453387e2ecaee384d4aed5f4"
     },
     {
       "path": "packages/views-react/src/controls/dropdownMenu.ts",
-      "bytes": 9255,
-      "sha256": "8a5899cffed4637b42a6f293e8c0c2cffcc64d339202d9f76602ba93bdd32f5f"
+      "bytes": 9118,
+      "sha256": "e3a08bfa7fec688b43ab2c77acc73cda72450bd54ad9f914adbdf5fb00fe8944"
     },
     {
       "path": "packages/views-react/src/controls/icons.json",
@@ -93,7 +93,7 @@
     {
       "path": "packages/views-react/src/controls/icons.pin.json",
       "bytes": 285,
-      "sha256": "4b5c1aed6fa725ac6280e0a5df718c55ac9cfa294383f9bed13325e7c6df3a91"
+      "sha256": "4e3d34a251c34a3cdee49593e1394afa832464f02d151b2397171175953cdb08"
     },
     {
       "path": "packages/views-react/src/controls/nativeSelect.ts",
@@ -164,20 +164,20 @@
   "outputs": [
     {
       "path": "agentic-base-data-view.js",
-      "bytes": 241621,
-      "sha256": "0c4bf2d4ed1bedcfd92bc359085d37b7eaaa5b2340d86ecfd2d2694e6a152e52",
+      "bytes": 241601,
+      "sha256": "4d84c8c91217e641394a0df57943e041cf76166f4e33b70b47a9bc230403feb5",
       "sourcePath": "browser-data-view.js"
     },
     {
       "path": "dropdown-menus.js",
-      "bytes": 22132,
-      "sha256": "946ddf7822a1f983e8fec8471ebea69aaa6f9cd3cd77990c19e5c4a3e522b091",
+      "bytes": 22113,
+      "sha256": "f63919b05314a6a1207b4b9d840aec26961864454909c3cd811d0e27ecf46021",
       "sourcePath": "dropdown-menus.js"
     },
     {
       "path": "agentic-base-data-view.css",
-      "bytes": 35976,
-      "sha256": "68e26ad9c3e26f218b94f026ac2fa0f53799306ba2656c41204c89b7cb29a5e6",
+      "bytes": 35987,
+      "sha256": "6551d066bd056388d7686cf8153e38682ff9662bc4d26e4b08bdfe553a4f7f5c",
       "sourcePath": "browser-data-view.css"
     }
   ]

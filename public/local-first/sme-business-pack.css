@@ -20,7 +20,7 @@
 #sme .sme-table-subheading p:last-child { max-width: 720px; margin: 0; color: var(--commerce-text-muted); font-size: .75rem; line-height: 1.5; }
 #sme .workflow-toolbar { display: flex; align-items: end; flex-wrap: wrap; gap: 9px; margin: 13px 0; }
 #sme .workflow-control { flex: 1 1 210px; min-width: 0; }
-#sme .workflow-control label, #sme .sme-workflow-editor label { display: block; margin: 5px 0; color: var(--commerce-ink); font-size: .74rem; font-weight: 600; }
+#sme .workflow-control label { display: block; margin: 5px 0; color: var(--commerce-ink); font-size: .74rem; font-weight: 600; }
 #sme .workflow-toolbar :is(select, .agentic-select-trigger), #sme .sme-workflow-editor :is(select, .agentic-select-trigger), #sme .review-controls :is(select, .agentic-select-trigger), #sme .review-date-editor input { width: 100%; border: 1px solid var(--commerce-control-border); background: var(--commerce-surface); color: var(--commerce-ink); }
 #sme .workflow-toolbar button:not(.agentic-form-control) { box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: var(--agentic-control-padding-block); block-size: var(--agentic-control-height); min-block-size: var(--agentic-control-height); padding-block: 0; padding-inline: var(--agentic-control-padding-inline); border: 1px solid var(--commerce-action); border-radius: var(--agentic-control-radius); background: var(--commerce-action); color: var(--commerce-surface); font: var(--agentic-font-size-body)/var(--agentic-line-height-body) var(--agentic-font-sans); font-weight: 600; cursor: pointer; text-decoration: none; }
 #sme .actions button:not(.agentic-form-control), #sme .button:not(.agentic-form-control).secondary, #sme .sme-workflow-editor button:not(.agentic-form-control) { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 9px 13px; border: 1px solid var(--commerce-action); border-radius: 9px; background: var(--commerce-action); color: var(--commerce-surface); font-size: .76rem; font-weight: 600; cursor: pointer; text-decoration: none; }
@@ -37,7 +37,6 @@
 #sme .workflow-parameter-grid > div { min-width: 0; }
 #sme .workflow-parameter-grid dt { color: var(--commerce-text-muted); font-size: .66rem; font-weight: 650; }
 #sme .workflow-parameter-grid dd { margin: 2px 0 0; color: var(--commerce-ink); font-size: .7rem; line-height: 1.4; overflow-wrap: anywhere; }
-#sme .workflow-edit-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
 #sme .workflow-edit-set { min-width: 0; margin: 0; padding: 8px 10px 12px; border: 1px solid var(--commerce-border); border-radius: 8px; }
 #sme .workflow-edit-set legend { padding: 0 4px; color: var(--commerce-action); font-size: .74rem; font-weight: 650; }
 #sme .field { min-width: 0; }
@@ -84,7 +83,7 @@
   #sme .workflow-toolbar { align-items: stretch; }
   #sme .workflow-control, #sme .workflow-toolbar button { flex: 1 1 100%; }
   #sme .workflow-table-actions button { width: 100%; }
-  #sme .workflow-parameter-grid, #sme .workflow-edit-fields, #sme .evidence-fields { grid-template-columns: minmax(0, 1fr); }
+  #sme .workflow-parameter-grid, #sme .evidence-fields { grid-template-columns: minmax(0, 1fr); }
 }
 
 #sme .review-controls { margin: 16px 0; }

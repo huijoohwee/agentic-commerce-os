@@ -2,7 +2,7 @@
   "schema": "agentic-commerce-design-system-static-release/v1",
   "source": {
     "repository": "github.com/huijoohwee/agentic-design-system",
-    "revision": "7fae5884f7024c1ddd029ef058a3e7758614f73b"
+    "revision": "eab0dcaad86c3d2cfd0c6eebf60070998fdb3b1e"
   },
   "route": "https://airvio.co/agentic-design-system/",
   "files": [
@@ -14,7 +14,7 @@
     {
       "path": "catalog.json",
       "bytes": 13778,
-      "sha256": "76737e69018793b872a5089ace32904fb56087c4c921c1702a20d69137360eb3"
+      "sha256": "f85513e0311491e3ac8f882c217748b84f79a2abcdc20785aad8f979949627fa"
     },
     {
       "path": "catalog.schema.json",
@@ -45,6 +45,11 @@
       "path": "index.html",
       "bytes": 9366,
       "sha256": "f85ffbc70e195a2e0a8c115fbb3f23086ccefbcecf0f6eb5d682f451628dd1be"
+    },
+    {
+      "path": "key-type-value.js",
+      "bytes": 1983,
+      "sha256": "aeb2a207823aec7b67673978aaff13efd3c9cbe6db6d091306cc23168f7ec26b"
     },
     {
       "path": "LICENSE",
@@ -118,8 +123,8 @@
     },
     {
       "path": "vendor/shared-ui-profile.css",
-      "bytes": 20496,
-      "sha256": "5396a794b984c505960807e419f2bfd4504c1006af96533d710d7e433af26063"
+      "bytes": 20507,
+      "sha256": "ed7f351a66f37acfebed742ce992b6ff5ed2a8bd75692c2bbaa67c35a75fb926"
     }
   ],
   "profilePins": {
@@ -127,15 +132,15 @@
       "id": "shared-ui",
       "owner": "github.com/huijoohwee/agentic-design-system",
       "sourceRevision": "9862a2f89b47be3496c72ed9ca28576c992873f4",
-      "registryRevision": "0e45c8c420a2f4773a890cbbbf859956c03de73a",
+      "registryRevision": "eab0dcaad86c3d2cfd0c6eebf60070998fdb3b1e",
       "sourcePath": "site/tokens/shared-ui-profile.json",
       "sourceSha256": "sha256:cff7692142b9a744a9f01d0fe91c1b62afaf57b028c901b298b411d5cdb1f098",
       "projectionPath": "site/vendor/shared-ui-profile.css",
-      "projectionSha256": "sha256:5396a794b984c505960807e419f2bfd4504c1006af96533d710d7e433af26063"
+      "projectionSha256": "sha256:ed7f351a66f37acfebed742ce992b6ff5ed2a8bd75692c2bbaa67c35a75fb926"
     }
   },
-  "totalBytes": 203001,
-  "payloadDigest": "7b9d350e3204c3fae515a836505a512f22fc7277a8dd843e7fd6342a846173fe",
+  "totalBytes": 204995,
+  "payloadDigest": "04d1dc11b89230362464f9656d0b1d45ba2d213bbfba67ab281f23ff1871c6ba",
   "excluded": [
     "registry/",
     "site/review-inventory.json",
