@@ -151,14 +151,18 @@ export function createSmeWorkflowEditor({
     }
   }
 
+  function readOnlyCells(label, value, type = 'text') {
+    const keyNode = node('span', label), valueNode = node('span', value)
+    const typeNode = createDesignIcon(['number', 'money', 'integer'].includes(type) ? 'Hash' : type === 'date' ? 'CalendarClock' : 'Type')
+    keyNode.title = label; keyNode.tabIndex = 0
+    typeNode.removeAttribute('aria-hidden'); typeNode.setAttribute('role', 'img')
+    typeNode.setAttribute('aria-label', { number: 'Number', money: 'Amount', integer: 'Whole number', date: 'Date' }[type] || 'Text')
+    return { keyNode, typeNode, valueNode, align: 'start' }
+  }
+
   function guidance(field, protocol, mode, inputs) {
     const details = node('section', undefined, 'agentic-ktv-container')
-    const add = (name, value) => {
-      const keyNode = node('span', name), typeNode = createDesignIcon('Type'), valueNode = node('span', value)
-      keyNode.title = name; keyNode.tabIndex = 0
-      typeNode.removeAttribute('aria-hidden'); typeNode.setAttribute('role', 'img'); typeNode.setAttribute('aria-label', 'Text')
-      details.append(createKeyTypeValueRow({ keyNode, typeNode, valueNode, align: 'start' }))
-    }
+    const add = (name, value) => details.append(createKeyTypeValueRow(readOnlyCells(name, value)))
     const target = protocol?.protocols?.find(row => row.field_key === field.name)
     const lines = (protocol?.model_outputs ?? []).filter(row => row.inputs.includes(field.name))
     const currency = protocol?.pack.currency ?? getSlots().find(row => row.slot === getSelectedSlot())?.inputs.currency_code
@@ -339,28 +343,43 @@ export function createSmeWorkflowEditor({
     }
     const working = node('details'); working.id = 'sme-working'
     working.append(node('summary', 'Show calculation working'))
-    if (!report) working.append(node('p', 'Build the current plan to inspect its working.'))
+    const fact = (id, label, value, type) => ({ id: 'sme-working-' + id, ...readOnlyCells(label, value, type) })
+    if (!report) working.append(createKeyTypeValueRows({ rows: [fact('status', 'Calculation status', 'Build the current plan to inspect its working.')] }))
     else {
-      working.append(node('p', report.working.range_basis + ' · Evidence is user-recorded and not authenticated.'))
+      working.append(createKeyTypeValueRows({ rows: [fact('range-basis', 'Range basis', report.working.range_basis),
+        fact('evidence-status', 'Evidence status', report.working.evidence_status)] }))
       const deltas = reports.decision?.rows.find(row => row.slot === selected)?.deltas
       const deltaText = delta => !delta.value ? 'Unknown' : `${delta.value.low === delta.value.high ? delta.value.low : delta.value.low + ' to ' + delta.value.high} ${delta.unit}`
       for (const output of getProtocol().model_outputs) {
-        const entry = report.working.outputs[output.id], section = node('details'), delta = deltas?.[output.id]
-        const change = delta ? ` · Change from baseline ${reports.decision.baseline}: ${deltaText(delta)}` : ''
-        const summary = node('summary', `${output.label}: ${report.model_display[output.id]}${change}`)
-        section.append(summary, node('p', `${entry.formula} · Unit: ${entry.unit} · Period: ${entry.period} · ${enumLabel(entry.status)}`))
-        if (deltas?.[output.id]) {
-          const delta = deltas[output.id], value = delta.value
-          section.append(node('p', `Change from baseline ${reports.decision.baseline}: ${deltaText(delta)} · ${enumLabel(delta.status)}`))
-        }
-        const list = node('ul')
+        const entry = report.working.outputs[output.id], delta = deltas?.[output.id], prefix = output.id + '-'
+        const group = node('section'), details = node('details')
+        group.dataset.workingOutput = output.id; group.setAttribute('aria-label', output.label)
+        const results = [fact(prefix + 'result', output.label, report.model_display[output.id], 'number')]
+        if (delta) results.push(fact(prefix + 'delta', 'Change from baseline ' + reports.decision.baseline, deltaText(delta), 'number'),
+          fact(prefix + 'delta-status', 'Change status', enumLabel(delta.status)))
+        group.append(createKeyTypeValueRows({ rows: results }))
+        details.append(node('summary', 'Calculation details · ' + output.label), createKeyTypeValueRows({ rows: [
+          fact(prefix + 'formula', 'Formula', entry.formula), fact(prefix + 'unit', 'Unit', entry.unit),
+          fact(prefix + 'period', 'Period', entry.period), fact(prefix + 'status', 'Calculation status', enumLabel(entry.status)),
+        ] }))
         for (const key of entry.fields) {
-          const operand = report.working.operands[key], field = getFields().find(row => row.name === key)
+          const operand = report.working.operands[key], field = getFields().find(row => row.name === key), inputId = prefix + key + '-'
+          const input = node('section'); input.setAttribute('aria-label', 'Input · ' + (field?.label ?? key))
           const value = operand.value === null ? 'Unknown' : formatFieldValue(field, operand.value, report.model.currency_code)
-          const sources = operand.evidence.map(row => `${row.provenance}, ${row.date}, ${row.observer_role}, value ${JSON.stringify(row.value)}`).join('; ') || 'No dated evidence recorded'
-          list.append(node('li', `${field?.label ?? key}: ${value} · ${sources}`))
+          input.append(createKeyTypeValueRows({ rows: [fact(inputId + 'value', field?.label ?? key, value, field?.type)] }))
+          if (!operand.evidence.length) input.append(createKeyTypeValueRows({ rows: [fact(inputId + 'evidence-status', 'Evidence status', 'No dated evidence recorded')] }))
+          operand.evidence.forEach((source, index) => {
+            const evidence = node('section'), sourceId = inputId + 'evidence-' + index + '-'
+            evidence.setAttribute('aria-label', `Evidence ${index + 1} · ${field?.label ?? key}`)
+            evidence.append(createKeyTypeValueRows({ rows: [
+              fact(sourceId + 'value', 'Recorded value', formatFieldValue(field, source.value, report.model.currency_code), field?.type),
+              fact(sourceId + 'provenance', 'Provenance', enumLabel(source.provenance)),
+              fact(sourceId + 'observer', 'Observer', enumLabel(source.observer_role)), fact(sourceId + 'date', 'Date', source.date, 'date'),
+            ] })); input.append(evidence)
+          })
+          details.append(input)
         }
-        section.append(list); working.append(section)
+        group.append(details); working.append(group)
       }
     }
     for (const label of decisionPanel.querySelectorAll('.decision-policy > label')) {
