@@ -1,3 +1,4 @@
+import { buildSettingsKeyTooltip, buildSettingsValueTooltip } from './hover-text.js'
 import { createKeyTypeValueRow } from './key-type-value.js'
 import { createDesignIcon } from './toolbar-icons.js'
 import { applySmePatch, baselineProposal, confirmBaseline, validateDecisionPolicy, sameDecisionPolicy } from './sme-business-pack-core.js?v=business-plan-contract-v6'
@@ -23,7 +24,17 @@ export function createSmeWorkflowEditor({
   function typedField(wrap, field) {
     const keyNode = wrap.querySelector(':scope > label, :scope > .field-label')
     if (!keyNode) throw Error('sme_typed_field_label_missing')
-    keyNode.title = keyNode.textContent
+    keyNode.title = buildSettingsKeyTooltip({ area: 'Business plan', key: field.label,
+      responsibility: 'record your planning facts and assumptions without treating unknown facts as zero',
+      role: 'Plan owner', actions: ['review ' + field.label, 'enter your own facts and assumptions'], outcome: 'inspect the same local planning inputs across views' })
+    keyNode.tabIndex = 0
+    for (const control of wrap.querySelectorAll('input, select')) {
+      control.title = buildSettingsValueTooltip({ key: field.name, type: control.type === 'number' ? 'number' : field.type,
+        defaultValue: null, defaultValueOverride: 'Not declared',
+        ...(control.type === 'number' ? { min: control.min, max: control.max, interval: control.step } : {}),
+        impact: 'Your recorded planning input; unknown facts remain unknown. Evidence is not authenticated.' })
+    }
+    wrap.title = wrap.querySelector('input, select')?.title || ''
     const typeNode = createDesignIcon(['money', 'integer'].includes(field.type) ? 'Hash' : 'Type', wrap.ownerDocument)
     typeNode.removeAttribute('aria-hidden'); typeNode.setAttribute('role', 'img')
     typeNode.setAttribute('aria-label', { money: 'Amount or range', integer: 'Whole number', enum: 'Choice', boolean: 'Yes or no', currency: 'Currency code', text: 'Text' }[field.type])

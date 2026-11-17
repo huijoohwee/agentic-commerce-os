@@ -1,0 +1,30 @@
+/* Shared hover presentation. Values belong to the shared-ui profile. */
+.agentic-hover-anchor { display: inline-flex; align-items: center; }
+.agentic-hover-panel {
+  box-sizing: border-box; margin: 0; border: 0;
+  border-radius: var(--agentic-hover-radius);
+  padding: var(--agentic-hover-padding-block) var(--agentic-hover-padding-inline);
+  background: var(--agentic-hover-panel-background); color: var(--agentic-hover-text-color);
+  font: var(--agentic-hover-font-size)/var(--agentic-hover-line-height) var(--agentic-font-sans);
+  text-align: start; white-space: pre-line; overflow-wrap: anywhere;
+  min-inline-size: 0; max-inline-size: min(var(--agentic-hover-width, var(--agentic-hover-width-default)), calc(100dvw - 2 * var(--agentic-hover-edge-gap)));
+  max-block-size: calc(100dvh - 2 * var(--agentic-hover-edge-gap)); overflow: auto;
+}
+.agentic-hover-panel[data-agentic-hover-root="1"] {
+  position: fixed; z-index: var(--agentic-hover-layer);
+}
+.agentic-hover-panel[data-interactive="false"] { pointer-events: none; }
+.agentic-hover-content { min-inline-size: 0; max-inline-size: 100%; }
+.agentic-hover-background { background-color: var(--agentic-hover-panel-background); }
+.agentic-hover-label, .agentic-hover-key { color: var(--agentic-hover-label-color); }
+.agentic-hover-text, .agentic-hover-value { color: var(--agentic-hover-text-color); }
+.agentic-hover-muted { color: var(--agentic-hover-label-color); opacity: .875; }
+.agentic-hover-key { max-inline-size: min(var(--agentic-hover-key-max-width), 45%); }
+.agentic-hover-expanded-text {
+  max-block-size: min(var(--agentic-hover-expanded-max-height), calc(100dvh - 2 * var(--agentic-hover-edge-gap)));
+  overflow: auto; overscroll-behavior: contain;
+}
+@media (forced-colors: active) {
+  .agentic-hover-panel { background: Canvas; color: CanvasText; border: 1px solid CanvasText; }
+  .agentic-hover-label, .agentic-hover-key, .agentic-hover-text, .agentic-hover-value { color: inherit; }
+}

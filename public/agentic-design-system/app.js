@@ -1,8 +1,31 @@
 import { registerWebMcpTools, searchRegistry, validateRegistryContext } from "./registry-query.js?v=c104158";
 import { hydrateDesignIcons, hydratePanelControls } from "./toolbar-icons.js";
+import { installHoverLabels, createHoverPanel } from "./hover.js";
+import { buildSettingsKeyTooltip, buildSettingsValueTooltip } from "./hover-text.js";
+import { createKeyTypeValueRow } from "./key-type-value.js";
 
 hydratePanelControls(document);
 hydrateDesignIcons(document);
+installHoverLabels(document);
+
+function addHoverPreview() {
+  const section = document.createElement("section"), heading = document.createElement("h2");
+  section.id = "hover-preview"; section.className = "agentic-dashboard-card";
+  section.setAttribute("aria-label", "Shared hover help preview"); heading.textContent = "Shared hover help";
+  const label = document.createElement("label"), input = document.createElement("input");
+  input.id = "hover-preview-capacity"; input.type = "number"; input.value = "10"; input.min = "0"; input.max = "20"; input.step = "2";
+  label.htmlFor = input.id; label.textContent = "Capacity"; label.tabIndex = 0;
+  label.title = buildSettingsKeyTooltip({ area: "Example settings", key: "capacity", responsibility: "bound a local preview",
+    role: "Preview editor", actions: ["adjust capacity", "inspect help"], outcome: "understand the setting before changing it" });
+  input.title = buildSettingsValueTooltip({ type: "number", key: "capacity", defaultValue: 10, min: 0, max: 20, interval: 2,
+    impact: "increase capacity; reduce capacity" });
+  const trigger = document.createElement("button"); trigger.type = "button"; trigger.textContent = "Hover or focus for help";
+  trigger.className = "agentic-toolbar-item";
+  createHoverPanel(trigger, { content: input.title });
+  section.append(heading, createKeyTypeValueRow({ keyNode: label, typeNode: "Number", valueNode: input }), trigger);
+  document.querySelector("#catalog-grid").before(section);
+}
+addHoverPreview();
 
 const grid = document.querySelector("#catalog-grid");
 const empty = document.querySelector("#catalog-empty");

@@ -1,19 +1,19 @@
 ---
 title: "Reference Implementation — Commerce Workspace and Decision Rehearsal"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.4.0"
-revision: "0.4.0"
+version: "0.4.1"
+revision: "0.4.1"
 date: "2026-11-16"
 updated_date: "2026-11-16"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Commerce product function"
 continuity_id: "COMMERCE-CONTROL-PLANE-001"
-prd_revision: "0.4.0"
-tad_revision: "0.4.0"
-adr_revision: "0.4.0"
-mvp_revision: "0.4.0"
-gtm_revision: "0.4.0"
+prd_revision: "0.4.1"
+tad_revision: "0.4.1"
+adr_revision: "0.4.1"
+mvp_revision: "0.4.1"
+gtm_revision: "0.4.1"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -39,7 +39,7 @@ agenticOsCanvas2dRenderer: "flowchart"
 
 # Reference implementation — Commerce workspace and decision rehearsal
 
-**Join:** `COMMERCE-CONTROL-PLANE-001@0.4.0`. Update the existing shared-shell plan in place. Keep COM-01–08 and ADR-01; extend the same SME workflow with DEC-01–06 and ADR-02. This is the sole editable owner of this increment. Existing commerce, workspace, transfer, housing and first-dollar plans retain their own scopes. No second app, planner, roadmap, capability registry, design system or payment ledger is introduced.
+**Join:** `COMMERCE-CONTROL-PLANE-001@0.4.1`. Update the existing shared-shell plan in place. Keep COM-01–08 and ADR-01; extend the same SME workflow with DEC-01–06 and ADR-02. This is the sole editable owner of this increment. Existing commerce, workspace, transfer, housing and first-dollar plans retain their own scopes. No second app, planner, roadmap, capability registry, design system or payment ledger is introduced.
 
 **Revision outcome:** the user's explicit 2026-11-16 IMPLEMENT instruction authorizes the native source changes for the preceding `0.3.0` plan. DEC-01–06 are implemented in the existing SME owners and their bounded decision helper; the implementation checkpoint records checks and remaining acceptance. Shared tokens, package pins, effect owners and four tool identities are retained. Runtime delivery, payment and outreach remain separately gated. Whole-artifact readiness stays conservative until the broader COM acceptance is closed; local implementation evidence is not a deployed product verdict.
 
@@ -140,7 +140,7 @@ Top-down sizing = verified eligible operators in a selected geography × observe
 
 ### Single host and decision contract
 
-TAD consumes PRD `0.4.0`. Extend the existing SME mode, schema, evaluator, workflow editor and worksheet serializer; the one shared shell remains mounted. The existing 2–3-slot comparison is the canonical row set. A baseline is a reference to a row at a revision, not a copy of every row in another store. The calculation result remains a derived report; no payment, order or published listing follows from it.
+TAD consumes PRD `0.4.1`. Extend the existing SME mode, schema, evaluator, workflow editor and worksheet serializer; the one shared shell remains mounted. The existing 2–3-slot comparison is the canonical row set. A baseline is a reference to a row at a revision, not a copy of every row in another store. The calculation result remains a derived report; no payment, order or published listing follows from it.
 
 | Element / criterion | Native owner | Smallest planned delta / recovery |
 |---|---|---|
@@ -283,7 +283,7 @@ Proposed implementation, after authorization: two bounded 90-minute slices, ≤1
 
 ## ADR-02 — Extend deterministic scenarios and explicit owner review
 
-**Status:** proposed; binds PRD/TAD `0.4.0`. Constraint gate: $0 external spend, no new data service, no model dependency, protected facts, deterministic results, portable worksheets and one owner. Existing deterministic comparison meets those constraints. A contract-only adapter is acceptable for transport differences but cannot contain calculation or authority logic.
+**Status:** proposed; binds PRD/TAD `0.4.1`. Constraint gate: $0 external spend, no new data service, no model dependency, protected facts, deterministic results, portable worksheets and one owner. Existing deterministic comparison meets those constraints. A contract-only adapter is acceptable for transport differences but cannot contain calculation or authority logic.
 
 | Alternative | Argument / feasibility | Outranking and consequence |
 |---|---|---|
@@ -303,7 +303,7 @@ Deployment TCO comparison: existing cached local browser has $0 incremental infr
 
 ### Accepted slice, checks and readiness
 
-MVP consumes COM-01–08, DEC-01–06, T1–T7 and ADR-01/02 at `0.4.0`. It is one enhancement inside the current SME workspace. Existing source/liveness evidence reduces discovery work; it does not satisfy the proposed enhancement or grant baseline changes.
+MVP consumes COM-01–08, DEC-01–06, T1–T7 and ADR-01/02 at `0.4.1`. It is one enhancement inside the current SME workspace. Existing source/liveness evidence reduces discovery work; it does not satisfy the proposed enhancement or grant baseline changes.
 
 | Criteria | Current evidence | Completion boundary |
 |---|---|---|
@@ -332,7 +332,7 @@ Source order is owner contract/checks → compatible export/version → exact pi
 
 ## GTM
 
-GTM consumes PRD/TAD/ADR/MVP `0.4.0`; it creates no new feature requirement. Proposed offer: an owner-guided setup and explanation of one existing baseline/candidate worksheet. The existing first-dollar plan remains the only payment/learning record. No buyer, paid price, payment mechanism outcome, recognized revenue or collection is evidenced by this authoring task.
+GTM consumes PRD/TAD/ADR/MVP `0.4.1`; it creates no new feature requirement. Proposed offer: an owner-guided setup and explanation of one existing baseline/candidate worksheet. The existing first-dollar plan remains the only payment/learning record. No buyer, paid price, payment mechanism outcome, recognized revenue or collection is evidenced by this authoring task.
 
 | Stream / rank | Constraints → argument → decision | Evidence / next experiment |
 |---|---|---|
@@ -348,7 +348,7 @@ Operations: existing product owner triages route, import, input-policy, arithmet
 
 ## C01–C16 coverage
 
-Join `COMMERCE-CONTROL-PLANE-001@0.4.0`, as of 2026-11-16. A covered row means the specification addresses it, not that implementation or the business is validated.
+Join `COMMERCE-CONTROL-PLANE-001@0.4.1`, as of 2026-11-16. A covered row means the specification addresses it, not that implementation or the business is validated.
 
 | Domain | Disposition / section | Evidence or gap / accountable function / revisit |
 |---|---|---|
@@ -407,7 +407,7 @@ Existing product owners: [edge commerce](prd-tad-adr-mvp-gtm-edge-commerce-agent
 
 ## Implementation checkpoint — reference implementation
 
-**Authorization and join:** implementation of `COMMERCE-CONTROL-PLANE-001@0.3.0` was explicitly requested on 2026-11-16; this coherent `0.4.0` successor records the resulting design and source. Earlier documentation-only candidates and their green source check remain historical in PR #280. This candidate adds product code and requires its own source proof.
+**Authorization and join:** implementation of `COMMERCE-CONTROL-PLANE-001@0.3.0` was explicitly requested on 2026-11-16; this coherent `0.4.1` successor records the resulting design and source. Earlier documentation-only candidates and their green source check remain historical in PR #280. This candidate adds product code and requires its own source proof.
 
 | Criterion / owner | Implemented behavior / current evidence |
 |---|---|
@@ -441,4 +441,8 @@ The explicit user instruction “merge, deploy, promote” authorized native rel
 
 Delivered desktop/mobile inspection, widths 320–1280, 200% text zoom, zero private UI writes, enforced CSP and the exact decision asset digest passed. WebMCP uses a contract fixture; native browser support and physical-device acceptance remain unclaimed. Workers Free $0, current headroom and fail-closed quota routing were reobserved. Retain same-source reader **6a70818b-1a0d-44f1-bb53-e2db031f950d** and v3 files; the native live-profile controller records no new actual-job rollback rehearsal or payment.
 
-This observation-only checkpoint preserves the `0.4.0` requirements and conservative whole-artifact rungs. The next product action is one consenting usability trial; WTP and revenue remain unverified. The immutable workspace Context is prepared locally; native publication is blocked by its missing repository trust anchor. Metadata-only receipt paths are excluded from the deployed artifact and require no redeployment.
+This observation-only checkpoint preserves the `0.4.1` requirements and conservative whole-artifact rungs. The next product action is one consenting usability trial; WTP and revenue remain unverified. The immutable workspace Context is prepared locally; native publication is blocked by its missing repository trust anchor. Metadata-only receipt paths are excluded from the deployed artifact and require no redeployment.
+
+## Shared hover owner · 2026-11-17
+
+PRD: the SME decision editor needs visible key/value help consistent with the existing shared KTV rows. TAD: project native hover runtime, text builders and CSS directly from Design System `b8b8c0624b9f5d378fa1a54ea32c52f867f3ad6d`; install one delegate in the existing application singleton and retain product labels, units, constraints, state and events. Keys use the shared action/outcome grammar; values use declared UI bounds and explicitly undeclared defaults. ADR: no local hover renderer, palette or formatter, and no invented facts/defaults. Base artifact uses integrated source `b36420f1e06c9d70569ac928e2b8b6ae882e7992`. Graph artifact is rebuilt from clean integrated source `42e03e240fd93594f80f0616ab3a8282487cf258`; Graph PR 1980 passed its exact protected gate and integrated this source. MVP: 19 focused checks, associated labels/descriptions, focus/Escape, shared key syntax, 320px containment (8-312px), and offline reload pass locally. Defaults remain explicitly undeclared and inspection leaves inputs empty. Native asset routing serves all three owner hover files. Exact-source/projection checks and protected integration remain separate acceptance evidence. GTM: bounded local evidence only, with no product-wide parity or provider delivery claim. Rollback restores prior source pins, manifests and generated files together while preserving browser drafts and planning facts. No Production effect is selected.

@@ -158,7 +158,7 @@
         "id": "agentic-design-system",
         "name": "Agentic Design System",
         "repository": "github.com/huijoohwee/agentic-design-system",
-        "revision": "9862a2f89b47be3496c72ed9ca28576c992873f4",
+        "revision": "e52a52111f52b6af85f99195ec9e59a490548575",
         "scopes": [
           "shared-ui"
         ],
@@ -168,7 +168,7 @@
           {
             "path": "site/tokens/shared-ui-profile.json",
             "kind": "native",
-            "digest": "sha256:cff7692142b9a744a9f01d0fe91c1b62afaf57b028c901b298b411d5cdb1f098"
+            "digest": "sha256:e5915b4b22dc861a80478e7b99dd27ecd41022ed755544812d6b74b2d4ea60dd"
           }
         ]
       }
@@ -258,9 +258,9 @@
         "name": "Graph token and typography profile",
         "owner": "github.com/huijoohwee/agentic-design-system",
         "repository": "github.com/huijoohwee/agentic-design-system",
-        "revision": "64c2a190b42f64fbb6ad821dac2e901ada86d0b1",
+        "revision": "e52a52111f52b6af85f99195ec9e59a490548575",
         "source": "./tokens/graph-profile.json",
-        "digest": "sha256:aae4fd536724e9f81783e3f580f2613f447e2fad25c09dfa60a01c5cc995674c",
+        "digest": "sha256:eaa4c5c04aca787a7b6910464f32491f01f6bee9fcd5355ab90183cf04dcdd17",
         "scope": [
           "graph-ui",
           "application-typography"
@@ -279,7 +279,7 @@
         "consumerPins": [],
         "projection": {
           "path": "./vendor/graph-profile.css",
-          "digest": "sha256:e7927753addf721a633416c6055c5aa52ff5c294f0a00d9c8fd44061233dae06"
+          "digest": "sha256:aeedf2bb331e6d677ba1dcc9c163ed14cdf289169e6a3b44d7caff4975004316"
         }
       },
       {
@@ -287,15 +287,15 @@
         "name": "Shared UI profile",
         "owner": "github.com/huijoohwee/agentic-design-system",
         "repository": "github.com/huijoohwee/agentic-design-system",
-        "revision": "9862a2f89b47be3496c72ed9ca28576c992873f4",
+        "revision": "e52a52111f52b6af85f99195ec9e59a490548575",
         "source": "./tokens/shared-ui-profile.json",
-        "digest": "sha256:cff7692142b9a744a9f01d0fe91c1b62afaf57b028c901b298b411d5cdb1f098",
+        "digest": "sha256:e5915b4b22dc861a80478e7b99dd27ecd41022ed755544812d6b74b2d4ea60dd",
         "scope": [
           "shared-interface"
         ],
         "status": "candidate",
         "rights": "cleared",
-        "permissionEvidence": "User instructions on 2026-11-03, 2026-11-06 and 2026-11-07: Agentic Design System owns shared icon sizes, responsive row/toolbar heights, body typography, font families, KTV tracks and responsive dropdown/textbox geometry for Base, Graph, Commerce, and related repositories. User instruction on 2026-11-08 covers the shared Mission dashboard layout. User instruction on 2026-11-10 grants the shared control border token and utility for Base, Graph, Commerce, and related repositories. User instruction on 2026-11-10 grants one shared FloatingPanel radius and shell presentation across Base, Graph, Commerce, and related repositories, with consumer overrides and competing shell variants forbidden. User instruction on 2026-11-12 grants shared MainPanel, FloatingPanel, BottomPanel and Editor Workspace token, UI, UX, visual and layout ownership across agentic-graph, agentic-base, agentic-commerce-os, agentic-canvas-os and related repositories; conflicting overrides and duplicate variants are forbidden.",
+        "permissionEvidence": "User instructions on 2026-11-03, 2026-11-06 and 2026-11-07: Agentic Design System owns shared icon sizes, responsive row/toolbar heights, body typography, font families, KTV tracks and responsive dropdown/textbox geometry for Base, Graph, Commerce, and related repositories. User instruction on 2026-11-08 covers the shared Mission dashboard layout. User instruction on 2026-11-10 grants the shared control border token and utility for Base, Graph, Commerce, and related repositories. User instruction on 2026-11-10 grants one shared FloatingPanel radius and shell presentation across Base, Graph, Commerce, and related repositories, with consumer overrides and competing shell variants forbidden. User instruction on 2026-11-12 grants shared MainPanel, FloatingPanel, BottomPanel and Editor Workspace token, UI, UX, visual and layout ownership across agentic-graph, agentic-base, agentic-commerce-os, agentic-canvas-os and related repositories; conflicting overrides and duplicate variants are forbidden. User instruction on 2026-11-17 grants shared hover panel, palette, labels, text and key/value help syntax from agentic-graph for Design System, Graph, Base, Commerce and Canvas; conflicting and duplicate variants are forbidden.",
         "licenseEvidence": [
           {
             "repository": "github.com/huijoohwee/agentic-design-system",
@@ -307,7 +307,7 @@
         "consumerPins": [],
         "projection": {
           "path": "./vendor/shared-ui-profile.css",
-          "digest": "sha256:ed7f351a66f37acfebed742ce992b6ff5ed2a8bd75692c2bbaa67c35a75fb926"
+          "digest": "sha256:2d79bcca25b00cd7ad6d2c09f360056f922594800922ef8a71c3925bb98cea9b"
         }
       }
     ]
