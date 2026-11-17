@@ -156,7 +156,7 @@ describe('Workspace Pack browser tool lifecycle', () => {
     complete!(); await page.pending
     expect(page.enhanceSelects).toHaveBeenCalledTimes(2)
     expect(page.installPanelSections).toHaveBeenCalledTimes(1)
-    expect(page.installPanelSections.mock.calls[0][0]).toHaveProperty('getElementById')
+    expect(page.installPanelSections.mock.calls[0]?.[0]).toHaveProperty('getElementById')
     expect(legacy.registerTool).not.toHaveBeenCalled()
     expect(page.node('webmcp-status').textContent).toBe('Browser WebMCP tool registered.')
     const output = await tool.execute(input(), {})
