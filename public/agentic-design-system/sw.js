@@ -1,4 +1,4 @@
-const CACHE_NAME = "agentic-design-system-v0.5.0-draft-registry-r32";
+const CACHE_NAME = "agentic-design-system-v0.5.0-draft-registry-r33";
 const CORE_FILES = [
   "./hover.js", "./hover-text.js", "./hover.css", "./key-type-value.js",
   "./", "./registry.css", "./floating-panel.css", "./toolbar.css", "./toolbar-icons.js", "./dashboard-columns.js", "./app.js?v=floating-panel-preview-7", "./registry-query.js?v=c104158", "./catalog.json", "./catalog.schema.json",

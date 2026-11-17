@@ -2,14 +2,14 @@
   "schema": "agentic-commerce-design-system-static-release/v1",
   "source": {
     "repository": "github.com/huijoohwee/agentic-design-system",
-    "revision": "b8b8c0624b9f5d378fa1a54ea32c52f867f3ad6d"
+    "revision": "98807b856ab35bac53c54987d4340cd37982d3ec"
   },
   "route": "https://airvio.co/agentic-design-system/",
   "files": [
     {
       "path": "app.js",
-      "bytes": 20981,
-      "sha256": "0ffec337e6e8bd272b3962a05260d59b290a73c16409b4d8a71fad033bcdd55a"
+      "bytes": 21909,
+      "sha256": "65f4aefb777dde9ffbab343bbfb946f21d6b5bd515615651e8afb9cea8f094cf"
     },
     {
       "path": "catalog.json",
@@ -63,8 +63,8 @@
     },
     {
       "path": "key-type-value.js",
-      "bytes": 1983,
-      "sha256": "aeb2a207823aec7b67673978aaff13efd3c9cbe6db6d091306cc23168f7ec26b"
+      "bytes": 3253,
+      "sha256": "7e02fb75cfcbd209122303c4e57816811b49cb1e8f29046f1cff2b5e3c8ff12f"
     },
     {
       "path": "LICENSE",
@@ -84,7 +84,7 @@
     {
       "path": "sw.js",
       "bytes": 2039,
-      "sha256": "b68539829473b8f4564f6963a4e566eb5b80c4c2709f272d5aa12b268e4be096"
+      "sha256": "8f3e9d21fedeed64d4045de03e292ec4f8ae14232bf1ccea7a3ecf24d8505e09"
     },
     {
       "path": "THIRD-PARTY-NOTICES.txt",
@@ -154,8 +154,8 @@
       "projectionSha256": "sha256:2d79bcca25b00cd7ad6d2c09f360056f922594800922ef8a71c3925bb98cea9b"
     }
   },
-  "totalBytes": 239993,
-  "payloadDigest": "b7eb107c3d9bc3d4b8718939b4517963bcbcdb59d18a4b366b23d77d76d1ac4f",
+  "totalBytes": 242191,
+  "payloadDigest": "ce567d640228f338d361b67f6ff60606b2ececb62e1a606cf38b02d722a93d0e",
   "excluded": [
     "registry/",
     "site/review-inventory.json",
