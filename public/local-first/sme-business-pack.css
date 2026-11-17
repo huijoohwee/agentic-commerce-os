@@ -2,6 +2,7 @@
 #sme .workspace-content button, #sme .workspace-content a { -webkit-tap-highlight-color: transparent; }
 #sme .workspace-content :focus-visible:not(#sme-heading) { outline: 3px solid var(--commerce-focus); outline-offset: 3px; }
 #sme-overview, #sme-workflow, #sme-agent-tools { scroll-margin-top: 104px; }
+#sme :is(#sme-workflow-editor, #sme-decision-panel, #sme-workflow-evidence, #sme-workflow-table-region, #sme-worksheet-actions) { scroll-margin-top: 104px; }
 #sme .eyebrow { margin: 0 0 9px; color: var(--commerce-action); font-size: .68rem; font-weight: 700; letter-spacing: .14em; }
 #sme .notice { max-width: 900px; min-width: 0; margin: 16px 0 20px; padding: 12px 15px; border: 1px solid var(--commerce-status-warning-border); border-left: 3px solid var(--commerce-status-warning-strong); border-radius: 10px; background: var(--commerce-status-warning-soft); }
 #sme .notice-heading { display: flex; align-items: center; gap: 9px; font-size: .82rem; }
@@ -12,6 +13,7 @@
 #sme .comparison-table-scroll { box-sizing: border-box; width: 100%; max-width: 100%; min-width: 0; height: min(58vh, 38rem); min-height: 18rem; overflow: hidden; overscroll-behavior-inline: contain; }
 #sme .comparison-table-scroll:focus-visible { outline: 3px solid var(--commerce-focus); outline-offset: 2px; }
 #sme .comparison-table-host { width: 100%; height: 100%; min-width: 0; min-height: 260px; }
+#sme #sme-workflow-table-region[data-orientation="rows"]:not([data-view="gantt"]) { height: 18rem; }
 #sme .comparison-table-status { min-height: 1.4em; margin: 8px 0 0; color: var(--commerce-text-muted); font-size: .72rem; }
 #sme .sme-table-subheading { max-width: 900px; margin-bottom: 12px; }
 #sme .sme-table-subheading h2 { margin: 0 0 6px; }
@@ -78,7 +80,7 @@
   .sme-print-sheet li { margin: 1mm 0; break-inside: avoid; }
 }
 @media (max-width: 560px) {
-  #sme-overview, #sme-workflow, #sme-agent-tools { scroll-margin-top: 72px; }
+  #sme :is(#sme-overview, #sme-workflow, #sme-agent-tools, #sme-workflow-editor, #sme-decision-panel, #sme-workflow-evidence, #sme-workflow-table-region, #sme-worksheet-actions) { scroll-margin-top: 104px; }
   #sme .workflow-toolbar { align-items: stretch; }
   #sme .workflow-control, #sme .workflow-toolbar button { flex: 1 1 100%; }
   #sme .workflow-table-actions button { width: 100%; }
