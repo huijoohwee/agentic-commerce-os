@@ -19,7 +19,7 @@ async function createSmeBusinessPack() {
   const workflowTableHost = $('#sme-workflow-table-host'), workflowTableRegion = $('#sme-workflow-table-region'), workflowPivot = $('#sme-workflow-pivot')
   const dictionaryHost = $('#sme-dictionary-table-host'), dictionaryRegion = $('#sme-dictionary-table-region')
   const dictionaryStatus = $('#sme-dictionary-status'), overview = $('#sme-overview'), dictionary = $('#sme-dictionary')
-  const workflowEditor = $('#sme-workflow-editor'), inputFields = $('#sme-workflow-inputs')
+  const workflowEditor = $('#sme-workflow-editor'), inputFields = $('#sme-workflow-inputs'), editSlotSelect = $('#sme-edit-slot')
   const evidenceEditor = $('#sme-workflow-evidence-editor')
   const workflowStatus = $('#workflow-status'), serviceStatus = $('#service-status')
   const runtimeMode = $('#runtime-mode'), runtimeStatus = $('#runtime-status')
@@ -77,7 +77,12 @@ async function createSmeBusinessPack() {
     getDecision: () => decisionPolicy, getReports: () => comparisonValue,
     setDecision: value => { decisionPolicy = value; invalidateComparison() },
   })
-  function renderWorkflowEditor() { workflowEditorView.render() }
+  function renderWorkflowEditor() {
+    editSlotSelect.replaceChildren()
+    for (const item of comparisonSlotElements.slice(0, Number(comparisonCount.value))) option(editSlotSelect, item.slot, rowLabel(item.slot))
+    editSlotSelect.value = selectedWorkflowSet ?? 'A'
+    workflowEditorView.render()
+  }
   const review = createSmeReviewWorkflow({ root,
     getState: () => ({ protocol: currentProtocol, mode: currentMode(), slots: comparisonSlotElements.slice(0, Number(comparisonCount.value)), format: formatFieldValue }),
     createTableView: () => workflowTableView(true),
@@ -271,7 +276,7 @@ async function createSmeBusinessPack() {
     for (const [index, item] of comparisonSlotElements.entries()) {
       if (index >= count) { item.inputs = {}; item.evidence.length = 0 }
     }
-    if (selectedWorkflowSet && !comparisonSlotElements.slice(0, count).some(item => item.slot === selectedWorkflowSet)) selectedWorkflowSet = 'A'
+    if (!comparisonSlotElements.slice(0, count).some(item => item.slot === selectedWorkflowSet)) selectedWorkflowSet = 'A'
     previousCount = comparisonCount.value
     renderWorkflowEditor()
     compareButton.textContent = count === 1 ? 'Build local plan' : `Compare ${count} ${pluralRows()} locally`
@@ -419,6 +424,10 @@ async function createSmeBusinessPack() {
   updateModePresentation()
   updateWorkflowOrientationCopy()
   workflowPivot.addEventListener('click', () => setWorkflowOrientation(tableOrientation === 'rows' ? 'columns' : 'rows'))
+  editSlotSelect.addEventListener('change', () => {
+    selectedWorkflowSet = editSlotSelect.value; renderWorkflowEditor(); void renderWorkflowTable()
+    workflowStatus.textContent = `Editing ${rowLabel(selectedWorkflowSet)}. Values and evidence stay on this device.`
+  })
   void renderWorkflowTable()
   comparisonCount.addEventListener('change', () => {
     if (decisionPolicy && ['A', 'B', 'C'].indexOf(decisionPolicy.baseline) >= Number(comparisonCount.value)) { comparisonCount.value = previousCount; workflowStatus.textContent = 'Keep the baseline row or explicitly clear the baseline and protections first.'; return }
@@ -566,10 +575,13 @@ async function createSmeBusinessPack() {
     if (isSmeSection) requestAnimationFrame(() => requestAnimationFrame(() => {
       if (location.hash.slice(1).split('?')[0] !== section) return
       const target = section === 'sme' ? root : document.getElementById(targetId)
+      if (target instanceof HTMLDetailsElement) target.open = true
+      if (target && section !== 'sme') { target.tabIndex = -1; target.focus({ preventScroll: true }) }
       target?.scrollIntoView({ block: 'start' })
     }))
   }
   window.addEventListener('hashchange', updateSectionNavigation)
+  $('#sme-section-navigation').addEventListener('click', event => { if (event.target.closest('a')?.hash === location.hash) updateSectionNavigation() })
   window.addEventListener('pagehide', deactivate, { once: true })
   window.addEventListener('pageshow', () => { if (document.body.dataset.workspaceRole === 'sme') void activate() })
   updateSectionNavigation()

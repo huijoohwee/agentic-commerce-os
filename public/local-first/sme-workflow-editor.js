@@ -215,9 +215,11 @@ export function createSmeWorkflowEditor({
       const element = node('button', label, 'secondary'); element.type = 'button'; element.id = id; element.addEventListener('click', action); return element
     }
     const current = () => getSlots().map(({ slot, inputs, evidence, revision }) => ({ slot, inputs, evidence, revision }))
-    const title = node('h3', 'Decision rehearsal'), status = node('p', policy ? `Baseline ${policy.baseline} · policy revision ${policy.policy_revision}` : 'No baseline selected. Build a plan, select its row, then request a baseline.')
+    const title = node('h3', 'Decision rehearsal'), status = node('p', policy ? `Baseline ${policy.baseline} · policy revision ${policy.policy_revision}` : getMode()?.id === 'scenario'
+      ? 'No baseline selected. Build a plan, select its row, then request a baseline.' : 'Build this plan to inspect its calculations. Choose Scenario mode to request a baseline and set owner constraints.')
     status.id = 'sme-baseline-status'
     const actions = node('div', undefined, 'actions')
+    decisionPanel.append(title, status)
     if (getMode()?.id === 'scenario' || policy) {
       const request = button('Request selected row as baseline', 'sme-baseline-request', () => {
         try { proposal = baselineProposal(selected, current(), getDecision()); renderDecision(); decisionPanel.querySelector('#sme-baseline-confirm')?.focus() } catch (error) { showRefusal(error) }
@@ -225,7 +227,7 @@ export function createSmeWorkflowEditor({
       request.disabled = !report || report.check.completeness.invalid_fields.length > 0
       actions.append(request)
       if (policy) actions.append(button('Clear baseline and protections', 'sme-decision-clear', () => { proposal = null; setDecision(null); renderDecision() }))
-      decisionPanel.append(title, status, actions)
+      decisionPanel.append(actions)
       if (proposal) {
         const review = node('section', undefined, 'decision-review'); review.setAttribute('aria-label', 'Baseline change review')
         review.append(node('p', `Use row ${proposal.slot} as the baseline? Review the current facts and policy before confirming. This changes only this local worksheet.`),
