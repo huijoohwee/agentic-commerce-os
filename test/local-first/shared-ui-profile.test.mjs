@@ -242,7 +242,7 @@ test('Base browser controls reuse the central shared border utility', () => {
   const profile = fs.readFileSync('public/agentic-design-system/vendor/shared-ui-profile.css', 'utf8');
   const css = fs.readFileSync('public/local-first/agentic-base-data-view.css', 'utf8');
   const profileDigest = digest(profile);
-  assert.equal(pin.source.revision, '67a31bdc121793408becbcd84427d5f7c0b651d0');
+  assert.equal(pin.source.revision, 'ff889d87a380f1e6f46575eb977448390f5c51d0');
   assert.equal(pin.inputs.find(input => input.path === 'packages/views-react/src/browser/shared-ui-profile.css')?.sha256,
     profileDigest);
   assert.match(profile, /--agentic-control-border:\s*1px solid var\(--agentic-base-border,/u);

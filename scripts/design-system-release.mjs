@@ -11,7 +11,7 @@ const CONFIG = join(ROOT, 'config/design-system-static-release.json');
 const PREFIX = '/agentic-design-system';
 const FILES = Object.freeze([
   ['LICENSE', 'LICENSE'],
-  ...['THIRD-PARTY-NOTICES.txt', 'app.js', 'catalog.json', 'catalog.schema.json', 'dashboard-columns.js', 'favicon.svg', 'floating-panel.css', 'icons.json', 'index.html', 'registry-query.js', 'registry.css', 'sw.js', 'tokens/base-profile.json', 'tokens/commerce-profile.json', 'tokens/graph-profile.json', 'tokens/shared-ui-profile.json', 'toolbar-icons.js', 'toolbar.css', 'vendor/base-profile.css', 'vendor/commerce-theme.css', 'vendor/graph-profile.css', 'vendor/shared-ui-profile.css'].map(path => ['site/' + path, path]),
+  ...['THIRD-PARTY-NOTICES.txt', 'app.js', 'catalog.json', 'catalog.schema.json', 'dashboard-columns.js', 'favicon.svg', 'floating-panel.css', 'icons.json', 'index.html', 'registry-query.js', 'registry.css', 'sw.js', 'tokens/base-profile.json', 'tokens/commerce-profile.json', 'tokens/graph-profile.json', 'tokens/shared-ui-profile.json', 'toolbar-icons.js', 'toolbar.css', 'key-type-value.js', 'vendor/base-profile.css', 'vendor/commerce-theme.css', 'vendor/graph-profile.css', 'vendor/shared-ui-profile.css'].map(path => ['site/' + path, path]),
 ]);
 
 function fail(code) { throw new Error(`design_system_release:${code}`); }
@@ -121,7 +121,7 @@ function syncSource(sourceRoot, expectedRevision) {
     copyFileSync(join(source, from), target);
   }
   const localFirst = join(ROOT, 'public/local-first');
-  for (const file of ['floating-panel.css', 'icons.json', 'toolbar-icons.js', 'toolbar.css']) {
+  for (const file of ['floating-panel.css', 'icons.json', 'toolbar-icons.js', 'toolbar.css', 'key-type-value.js']) {
     copyFileSync(join(source, 'site', file), join(localFirst, file));
   }
   copyFileSync(join(source, 'site/vendor/shared-ui-profile.css'), join(localFirst, 'shared-ui-profile.css'));

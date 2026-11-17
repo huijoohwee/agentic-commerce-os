@@ -1,3 +1,5 @@
+import { createKeyTypeValueRow } from './key-type-value.js'
+import { createDesignIcon } from './toolbar-icons.js'
 import { applySmePatch, baselineProposal, confirmBaseline, validateDecisionPolicy, sameDecisionPolicy } from './sme-business-pack-core.js?v=business-plan-contract-v6'
 export function createSmeWorkflowEditor({
   workflowEditor, inputFields, evidenceEditor, heading, note, evidenceHeading, parameterDetails,
@@ -18,6 +20,16 @@ export function createSmeWorkflowEditor({
       || field.required_when && inputs[field.required_when.field] === field.required_when.equals)
   }
 
+  function typedField(wrap, field) {
+    const keyNode = wrap.querySelector(':scope > label, :scope > .field-label')
+    if (!keyNode) throw Error('sme_typed_field_label_missing')
+    keyNode.title = keyNode.textContent
+    const typeNode = createDesignIcon(['money', 'integer'].includes(field.type) ? 'Hash' : 'Type', wrap.ownerDocument)
+    typeNode.removeAttribute('aria-hidden'); typeNode.setAttribute('role', 'img')
+    typeNode.setAttribute('aria-label', { money: 'Amount or range', integer: 'Whole number', enum: 'Choice', boolean: 'Yes or no', currency: 'Currency code', text: 'Text' }[field.type])
+    return createKeyTypeValueRow({ keyNode, typeNode, valueNode: wrap, ownerDocument: wrap.ownerDocument })
+  }
+
   function inputControl(field, prefix, protocol, currencyCode, mode, inputs) {
     const wrap = node('section', undefined, 'field'), label = node('label', field.label + (field.unit ? ' · ' + field.unit : ''))
     const id = prefix + '-' + field.name, scope = prefix === 'compare-evidence' ? 'Evidence value' : `${mode?.row_label ?? 'Plan option'} ${prefix.at(-1).toUpperCase()}`
@@ -27,7 +39,7 @@ export function createSmeWorkflowEditor({
       option(control, '', 'Choose…')
       const values = field.type === 'boolean' ? [['true', 'Yes'], ['false', 'No']] : field.values.map(value => [value, enumLabel(value)])
       for (const value of values) option(control, value[0], value[1])
-      label.htmlFor = id; control.setAttribute('aria-label', `${scope} ${field.label}`); control.setAttribute('aria-required', String(required)); wrap.append(label, control); return wrap
+      label.htmlFor = id; control.setAttribute('aria-label', `${scope} ${field.label}`); control.setAttribute('aria-required', String(required)); wrap.append(label, control); return typedField(wrap, field)
     }
     if (field.type === 'text' || field.type === 'currency') {
       const control = node('input'); control.type = 'text'; control.id = id; control.dataset.input = field.name
@@ -35,7 +47,7 @@ export function createSmeWorkflowEditor({
       control.autocapitalize = field.type === 'currency' ? 'characters' : 'sentences'
       if (field.type === 'currency') control.placeholder = 'ABC'
       control.setAttribute('aria-label', `${scope} ${field.label}`); control.setAttribute('aria-required', String(required))
-      label.htmlFor = id; wrap.append(label, control); return wrap
+      label.htmlFor = id; wrap.append(label, control); return typedField(wrap, field)
     }
     if (field.type === 'money') {
       const currency = protocol?.pack.currency ?? currencyCode
@@ -55,12 +67,12 @@ export function createSmeWorkflowEditor({
       const hint = node('span', 'Enter one amount or a low–high range in the selected currency; leave maximum blank for one amount.', 'field-help')
       hint.id = id + '-range-help'
       for (const control of range.querySelectorAll('input')) control.setAttribute('aria-describedby', hint.id)
-      wrap.append(heading, range, hint); return wrap
+      wrap.append(heading, range, hint); return typedField(wrap, field)
     }
     const control = node('input'); control.type = 'number'; control.step = '1'; control.inputMode = 'numeric'
     control.min = String(field.min ?? 0); control.max = String(field.max ?? 100000000)
     control.id = id; control.dataset.input = field.name; control.autocomplete = 'off'
-    label.htmlFor = id; control.setAttribute('aria-label', `${scope} ${label.textContent}`); control.setAttribute('aria-required', String(required)); wrap.append(label, control); return wrap
+    label.htmlFor = id; control.setAttribute('aria-label', `${scope} ${label.textContent}`); control.setAttribute('aria-required', String(required)); wrap.append(label, control); return typedField(wrap, field)
   }
 
   function readValue(field, prefix, scope) {
@@ -179,7 +191,7 @@ export function createSmeWorkflowEditor({
     activeParameter = fields.some(field => field.name === activeParameter) ? activeParameter : fallback?.name ?? null
     showParameter = field => { activeParameter = field.name; parameterDetails.replaceChildren(guidance(field, protocol, mode, item.inputs)) }
     if (fields.length) showParameter(fields.find(field => field.name === activeParameter) ?? fields[0])
-    const fieldset = node('fieldset', undefined, 'workflow-edit-set'), grid = node('div', undefined, 'workflow-edit-fields')
+    const fieldset = node('fieldset', undefined, 'workflow-edit-set'), grid = node('div', undefined, 'agentic-ktv-container')
     fieldset.append(node('legend', scope), grid)
     const prefix = 'compare-' + item.slot.toLowerCase()
     for (const field of fields) {

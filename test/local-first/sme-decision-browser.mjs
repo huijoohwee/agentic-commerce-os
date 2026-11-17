@@ -1,3 +1,4 @@
+import { checkSmeKtvBrowser } from './sme-ktv-browser.mjs'
 import assert from 'node:assert/strict'
 import path from 'node:path'
 import { readFile, writeFile } from 'node:fs/promises'
@@ -5,6 +6,7 @@ import { expect } from '@playwright/test'
 import { chooseDropdown } from './dropdown-menu-browser.mjs'
 
 export async function checkSmeDecisionBrowser({ browser, url, output }) {
+  await checkSmeKtvBrowser({ browser, url, output })
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 } }), requests = [], errors = []
   context.on('request', request => requests.push({ method: request.method(), url: request.url() }))
   await context.addInitScript(() => {
