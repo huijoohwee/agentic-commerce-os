@@ -130,6 +130,17 @@ test('housing priorities use individual central KTV rows with no local layout ov
   assert.doesNotMatch(localCss, /[.]housing-choice-list|[.]agentic-checkbox-group/);
 })
 
+test('Housing uses shared panel sections and fixed KTV flow, isolated from legacy form styling', () => {
+  const housing = fs.readFileSync('public/local-first/housing-comparison.js', 'utf8');
+  const style = fs.readFileSync('public/local-first/style.css', 'utf8');
+  const layout = fs.readFileSync('public/local-first/workspace-layout.js', 'utf8');
+  assert.match(housing, /class="agentic-ktv-container" data-housing-inputs/);
+  assert.match(housing, /agentic-panel-section housing-context/);
+  assert.doesNotMatch(housing, /agentic-dashboard-card housing-|data-dashboard-columns-for="housing"/);
+  assert.match(style, /label:not\(#sme label, \.agentic-ktv-row label\)\{/);
+  assert.match(layout, /filter\(\(\[key\]\)=>key!==['"]housing['"]\)/);
+});
+
 test('workspace pack pickers share the owner selection rule', () => {
   const html = fs.readFileSync('public/local-first/workspace-pack.html', 'utf8');
   for (const name of ['Output format', 'Response stage']) {

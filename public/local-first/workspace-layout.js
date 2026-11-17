@@ -1,7 +1,7 @@
 import {applyDashboardColumns, createDashboardColumnEditor, dashboardEditorActions, isColumnLayout} from './dashboard-columns.js'
 
 export function mountWorkspaceLayout({panel, toolbar, create, roles, packPage}) {
-  const views = [...Object.entries(roles).map(([key,{label}])=>({key,label})),
+  const views = [...Object.entries(roles).filter(([key])=>key!=='housing').map(([key,{label}])=>({key,label})),
     {key:'builder',label:'Workspace'},{key:'formats',label:'Included files'}]
   const api = new URL('../../dashboard-layout',toolbar.dataset.packService)
   const cache = 'commerce.dashboard-layout.v1', box = create('section'), sources = new Set()

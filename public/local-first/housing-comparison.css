@@ -1,7 +1,4 @@
 .housing-listing-editor>summary,.housing-portable-tools>summary{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;cursor:pointer;font-weight:650}
-.housing-context-summary{color:var(--commerce-text-muted);font-size:.84rem}
-.housing-fiction{margin:0}
-.housing-listing-filter [data-listing-count]{grid-column:1/-1;margin:0;color:var(--commerce-text-muted);font-size:.82rem}
 .housing-listing-editor,.housing-portable-tools{margin-top:var(--commerce-space-md);padding-top:var(--commerce-space-md);border-top:1px solid var(--commerce-border)}
 .housing-listing-editor .housing-form,.housing-portable-tools .housing-actions{margin-top:var(--commerce-space-md)}
 .housing-comparison-table-scroll{box-sizing:border-box;width:100%;height:min(68vh,48rem);min-height:20rem}
@@ -14,7 +11,6 @@
 .housing-table-actions{border-top:1px solid var(--commerce-border);padding-top:var(--commerce-space-md)}
 .housing-table-actions h3{margin:0;font-size:1rem}
 .housing-table-actions>p{margin:.25rem 0 var(--commerce-space-sm);color:var(--commerce-text-muted);font-size:.86rem}
-.housing-option-action>strong{min-width:0;overflow-wrap:anywhere}
 .housing-photo-dialog,.housing-plan-dialog{box-sizing:border-box;max-width:calc(100vw - 32px);max-height:90vh;overflow:auto;border:1px solid var(--commerce-border);border-radius:var(--commerce-radius-control);padding:0;background:var(--commerce-surface);color:var(--commerce-ink)}
 .housing-photo-dialog{width:min(720px,calc(100vw - 32px))}
 .housing-plan-dialog{width:min(760px,calc(100vw - 32px))}
