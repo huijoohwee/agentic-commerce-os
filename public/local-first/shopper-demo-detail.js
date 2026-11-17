@@ -1,3 +1,4 @@
+import { attachViewerSurface } from './viewer-surface.js'
 import { getOrCreateSingleton } from './workspace-singleton.js'
 
 const OFFER_TYPES = Object.freeze({ digital: 'Digital download', product: 'Small-batch product', service: 'Local service' })
@@ -32,7 +33,7 @@ function bind({ dialog, onError }) {
   if (!(shelf instanceof HTMLElement) || !(dialog instanceof HTMLDialogElement) || typeof onError !== 'function') {
     throw Error('shopper_demo_detail_binding_invalid')
   }
-  let opener = null
+  let opener = null, viewer = null
   const open = card => {
     const art = card.querySelector('.demo-product-art')?.cloneNode(true)
     const name = card.querySelector('h3')?.textContent.trim()
@@ -49,6 +50,7 @@ function bind({ dialog, onError }) {
     action.href = '#vendor-editor'
     const body = dialog.querySelector('#detail-content')
     if (!(body instanceof HTMLElement)) throw Error('shopper_demo_detail_content_missing')
+    viewer?.destroy()
     body.replaceChildren(
       art,
       element('small', `${type} · Example`),
@@ -59,6 +61,7 @@ function bind({ dialog, onError }) {
       element('p', 'Example only. No price, inventory, or customer activity is represented.', 'muted'),
       action,
     )
+    viewer = attachViewerSurface(body, {editable:false})
     dialog.classList.add('detail-split')
     opener = card
     dialog.showModal()
