@@ -1,3 +1,4 @@
+import { attachMarkdownEditor } from './markdown.js';
 import { listDrafts, saveDraft, importDrafts, exportDrafts, LIMITS, LISTING_FIELDS, LISTING_LABELS, listingFieldIssues, isArchived } from './drafts.js';
 import { createKeyTypeValueRow } from './key-type-value.js';
 import { createDesignIcon } from './toolbar-icons.js';
@@ -401,7 +402,8 @@ window.addEventListener('hashchange', () => {
   if (location.hash !== '#vendor-editor') { setupGeneration++; setupGuide?.close(false); clearListingGeoPreview(); }
 });
 window.addEventListener('beforeunload', event => { if (dirty) { event.preventDefault(); event.returnValue = ''; } });
-bindOfferFields();
+bindOfferFields(); attachMarkdownEditor($('#description'));
+const richTextStyles = document.createElement('link'); richTextStyles.rel = 'stylesheet'; richTextStyles.href = new URL('./rich-text.css', import.meta.url).href; document.head.append(richTextStyles);
 void refresh().catch(error => { actionFailed = true; message(error.message, true); renderSetup(); });
 $('#editor-fields').disabled = false; $('#import').disabled = false; $('#export').disabled = false;
 renderSetup();

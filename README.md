@@ -267,3 +267,5 @@ owner. The source synchronizer reads exact committed Git blobs, preserving
 untracked planning documents and excluding all mutable working-tree bytes.
 Local expansion state remains in Commerce; the shared runtime and CSS are
 included in its release and offline asset inventories.
+
+The lazy offer editor consumes the exact native Design System Markdown toolbar and color palette. Source text, private draft state, validation and save/review callbacks remain Commerce-owned. Shared syntax and controls are projected byte-for-byte by the existing release synchronizer and admitted on both offline routes; no competing editor implementation is retained.

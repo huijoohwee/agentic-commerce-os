@@ -1,3 +1,4 @@
+import { attachMarkdownEditor } from './markdown.js';
 import { installPanelSections } from './panel-section.js';
 import { registerWebMcpTools, searchRegistry, validateRegistryContext } from "./registry-query.js?v=c104158";
 import { hydrateDesignIcons, hydratePanelControls } from "./toolbar-icons.js";
@@ -453,3 +454,9 @@ if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
     .then(() => { offlineStatus.textContent = "Offline cache is ready for this site."; })
     .catch(() => { offlineStatus.textContent = "Offline caching is unavailable in this browser."; });
 }
+
+const richTextPreview = document.createElement('section'); richTextPreview.className = 'agentic-dashboard-card'; richTextPreview.ariaLabel = 'Shared Markdown and Color Palette preview';
+const richTextHeading = document.createElement('h2'); richTextHeading.textContent = 'Shared Markdown and Color Palette';
+const richTextField = document.createElement('textarea'); richTextField.ariaLabel = 'Markdown source'; richTextField.rows = 6; richTextField.value = 'Shared **Markdown** source. Select text, then choose a formatting command.';
+const richTextStyles = document.createElement('link'); richTextStyles.rel = 'stylesheet'; richTextStyles.href = './rich-text.css'; document.head.append(richTextStyles);
+richTextPreview.append(richTextHeading,richTextField); document.querySelector('main').append(richTextPreview); attachMarkdownEditor(richTextField);
