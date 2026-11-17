@@ -201,7 +201,7 @@ function profilePanel() {
   const profile = state.profile || { start: '', end: '', budget: '', currency: 'SGD', application: 'student', credit: 'unknown', guarantor: 'unknown', transport: 'unknown', campus: '', priorities: state.priorities }
   const selected = new Set(profile.priorities || [])
   const summary = state.profile ? 'Set for this visit' : 'Not set'
-  return `<section class="agentic-dashboard-card housing-context" aria-labelledby="housing-context-title"><header><h3 id="housing-context-title">Stay &amp; application context</h3><p class="housing-context-summary">${escapeHtml(summary)} · used for every selected listing</p></header>
+  return `<section class="agentic-panel-section housing-context" aria-labelledby="housing-context-title"><header class="agentic-panel-section-header"><span class="agentic-panel-section-title" role="heading" aria-level="3" id="housing-context-title">Stay &amp; application context</span></header><div class="agentic-panel-section-body"><span class="housing-context-summary" data-housing-fact="Context status">${escapeHtml(summary)}</span><span data-housing-fact="Applies to">Every selected listing</span>
     <form class="housing-form" data-form="profile"><div class="housing-field-grid">
       <label>Arrival date<input name="start" type="date" required value="${escapeHtml(profile.start)}"></label><label>Departure date<input name="end" type="date" required value="${escapeHtml(profile.end)}"></label>
       <label>Monthly budget<input name="budget" type="number" min="1" max="10000000" step="1" required value="${escapeHtml(profile.budget)}"></label><label>Currency<select name="currency">${['SGD', 'USD', 'MYR'].map(code => `<option${profile.currency === code ? ' selected' : ''}>${code}</option>`).join('')}</select></label>
@@ -211,12 +211,12 @@ function profilePanel() {
       <label>Typical transport<select name="transport">${[['unknown','Not set'],['public','Public transit'],['walk','Walk'],['bike','Bike'],['car','Car']].map(([value,label]) => `<option value="${value}"${profile.transport === value ? ' selected' : ''}>${label}</option>`).join('')}</select></label>
       <label class="housing-field-wide">Optional campus label<input name="campus" maxlength="60" value="${escapeHtml(profile.campus)}" placeholder="Example: North campus"><small>Do not enter a street address.</small></label>
       <fieldset class="agentic-ktv-container"><legend>Priorities</legend>${[['quiet','Quiet hours'],['furnished','Furnished space'],['privacy','Private room']].map(([value,label]) => `<label><input type="checkbox" name="priority" value="${value}"${selected.has(value) ? ' checked' : ''}><span>${label}</span></label>`).join('')}</fieldset>
-    </div><div class="housing-actions"><button type="submit">Apply context</button><button type="button" class="secondary" data-action="sample-profile">Use sample profile</button>${state.profile ? '<button type="button" class="secondary" data-action="clear-context">Clear context</button>' : ''}</div><p>Context stays in memory for this visit. No name, exact address, or document is collected.</p></form>
+    </div><div class="housing-actions"><button type="submit">Apply context</button><button type="button" class="secondary" data-action="sample-profile">Use sample profile</button>${state.profile ? '<button type="button" class="secondary" data-action="clear-context">Clear context</button>' : ''}</div><span data-housing-fact="Context storage">Memory for this visit</span><span data-housing-fact="Personal data">No name, exact address, or document is collected.</span></form></div>
   </section>`
 }
 function listingChoice(listing) {
   const checked = state.selected.includes(listing.id), favourite = saved.includes(listing.id), manual = state.manualIds.has(listing.id)
-  return `<article class="housing-option" data-listing-item data-id="${escapeHtml(listing.id)}"><label class="housing-option-select"><input type="checkbox" name="listing" value="${escapeHtml(listing.id)}"${checked ? ' checked' : ''}><span><strong>${escapeHtml(listing.label)}</strong><small>${manual ? 'Entered here' : 'Fictional sample'}</small></span></label><div class="housing-option-actions"><button type="button" class="secondary housing-save" data-action="favorite" data-id="${escapeHtml(listing.id)}" aria-pressed="${favourite}" aria-label="${favourite ? 'Remove saved listing' : 'Save listing'}: ${escapeHtml(listing.label)}">${favourite ? 'Saved ID' : 'Save ID'}</button>${manual ? `<button type="button" class="secondary" data-action="edit-listing" data-id="${escapeHtml(listing.id)}">Edit facts</button><button type="button" class="secondary" data-action="remove-listing" data-id="${escapeHtml(listing.id)}">Remove</button>` : ''}</div></article>`
+  return `<article class="housing-option" data-listing-item data-id="${escapeHtml(listing.id)}"><label class="housing-option-select"><input type="checkbox" name="listing" value="${escapeHtml(listing.id)}"${checked ? ' checked' : ''}><span>${escapeHtml(listing.label)}</span></label><span data-housing-fact="Listing source">${manual ? 'Entered here' : 'Fictional sample'}</span><div class="housing-option-actions"><button type="button" class="secondary housing-save" data-action="favorite" data-id="${escapeHtml(listing.id)}" aria-pressed="${favourite}" aria-label="${favourite ? 'Remove saved listing' : 'Save listing'}: ${escapeHtml(listing.label)}">${favourite ? 'Saved ID' : 'Save ID'}</button>${manual ? `<button type="button" class="secondary" data-action="edit-listing" data-id="${escapeHtml(listing.id)}">Edit facts</button><button type="button" class="secondary" data-action="remove-listing" data-id="${escapeHtml(listing.id)}">Remove</button>` : ''}</div></article>`
 }
 const unknownYesNo = [['unknown','Unknown'],['yes','Yes'],['no','No']]
 const listingFields = [
@@ -245,7 +245,7 @@ function portableTools(canExport) {
 }
 function listingPanel() {
   const selected = state.selected.filter(id => state.listings.some(item => item.id === id))
-  return `<section class="agentic-dashboard-card housing-listings-panel" aria-labelledby="housing-listings-title"><header><h3 id="housing-listings-title">Local listings</h3><p>Choose up to three options. Selection order matches the table.</p></header><div class="housing-listing-filter"><label>Find an option<input type="search" name="listing-query" value="${escapeHtml(state.query)}" placeholder="Search local labels"></label><label class="housing-filter-toggle"><input type="checkbox" name="saved-only"${state.savedOnly ? ' checked' : ''}>Saved only</label><p data-listing-count aria-live="polite"></p></div><div class="housing-listing-grid">${state.listings.map(listingChoice).join('')}</div><p>Selected ${selected.length} of 3 listings.</p>${listingForm()}${portableTools(selected.length > 0)}</section>`
+  return `<section class="agentic-panel-section housing-listings-panel" aria-labelledby="housing-listings-title"><header class="agentic-panel-section-header"><span class="agentic-panel-section-title" role="heading" aria-level="3" id="housing-listings-title">Local listings</span></header><div class="agentic-panel-section-body"><span data-housing-fact="Selection limit">Up to three listings</span><span data-housing-fact="Listing order">Selection order matches the comparison table.</span><div class="housing-listing-filter"><label>Find an option<input type="search" name="listing-query" value="${escapeHtml(state.query)}" placeholder="Search local labels"></label><label class="housing-filter-toggle"><input type="checkbox" name="saved-only"${state.savedOnly ? ' checked' : ''}>Saved only</label><span data-listing-count data-housing-fact="Matching listings" aria-live="polite"></span></div><div class="housing-listing-grid">${state.listings.map(listingChoice).join('')}</div><span data-housing-fact="Selected listings">Selected ${selected.length} of 3 listings.</span>${listingForm()}${portableTools(selected.length > 0)}</div></section>`
 }
 function filterChoices() {
   const query = state.query.trim().toLowerCase()
@@ -325,7 +325,7 @@ function comparisonPanel(reports) {
   const table = reports.length
     ? `<div class="housing-comparison-table-scroll" data-orientation="${state.orientation}" tabindex="0" role="region" aria-label="${regionLabel}"><div class="housing-comparison-table-host" data-housing-table-host></div></div><p class="housing-status" data-housing-table-status role="status" aria-live="polite">Loading the shared comparison table…</p>`
     : `<div class="housing-table-empty" role="status">Choose up to three options to add listings to the table.<button type="button" class="secondary" data-action="show-inputs">Choose listings</button></div>`
-  return `<section class="agentic-dashboard-region" aria-labelledby="housing-table-title"><header class="agentic-dashboard-header"><p class="agentic-dashboard-observation">HOUSING · LOCAL WORKSPACE</p><h1 data-dashboard-primitive="heading" id="housing-table-title" tabindex="-1">Multi-dimensional Table</h1><p data-dashboard-primitive="text">Stay context and listing facts share one matrix. Pivot to place each listing in rows or columns; shared facts stay the same. Samples are fictional and unverified.</p></header><details data-dashboard-primitive="disclosure" data-housing-workflow${state.inputsOpen ? ' open' : ''}><summary>Workflow inputs &amp; listing actions <span>${selectedCount} of 3 listings selected</span></summary><div data-dashboard-primitive="container" data-columns="2" data-dashboard-columns-for="housing">${profilePanel()}${listingPanel()}</div>${listingActions(reports)}</details>${dimensionControls}${table}${reports.map(planDialog).join('')}<p>No listing is contacted, submitted, or saved remotely.</p>${statusLine('Local only · no listing search or contact.')}</section>`
+  return `<section class="agentic-dashboard-region" aria-labelledby="housing-table-title"><header class="agentic-dashboard-header"><p class="agentic-dashboard-observation">HOUSING · LOCAL WORKSPACE</p><h1 data-dashboard-primitive="heading" id="housing-table-title" tabindex="-1">Multi-dimensional Table</h1><p data-dashboard-primitive="text">Stay context and listing facts share one matrix. Pivot to place each listing in rows or columns; shared facts stay the same. Samples are fictional and unverified.</p></header><details data-dashboard-primitive="disclosure" data-housing-workflow${state.inputsOpen ? ' open' : ''}><summary>Workflow inputs &amp; listing actions <span>${selectedCount} of 3 listings selected</span></summary><div class="agentic-ktv-container" data-housing-inputs>${profilePanel()}${listingPanel()}</div>${listingActions(reports)}</details>${dimensionControls}${table}${reports.map(planDialog).join('')}<p>No listing is contacted, submitted, or saved remotely.</p>${statusLine('Local only · no listing search or contact.')}</section>`
 }
 function syncComparisonOrientation() {
   const orientation = state.orientation
@@ -348,12 +348,25 @@ function bindHousingRows() {
     label.before(marker)
     control.id ||= 'housing-' + (control.closest('form')?.dataset.form || 'workspace') + '-' + (control.name || control.dataset.action || index) + '-' + index
     label.htmlFor = control.id
-    valueNode.append(control, ...label.querySelectorAll('small'))
+    const notes = [...label.querySelectorAll('small')]; notes.forEach(note => note.remove())
+    valueNode.append(control)
     label.className = ''; label.title = label.textContent.trim(); label.tabIndex = 0
     const type = control.tagName === 'SELECT' ? 'Choice' : control.type === 'date' ? 'Date' : control.type === 'number' ? 'Number' : control.type === 'checkbox' ? 'Yes or no' : control.type === 'file' ? 'File' : 'Text'
     const typeNode = createDesignIcon({ Date: 'CalendarClock', Number: 'Hash', 'Yes or no': 'CircleCheck', File: 'FileInput' }[type] || 'Type')
     typeNode.removeAttribute('aria-hidden'); typeNode.setAttribute('role', 'img'); typeNode.setAttribute('aria-label', type)
-    marker.replaceWith(createKeyTypeValueRow({ keyNode: label, typeNode, valueNode }))
+    const row = createKeyTypeValueRow({ keyNode: label, typeNode, valueNode }); marker.replaceWith(row)
+    notes.forEach((note, part) => {
+      const guidance = document.createElement('span'); guidance.id = control.id + '-guidance-' + part
+      guidance.dataset.housingFact = 'Entry guidance · ' + label.textContent.trim(); guidance.textContent = note.textContent
+      control.setAttribute('aria-describedby', [control.getAttribute('aria-describedby'), guidance.id].filter(Boolean).join(' '))
+      row.after(guidance)
+    })
+  }
+  for (const valueNode of root.querySelectorAll('[data-housing-fact]')) {
+    const marker = document.createElement('span'), keyNode = document.createElement('span'), typeNode = createDesignIcon('Type')
+    keyNode.textContent = valueNode.dataset.housingFact; keyNode.title = keyNode.textContent; keyNode.tabIndex = 0
+    typeNode.removeAttribute('aria-hidden'); typeNode.setAttribute('role', 'img'); typeNode.setAttribute('aria-label', 'Text')
+    valueNode.before(marker); marker.replaceWith(createKeyTypeValueRow({ keyNode, typeNode, valueNode, align: 'start' }))
   }
   for (const button of root.querySelectorAll('.housing-actions > button, .housing-option-actions > button, .housing-table-toolbar > button')) {
     const marker = document.createElement('span'), keyNode = document.createElement('span'), typeNode = createDesignIcon('Play')
