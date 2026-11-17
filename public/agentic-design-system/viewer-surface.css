@@ -1,0 +1,2 @@
+.agentic-viewer-surface:focus-visible{outline:var(--agentic-focus-ring-width,2px) solid var(--agentic-focus-ring-color,currentColor);outline-offset:2px}
+.agentic-viewer-surface[contenteditable="true"]{caret-color:inherit}

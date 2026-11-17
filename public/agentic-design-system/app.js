@@ -1,3 +1,4 @@
+import { attachViewerSurface } from './viewer-surface.js';
 import { attachMarkdownEditor } from './markdown.js';
 import { installPanelSections } from './panel-section.js';
 import { registerWebMcpTools, searchRegistry, validateRegistryContext } from "./registry-query.js?v=c104158";
@@ -460,3 +461,7 @@ const richTextHeading = document.createElement('h2'); richTextHeading.textConten
 const richTextField = document.createElement('textarea'); richTextField.ariaLabel = 'Markdown source'; richTextField.rows = 6; richTextField.value = 'Shared **Markdown** source. Select text, then choose a formatting command.';
 const richTextStyles = document.createElement('link'); richTextStyles.rel = 'stylesheet'; richTextStyles.href = './rich-text.css'; document.head.append(richTextStyles);
 richTextPreview.append(richTextHeading,richTextField); document.querySelector('main').append(richTextPreview); attachMarkdownEditor(richTextField);
+
+const viewerPreview=document.createElement('article');viewerPreview.className='agentic-dashboard-card agentic-viewer-surface';viewerPreview.ariaLabel='Shared Viewer view and edit surface';viewerPreview.innerHTML='<h2>Shared Viewer surface</h2><p>Click this rendered content to edit it in place. <strong>Bold text</strong> and <em>inline styling</em> retain their layout.</p><ul><li>One mounted surface</li><li>No source write on activation</li></ul>';
+document.querySelector('main').append(viewerPreview);attachViewerSurface(viewerPreview);
+const viewerStyles=document.createElement('link');viewerStyles.rel='stylesheet';viewerStyles.href='./viewer-surface.css';document.head.append(viewerStyles);
