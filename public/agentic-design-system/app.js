@@ -2,7 +2,7 @@ import { registerWebMcpTools, searchRegistry, validateRegistryContext } from "./
 import { hydrateDesignIcons, hydratePanelControls } from "./toolbar-icons.js";
 import { installHoverLabels, createHoverPanel } from "./hover.js";
 import { buildSettingsKeyTooltip, buildSettingsValueTooltip } from "./hover-text.js";
-import { createKeyTypeValueRow } from "./key-type-value.js";
+import { createKeyTypeValueRow, createKeyTypeValueRows } from "./key-type-value.js";
 
 hydratePanelControls(document);
 hydrateDesignIcons(document);
@@ -26,6 +26,22 @@ function addHoverPreview() {
   document.querySelector("#catalog-grid").before(section);
 }
 addHoverPreview();
+
+function addKtvPreview() {
+  const section = document.createElement("section"), heading = document.createElement("h2");
+  section.id = "ktv-preview"; section.className = "agentic-dashboard-card";
+  section.setAttribute("aria-label", "One value per KTV row preview"); heading.textContent = "One value per KTV row";
+  const rows = ["minimum", "maximum"].map(bound => {
+    const label = document.createElement("label"), input = document.createElement("input");
+    input.id = "ktv-preview-" + bound; input.type = "number"; input.min = "0";
+    label.htmlFor = input.id; label.textContent = "Capacity " + bound;
+    input.setAttribute("aria-label", label.textContent);
+    return { id: input.id + "-row", keyNode: label, typeNode: "Number", valueNode: input };
+  });
+  section.append(heading, createKeyTypeValueRows({ rows }));
+  document.querySelector("#catalog-grid").before(section);
+}
+addKtvPreview();
 
 const grid = document.querySelector("#catalog-grid");
 const empty = document.querySelector("#catalog-empty");

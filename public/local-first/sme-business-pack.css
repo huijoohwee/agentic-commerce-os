@@ -41,11 +41,7 @@
 #sme .workflow-edit-set legend { padding: 0 4px; color: var(--commerce-action); font-size: .74rem; font-weight: 650; }
 #sme .field { min-width: 0; }
 #sme .field label { display: block; min-height: 0; margin: 9px 0 5px; color: var(--commerce-text-muted); font-size: .72rem; font-weight: 600; line-height: 1.35; }
-#sme .field .field-label { display: block; margin: 9px 0 5px; color: var(--commerce-text-muted); font-size: .72rem; font-weight: 600; line-height: 1.35; }
 #sme .field :is(select, .agentic-select-trigger), #sme .field input { width: 100%; min-width: 0; border: 1px solid var(--commerce-control-border); background: var(--commerce-surface); color: var(--commerce-ink); font-size: var(--agentic-font-size-body); }
-#sme .cash-range-input { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
-#sme .field label.cash-bound { margin: 0; color: var(--commerce-text-muted); font-size: .64rem; }
-#sme .cash-bound input { margin-top: 4px; }
 #sme .field-help { display: block; margin-top: 5px; color: var(--commerce-text-muted); font-size: .64rem; line-height: 1.35; }
 #sme .workflow-evidence { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--commerce-border); }
 #sme .evidence-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px 10px; }

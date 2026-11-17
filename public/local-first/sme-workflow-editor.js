@@ -1,5 +1,5 @@
 import { buildSettingsKeyTooltip, buildSettingsValueTooltip } from './hover-text.js'
-import { createKeyTypeValueRow } from './key-type-value.js'
+import { createKeyTypeValueRow, createKeyTypeValueRows } from './key-type-value.js'
 import { createDesignIcon } from './toolbar-icons.js'
 import { applySmePatch, baselineProposal, confirmBaseline, validateDecisionPolicy, sameDecisionPolicy } from './sme-business-pack-core.js?v=business-plan-contract-v6'
 export function createSmeWorkflowEditor({
@@ -21,7 +21,7 @@ export function createSmeWorkflowEditor({
       || field.required_when && inputs[field.required_when.field] === field.required_when.equals)
   }
 
-  function typedField(wrap, field) {
+  function fieldCells(wrap, field) {
     const keyNode = wrap.querySelector(':scope > label, :scope > .field-label')
     if (!keyNode) throw Error('sme_typed_field_label_missing')
     keyNode.title = buildSettingsKeyTooltip({ area: 'Business plan', key: field.label,
@@ -37,8 +37,12 @@ export function createSmeWorkflowEditor({
     wrap.title = wrap.querySelector('input, select')?.title || ''
     const typeNode = createDesignIcon(['money', 'integer'].includes(field.type) ? 'Hash' : 'Type', wrap.ownerDocument)
     typeNode.removeAttribute('aria-hidden'); typeNode.setAttribute('role', 'img')
-    typeNode.setAttribute('aria-label', { money: 'Amount or range', integer: 'Whole number', enum: 'Choice', boolean: 'Yes or no', currency: 'Currency code', text: 'Text' }[field.type])
-    return createKeyTypeValueRow({ keyNode, typeNode, valueNode: wrap, ownerDocument: wrap.ownerDocument })
+    typeNode.setAttribute('aria-label', { money: 'Amount', integer: 'Whole number', enum: 'Choice', boolean: 'Yes or no', currency: 'Currency code', text: 'Text' }[field.type])
+    return { keyNode, typeNode, valueNode: wrap }
+  }
+
+  function typedField(wrap, field) {
+    return createKeyTypeValueRow({ ...fieldCells(wrap, field), ownerDocument: wrap.ownerDocument })
   }
 
   function inputControl(field, prefix, protocol, currencyCode, mode, inputs) {
@@ -62,23 +66,24 @@ export function createSmeWorkflowEditor({
     }
     if (field.type === 'money') {
       const currency = protocol?.pack.currency ?? currencyCode
-      const range = node('div', undefined, 'cash-range-input')
-      const heading = node('span', field.label + ' · ' + (currency || 'selected currency code'), 'field-label')
-      range.setAttribute('role', 'group'); range.setAttribute('aria-label', field.label + ' range')
-      for (const bound of ['low', 'high']) {
+      const hint = node('span', 'Enter one amount or a low–high range in the selected currency; leave maximum blank for one amount.', 'field-help')
+      hint.id = id + '-range-help'
+      const rows = ['low', 'high'].map(bound => {
+        const value = node('section', undefined, 'field'), boundName = bound === 'low' ? 'Minimum' : 'Maximum'
         const control = node('input'); control.type = 'number'; control.min = '0'; control.max = '1000000000'; control.step = '0.0001'
         control.inputMode = 'numeric'; control.autocomplete = 'off'
         control.id = id + '-' + bound; control.dataset.input = field.name; control.dataset.bound = bound
         control.setAttribute('aria-label', `${scope} ${field.label} ${bound === 'low' ? 'minimum' : 'maximum'} amount in ${currency || 'selected currency'}${bound === 'high' ? ' (optional)' : ''}`)
         control.setAttribute('aria-required', String(required && bound === 'low'))
+        control.setAttribute('aria-describedby', hint.id)
         control.placeholder = bound === 'low' ? 'Amount' : 'Optional'
-        const boundLabel = node('label', `${bound === 'low' ? 'Minimum' : 'Maximum'} · ${currency || 'selected currency'}`, 'cash-bound')
-        boundLabel.htmlFor = control.id; boundLabel.append(control); range.append(boundLabel)
-      }
-      const hint = node('span', 'Enter one amount or a low–high range in the selected currency; leave maximum blank for one amount.', 'field-help')
-      hint.id = id + '-range-help'
-      for (const control of range.querySelectorAll('input')) control.setAttribute('aria-describedby', hint.id)
-      wrap.append(heading, range, hint); return typedField(wrap, field)
+        const boundField = { ...field, label: `${boundName} · ${field.label} · ${currency || 'selected currency code'}` }
+        const boundLabel = node('label', boundField.label); boundLabel.htmlFor = control.id
+        value.append(boundLabel, control)
+        return { id: control.id + '-row', ...fieldCells(value, boundField) }
+      })
+      const group = createKeyTypeValueRows({ rows, ownerDocument: wrap.ownerDocument })
+      group.append(hint); return group
     }
     const control = node('input'); control.type = 'number'; control.step = '1'; control.inputMode = 'numeric'
     control.min = String(field.min ?? 0); control.max = String(field.max ?? 100000000)

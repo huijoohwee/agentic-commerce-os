@@ -11,10 +11,18 @@ export async function checkSmeKtvBrowser({ browser, url, output }) {
   try {
     await page.goto(url + '#sme')
     const protocol = await invokeSmePackTool('pack.protocol', { pack_id: PACK_INDEX[0].id })
+    const expectedRows = protocol.input_fields.reduce((count, field) => count + (field.type === 'money' ? 2 : 1), 0)
     const rows = page.locator('#sme-workflow-inputs [data-panel-field-row]')
-    await expect(rows).toHaveCount(protocol.input_fields.length)
+    await expect(rows).toHaveCount(expectedRows)
     assert.deepEqual(await rows.first().evaluate(node => [...node.children].map(cell => cell.tagName)), ['DT', 'DD', 'DD'])
-    assert.equal(await rows.locator('.agentic-ktv-type svg[role="img"][aria-label]').count(), protocol.input_fields.length)
+    assert.equal(await rows.locator('.agentic-ktv-type svg[role="img"][aria-label]').count(), expectedRows)
+    for (const row of await rows.all()) {
+      assert.equal(await row.locator('input, select').count(), 1, 'one editable value per KTV row, including enhanced selects')
+    }
+    for (const field of protocol.input_fields.filter(field => field.type === 'money')) {
+      const low = page.locator('#compare-a-' + field.name + '-low'), high = page.locator('#compare-a-' + field.name + '-high')
+      assert.notEqual(await low.evaluate(node => node.closest('dl').id), await high.evaluate(node => node.closest('dl').id))
+    }
     await expect(page.locator('#sme-workflow-inputs .workflow-edit-fields')).toHaveCount(0)
     assert.deepEqual(await rows.first().evaluate(row => { const label = row.querySelector('dt label');
       return [getComputedStyle(row).margin, getComputedStyle(label).margin, getComputedStyle(label).fontWeight === getComputedStyle(label.parentElement).fontWeight]
@@ -41,12 +49,13 @@ export async function checkSmeKtvBrowser({ browser, url, output }) {
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, '200% text zoom overflow')
     await page.waitForFunction(() => navigator.serviceWorker.controller)
     await context.setOffline(true); await page.reload()
-    await expect(rows).toHaveCount(protocol.input_fields.length)
+    await expect(rows).toHaveCount(expectedRows)
     await page.locator('#sample').click(); await page.locator('#sme-compare-run').click()
     await expect(page.locator('#workflow-status')).toContainText('Local Buy/Build plan built')
     assert.deepEqual(errors, [])
     await writeFile(path.join(output, 'sme-ktv-proof.json'), JSON.stringify({ schema: 'commerce.sme-ktv/v1',
-      owner: 'agentic-design-system', revision: 'eab0dcaad86c3d2cfd0c6eebf60070998fdb3b1e', fields: protocol.input_fields.length,
+      owner: 'agentic-design-system', revision: '98807b856ab35bac53c54987d4340cd37982d3ec', fields: protocol.input_fields.length,
+      rows: expectedRows, oneEditableValuePerRow: true,
       semanticCells: ['DT', 'DD', 'DD'], namedTypeIcons: true, controlIdentityPreserved: true, revenueAfterPriceEdit: 7500,
       widths: [320, 390, 768, 1280], narrowValueStacks: true, textZoom: '200%', offlineReloadAndBuild: true, pageErrors: errors,
     }, null, 2) + '\n')

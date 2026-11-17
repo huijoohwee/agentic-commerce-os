@@ -1,19 +1,19 @@
 ---
 title: "Reference Implementation — Commerce Workspace and Decision Rehearsal"
 doc_type: "PRD-TAD-ADR-MVP-GTM"
-version: "0.4.1"
-revision: "0.4.1"
+version: "0.4.2"
+revision: "0.4.2"
 date: "2026-11-16"
-updated_date: "2026-11-16"
+updated_date: "2026-11-17"
 lang: "en-US"
 frontmatter_contract: "required"
 owner: "Commerce product function"
 continuity_id: "COMMERCE-CONTROL-PLANE-001"
-prd_revision: "0.4.1"
-tad_revision: "0.4.1"
-adr_revision: "0.4.1"
-mvp_revision: "0.4.1"
-gtm_revision: "0.4.1"
+prd_revision: "0.4.2"
+tad_revision: "0.4.2"
+adr_revision: "0.4.2"
+mvp_revision: "0.4.2"
+gtm_revision: "0.4.2"
 local_rung: "spec-complete"
 delivered_rung: "undocumented"
 lane: "authoring"
@@ -27,7 +27,7 @@ guideline_source_revision: "99ea1f49211361528256045719b54f1634eee41a"
 guideline_sha256: "4c7b9cfce239e0fba3b1ef560aba81e634dbea7d18213a2d1c7d7261736d8541"
 template_revision: "1.6.0"
 template_sha256: "0aaa79cfc4e6ead44514e2c1264879ae4445e252a1590ac6c5241ad4dfec15e4"
-worktree_id: "device-0232231d4a19--commerce-native-decision-plan"
+worktree_id: "device-0232231d4a19--atomic-ktv-rows"
 agent_id: "codex"
 source_revision: "37778153321b48a82480720b4880a519e09a62e5"
 lifecycle_status: "proposed"
@@ -446,3 +446,11 @@ This observation-only checkpoint preserves the `0.4.1` requirements and conserva
 ## Shared hover owner · 2026-11-17
 
 PRD: the SME decision editor needs visible key/value help consistent with the existing shared KTV rows. TAD: project native hover runtime, text builders and CSS directly from Design System `b8b8c0624b9f5d378fa1a54ea32c52f867f3ad6d`; install one delegate in the existing application singleton and retain product labels, units, constraints, state and events. Keys use the shared action/outcome grammar; values use declared UI bounds and explicitly undeclared defaults. ADR: no local hover renderer, palette or formatter, and no invented facts/defaults. Base artifact uses integrated source `b36420f1e06c9d70569ac928e2b8b6ae882e7992`. Graph artifact is rebuilt from clean integrated source `42e03e240fd93594f80f0616ab3a8282487cf258`; Graph PR 1980 passed its exact protected gate and integrated this source. MVP: 19 focused checks, associated labels/descriptions, focus/Escape, shared key syntax, 320px containment (8-312px), and offline reload pass locally. Defaults remain explicitly undeclared and inspection leaves inputs empty. Native asset routing serves all three owner hover files. Exact-source/projection checks and protected integration remain separate acceptance evidence. GTM: bounded local evidence only, with no product-wide parity or provider delivery claim. Rollback restores prior source pins, manifests and generated files together while preserving browser drafts and planning facts. No Production effect is selected.
+
+## Reference implementation — one value per shared KTV row (0.4.2)
+
+PRD: the operator marked the range editor because its minimum and maximum shared one value cell. Each endpoint now occupies its own key/type/value row with its complete field/currency context in the accessible key. TAD/ADR: use the existing Design System native row-group API from exact integrated source `98807b856ab35bac53c54987d4340cd37982d3ec` (PR #58); remove the old two-column range CSS. No consumer renderer, layout override or data-schema change. Keep original input IDs, bounds, optional maximum, events and shared range help. Base/Graph browser artifacts remain exact generated projections.
+
+MVP evidence: live local UI observed 37 rows with exactly one native input/select each. Editing price to USD 25–30 and variable cost to USD 4–7 preserved distinct endpoint IDs and produced monthly revenue USD 7,500–9,000 and variable costs USD 1,200–2,100 at 300 units. Existing owner tests/public-release check passed; live 320px checks show no page overflow and owner-stacked value cells; offline reload preserves all 37 rows and blank unknown endpoints. Base PR #83 integrated exact revision `887d2cfa7f1dc3b76fa0a33694f76336e7aacbcf`; its 24 immutable build inputs and three output digests were verified before projection. Remaining native consumer checks are recorded separately at release. This bounded proof does not establish full product parity or Production delivery.
+
+GTM/bounds: improve the existing free local planning journey; WTP remains unmeasured. No paid service, new dependency or runtime module. Shared sprint limits: 60 KB authored changes, 100 paths excluding generated projections, 45-minute initial pass, 500,000-byte chunks. Rollback restores exact prior Design System/consumer pins and editor source together; user inputs and worksheet schema remain unchanged.
