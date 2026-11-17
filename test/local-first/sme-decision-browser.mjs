@@ -35,7 +35,9 @@ export async function checkSmeDecisionBrowser({ browser, url, output }) {
     await page.locator('#sme-bound-field').click()
     const firstDownload = page.waitForEvent('download'); await page.locator('[data-export="json"]').click()
     const firstSheet = JSON.parse(await readFile(await (await firstDownload).path(), 'utf8'))
-    const pair = [firstSheet, { ...structuredClone(firstSheet), inputs: { ...firstSheet.inputs, price_per_unit: 22 }, row_revision: 1 }]
+    const secondSheet = { ...structuredClone(firstSheet), inputs: { ...firstSheet.inputs, price_per_unit: 22 }, row_revision: 1 }
+    secondSheet.evidence.push({ field_key: 'price_per_unit', value: 22, provenance: 'directly_observed', observer_role: 'observer', date: '2026-11-17' })
+    const pair = [firstSheet, secondSheet]
     await page.locator('#sme-worksheet-import').setInputFiles({ name: 'decision.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(pair)) })
     await expect(page.locator('#workflow-status')).toContainText('Worksheet imported')
     await page.locator('#sme-compare-run').click()
@@ -43,9 +45,35 @@ export async function checkSmeDecisionBrowser({ browser, url, output }) {
     const select = async slot => { await page.locator('#sme-workflow-table-host').getByRole('row', { name: `Data row: Scenario ${slot}`, exact: true }).click() }
     await select('B')
     const working = page.locator('#sme-working'); await working.locator(':scope > summary').click()
-    await expect(working).toContainText('Change from baseline A: 600 USD')
+    await expect(working.locator('#sme-working-monthly_revenue-delta .agentic-ktv-key')).toHaveText('Change from baseline A')
+    await expect(working.locator('#sme-working-monthly_revenue-delta .agentic-ktv-value')).toHaveText('600 USD')
     await expect(working).toContainText('price_per_unit × units_per_month')
     await expect(working).toContainText('No dated evidence recorded')
+    const revenue = working.locator('[data-working-output="monthly_revenue"]')
+    await revenue.locator('summary').click()
+    for (const [id, text] of [['result', 'USD 6,600'], ['formula', 'price_per_unit × units_per_month'], ['unit', 'USD'], ['period', 'month'], ['status', 'Calculated']]) {
+      await expect(revenue.locator('#sme-working-monthly_revenue-' + id + ' .agentic-ktv-value')).toHaveText(text)
+    }
+    const assertWorkingRows = async scope => {
+      await expect(scope.locator('ul, li, p')).toHaveCount(0)
+      assert.ok(await scope.locator('[data-panel-field-row]').count() > 20)
+      for (const row of await scope.locator('[data-panel-field-row]').all()) {
+        assert.deepEqual(await row.evaluate(node => [...node.children].map(cell => cell.tagName)), ['DT', 'DD', 'DD'])
+        await expect(row.locator('.agentic-ktv-type > svg[role="img"][aria-label]')).toHaveCount(1)
+      }
+    }
+    await assertWorkingRows(working)
+    for (const [id, text] of [['value', 'USD 22'], ['provenance', 'Directly observed'], ['observer', 'Observer'], ['date', '2026-11-17']]) {
+      await expect(revenue.locator('#sme-working-monthly_revenue-price_per_unit-evidence-0-' + id + ' .agentic-ktv-value')).toHaveText(text)
+    }
+    for (const width of [320, 390, 768, 1280]) {
+      await page.setViewportSize({ width, height: 900 })
+      assert.equal(await revenue.locator('[data-panel-field-row]').evaluateAll(rows => rows.every(row => row.scrollWidth <= row.clientWidth)), true, 'working rows overflow at ' + width)
+    }
+    await page.setViewportSize({ width: 1280, height: 900 })
+    await revenue.scrollIntoViewIfNeeded()
+    await page.screenshot({ path: path.join(output, 'sme-working-ktv-desktop.png') })
+
     await page.locator('#compare-b-payroll_per_month-low').fill('1')
     await expect(page.locator('#workflow-status')).toContainText('Team and contractor cost per month is protected')
     await expect(page.locator('#compare-b-payroll_per_month-low')).toHaveValue('2500')
@@ -92,7 +120,11 @@ export async function checkSmeDecisionBrowser({ browser, url, output }) {
     await expect(mobile.locator('#workflow-status')).toContainText('Worksheet imported')
     await mobile.locator('#sme-compare-run').click(); await expect(mobile.locator('#workflow-status')).toContainText('Local scenario comparison')
     await mobile.locator('#sme-working > summary').click()
-    await expect(mobile.locator('#sme-working')).toContainText('Change from baseline B: -1200 USD')
+    await expect(mobile.locator('#sme-working-monthly_revenue-delta .agentic-ktv-key')).toHaveText('Change from baseline B')
+    await expect(mobile.locator('#sme-working-monthly_revenue-delta .agentic-ktv-value')).toHaveText('-1200 USD')
+    await mobile.locator('#sme-working [data-working-output="monthly_revenue"] summary').click()
+    await assertWorkingRows(mobile.locator('#sme-working'))
+    await expect(mobile.locator('#sme-working-monthly_revenue-formula .agentic-ktv-value')).toHaveText('price_per_unit × units_per_month')
     await mobile.locator('#sme-decision-panel').scrollIntoViewIfNeeded()
     await mobile.screenshot({ path: path.join(output, 'sme-decision-mobile-offline.png') })
     for (const width of [320, 360, 390, 768, 1280]) {
@@ -105,6 +137,7 @@ export async function checkSmeDecisionBrowser({ browser, url, output }) {
     assert.equal(requests.some(row => !['GET', 'HEAD'].includes(row.method)), false)
     assert.equal(requests.some(row => row.url.includes('/services/sme-business-pack/api') || row.url.includes('/services/sme-business-pack/mcp')), false)
     await writeFile(path.join(output, 'sme-decision-proof.json'), JSON.stringify({ source: await page.locator('meta[name="commerce-source"]').getAttribute('content'),
+      workingKtv: { owner: 'agentic-design-system', oneFactPerRow: true, formulasAndDeltasPreserved: true, datedEvidencePreserved: true },
       baseline: 'B', staleConfirmationRefused: true, protectedAtomicImportRefused: true, working: true, transport: 'WebMCP contract fixture',
       nativeWebMcpAvailability: 'not claimed', privateNetworkWrites: 0, offlineReloadAndImport: true, widths: [320, 360, 390, 768, 1280], textZoom: '200%' }, null, 2))
   } finally { await context.close() }
