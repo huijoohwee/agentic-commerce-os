@@ -16,12 +16,12 @@ export type LocalFirstEnv = Readonly<CheckoutEnv & ListingRelayEnv & {
 }>
 const packDirectory = '/services/workspace-pack/'
 // A bounded, exact allowlist: shared files get the same asset at both route prefixes.
-const sharedPackFiles = ((import.meta.commerceLiveCheckout === false ? '' : 'viewer-surface.js viewer-surface.css ') + 'markdown.js markdown-parser.js color.js rich-text.css panel-section.js panel-section.css commerce-shell.css workspace-layout.js dashboard-columns.js toolbar-icons.js icons.json commerce-toolbar.js dropdown-menus.js graph-ui-tokens.css commerce-theme.css shared-ui-profile.css collection-layout.css floating-panel.css toolbar.css').split(' ')
+const sharedPackFiles = ((import.meta.commerceLiveCheckout === false ? '' : 'viewer-surface.js viewer-surface.css ') + 'markdown.js markdown-parser.js color.js rich-text.css panel-section.js panel-section.css commerce-shell.css workspace-layout.js dashboard-columns.js toolbar-icons.js icons.json commerce-toolbar.js dropdown-menus.js graph-ui-tokens.css commerce-theme.css shared-ui-profile.css floating-panel.css toolbar.css').split(' ')
 const primaryFiles = [
   'app.js drafts.js listing-geo.js agentic-geo-core.mjs checkout.js launch.js workspace.js workspace-graph.js agentic-base-data-view.js agentic-base-data-view.css graph-data-view.js graph-data-view.css style.css sw.js workflow.js workspace-capabilities.js workspace-tools.js',
   ...(import.meta.commerceLiveCheckout === false ? ['dropdown-menus.js graph-ui-tokens.css'] : [
     sharedPackFiles.join(' '),
-    'favicon.svg workspace-tour.js workspace-navigation.js workspace-pack.route.js workspace-view-styles.js workspace-singleton.js shopper-demo-detail.js workspace-shell.css sme-business-pack.js sme-business-pack.css sme-business-pack-core.js sme-decision-contract.js sme-workflow-editor.js key-type-value.js hover.js hover-text.js hover.css sme-pack-dictionary.js sme-pack-business-plan.js housing-comparison.js housing-engine.js housing-sample.js housing-comparison.css sme-review-workflow.js graph-gantt-timeline.js graph-gantt-timeline.css',
+    'collection-layout.css favicon.svg workspace-tour.js workspace-navigation.js workspace-pack.route.js workspace-view-styles.js workspace-singleton.js shopper-demo-detail.js workspace-shell.css sme-business-pack.js sme-business-pack.css sme-business-pack-core.js sme-decision-contract.js sme-workflow-editor.js key-type-value.js hover.js hover-text.js hover.css sme-pack-dictionary.js sme-pack-business-plan.js housing-comparison.js housing-engine.js housing-sample.js housing-comparison.css sme-review-workflow.js graph-gantt-timeline.js graph-gantt-timeline.css',
   ]),
 ].join(' ').split(' ')
 const ASSET_PATHS = new Map<string,string>([['/', '/'], [packDirectory, '/workspace-pack.html']])
