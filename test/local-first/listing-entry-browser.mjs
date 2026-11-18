@@ -92,8 +92,17 @@ export async function checkListingEntry({ browser, url: base, output, revision, 
       await page.locator('#' + role + '-query').fill(original.listing.sourceUrl);
       await expect(page.getByText('Asking price · supplied:', { exact: false }).first()).toBeVisible();
       await expect(page.locator('#' + role + '-count')).toContainText('1 offer');
-      if (role === 'vendor') assert(await page.locator('.vendor-offer-outcome').evaluate(element => element.scrollHeight <= element.clientHeight + 1
-        && element.getBoundingClientRect().bottom <= element.parentElement.querySelector('.vendor-offer-card-footer').getBoundingClientRect().top));
+      if (role === 'vendor') {
+        const geometry = await page.locator('.vendor-offer-outcome').evaluate(element => ({
+          shared: element.parentElement.matches('.agentic-collection-item[data-layout="grid"]'),
+          style: getComputedStyle(element.parentElement).display,
+          scroll: element.scrollHeight, visible: element.clientHeight,
+          bottom: element.getBoundingClientRect().bottom,
+          footer: element.parentElement.querySelector('.vendor-offer-card-footer').getBoundingClientRect().top,
+        }));
+        assert(geometry.shared && geometry.style === 'grid'
+          && geometry.scroll <= geometry.visible + 1 && geometry.bottom <= geometry.footer, JSON.stringify(geometry));
+      }
       assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
       await page.screenshot({ path: path.join(output, `listing-management-${role}-${width}.png`), fullPage: true });
       await page.locator('#' + role + '-query').fill('https://example.invalid/not-this-entry');

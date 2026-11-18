@@ -79,9 +79,12 @@ function applyBaseTheme(host) {
   for (const [name, value] of Object.entries(slots)) host.style.setProperty(name, value);
 }
 function mountOfferCards(target, offers, presentation, selectedId, activate) {
-  const list = el('ul', undefined, 'vendor-offer-card-grid');
+  const list = el('ul', undefined, 'agentic-collection vendor-offer-card-grid');
+  list.dataset.layout = 'grid';
   for (const offer of offers) {
-    const item = el('li', undefined, 'vendor-offer-card-item'), button = el('button', undefined, 'vendor-offer-card-open');
+    const item = el('li', undefined, 'vendor-offer-card-item'), button = el('button', undefined, 'agentic-collection-item vendor-offer-card-open');
+    button.dataset.layout = 'grid';
+    if (selectedId === offer.id) button.setAttribute('aria-current', 'true');
     button.type = 'button'; button.setAttribute('aria-label', 'Open details for ' + offer.title);
     button.setAttribute('aria-pressed', String(selectedId === offer.id)); button.addEventListener('click', () => activate(offer.id));
     const cover = el('span', presentation.monogram(offer.title), 'product-monogram vendor-offer-cover'); cover.setAttribute('aria-hidden', 'true'); button.dataset.offerId = offer.id;

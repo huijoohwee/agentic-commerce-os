@@ -87,7 +87,7 @@ test('Commerce field layouts consume the central KTV owner without competing gri
 
 test('Commerce actions and Workspace Pack reuse shared responsive control geometry', () => {
   const style = fs.readFileSync('public/local-first/style.css', 'utf8');
-  const primary = style.match(/button:not\(\.agentic-form-control\):where\(:not\(\.agentic-toggle-group > button, \.agentic-toolbar-item, \.agentic-color-palette button\)\),\.button\{([^}]*)\}/u)?.[1];
+  const primary = style.match(/button:not\(\.agentic-form-control\):where\(:not\(\.agentic-toggle-group > button, \.agentic-toolbar-item, \.agentic-color-palette button, \.agentic-collection-item\)\),\.button\{([^}]*)\}/u)?.[1];
   assert.ok(primary, 'storefront actions must keep one owning rule');
   for (const declaration of [
     /block-size:\s*var\(--agentic-control-height\)/u,
@@ -97,7 +97,7 @@ test('Commerce actions and Workspace Pack reuse shared responsive control geomet
     /border-radius:\s*var\(--agentic-control-radius\)/u,
   ]) assert.match(primary, declaration);
   assert.doesNotMatch(primary, /44px|10px|11px\s+18px/u);
-  const consoleOverride = style.match(/\.console-mode \.button,\.console-mode button:not\(\.agentic-form-control\):where\(:not\(\.agentic-toggle-group > button, \.agentic-toolbar-item, \.agentic-color-palette button\)\)\{([^}]*)\}/u)?.[1];
+  const consoleOverride = style.match(/\.console-mode \.button,\.console-mode button:not\(\.agentic-form-control\):where\(:not\(\.agentic-toggle-group > button, \.agentic-toolbar-item, \.agentic-color-palette button, \.agentic-collection-item\)\)\{([^}]*)\}/u)?.[1];
   assert.ok(consoleOverride, 'console typography must remain owned');
   assert.doesNotMatch(consoleOverride, /(?:block-size|height|padding|gap|border-radius)\s*:/u);
 
