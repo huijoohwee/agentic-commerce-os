@@ -1,0 +1,22 @@
+.agentic-panel-tab-layout, .agentic-skills-catalog {
+  display: flex; flex-direction: column; block-size: 100%; min-block-size: 0; min-inline-size: 0;
+  color: var(--agentic-panel-foreground); font-family: var(--agentic-font-sans);
+}
+:is(.agentic-panel-tab-header, .agentic-skills-header, .agentic-panel-tab-body, .agentic-skills-body) {
+  grid-template-columns: minmax(0, 1fr);
+  display: grid; align-content: start; gap: var(--agentic-menu-gap); min-inline-size: 0;
+}
+:is(.agentic-panel-tab-header, .agentic-skills-header) { flex: none; padding: var(--agentic-menu-padding); border-block-end: var(--agentic-panel-border); }
+:is(.agentic-panel-tab-header, .agentic-skills-header) > h2 { margin: 0; font-size: inherit; }
+:is(.agentic-panel-tab-header, .agentic-skills-header) .agentic-panel-section-actions { justify-content: flex-start; flex-wrap: wrap; }
+:is(.agentic-panel-tab-header, .agentic-skills-header) [hidden] { display: none; }
+:is(.agentic-panel-tab-body, .agentic-skills-body) { flex: 1 1 auto; overflow: auto; min-block-size: 0; padding: var(--agentic-menu-padding); }
+.agentic-panel-tab-body[data-agentic-tab-viewport="true"] { grid-template-rows: minmax(0, 1fr); align-content: stretch; }
+.agentic-collection.agentic-skills-groups { gap: 0; }
+.agentic-skills-groups:not(:empty) { border-block-start: var(--agentic-panel-border); }
+.agentic-skills-group-section { border-block-end: var(--agentic-panel-border); }
+.agentic-panel-tab-body .agentic-panel-section, .agentic-panel-section.agentic-skills-group-section { padding-inline: 0; }
+.agentic-skills-group-section > :is(.agentic-panel-section-body, .agentic-collection) { padding-inline: var(--agentic-control-padding-inline); }
+.agentic-skills-group-label { display: inline-flex; align-items: baseline; gap: var(--agentic-control-padding-inline); margin: 0; font: inherit; font-weight: 600; text-transform: uppercase; }
+.agentic-panel-tab-subtitle, .agentic-skills-title, .agentic-skills-meta { margin: 0; overflow-wrap: anywhere; }
+.agentic-panel-tab-subtitle, .agentic-skills-meta { font-weight: normal; }

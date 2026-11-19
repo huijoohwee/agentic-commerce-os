@@ -28,9 +28,9 @@ export function attachViewerSurface(root, options = {}) {
     setEditing(true,{focus:true})
   }
   const keydown=event=>{
-    if(options.activation==='manual')return
+    if(options.activation==='manual'||options.editable===false||event.defaultPrevented)return
     if(event.key==='Escape'&&active&&options.onCancel){event.preventDefault();cancel()}
-    else if(!active&&event.key==='Enter'){event.preventDefault();setEditing(true,{focus:true})}
+    else if(!active&&event.key==='Enter'&&event.target===root){event.preventDefault();setEditing(true,{focus:true})}
   }
   const blur=event=>{if(options.activation!=='manual'&&!root.contains(event.relatedTarget))commit()}
   root.setAttribute('data-agentic-viewer-surface','view')

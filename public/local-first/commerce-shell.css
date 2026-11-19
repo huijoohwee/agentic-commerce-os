@@ -1,4 +1,9 @@
+@import "./shared-ui-profile.css";
+@import "./toolbar.css";
 @import "./floating-panel.css";
+@import "./panel-section.css";
+@import "./collection-layout.css";
+@import "./skills-commands.css";
 
 :root {
   --workspace-banner-height: var(--agentic-control-height);
@@ -20,9 +25,6 @@
 .commerce-workspace-panel {
   --agentic-floating-panel-block-start-offset: calc(var(--workspace-chrome-height) + var(--agentic-menu-edge-gap));
 }
-.commerce-workspace-panel .agentic-base-floating-panel-inner { inline-size: 100%; block-size: 100%; overflow: hidden; }
-.commerce-workspace-panel-content { display: flex; flex: 1 1 auto; min-inline-size: 0; min-block-size: 0; overflow: hidden; }
-.commerce-workspace-panel-view { min-inline-size: 0; min-block-size: 0; }
 @media (max-width: 32rem) {
   :root { --workspace-banner-height: calc(2 * var(--agentic-line-height-body)); }
   .commerce-banner { flex-direction: column; }

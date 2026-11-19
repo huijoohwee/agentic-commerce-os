@@ -1,9 +1,6 @@
 @import "./graph-ui-tokens.css";
 @import "./commerce-theme.css";
-@import "./shared-ui-profile.css";
-@import "./panel-section.css";
 @import "./commerce-shell.css";
-@import "./toolbar.css";
 
 :root { color: var(--kg-text-primary); background: var(--commerce-canvas); }
 * { box-sizing: border-box; }
