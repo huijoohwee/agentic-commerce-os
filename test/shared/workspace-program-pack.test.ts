@@ -75,7 +75,14 @@ describe('Workspace Pack HTTP and MCP host', () => {
       const html = await fetch(host.url)
       expect(html.status).toBe(200)
       expect(await html.text()).not.toContain('data-workspace-home')
-      expect((await fetch(host.url + 'commerce-toolbar.js')).status).toBe(200)
+      for (const file of ['commerce-toolbar.js', 'floating-panel.js', 'panel-section.js', 'skills-commands.css', 'collection-layout.css', 'icons.json']) {
+        const response = await fetch(host.url + file)
+        expect(response.status, file).toBe(200)
+        expect(await response.text()).toBe(await fs.readFile(path.resolve('public/local-first', file), 'utf8'))
+      }
+      const guide = await fetch(new URL('../../graph-data-view.css', host.url))
+      expect(guide.status).toBe(200)
+      expect(await guide.text()).toContain('.agentic-panel-tab-layout')
       for (const pathname of ['/agentic-commerce-os', '/agentic-commerce-os/']) {
         const response = await fetch(new URL(pathname, host.url), { redirect: 'manual' })
         expect(response.status).toBe(302)

@@ -407,7 +407,7 @@ export function sourceManifest(revision, selection = readCheckoutRelease()) {
   verifyStorageManagementSourceIndex();
   assertLocalFirstConfig(JSON.parse(fs.readFileSync(CONFIG, 'utf8')));
   if (listRegularFiles('public/local-first').join() !== [...FILES, ...PRIVATE_FILES, ...STORAGE_MANAGEMENT_SOURCE_FILES].sort().join()) throw Error('Unexpected static asset inventory');
-  const paths = [CONFIG, 'src/local-first/worker.ts', 'src/local-first/workspace-pack.ts', 'src/local-first/workspace-service.ts', 'src/local-first/sme-business-pack.ts', 'public/local-first/sme-business-pack-core.js', 'config/capability-token-map.json', 'config/shared-ui-profile.pin.json', 'config/floating-panel.pin.json', 'config/toolbar.pin.json',
+  const paths = [CONFIG, 'src/local-first/worker.ts', 'src/local-first/pack-assets.ts', 'src/local-first/workspace-pack.ts', 'src/local-first/workspace-service.ts', 'src/local-first/sme-business-pack.ts', 'public/local-first/sme-business-pack-core.js', 'config/capability-token-map.json', 'config/shared-ui-profile.pin.json', 'config/floating-panel.pin.json', 'config/toolbar.pin.json',
     'config/dashboard-columns.pin.json', 'config/collection-layout.pin.json', 'config/agentic-base-data-view.json', 'config/graph-data-view.json', 'config/workspace-pack-graph.json', 'src/generated/graph-workspace-pack.js', 'src/generated/graph-workspace-pack.d.ts',
     'scripts/workspace-pack/build-graph.mjs', 'src/edge/production-prefix.ts', 'src/shared/http.ts',
     ...['checkout', 'session', 'fulfillment-contract', 'fulfillment-definition', 'fulfillment', 'fulfillment-relay', 'stripe-checkout', 'checkout-offer', 'checkout-recovery', 'stripe-webhook'].map(file => `src/local-first/${file}.ts`),

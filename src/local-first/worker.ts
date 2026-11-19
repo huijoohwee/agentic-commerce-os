@@ -1,3 +1,4 @@
+import { filesWithExtension, packAssets, packEntries } from './pack-assets.ts'
 import { handleWorkspaceService } from './workspace-service.ts'
 import { handleCheckout, checkoutConfigured, checkoutMode, type CheckoutEnv } from './checkout.ts'
 import type { PaymentFetch } from './stripe-checkout.ts'
@@ -16,19 +17,19 @@ export type LocalFirstEnv = Readonly<CheckoutEnv & ListingRelayEnv & {
 }>
 const packDirectory = '/services/workspace-pack/'
 // A bounded, exact allowlist: shared files get the same asset at both route prefixes.
-const sharedPackFiles = ((import.meta.commerceLiveCheckout === false ? '' : 'viewer-surface.js viewer-surface.css ') + 'markdown.js markdown-parser.js color.js rich-text.css panel-section.js panel-section.css commerce-shell.css workspace-layout.js dashboard-columns.js toolbar-icons.js icons.json commerce-toolbar.js dropdown-menus.js graph-ui-tokens.css commerce-theme.css shared-ui-profile.css floating-panel.css floating-panel.js skills-commands.css collection-layout.css toolbar.css').split(' ')
+const sharedPackFiles = import.meta.commerceLiveCheckout === false ? packAssets : [...packAssets, 'viewer-surface.js', 'viewer-surface.css']
 const primaryFiles = [
-  'app.js drafts.js listing-geo.js agentic-geo-core.mjs checkout.js launch.js workspace.js workspace-graph.js agentic-base-data-view.js agentic-base-data-view.css graph-data-view.js graph-data-view.css style.css sw.js workflow.js workspace-capabilities.js workspace-tools.js',
-  ...(import.meta.commerceLiveCheckout === false ? ['dropdown-menus.js graph-ui-tokens.css'] : [
-    sharedPackFiles.join(' '),
-    'favicon.svg workspace-tour.js workspace-navigation.js workspace-pack.route.js workspace-view-styles.js workspace-singleton.js shopper-demo-detail.js workspace-shell.css sme-business-pack.js sme-business-pack.css sme-business-pack-core.js sme-decision-contract.js sme-workflow-editor.js key-type-value.js hover.js hover-text.js hover.css sme-pack-dictionary.js sme-pack-business-plan.js housing-comparison.js housing-engine.js housing-sample.js housing-comparison.css sme-review-workflow.js graph-gantt-timeline.js graph-gantt-timeline.css',
+  ...filesWithExtension('app drafts listing-geo checkout launch workspace workspace-graph agentic-base-data-view graph-data-view sw workflow workspace-capabilities workspace-tools', 'js'),
+  'agentic-geo-core.mjs', 'agentic-base-data-view.css', 'graph-data-view.css', 'style.css',
+  ...(import.meta.commerceLiveCheckout === false ? ['dropdown-menus.js', 'graph-ui-tokens.css'] : [
+    ...sharedPackFiles,
+    ...filesWithExtension('workspace-tour workspace-navigation workspace-pack.route workspace-view-styles workspace-singleton shopper-demo-detail sme-business-pack sme-business-pack-core sme-decision-contract sme-workflow-editor key-type-value hover hover-text sme-pack-dictionary sme-pack-business-plan housing-comparison housing-engine housing-sample sme-review-workflow graph-gantt-timeline', 'js'),
+    ...filesWithExtension('workspace-shell sme-business-pack hover housing-comparison graph-gantt-timeline', 'css'), 'favicon.svg',
   ]),
-].join(' ').split(' ')
+]
 const ASSET_PATHS = new Map<string,string>([['/', '/'], [packDirectory, '/workspace-pack.html']])
 for (const file of primaryFiles) ASSET_PATHS.set('/' + file, '/' + file)
-for (const file of [...sharedPackFiles, ...['js', 'simulation.js', 'console.js', 'css'].map(ext => 'workspace-pack.' + ext)]) {
-  ASSET_PATHS.set(packDirectory + file, '/' + file)
-}
+for (const file of [...sharedPackFiles, ...packEntries]) ASSET_PATHS.set(packDirectory + file, '/' + file)
 function secured(response: Response, source: string, head: boolean): Response {
   const headers = new Headers(response.headers)
   headers.set('content-security-policy', source === 'local-unreleased' && headers.get('content-type')?.startsWith('text/html')
@@ -46,8 +47,9 @@ function secured(response: Response, source: string, head: boolean): Response {
 export async function fetchLocalFirst(request: Request, env: LocalFirstEnv, transport?: PaymentFetch,
   runtime?: FulfillmentRuntime): Promise<Response> {
     const url = new URL(request.url), prefix = PRODUCTION_STOREFRONT_PREFIX
-    const head = request.method === 'HEAD'
-    const finish = (response: Response) => secured(response, env.RELEASE_CANDIDATE_SHA, head)
+    const revision = env.RELEASE_CANDIDATE_SHA
+    const head = request.method === 'HEAD', read = head || request.method === 'GET'
+    const finish = (response: Response) => secured(response, revision, head)
     const notFound = () => finish(Response.json({ ok: false, code: 'not_found' }, { status: 404 }))
     if (url.pathname !== prefix && !url.pathname.startsWith(`${prefix}/`)) {
       return notFound()
@@ -57,14 +59,14 @@ export async function fetchLocalFirst(request: Request, env: LocalFirstEnv, tran
     if (import.meta.commerceLiveCheckout !== false) {
       if ([prefix + '/dashboard-layout', prefix + '/dashboard-layout/session'].includes(url.pathname)) {
         const { dashboardLayout } = await import('./dashboard-layout.ts')
-        return finish(await dashboardLayout(request, env.RELEASE_CANDIDATE_SHA, env.DASHBOARD_LAYOUT_SERVICE))
+        return finish(await dashboardLayout(request, revision, env.DASHBOARD_LAYOUT_SERVICE))
       }
-      if (['GET', 'HEAD'].includes(request.method) && [WORKSPACE_PACK_PATH, WORKSPACE_PACK_PATH + '/'].includes(url.pathname)) {
+      if (read && [WORKSPACE_PACK_PATH, WORKSPACE_PACK_PATH + '/'].includes(url.pathname)) {
         url.pathname = prefix + '/'; url.searchParams.set('workspace-pack', '')
         return finish(Response.redirect(url.href, 302))
       }
       const smePackRoute = `${prefix}/services/sme-business-pack`
-      if ([smePackRoute, `${smePackRoute}/`].includes(url.pathname) && ['GET', 'HEAD'].includes(request.method)) {
+      if ([smePackRoute, `${smePackRoute}/`].includes(url.pathname) && read) {
         url.pathname = `${prefix}/`; url.hash = 'sme'; url.search = ''
         return finish(Response.redirect(url.href, 308))
       }
@@ -72,25 +74,25 @@ export async function fetchLocalFirst(request: Request, env: LocalFirstEnv, tran
         const route = url.pathname.slice(smePackRoute.length)
         if (['/service.json', '/api', '/mcp'].includes(route)) {
           const { handleSmeBusinessPackRequest } = await import('./sme-business-pack.ts')
-          const response = await handleSmeBusinessPackRequest(request, env.RELEASE_CANDIDATE_SHA)
+          const response = await handleSmeBusinessPackRequest(request, revision)
           if (response) return finish(response)
         }
       }
     }
-    if ((url.pathname === WORKSPACE_PACK_PATH || url.pathname === prefix) && ['GET', 'HEAD'].includes(request.method)) {
+    if ((url.pathname === WORKSPACE_PACK_PATH || url.pathname === prefix) && read) {
       if (url.pathname === WORKSPACE_PACK_PATH) url.search = ''
       url.pathname += '/'; return finish(Response.redirect(url.href, 308))
     }
-    const workspace = await handleWorkspaceService(request, env.RELEASE_CANDIDATE_SHA,
+    const workspace = await handleWorkspaceService(request, revision,
       signal => readiness(env, runtime, signal ?? request.signal))
     if (workspace) return finish(workspace)
-    const pack = await handleWorkspacePack(request, env.RELEASE_CANDIDATE_SHA)
+    const pack = await handleWorkspacePack(request, revision)
     if (pack) return finish(pack)
     const fulfillment = await handleFulfillment(request, env.STOREFRONT_SESSION_SECRET, runtime)
     if (fulfillment) return finish(fulfillment)
     const checkout = await handleCheckout(request, env, transport, runtime)
     if (checkout) return finish(checkout)
-    if (!['GET', 'HEAD'].includes(request.method)) {
+    if (!read) {
       return finish(Response.json({ ok: false, code: 'checkout_deferred', profile: 'local-first',
         message: 'Agent writes are unavailable. Use the reviewed offer and human-operated sandbox checkout.' }, { status: 501 }))
     }
@@ -103,7 +105,7 @@ export async function fetchLocalFirst(request: Request, env: LocalFirstEnv, tran
       const value = await readiness(env, runtime, request.signal)
       return finish(Response.json(value, { status: value.ok ? 200 : 503 }))
     }
-    const versionPrefix = `/assets/${env.RELEASE_CANDIDATE_SHA}/`
+    const versionPrefix = `/assets/${revision}/`
     const assetPath = relative.startsWith(versionPrefix) ? '/' + relative.slice(versionPrefix.length) : relative
     const asset = ASSET_PATHS.get(assetPath)
     if (!asset) return notFound()
@@ -112,7 +114,7 @@ export async function fetchLocalFirst(request: Request, env: LocalFirstEnv, tran
     const response = await env.ASSETS.fetch(new Request(assetUrl, { method: 'GET' }))
     if (!response.ok) return finish(new Response('Asset unavailable', { status: 503 }))
     if (assetPath === '/sw.js' || assetPath === '/') {
-      const source = env.RELEASE_CANDIDATE_SHA
+      const source = revision
       if (!/^(?:[0-9a-f]{40}|local-unreleased)$/u.test(source)) return finish(new Response('Invalid release', { status: 503 }))
       const headers = new Headers({ 'content-type': (assetPath === '/' ? 'text/html' : 'application/javascript') + '; charset=utf-8' })
       if (assetPath === '/sw.js') headers.set('service-worker-allowed', `${prefix}/`)
