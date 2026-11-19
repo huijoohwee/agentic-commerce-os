@@ -1,3 +1,5 @@
+import { createDesignIcon } from './toolbar-icons.js'
+
 /** Canonical section mechanics. Hosts own content, persistence and available geometry. */
 export const PANEL_SECTION = Object.freeze({
   section: 'agentic-panel-section', header: 'agentic-panel-section-header',
@@ -21,6 +23,22 @@ export function updateSectionGroup(previous, key, collapsed) {
   if (collapsed) next.add(key)
   else next.delete(key)
   return next
+}
+
+/** A native disclosure keeps the summary as the sole keyboard target and exposes a document heading. */
+export function createPanelSectionSummary(doc, label, level = 3) {
+  if (!Number.isInteger(level) || level < 1 || level > 6) throw new RangeError('Invalid section heading level')
+  const summary = doc.createElement('summary')
+  summary.className = PANEL_SECTION.header + ' agentic-panel-disclosure-summary'
+  const heading = doc.createElement('h' + level)
+  heading.className = PANEL_SECTION.title + ' agentic-panel-section-toggle'
+  const text = doc.createElement('span')
+  text.append(label)
+  const chevron = createDesignIcon('ChevronDown', doc)
+  chevron.classList.add('agentic-disclosure-chevron')
+  heading.append(text, chevron)
+  summary.append(heading)
+  return summary
 }
 
 export function setPanelSectionExpanded(section, expanded) {

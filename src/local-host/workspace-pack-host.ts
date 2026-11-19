@@ -1,3 +1,4 @@
+import { packAssets, packEntries } from '../local-first/pack-assets.ts'
 import { createServer } from 'node:http'
 import fs from 'node:fs/promises'
 import path from 'node:path'
@@ -13,13 +14,13 @@ export async function startWorkspacePackHost(options: Options) {
   if (!Number.isInteger(options.port ?? 0) || (options.port ?? 0) < 0 || (options.port ?? 0) > 65535) throw Error('workspace_pack_port_invalid')
   const sample = 'print("ready")\n'
   await options.adapter({ title: 'Service readiness', source: sample, sourceDigest: digest(sample) }, AbortSignal.timeout(5000))
-  const assets = new Map(await Promise.all([
-    ['/', 'workspace-pack.html', 'text/html; charset=utf-8'],
-    ...['dropdown-menus', 'commerce-toolbar', 'workspace-layout', 'dashboard-columns', 'toolbar-icons', 'workspace-pack', 'workspace-pack.simulation', 'workspace-pack.console']
-      .map(name => ['/' + name + '.js', name + '.js', 'application/javascript; charset=utf-8']),
-    ...['graph-ui-tokens', 'commerce-theme', 'commerce-shell', 'floating-panel', 'toolbar', 'shared-ui-profile', 'workspace-pack']
-      .map(name => ['/' + name + '.css', name + '.css', 'text/css; charset=utf-8']),
-  ].map(async ([route, name, type]) => [route!, { text: await fs.readFile(path.join(options.assets, name!), 'utf8'), type: type! }] as const)))
+  const assets = new Map([[PACK_PATH + '/', 'workspace-pack.html']])
+  for (const name of [...packAssets, ...packEntries]) assets.set(PACK_PATH + '/' + name, name)
+  // The guide lazily imports the same Graph adapter relative to the storefront on either host.
+  for (const name of [...packAssets, 'workspace-graph.js', 'drafts.js', 'launch.js', 'graph-data-view.js', 'graph-data-view.css']) {
+    assets.set('/agentic-commerce-os/' + name, name)
+  }
+  const types: Record<string, string> = { '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.html': 'text/html' }
   let port = 0, active = 0, closing = false
   const arrivals: number[] = [], controllers = new Set<AbortController>()
   const server = createServer({ maxHeaderSize: 8192, headersTimeout: 5000, requestTimeout: 6500 }, (request, response) => {
@@ -50,11 +51,13 @@ export async function startWorkspacePackHost(options: Options) {
         id: PACK_TOOL, owner: 'agentic-commerce-os', title: 'Workspace Program Pack', price: { amount: '0', mode: 'free' },
         availability: 'device-session', scope: 'loopback-only', marketplaceListed: false, registryAdmission: 'not-claimed',
         adapterDigest: options.adapterDigest, limits: PACK_LIMITS, api: PACK_PATH + '/api', mcp: PACK_PATH + '/mcp' })
-      const asset = request.url?.startsWith(PACK_PATH) ? assets.get(request.url.slice(PACK_PATH.length)) : undefined
+      const asset = assets.get(request.url ?? '')
       if (asset) {
-        // The standalone host serves only the pack. Advertise workspace roles only on the full Commerce host.
-        const text = asset.type.startsWith('text/html') ? asset.text.replace(' data-workspace-home="../../"', '') : asset.text
-        return send(200, text, asset.type)
+        const type = types[path.extname(asset)]! + '; charset=utf-8'
+        void fs.readFile(path.join(options.assets, asset), 'utf8').then(text =>
+          send(200, asset === 'workspace-pack.html' ? text.replace(' data-workspace-home="../../"', '') : text, type)
+        ).catch(() => failure(503, 'workspace_pack_asset_unavailable'))
+        return
       }
       return failure(404, 'not_found')
     }

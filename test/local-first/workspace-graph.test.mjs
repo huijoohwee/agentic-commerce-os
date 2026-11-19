@@ -60,7 +60,7 @@ test('Commerce table uses the exact Agentic Base browser artifact candidate', ()
   const pin = JSON.parse(fs.readFileSync('config/agentic-base-data-view.json', 'utf8'));
   assert.equal(pin.schema, 'agentic-base/consumer-artifact/v1');
   assert.equal(pin.source.repository, 'github.com/huijoohwee/agentic-base');
-  assert.equal(pin.source.revision, '887d2cfa7f1dc3b76fa0a33694f76336e7aacbcf');
+  assert.equal(pin.source.revision, '30871e732e53f8f5963aaed46a7f6cbe3d1ddaca');
   assert.equal(pin.source.sourceDirty, false);
   assert.equal(pin.contract.browserExport, 'mountDataView');
   assert.equal(pin.contract.defaultLayout, 'table');
@@ -105,8 +105,9 @@ test('generated Graph assets match their bounded native manifest and remain self
     assert.match(input.sha256, /^[0-9a-f]{64}$/);
   }
   for (const required of [pin.entry, 'canvas/scripts/build-data-view-adapter.mjs',
-    'node_modules/@agentic-base/views-react/packages/views-react/src/table/TableCore.tsx', 'node_modules/@agentic-base/views-react/packages/views-react/src/browser/DataViewBrowserAdapter.tsx', 'grph-shared/src/ui/themeTokens.ts',
-    'grph-shared/src/ui/kgTokens.ts', 'grph-shared/src/ui/typography.ts',
+    'node_modules/@agentic-base/views-react/packages/views-react/src/table/TableCore.tsx', 'node_modules/@agentic-base/views-react/packages/views-react/src/browser/DataViewBrowserAdapter.tsx', 'canvas/src/styles/shared-ui-profile.css',
+    'grph-shared/src/ui/shared-ui-profile.json', 'node_modules/agentic-design-system/packages/react-panels/src/PanelSection.tsx',
+    'node_modules/agentic-design-system/site/panels.css',
     'node_modules/agentic-design-system/packages/react-panels/src/FloatingPanelShell.tsx',
     'node_modules/agentic-design-system/packages/react-panels/src/FloatingPanelCloseButton.tsx',
     'node_modules/agentic-design-system/packages/react-panels/src/FloatingPanelTabs.tsx',

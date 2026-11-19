@@ -3,6 +3,7 @@
 .agentic-panel-surface,
 .agentic-base-floating-panel {
   --agentic-panel-frame-stroke-width: 1px;
+  --agentic-panel-control-border: var(--agentic-panel-border);
   position: relative; display: flex; box-sizing: border-box; min-width: 0; min-height: 0;
   max-width: calc(100vw - 2 * var(--agentic-menu-edge-gap)); max-height: calc(100dvh - 2 * var(--agentic-menu-edge-gap));
   overflow: hidden; pointer-events: auto; border: var(--agentic-panel-border);
@@ -22,13 +23,10 @@
 .agentic-panel-body,
 .agentic-floating-panel-body { flex: 1 1 auto; min-inline-size: 0; min-block-size: 0; overflow: auto; overscroll-behavior: contain; padding: var(--agentic-control-padding-inline); }
 .agentic-base-floating-panel-inner {
-  box-sizing: border-box; display: flex; min-width: 0; min-height: 0; flex-direction: column; gap: var(--agentic-control-padding-block);
-  padding: var(--agentic-control-padding-inline);
+  box-sizing: border-box; display: flex; min-width: 0; min-height: 0; flex-direction: column;
 }
-.agentic-base-floating-panel-expanded > .agentic-base-floating-panel-header {
-  inline-size: calc(100% + 2 * var(--agentic-control-padding-inline));
-  margin-block: calc(-1 * var(--agentic-control-padding-inline)) var(--agentic-control-padding-inline);
-  margin-inline: calc(-1 * var(--agentic-control-padding-inline));
+.agentic-base-floating-panel-inner > .agentic-panel-body {
+  display: flex; flex-direction: column; gap: var(--agentic-control-padding-block);
 }
 .agentic-panel-main--collapsed.agentic-panel-main,
 .agentic-panel-bottom--collapsed,
@@ -38,7 +36,7 @@
 .agentic-panel-main--collapsed > .agentic-base-floating-panel-inner,
 .agentic-panel-bottom--collapsed > .agentic-base-floating-panel-inner,
 .agentic-base-floating-panel[data-agentic-base-panel-minimized="true"] > .agentic-base-floating-panel-inner {
-  gap: 0; padding: 0; inline-size: 100%;
+  inline-size: 100%;
 }
 .agentic-panel-main--collapsed :is(.agentic-panel-header, .agentic-base-floating-panel-header),
 .agentic-panel-bottom--collapsed :is(.agentic-panel-header, .agentic-base-floating-panel-header),
@@ -195,7 +193,6 @@
     grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(8rem, 1fr) minmax(8rem, 0.8fr) minmax(7rem, min(30vh, var(--agentic-panel-bottom-height)));
     grid-template-areas: "stage" "main" "bottom";
   }
-  .agentic-panel-main { inline-size: 100%; }
   .agentic-editor-workspace-preview { block-size: 34rem; }
   .agentic-panel-main-dock {
     inset-inline: max(var(--agentic-menu-edge-gap), env(safe-area-inset-left)) max(var(--agentic-menu-edge-gap), env(safe-area-inset-right));

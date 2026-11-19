@@ -2,24 +2,34 @@
   "schema": "agentic-commerce-design-system-static-release/v1",
   "source": {
     "repository": "github.com/huijoohwee/agentic-design-system",
-    "revision": "54229ceed5106c5a44a2cb3731c0deb0f74a1904"
+    "revision": "e57dd13f2f0deaaa4db5752e19cb656b17121867"
   },
   "route": "https://airvio.co/agentic-design-system/",
   "files": [
     {
       "path": "app.js",
-      "bytes": 25046,
-      "sha256": "bda1f107b63f6c55b2de50db933a8d6620cc344ebb583467ef89439c0a10424e"
+      "bytes": 23013,
+      "sha256": "39c432d851219c6af6fc634a1861b31dcc998b460b863e77a2b4526c9a256b4b"
     },
     {
       "path": "catalog.json",
       "bytes": 14006,
-      "sha256": "52724fe7c08e2937fe3355f182f8806cd9975055d439f39536a9c94644cc8e74"
+      "sha256": "30058d405462b203f3110e6f88ddafcdef09a06b9a41f32a600a51b24fe719aa"
     },
     {
       "path": "catalog.schema.json",
       "bytes": 13998,
       "sha256": "9a97ac3167f89eaf8e9198969d3b0d7fa4e227670b0108290f4307270b090033"
+    },
+    {
+      "path": "collection-layout.css",
+      "bytes": 3518,
+      "sha256": "46e6855129632a48e79188c2baf460358d8d59a7dfa1e775f900de2aee570bf8"
+    },
+    {
+      "path": "collection-layout.js",
+      "bytes": 1642,
+      "sha256": "c86df211a3415cdc386f9340741c70cf460413f27388ba5c1a064119daa30abb"
     },
     {
       "path": "color.js",
@@ -38,8 +48,13 @@
     },
     {
       "path": "floating-panel.css",
-      "bytes": 16358,
-      "sha256": "15395dd5e9d54026edaa0d9199713831cf8e7f27df938eaec9b45a05592710cc"
+      "bytes": 16086,
+      "sha256": "2dae95e94c582744f1b249ee7b3e2e2acf00454fb0254626a8b12aa995a276b8"
+    },
+    {
+      "path": "floating-panel.js",
+      "bytes": 6007,
+      "sha256": "7d6e1d91750534b4edeb75c65861b87df94c55587a3f4a9a74a0f0bb5c945670"
     },
     {
       "path": "hover-text.js",
@@ -58,13 +73,18 @@
     },
     {
       "path": "icons.json",
-      "bytes": 14011,
-      "sha256": "8ae9c970e70e9947496bde996af86ce2ca9291fcd6f1cfafae6e417071f33468"
+      "bytes": 14205,
+      "sha256": "c01cbadd47648837bb8514f6f88f20ad72ee36e1e53aaabff950be2e6214a0b6"
     },
     {
       "path": "index.html",
-      "bytes": 9411,
-      "sha256": "8bbbcca12597765e6d6516dcf55b1526fb6284009ced42267aa3fe382474bf60"
+      "bytes": 8290,
+      "sha256": "b584a0fdc0332cad715b68a4808729cfc0d0b3957533a3caba89928ef1d72d51"
+    },
+    {
+      "path": "inline-editor.js",
+      "bytes": 1892,
+      "sha256": "a9ccad9e2538324367b41aaf4e30d46a60c55482a5e4e43434c4226814685739"
     },
     {
       "path": "key-type-value.js",
@@ -88,13 +108,18 @@
     },
     {
       "path": "panel-section.css",
-      "bytes": 2259,
-      "sha256": "980e8431acbea5084e2c28f4b76c5c6713af2c7cb5dc3d90e7a88565be0fc723"
+      "bytes": 3758,
+      "sha256": "2fc5b5b950537320f7f46ae8a5a6e8fd8e80ebcf19d76dc4121d0898e0a86d52"
     },
     {
       "path": "panel-section.js",
-      "bytes": 4398,
-      "sha256": "73a7d8e15b29c22061585dc708e58c71549b258f1d4eda745625854b9a89ac8d"
+      "bytes": 5239,
+      "sha256": "f7264ad1497fa41e38da6eee3d9ffe520e6ef44c83df3f1782877baf40d44cf7"
+    },
+    {
+      "path": "panels.css",
+      "bytes": 262,
+      "sha256": "bb407f689a0a74f824c89646463c74a059fcc44b8fa12157e09f84f471547717"
     },
     {
       "path": "registry-query.js",
@@ -112,9 +137,19 @@
       "sha256": "ee3da59b4122f517a9da0f2c8a2924ff47eb74ddbefb48c9af591ca27a1a108a"
     },
     {
+      "path": "skills-commands.css",
+      "bytes": 2077,
+      "sha256": "19e0910390930260905338a5b185d1be2326b71b0ec5329bdd2701f1a74015ae"
+    },
+    {
+      "path": "skills-commands.js",
+      "bytes": 8275,
+      "sha256": "fc8e1ff5fb689fe338c6bd8ae999b911591a178115be0fadf98fc9d0938f9ef0"
+    },
+    {
       "path": "sw.js",
-      "bytes": 2217,
-      "sha256": "7cfce842b9c22d0a38e347b7fb334e3f06364e6f8f53c69eaa73b6414adc690e"
+      "bytes": 2384,
+      "sha256": "7752567a9aa1c5b04b4c758327f6e192c5b124fd4bf33caf2c8e716fb9ce222d"
     },
     {
       "path": "THIRD-PARTY-NOTICES.txt",
@@ -138,8 +173,8 @@
     },
     {
       "path": "tokens/shared-ui-profile.json",
-      "bytes": 11514,
-      "sha256": "e5915b4b22dc861a80478e7b99dd27ecd41022ed755544812d6b74b2d4ea60dd"
+      "bytes": 11576,
+      "sha256": "bab5811bcd4aa82065d4671d7876c6d9085a25f1c10e63932f8b81a53255bdb3"
     },
     {
       "path": "toolbar-icons.js",
@@ -168,8 +203,8 @@
     },
     {
       "path": "vendor/shared-ui-profile.css",
-      "bytes": 21178,
-      "sha256": "2d79bcca25b00cd7ad6d2c09f360056f922594800922ef8a71c3925bb98cea9b"
+      "bytes": 24353,
+      "sha256": "cb69acc13a7a9e9687675b354abd0bbc860ce68bbbb50e4f68d9efa2dbbbacfd"
     },
     {
       "path": "viewer-surface.css",
@@ -178,24 +213,24 @@
     },
     {
       "path": "viewer-surface.js",
-      "bytes": 4383,
-      "sha256": "17039e247006020127d56aa8afa09bd26d94a7543e3f52965a4ef579cdd01f67"
+      "bytes": 4454,
+      "sha256": "b58cd27e84b2ca582fdb6199faf9785a7f7e97f24eeac41525eb44c6a7f12683"
     }
   ],
   "profilePins": {
     "sharedUi": {
       "id": "shared-ui",
       "owner": "github.com/huijoohwee/agentic-design-system",
-      "sourceRevision": "e52a52111f52b6af85f99195ec9e59a490548575",
-      "registryRevision": "b8b8c0624b9f5d378fa1a54ea32c52f867f3ad6d",
+      "sourceRevision": "0e1a21ff98a02604b7f733c6705380133c3d7d1c",
+      "registryRevision": "7a6ad63e00f573f85e68d8ed26bffcec560c43f6",
       "sourcePath": "site/tokens/shared-ui-profile.json",
-      "sourceSha256": "sha256:e5915b4b22dc861a80478e7b99dd27ecd41022ed755544812d6b74b2d4ea60dd",
+      "sourceSha256": "sha256:bab5811bcd4aa82065d4671d7876c6d9085a25f1c10e63932f8b81a53255bdb3",
       "projectionPath": "site/vendor/shared-ui-profile.css",
-      "projectionSha256": "sha256:2d79bcca25b00cd7ad6d2c09f360056f922594800922ef8a71c3925bb98cea9b"
+      "projectionSha256": "sha256:cb69acc13a7a9e9687675b354abd0bbc860ce68bbbb50e4f68d9efa2dbbbacfd"
     }
   },
-  "totalBytes": 283877,
-  "payloadDigest": "47ced579fc805c2a4ebc701dbaeee6102232672c0b6d3ca234368ab9ec5848e5",
+  "totalBytes": 310133,
+  "payloadDigest": "64445ddadd816f94f2eb0326f335b457008007ffc98c971997303caa8d29fed6",
   "excluded": [
     "registry/",
     "site/review-inventory.json",

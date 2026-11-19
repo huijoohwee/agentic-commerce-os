@@ -7,7 +7,14 @@ export function mountWorkspaceLayout({panel, toolbar, create, roles, packPage}) 
   const cache = 'commerce.dashboard-layout.v1', box = create('section'), sources = new Set()
   let layout = {revision:0, columns:{}}, authoring=false, editToken='', turn=0, generation=0, reads=0
   const admin = () => !packPage && document.body.dataset.workspaceRole==='admin' && /^#admin(?:$|[-?])/.test(location.hash)
-  panel.querySelector('.agentic-base-floating-panel-inner').append(box); box.hidden=true
+  box.hidden=true
+  const placeEditor = view => {
+    const slot = panel.querySelector(`[data-panel-tab="${view}"]`)
+    const target = view === 'setup-guide' ? slot : slot?.querySelector('.agentic-panel-tab-body')
+    target?.append(box)
+  }
+  placeEditor('agent-tools')
+  document.addEventListener('commerce:panel-state', ({detail}) => { if (detail.open) placeEditor(detail.view) })
   function apply() {
     for (const root of [document,document.getElementById('pack-view')?.shadowRoot].filter(Boolean)) {
       applyDashboardColumns(root,layout)

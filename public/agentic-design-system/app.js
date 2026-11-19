@@ -1,3 +1,5 @@
+import { mountCollectionLayoutPicker } from './collection-layout.js';
+import { mountFloatingPanel } from './floating-panel.js';
 import { attachViewerSurface } from './viewer-surface.js';
 import { attachMarkdownEditor } from './markdown.js';
 import { installPanelSections } from './panel-section.js';
@@ -20,6 +22,19 @@ for (const title of ['Section mechanics', 'Retained local inputs']) {
   section.append(summary, body); sectionPreview.append(section);
 }
 document.querySelector('#catalog-grid').before(sectionPreview);
+
+const collectionPreview = document.querySelector('#collection-preview');
+const collection = collectionPreview.querySelector('.agentic-collection');
+const collectionItems = collection.querySelectorAll('.agentic-collection-item');
+const layoutPicker = mountCollectionLayoutPicker(collectionPreview.querySelector('[data-layout-picker]'), {
+  layout: 'list',
+  label: 'Collection layout',
+  onChange(layout) {
+    collection.dataset.layout = layout;
+    for (const item of collectionItems) item.dataset.layout = layout;
+    layoutPicker.setLayout(layout);
+  },
+});
 
 hydrateDesignIcons(document);
 installHoverLabels(document);
@@ -318,64 +333,8 @@ function updateSectionSelection() {
 
 window.addEventListener("hashchange", updateSectionSelection);
 
-const floatingPanelTrigger = document.querySelector("#floating-panel-preview-trigger");
-const floatingPanelPreview = document.querySelector("#panel-preview");
-const floatingPanelClose = floatingPanelPreview?.querySelector("[data-panel-close]");
-const floatingPanelTablist = floatingPanelPreview?.querySelector('[role="tablist"]');
-const floatingPanelTabs = [...(floatingPanelTablist?.querySelectorAll('[role="tab"]') ?? [])];
-
-function selectFloatingPanelTab(key, focus = false) {
-  const selectedTab = floatingPanelTabs.find(tab => tab.dataset.agenticFloatingPanelTabKey === key);
-  if (!selectedTab) throw new Error(`Unknown shared FloatingPanel tab: ${key}`);
-  for (const tab of floatingPanelTabs) {
-    const selected = tab === selectedTab;
-    tab.setAttribute("aria-selected", String(selected));
-    tab.tabIndex = selected ? 0 : -1;
-    const panel = document.getElementById(tab.getAttribute("aria-controls"));
-    if (!panel) throw new Error(`FloatingPanel tab has no panel: ${tab.id}`);
-    panel.hidden = !selected;
-  }
-  if (focus) selectedTab.focus({ preventScroll: true });
-}
-
-const initialFloatingPanelTab = floatingPanelTabs.find(tab => tab.getAttribute("aria-selected") === "true");
-if (initialFloatingPanelTab) selectFloatingPanelTab(initialFloatingPanelTab.dataset.agenticFloatingPanelTabKey);
-
-floatingPanelTablist?.addEventListener("click", event => {
-  const tab = event.target.closest('[role="tab"]');
-  if (tab && floatingPanelTablist.contains(tab)) selectFloatingPanelTab(tab.dataset.agenticFloatingPanelTabKey);
-});
-
-floatingPanelTablist?.addEventListener("keydown", event => {
-  const current = event.target.closest('[role="tab"]');
-  const index = floatingPanelTabs.indexOf(current);
-  if (index < 0) return;
-  let next = index;
-  if (event.key === "ArrowRight") next = (index + 1) % floatingPanelTabs.length;
-  else if (event.key === "ArrowLeft") next = (index - 1 + floatingPanelTabs.length) % floatingPanelTabs.length;
-  else if (event.key === "Home") next = 0;
-  else if (event.key === "End") next = floatingPanelTabs.length - 1;
-  else return;
-  event.preventDefault();
-  selectFloatingPanelTab(floatingPanelTabs[next].dataset.agenticFloatingPanelTabKey, true);
-});
-
-function setFloatingPanelOpen(open) {
-  if (!floatingPanelTrigger || !floatingPanelPreview) return;
-  floatingPanelPreview.hidden = !open;
-  floatingPanelTrigger.setAttribute("aria-expanded", String(open));
-  if (open) floatingPanelClose?.focus({ preventScroll: true });
-  else floatingPanelTrigger.focus({ preventScroll: true });
-}
-
-floatingPanelTrigger?.addEventListener("click", () => {
-  if (floatingPanelPreview) setFloatingPanelOpen(floatingPanelPreview.hidden);
-});
-floatingPanelClose?.addEventListener("click", () => setFloatingPanelOpen(false));
-document.addEventListener("keydown", event => {
-  if (event.key !== "Escape" || !floatingPanelPreview || floatingPanelPreview.hidden) return;
-  event.preventDefault();
-  setFloatingPanelOpen(false);
+mountFloatingPanel(document.querySelector('#floating-panel-preview-trigger'), document.querySelector('#panel-preview'), {
+  label: 'FloatingPanel preview', tablistLabel: 'Workspace panels', activeKey: 'console', placement: 'dock',
 });
 
 async function sha256(bytes) {

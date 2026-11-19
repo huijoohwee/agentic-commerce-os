@@ -36,10 +36,9 @@ test('Commerce consumes the pinned Design System panel profile and shell offline
     /\.agentic-base-floating-panel\s+\.agentic-floating-panel-tab:hover\s*\{[^}]*background:\s*var\(--agentic-control-hover-background\)/u,
     'hovered icon-plus-label state comes from the pinned Design System stylesheet');
   const shellHtml = fs.readFileSync('public/local-first/index.html', 'utf8');
-  assert.match(shellHtml, /assets\/__RELEASE__\/shared-ui-profile\.css/u);
-  assert.match(shellHtml, /assets\/__RELEASE__\/floating-panel\.css/u);
-  assert.ok(shellHtml.indexOf('style.css') < shellHtml.indexOf('shared-ui-profile.css'));
-  assert.ok(shellHtml.indexOf('shared-ui-profile.css') < shellHtml.indexOf('floating-panel.css'));
+  assert.match(shellHtml, /assets\/__RELEASE__\/workspace-shell\.css/u);
+  assert.ok(shellHtml.indexOf('style.css') < shellHtml.indexOf('workspace-shell.css'));
+  assert.doesNotMatch(shellHtml, /(?:shared-ui-profile|floating-panel|collection-layout|panel-section|skills-commands)\.css/u);
   const floatingPanelPin = JSON.parse(fs.readFileSync('config/floating-panel.pin.json', 'utf8'));
   const designSystemRelease = JSON.parse(fs.readFileSync('config/design-system-static-release.json', 'utf8'));
   assert.equal(floatingPanelPin.revision, designSystemRelease.source.revision);
@@ -51,9 +50,7 @@ test('Commerce consumes the pinned Design System panel profile and shell offline
   const commerceShell = fs.readFileSync('public/local-first/commerce-shell.css', 'utf8');
   const panelRules = [...commerceShell.matchAll(/([^{}]+)\{([^{}]*)\}/gu)]
     .filter(([, selector]) => /\.agentic-(?:base-floating-panel|panel-(?:main|bottom)|panel-control)/u.test(selector));
-  assert.ok(panelRules.length, 'Commerce keeps its panel host layout scoped to the shared panel classes');
-  assert.ok(panelRules.every(([, , declarations]) => !/(?:^|[;{])\s*(?:color|background(?:-[\w-]+)?|border(?:-[\w-]+)?|box-shadow|font(?:-[\w-]+)?)\s*:/u.test(declarations)),
-    'Commerce must not define a competing Design System panel appearance');
+  assert.equal(panelRules.length, 0, 'Consumer CSS may not style the canonical shell');
   const commercePanelRule = commerceShell.match(/\.commerce-workspace-panel\s*\{([^}]*)\}/u)?.[1] ?? '';
   assert.ok(commercePanelRule, 'Commerce must scope its workspace offset to the shared panel root');
   assert.match(commercePanelRule, /--agentic-floating-panel-block-start-offset:/u,
@@ -155,7 +152,7 @@ test('Workspace Pack takes panel geometry and colors from the pinned stylesheets
   const css = fs.readFileSync('public/local-first/workspace-pack.css', 'utf8');
   const owners = [...css.matchAll(/@import\s+([^;]+);/gi)].map(match => match[1].trim());
   assert.match(fs.readFileSync('public/local-first/commerce-shell.css', 'utf8'), /@import "\.\/floating-panel\.css";/);
-  assert.deepEqual(owners, ['"./graph-ui-tokens.css"', '"./commerce-theme.css"', '"./shared-ui-profile.css"', '"./panel-section.css"', '"./commerce-shell.css"', '"./toolbar.css"']);
+  assert.deepEqual(owners, ['"./graph-ui-tokens.css"', '"./commerce-theme.css"', '"./commerce-shell.css"']);
   assert.match(html, /id="builder" class="agentic-dashboard-layout"/);
   assert.match(html, /class="agentic-dashboard-region">\s*<div class="agentic-dashboard-grid" data-columns="2" data-dashboard-columns-for="builder">/);
   assert.match(html, /id="formats" class="agentic-dashboard-layout"/);
@@ -188,14 +185,15 @@ test('the storefront leaves the Mission grid, cards and selected colors to the s
 test('storefront and service navigation use the pinned Toolbar without a local surface', () => {
   for (const file of ['workspace-pack.css', 'workspace-shell.css']) {
     const css = fs.readFileSync('public/local-first/' + file, 'utf8');
-    assert.match(css, /@import "\.\/toolbar\.css";/);
+    assert.doesNotMatch(css, /@import "\.\/toolbar\.css";/);
     assert.match(css, /@import "\.\/commerce-shell\.css";/);
     assert.doesNotMatch(css, /\.(?:commerce-chrome|commerce-flyout|commerce-banner|service-note)\b/);
     assert.doesNotMatch(css, /\.agentic-toolbar(?:[-\w]*)\b|\.topbar\s*[{>]|body\s*>\s*header\s*\{/);
   }
   const owner = fs.readFileSync('public/local-first/commerce-toolbar.js', 'utf8');
-  assert.match(owner, /import \{[^}]*createPanelControlButton[^}]*\} from '\.\/toolbar-icons\.js'/);
-  assert.match(owner, /createPanelControlButton\('close'\)/);
+  assert.match(owner, /import \{ mountFloatingPanel \} from '\.\/floating-panel\.js'/);
+  assert.match(owner, /mountFloatingPanel\(button, popover,/);
+  assert.doesNotMatch(owner, /createPanelControlButton|setAttribute\('role', 'tablist'\)/);
   assert.doesNotMatch(owner, /aria-label.{0,40}close|title.{0,40}close/u);
   assert.match(owner, /PANEL_VIEWS[\s\S]*?Bot[\s\S]*?SquareTerminal[\s\S]*?HelpCircle/);
   assert.doesNotMatch(owner, /workspace-agent-open|console-toggle/);
@@ -225,7 +223,9 @@ test('Commerce panel close reuses the canonical semantic role and icon', () => {
   assert.match(source, /definition\.label/);
   assert.match(source, /cannot override its canonical/);
   assert.match(source, /cannot replace its existing semantic role/);
-  assert.match(owner, /createPanelControlButton\('close'\)/);
+  assert.match(owner, /mountFloatingPanel\(button, popover,/);
+  assert.doesNotMatch(owner, /createPanelControlButton|setAttribute\('role', 'tablist'\)/);
+  assert.match(fs.readFileSync('public/local-first/floating-panel.js', 'utf8'), /updatePanelControlGroup\(controls, \{ actions: \{ close \}/);
   assert.match(fs.readFileSync('public/local-first/floating-panel.css', 'utf8'), /\.agentic-base-floating-panel-close/);
 });
 
@@ -240,7 +240,7 @@ test('all Commerce form borders come from the pinned shared control token', () =
   const style = fs.readFileSync('public/local-first/style.css', 'utf8');
   const profile = fs.readFileSync('public/local-first/shared-ui-profile.css', 'utf8');
   assert.match(profile, /--agentic-control-border:\s*1px solid var\(--agentic-base-border,[^;]+\);/u);
-  assert.match(profile, /\.agentic-form-control,[\s\S]+?\.agentic-select-trigger\s*\{[^}]*border:\s*var\(--agentic-control-border\)/u);
+  assert.match(profile, /\.agentic-form-control,[\s\S]+?\.agentic-select-trigger\s*\{[^}]*border:\s*var\(--agentic-panel-control-border,\s*var\(--agentic-control-border\)\)/u);
   const controlRules = [...style.matchAll(/([^{}]+)\{([^{}]*)\}/gu)]
     .filter(([, selector]) => /\b(?:input|textarea|select)\b|\.agentic-select-trigger/u.test(selector))
     .filter(([, selector]) => !/\.file-input\b/u.test(selector));
@@ -254,12 +254,12 @@ test('Base browser controls reuse the central shared border utility', () => {
   const profile = fs.readFileSync('public/agentic-design-system/vendor/shared-ui-profile.css', 'utf8');
   const css = fs.readFileSync('public/local-first/agentic-base-data-view.css', 'utf8');
   const profileDigest = digest(profile);
-  assert.equal(pin.source.revision, '887d2cfa7f1dc3b76fa0a33694f76336e7aacbcf');
+  assert.equal(pin.source.revision, '30871e732e53f8f5963aaed46a7f6cbe3d1ddaca');
   assert.equal(pin.inputs.find(input => input.path === 'packages/views-react/src/browser/shared-ui-profile.css')?.sha256,
     profileDigest);
   assert.match(profile, /--agentic-control-border:\s*1px solid var\(--agentic-base-border,/u);
   assert.match(css, /--agentic-control-border:\s*1px solid var\(--agentic-base-border,/u);
-  assert.match(css, /\.agentic-form-control,[\s\S]+?border:\s*var\(--agentic-control-border\)/u);
+  assert.match(css, /\.agentic-form-control,[\s\S]+?border:\s*var\(--agentic-panel-control-border,\s*var\(--agentic-control-border\)\)/u);
 });
 
 test('native hover panel, palette and key/value text are exact shared projections', () => {

@@ -11,7 +11,7 @@ const CONFIG = join(ROOT, 'config/design-system-static-release.json');
 const PREFIX = '/agentic-design-system';
 const FILES = Object.freeze([
   ['LICENSE', 'LICENSE'],
-  ...['THIRD-PARTY-NOTICES.txt', 'app.js', 'catalog.json', 'catalog.schema.json', 'dashboard-columns.js', 'favicon.svg', 'floating-panel.css', 'icons.json', 'index.html', 'registry-query.js', 'registry.css', 'sw.js', 'tokens/base-profile.json', 'tokens/commerce-profile.json', 'tokens/graph-profile.json', 'tokens/shared-ui-profile.json', 'toolbar-icons.js', 'toolbar.css', 'key-type-value.js', 'markdown.js', 'markdown-parser.js', 'color.js', 'rich-text.css', 'viewer-surface.js', 'viewer-surface.css', 'panel-section.js', 'panel-section.css', 'hover.js', 'hover-text.js', 'hover.css', 'vendor/base-profile.css', 'vendor/commerce-theme.css', 'vendor/graph-profile.css', 'vendor/shared-ui-profile.css'].map(path => ['site/' + path, path]),
+  ...['THIRD-PARTY-NOTICES.txt', 'app.js', 'catalog.json', 'catalog.schema.json', 'dashboard-columns.js', 'favicon.svg', 'floating-panel.js', 'inline-editor.js', 'skills-commands.js', 'skills-commands.css', 'collection-layout.js', 'collection-layout.css', 'panels.css', 'floating-panel.css', 'icons.json', 'index.html', 'registry-query.js', 'registry.css', 'sw.js', 'tokens/base-profile.json', 'tokens/commerce-profile.json', 'tokens/graph-profile.json', 'tokens/shared-ui-profile.json', 'toolbar-icons.js', 'toolbar.css', 'key-type-value.js', 'markdown.js', 'markdown-parser.js', 'color.js', 'rich-text.css', 'viewer-surface.js', 'viewer-surface.css', 'panel-section.js', 'panel-section.css', 'hover.js', 'hover-text.js', 'hover.css', 'vendor/base-profile.css', 'vendor/commerce-theme.css', 'vendor/graph-profile.css', 'vendor/shared-ui-profile.css'].map(path => ['site/' + path, path]),
 ]);
 
 function fail(code) { throw new Error(`design_system_release:${code}`); }
@@ -125,7 +125,7 @@ function syncSource(sourceRoot, expectedRevision) {
     writeFileSync(target, sourceBytes(from));
   }
   const localFirst = join(ROOT, 'public/local-first');
-  for (const file of ['floating-panel.css', 'icons.json', 'toolbar-icons.js', 'toolbar.css', 'key-type-value.js', 'markdown.js', 'markdown-parser.js', 'color.js', 'rich-text.css', 'viewer-surface.js', 'viewer-surface.css', 'panel-section.js', 'panel-section.css', 'hover.js', 'hover-text.js', 'hover.css']) {
+  for (const file of ['floating-panel.js', 'collection-layout.css', 'skills-commands.css', 'floating-panel.css', 'icons.json', 'toolbar-icons.js', 'toolbar.css', 'key-type-value.js', 'markdown.js', 'markdown-parser.js', 'color.js', 'rich-text.css', 'viewer-surface.js', 'viewer-surface.css', 'panel-section.js', 'panel-section.css', 'hover.js', 'hover-text.js', 'hover.css']) {
     writeFileSync(join(localFirst, file), sourceBytes('site/' + file));
   }
   writeFileSync(join(localFirst, 'shared-ui-profile.css'), sourceBytes('site/vendor/shared-ui-profile.css'));
@@ -136,6 +136,10 @@ function syncSource(sourceRoot, expectedRevision) {
   floatingPanelPin.revision = expectedRevision;
   floatingPanelPin.sha256 = hash(sourceBytes('site/floating-panel.css'));
   writeJson(join(ROOT, 'config/floating-panel.pin.json'), floatingPanelPin);
+  const collectionPin = json(join(ROOT, 'config/collection-layout.pin.json'));
+  collectionPin.revision = expectedRevision;
+  collectionPin.sha256 = hash(sourceBytes(collectionPin.path));
+  writeJson(join(ROOT, 'config/collection-layout.pin.json'), collectionPin);
   const toolbarPin = json(join(ROOT, 'config/toolbar.pin.json'));
   toolbarPin.revision = expectedRevision;
   toolbarPin.sha256 = hash(sourceBytes('site/toolbar.css'));

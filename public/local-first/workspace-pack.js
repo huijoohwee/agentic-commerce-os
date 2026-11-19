@@ -182,7 +182,7 @@ export function mountWorkspacePack({ root, toolbar, service, active, readiness }
   })
   const workspacePanel = document.getElementById('commerce-workspace-panel')
   const initiallySelectedView = !workspacePanel?.hidden
-    ? workspacePanel?.querySelector('[role="tab"][aria-selected="true"]')?.dataset.panelView
+    ? workspacePanel?.querySelector('[role="tab"][aria-selected="true"]')?.dataset.agenticFloatingPanelTabKey
     : undefined
   if (active() && initiallySelectedView) activateWorkspacePanelView(initiallySelectedView)
   const statusBar = $('status-service').parentElement

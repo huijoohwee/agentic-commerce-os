@@ -11,7 +11,7 @@ import { readCheckoutRelease, liveAuthorizationScope } from './live-profile.mjs'
 
 export const CONFIG = 'wrangler.local-first.jsonc';
 export const WORKER = 'agentic-commerce-edge-production';
-export const FILES = Object.freeze(['index.html', 'favicon.svg', 'workspace.js', 'workspace-navigation.js', 'workspace-pack.route.js', 'workspace-view-styles.js', 'commerce-toolbar.js', 'commerce-shell.css', 'workspace-layout.js', 'dashboard-columns.js', 'toolbar-icons.js', 'icons.json', 'workspace-singleton.js', 'shopper-demo-detail.js', 'workspace-tour.js', 'workspace-capabilities.js', 'workspace-tools.js', 'workspace-graph.js', 'agentic-base-data-view.js', 'dropdown-menus.js', 'agentic-base-data-view.css', 'graph-data-view.js', 'graph-data-view.css', 'graph-ui-tokens.css', 'commerce-theme.css', 'workspace-shell.css', 'shared-ui-profile.css', 'collection-layout.css', 'listing-geo.js', 'agentic-geo-core.mjs', 'app.js', 'drafts.js', 'checkout.js', 'launch.js', 'workflow.js', 'style.css', 'sw.js', 'workspace-pack.html', 'workspace-pack.js', 'workspace-pack.css', 'floating-panel.css', 'toolbar.css', 'workspace-pack.simulation.js', 'workspace-pack.console.js', 'sme-business-pack.js', 'sme-business-pack.css', 'sme-business-pack-core.js', 'sme-decision-contract.js', 'sme-workflow-editor.js', 'key-type-value.js', 'markdown.js', 'markdown-parser.js', 'color.js', 'rich-text.css', 'viewer-surface.js', 'viewer-surface.css', 'panel-section.js', 'panel-section.css', 'hover.js', 'hover-text.js', 'hover.css', 'sme-review-workflow.js', 'graph-gantt-timeline.js', 'graph-gantt-timeline.css', 'sme-pack-business-plan.js', 'sme-pack-dictionary.js', 'housing-comparison.js', 'housing-engine.js', 'housing-sample.js', 'housing-comparison.css']);
+export const FILES = Object.freeze(['index.html', 'favicon.svg', 'workspace.js', 'workspace-navigation.js', 'workspace-pack.route.js', 'workspace-view-styles.js', 'commerce-toolbar.js', 'commerce-shell.css', 'workspace-layout.js', 'dashboard-columns.js', 'toolbar-icons.js', 'icons.json', 'workspace-singleton.js', 'shopper-demo-detail.js', 'workspace-tour.js', 'workspace-capabilities.js', 'workspace-tools.js', 'workspace-graph.js', 'agentic-base-data-view.js', 'dropdown-menus.js', 'agentic-base-data-view.css', 'graph-data-view.js', 'graph-data-view.css', 'graph-ui-tokens.css', 'commerce-theme.css', 'workspace-shell.css', 'shared-ui-profile.css', 'collection-layout.css', 'listing-geo.js', 'agentic-geo-core.mjs', 'app.js', 'drafts.js', 'checkout.js', 'launch.js', 'workflow.js', 'style.css', 'sw.js', 'workspace-pack.html', 'workspace-pack.js', 'workspace-pack.css', 'floating-panel.css', 'floating-panel.js', 'skills-commands.css', 'toolbar.css', 'workspace-pack.simulation.js', 'workspace-pack.console.js', 'sme-business-pack.js', 'sme-business-pack.css', 'sme-business-pack-core.js', 'sme-decision-contract.js', 'sme-workflow-editor.js', 'key-type-value.js', 'markdown.js', 'markdown-parser.js', 'color.js', 'rich-text.css', 'viewer-surface.js', 'viewer-surface.css', 'panel-section.js', 'panel-section.css', 'hover.js', 'hover-text.js', 'hover.css', 'sme-review-workflow.js', 'graph-gantt-timeline.js', 'graph-gantt-timeline.css', 'sme-pack-business-plan.js', 'sme-pack-dictionary.js', 'housing-comparison.js', 'housing-engine.js', 'housing-sample.js', 'housing-comparison.css']);
 export const PRIVATE_FILES = Object.freeze(['education-materials.md', '_headers']);
 export const STORAGE_MANAGEMENT_ASSETS = Object.freeze(['index.html', 'style.css', 'guide.js', 'sources.json', 'sw.js']);
 export const STORAGE_MANAGEMENT_SOURCE_FILES = Object.freeze([
@@ -207,15 +207,19 @@ export function verifyGraphDataView() {
     'node_modules/agentic-design-system/site/floating-panel.css',
     'node_modules/agentic-design-system/site/toolbar.css',
     'node_modules/agentic-design-system/site/icons.json',
-    'canvas/src/index.css', 'canvas/src/styles/responsive-toolbar.css', 'grph-shared/src/ui/themeTokens.ts',
-    'grph-shared/src/ui/kgTokens.ts', 'grph-shared/src/ui/typography.ts',
+    'canvas/src/index.css', 'canvas/src/styles/responsive-toolbar.css', 'canvas/src/styles/shared-ui-profile.css',
+    'grph-shared/src/ui/shared-ui-profile.json', 'node_modules/agentic-design-system/packages/react-panels/src/PanelSection.tsx',
+    'node_modules/agentic-design-system/site/panels.css',
     'grph-shared/src/ui/graph-profile.json', 'grph-shared/src/ui/graph-profile.pin.json', 'grph-shared/src/ui/design-runtime-profile.json',
     'canvas/src/styles/shared-ui-profile.pin.json', 'canvas/src/styles/kgTokens.generated.css',
     'node_modules/@agentic-base/views-react/packages/views-react/src/controls/icons.json'];
   if (totalInputBytes > 8000000 || owners.some(owner => !paths.has(owner))) throw Error('Graph data view native owner missing or over budget');
-  const panelSource = pin.inputs.find(input => input.path === 'node_modules/agentic-design-system/site/floating-panel.css');
-  if (panelSource?.sha256 !== digest(fs.readFileSync('public/local-first/floating-panel.css')))
-    throw Error('The Graph browser export and native Workspace Pack Console must use the same FloatingPanel');
+  const panelIndex = fs.readFileSync('public/agentic-design-system/panels.css', 'utf8');
+  for (const file of ['panels.css', ...[...panelIndex.matchAll(/@import "\.\/([^";]+)";/gu)].map(match => match[1])]) {
+    const entry = pin.inputs.find(input => input.path === 'node_modules/agentic-design-system/site/' + file);
+    if (entry?.sha256 !== digest(fs.readFileSync('public/agentic-design-system/' + file)))
+      throw Error('Graph and Commerce must use the same panel stylesheet: ' + file);
+  }
   const names = ['graph-data-view.js', 'graph-data-view.css', 'graph-ui-tokens.css'];
   if (!Array.isArray(pin.outputs) || pin.outputs.length !== names.length || names.some(name => !pin.outputs.some(row => row.path === name))) throw Error('Graph data view inventory invalid');
   for (const output of pin.outputs) {
@@ -360,14 +364,21 @@ export function verifySharedUiIconProfile(directory = 'public/local-first') {
       throw Error('Commerce panel and toolbar must use one pinned Design System revision');
   }
   const panelShell = fs.readFileSync(path.join(directory, 'commerce-shell.css'), 'utf8');
-  const panelRules = [...panelShell.matchAll(/([^{}]+)\{([^{}]*)\}/gu)]
-    .filter(([, selector]) => /\.agentic-(?:base-floating-panel|panel-(?:main|bottom)|panel-control)/u.test(selector));
-  const appearance = /(?:^|[;{])\s*(?:color|background(?:-[\w-]+)?|border(?:-[\w-]+)?|box-shadow|font(?:-[\w-]+)?)\s*:/u;
-  if (panelRules.some(([, , declarations]) => appearance.test(declarations)))
-    throw Error('Commerce must not override Design System panel appearance');
+  const imports = css => [...css.matchAll(/@import "\.\/(?:vendor\/)?([^"/]+)";/gu)].map(match => match[1]);
+  const owner = fs.readFileSync('public/agentic-design-system/panels.css', 'utf8');
+  const assets = imports(owner);
+  if (!assets.length || JSON.stringify(imports(panelShell)) !== JSON.stringify(assets))
+    throw Error('Commerce must import the ordered Design System panel styles exactly once');
+  for (const file of [...assets, 'floating-panel.js']) {
+    const source = file === 'shared-ui-profile.css' ? 'vendor/' + file : file;
+    if (!fs.readFileSync(path.join(directory, file)).equals(fs.readFileSync('public/agentic-design-system/' + source)))
+      throw Error('Commerce must use the exact Design System panel asset: ' + file);
+  }
+  if (/\.agentic-(?:base-floating-panel|floating-panel|panel-(?:main|bottom|section|tab|control|body|scroll))/.test(panelShell))
+    throw Error('Commerce must not override Design System panel layout or appearance');
   const shell = fs.readFileSync(path.join(directory, 'workspace-shell.css'), 'utf8');
   const rule = shell.match(/\.workspace-shell>\.sidebar \.console-search>svg\s*\{([^}]*)\}/u)?.[1] ?? '';
-  if (!shell.startsWith('@import "./shared-ui-profile.css";')
+  if (JSON.stringify(imports(shell)) !== JSON.stringify(['commerce-shell.css'])
     || !rule.includes('width: var(--agentic-icon-size-default)')
     || !rule.includes('height: var(--agentic-icon-size-default)')
     || !rule.includes('flex: 0 0 var(--agentic-icon-size-default)')
@@ -396,7 +407,7 @@ export function sourceManifest(revision, selection = readCheckoutRelease()) {
   verifyStorageManagementSourceIndex();
   assertLocalFirstConfig(JSON.parse(fs.readFileSync(CONFIG, 'utf8')));
   if (listRegularFiles('public/local-first').join() !== [...FILES, ...PRIVATE_FILES, ...STORAGE_MANAGEMENT_SOURCE_FILES].sort().join()) throw Error('Unexpected static asset inventory');
-  const paths = [CONFIG, 'src/local-first/worker.ts', 'src/local-first/workspace-pack.ts', 'src/local-first/workspace-service.ts', 'src/local-first/sme-business-pack.ts', 'public/local-first/sme-business-pack-core.js', 'config/capability-token-map.json', 'config/shared-ui-profile.pin.json', 'config/floating-panel.pin.json', 'config/toolbar.pin.json',
+  const paths = [CONFIG, 'src/local-first/worker.ts', 'src/local-first/pack-assets.ts', 'src/local-first/workspace-pack.ts', 'src/local-first/workspace-service.ts', 'src/local-first/sme-business-pack.ts', 'public/local-first/sme-business-pack-core.js', 'config/capability-token-map.json', 'config/shared-ui-profile.pin.json', 'config/floating-panel.pin.json', 'config/toolbar.pin.json',
     'config/dashboard-columns.pin.json', 'config/collection-layout.pin.json', 'config/agentic-base-data-view.json', 'config/graph-data-view.json', 'config/workspace-pack-graph.json', 'src/generated/graph-workspace-pack.js', 'src/generated/graph-workspace-pack.d.ts',
     'scripts/workspace-pack/build-graph.mjs', 'src/edge/production-prefix.ts', 'src/shared/http.ts',
     ...['checkout', 'session', 'fulfillment-contract', 'fulfillment-definition', 'fulfillment', 'fulfillment-relay', 'stripe-checkout', 'checkout-offer', 'checkout-recovery', 'stripe-webhook'].map(file => `src/local-first/${file}.ts`),

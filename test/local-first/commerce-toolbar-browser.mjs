@@ -53,6 +53,7 @@ export async function checkCommerceToolbar(browser, url, width) {
         await options.getByRole('tab', { name: 'Setup Guide' }).click();
         const guide = options.getByRole('tabpanel', { name: 'Setup Guide' });
         await expect(guide.getByRole('heading', { name: 'Program Pack setup' })).toBeVisible();
+        await expect(guide.getByRole('heading', {level: 2})).toHaveCount(1);
         await expect(guide.locator('button[data-step-id]')).toHaveCount(4);
       }
       await options.getByRole('tab', { name: 'Agent tools' }).click();

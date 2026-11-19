@@ -1,6 +1,3 @@
-@import "./shared-ui-profile.css";
-@import "./panel-section.css";
-@import "./toolbar.css";
 @import "./commerce-shell.css";
 
 /* Shared workspace layout owner for Shopper, Vendor, Admin, and SME surfaces. */
