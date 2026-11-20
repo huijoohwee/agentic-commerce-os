@@ -106,11 +106,17 @@ export async function checkSandboxCheckout({ browser, url, output, record, remot
       assert.equal(control.status(), 200);
       await page.locator('#checkout-refresh').click(); await expect(page.locator('#checkout-status')).toContainText('test payment verified');
       const receiptWait = page.waitForEvent('download'); await page.locator('#checkout-receipt').click();
-      const receipt = JSON.parse(fs.readFileSync(await (await receiptWait).path(), 'utf8'));
+      const receiptDownload = await receiptWait;
+      const receiptFile = path.join(output, 'sandbox-checkout-receipt.json');
+      await receiptDownload.saveAs(receiptFile);
+      const receipt = JSON.parse(fs.readFileSync(receiptFile, 'utf8'));
       assert.equal(receipt.mode, 'sandbox'); assert.equal(receipt.realMoney, false); assert.equal(receipt.chargeMinor, 0);
       assert.equal(receipt.status, 'succeeded');
       const fileWait = page.waitForEvent('download'); await page.locator('#checkout-download').click();
-      assert.match(fs.readFileSync(await (await fileWait).path(), 'utf8'), /Buyer interview worksheet/);
+      const worksheetDownload = await fileWait;
+      const worksheetFile = path.join(output, 'sandbox-checkout-download.txt');
+      await worksheetDownload.saveAs(worksheetFile);
+      assert.match(fs.readFileSync(worksheetFile, 'utf8'), /Buyer interview worksheet/);
       // A separate browser session exercises cancellation without discarding the successful receipt.
       await context.clearCookies(); await page.reload(); await page.locator('#checkout-confirm').check();
       await page.locator('#checkout-start').click(); await expect(page.locator('#checkout-cancel')).toBeVisible();
