@@ -27,7 +27,7 @@ const primaryFiles = [
     ...filesWithExtension('workspace-shell sme-business-pack hover housing-comparison graph-gantt-timeline', 'css'), 'favicon.svg',
   ]),
 ]
-const ASSET_PATHS = new Map<string,string>([['/', '/'], [packDirectory, '/workspace-pack.html']])
+const ASSET_PATHS = new Map<string,string>([['/', '/index.html'], [packDirectory, '/workspace-pack.html']])
 for (const file of primaryFiles) ASSET_PATHS.set('/' + file, '/' + file)
 for (const file of [...sharedPackFiles, ...packEntries]) ASSET_PATHS.set(packDirectory + file, '/' + file)
 function secured(response: Response, source: string, head: boolean): Response {
@@ -109,7 +109,7 @@ export async function fetchLocalFirst(request: Request, env: LocalFirstEnv, tran
     const assetPath = relative.startsWith(versionPrefix) ? '/' + relative.slice(versionPrefix.length) : relative
     const asset = ASSET_PATHS.get(assetPath)
     if (!asset) return notFound()
-    const assetUrl = new URL(asset, url.origin)
+    const assetUrl = new URL(assetPath === '/' ? '/__local-first-index.html' : asset, url.origin)
     // Do not forward user headers, cookies or credentials to the static asset service.
     const response = await env.ASSETS.fetch(new Request(assetUrl, { method: 'GET' }))
     if (!response.ok) return finish(new Response('Asset unavailable', { status: 503 }))

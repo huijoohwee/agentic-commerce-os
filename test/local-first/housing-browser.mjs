@@ -132,8 +132,8 @@ export async function checkHousingWorkspace({ browser, url, output, observeConte
 
   await expect(inputs.locator('.agentic-ktv-value small')).toHaveCount(0)
   const assertHousingKtv = async () => {
-    assert.deepEqual(await inputs.locator('input, select, textarea, [data-housing-fact]').evaluateAll(nodes => nodes.filter(node => !node.closest('[data-panel-field-row]')).map(node => node.id || node.name)), [])
-    const geometry = await inputs.locator('[data-panel-field-row]').evaluateAll(rows => rows.filter(row => row.getClientRects().length && !row.closest('details:not([open])')).map(row => {
+    assert.deepEqual(await inputs.locator('input, select, textarea, [data-housing-fact]').evaluateAll(nodes => nodes.filter(node => !node.closest('.agentic-ktv-row')).map(node => node.id || node.name)), [])
+    const geometry = await inputs.locator('.agentic-ktv-row').evaluateAll(rows => rows.filter(row => row.getClientRects().length && !row.closest('details:not([open])')).map(row => {
       const box = row.getBoundingClientRect()
       return { top: box.top, bottom: box.bottom, left: box.left, right: box.right, overflow: row.scrollWidth > row.clientWidth }
     }))
