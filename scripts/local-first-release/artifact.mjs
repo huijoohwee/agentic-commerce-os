@@ -158,7 +158,7 @@ export function prepareLocalFirstAssets() {
   const source = path.resolve('public/local-first'), output = path.resolve(LOCAL_FIRST_ASSET_DIRECTORY)
   fs.rmSync(output, { recursive: true, force: true })
   fs.mkdirSync(output, { recursive: true })
-  for (const file of [...FILES, ...PRIVATE_FILES.filter(file => file.startsWith('_'))]) {
+  for (const file of [...FILES, ...PRIVATE_FILES]) {
     const input = path.resolve(source, file)
     if (!input.startsWith(source + path.sep)) throw Error('Local-first asset path escaped its source directory')
     const stat = fs.lstatSync(input)
@@ -168,7 +168,7 @@ export function prepareLocalFirstAssets() {
     fs.copyFileSync(input, target, fs.constants.COPYFILE_EXCL)
   }
   fs.copyFileSync(path.join(output, 'index.html'), path.join(output, LOCAL_FIRST_DEV_INDEX_ALIAS), fs.constants.COPYFILE_EXCL)
-  if (listRegularFiles(output).join() !== [...FILES, ...PRIVATE_FILES.filter(file => file.startsWith('_')), LOCAL_FIRST_DEV_INDEX_ALIAS].sort().join()) {
+  if (listRegularFiles(output).join() !== [...FILES, ...PRIVATE_FILES, LOCAL_FIRST_DEV_INDEX_ALIAS].sort().join()) {
     throw Error('Local-first staged asset inventory invalid')
   }
   return output
