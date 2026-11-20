@@ -107,13 +107,14 @@ export function createSmeReviewWorkflow({ root, getState, renderTable, createTab
     if (!target) {
       const shadow = timelineHost.shadowRoot ?? timelineHost.attachShadow({ mode: 'open' })
       target = document.createElement('div'); target.dataset.reviewTimelineTarget = 'true'
-      const links = ['graph-ui-tokens.css', 'graph-gantt-timeline.css'].map(file => {
+      const links = ['graph-ui-tokens.css', 'graph-gantt-timeline.css', 'shared-ui-profile.css'].map(file => {
         const link = document.createElement('link'); link.rel = 'stylesheet'; link.href = new URL(file, import.meta.url).href; return link
       })
       ready = Promise.all(links.map(link => new Promise((resolve, reject) => {
         const timer = setTimeout(() => reject(Error('review_timeline_styles_unavailable')), 8000)
         link.onload = () => { clearTimeout(timer); resolve() }; link.onerror = () => { clearTimeout(timer); reject(Error('review_timeline_styles_unavailable')) }
       })))
+      target.setAttribute('data-agentic-typography', '')
       shadow.append(...links, target)
     }
     await ready

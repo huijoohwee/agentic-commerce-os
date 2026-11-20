@@ -184,7 +184,7 @@ export function initConsole(bridge) {
       button.type = 'button'; button.textContent = title
       button.addEventListener('click', () => { closeSheet(); action(key, sheetTrigger) })
       const detail = document.createElement('p'); detail.textContent = description
-      const status = document.createElement('span'); status.className = 'capability-state'; status.textContent = 'Visible action'
+      const status = document.createElement('span'); status.className = 'capability-state agentic-mono-detail'; status.textContent = 'Visible action'
       item.append(button, status, detail)
       return item
     }))
@@ -203,7 +203,7 @@ export function initConsole(bridge) {
     agentRoot.getElementById('agent-tools-list').replaceChildren(...matches.map(row => {
       const item = document.createElement('li'), title = document.createElement('h3'), detail = document.createElement('p')
       title.textContent = row.title; detail.textContent = row.description
-      const status = document.createElement('span'); status.className = 'capability-state'; status.textContent = row.status
+      const status = document.createElement('span'); status.className = 'capability-state agentic-mono-detail'; status.textContent = row.status
       const code = document.createElement('code'); code.textContent = row.name
       const effect = document.createElement('small'); effect.textContent = `Effect: ${row.effect}`
       item.append(title, status, detail, code, effect); return item

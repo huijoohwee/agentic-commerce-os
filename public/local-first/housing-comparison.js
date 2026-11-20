@@ -80,6 +80,7 @@ function comparisonSurface(host) {
     '--agentic-base-hover': 'var(--commerce-accent-soft)',
     '--agentic-base-focus': 'var(--commerce-focus)',
   })) host.style.setProperty(name, value)
+  target.setAttribute('data-agentic-typography', '')
   shadow.append(stylesheet, target)
   return { target, ready }
 }
