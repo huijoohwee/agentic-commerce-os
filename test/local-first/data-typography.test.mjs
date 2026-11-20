@@ -12,6 +12,7 @@ const guide = 'agentic-commerce-os/storage-management/';
 
 test('Commerce serves the same offline typography in the shell, edge dashboard and storage guide', () => {
   const typography = read(registry + 'vendor/typography.css');
+  assert.match(typography, /:where\(dt\), \.agentic-fact-label/u);
   assert.equal(hash(typography), release.files.find(file => file.path === 'vendor/typography.css').sha256);
   assert.equal(read(local + 'shared-ui-profile.css').split(typography).length, 2);
   assert.equal(JSON.parse(read('src/generated/design-typography.json')), typography);
@@ -34,12 +35,12 @@ test('authored styles inherit the owner font stacks and structured data roles', 
   styles.push(['storage guide', read(local + guide + 'style.css').split('/* Storage guide layout */')[1]],
     ['edge', read('src/edge/experience-styles.ts')], ['timeline host', read('scripts/sme-review/graph-gantt-host.css')]);
   for (const [name, css] of styles) {
-    assert.doesNotMatch(css, /--agentic-(?:font|line-height)-[\w-]+\s*:|\.agentic-(?:mono(?:-detail)?|text-detail)\b\s*[{,]/u, name);
+    assert.doesNotMatch(css, /--agentic-(?:font|line-height)-[\w-]+\s*:|\.agentic-(?:mono(?:-detail)?|text-detail|fact-label)\b\s*[{,]/u, name);
     for (const [, selector, body] of css.matchAll(/([^{}]+)\{([^{}]*)\}/gu)) {
       for (const [, value] of body.matchAll(/(?:^|;)\s*font(?:-family)?\s*:\s*([^;}]+)/gu)) {
         assert.ok(value.trim() === 'inherit' || /var\(--agentic-font-(?:mono|sans)\)\s*$/u.test(value), name + ': ' + value);
       }
-      if (selector.split(',').some(part => /(?:^|[\s>+~])(?:code|dd|kbd|pre|samp|time)\s*$/u.test(part))) {
+      if (selector.split(',').some(part => /(?:^|[\s>+~])(?:code|dt|dd|kbd|pre|samp|time)\s*$/u.test(part))) {
         assert.doesNotMatch(body, /(?:^|;)\s*(?:font(?:-[\w-]+)?|line-height)\s*:/u, name + ': ' + selector);
       }
     }

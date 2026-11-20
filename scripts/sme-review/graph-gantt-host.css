@@ -8,7 +8,7 @@
 .review-activity button { font:inherit; min-height:44px; padding:8px; border:1px solid var(--kg-border); border-radius:var(--island-radius); background:var(--kg-panel-bg); color:var(--kg-text-primary); cursor:pointer; }
 .review-activity button { width:100%; text-align:left; } .review-activity p { overflow-wrap:anywhere; }
 .review-activity dl { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:6px; font-size:12px; }
-.review-activity dt,.review-activity dd { margin:0; overflow-wrap:anywhere; } .review-activity dt { font-weight:600; }
+.review-activity dt,.review-activity dd { margin:0; overflow-wrap:anywhere; }
 
 .sme-native-gantt .timeline-video-sequence-lane-label { min-width:0; overflow:hidden; }
 .sme-native-gantt .timeline-video-sequence-lane-select { min-width:0; width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -20,4 +20,4 @@
 .review-records button { font:inherit; min-height:44px; padding:8px; border:1px solid var(--kg-border); border-radius:var(--island-radius); background:var(--kg-panel-bg); color:var(--kg-text-primary); cursor:pointer; }
 .review-records dl { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:6px; font-size:12px; }
 .review-records dt,.review-records dd { margin:0; white-space:pre-wrap; overflow-wrap:anywhere; }
-.review-records dt { font-weight:600; }.review-record-value { white-space:pre-wrap; }
+.review-record-value { white-space:pre-wrap; }

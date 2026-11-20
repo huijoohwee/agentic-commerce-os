@@ -1,7 +1,7 @@
 {
   "schema": "agentic-commerce/graph-gantt-artifact/v1",
   "owner": "github.com/huijoohwee/agentic-graph",
-  "sourceRevision": "6b85a995b574c38ee1f1be0a75b351dcac6904c5",
+  "sourceRevision": "028de0946abc85aa57124a4a37d54d68fabdaf3a",
   "sourceDirty": false,
   "browserExport": "mountGanttTimeline",
   "cssScope": "shadow-root",
@@ -320,15 +320,15 @@
     {
       "path": "package-lock.json",
       "bytes": 639064,
-      "sha256": "4bc469ac09b1f4c0940c172fac3efe8a694a2fe74513c0b72695ad96666987d9"
+      "sha256": "3474fd2f80d361fc3bb03653a142c5e2c3bc9575e1d65a961c2d48da845ca3d6"
     },
     {
       "path": "package.json",
       "bytes": 51287,
-      "sha256": "345ecd4cd4c4e42b2a5dd016b4ae8f3ed5cadb7876694f0f31af0461d2644563"
+      "sha256": "2f869bc713e3f508a0111ebaf9d2fba123b8f53eb742eff0e7997094de8a1847"
     }
   ],
-  "inputDigest": "d67baf1d05d87ba4b4004243c1c27d173edbf3bc2b0a005767a6b84c9e200aed",
+  "inputDigest": "f16c2e3779916a66bda18a4e6bdc4e6df7769ad8b3669edc817f28380814fc96",
   "consumerInputs": [
     {
       "path": "scripts/sme-review/graph-gantt-adapter.tsx",
@@ -336,7 +336,7 @@
     },
     {
       "path": "scripts/sme-review/graph-gantt-host.css",
-      "sha256": "bdcb0cb7aac9adf5ecd9493fbecc08cfe2e040ceff23cabea949a0d63eb1e967"
+      "sha256": "1dbbb23cfeb8853057428ad3a03ba64275da2efb083c8e122f831651c4e19269"
     },
     {
       "path": "public/local-first/sme-review-workflow.js",
@@ -355,8 +355,8 @@
     },
     {
       "path": "graph-gantt-timeline.css",
-      "bytes": 78078,
-      "sha256": "5c427ded27606c0e551f801ff53efdb9f478f3fa51c3c7849c55b35dab5382dc"
+      "bytes": 78007,
+      "sha256": "aa1139b68c2a75313edc7f9252e77e7cab3129670f146a119d2014b893a65624"
     }
   ]
 }

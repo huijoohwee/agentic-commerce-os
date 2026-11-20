@@ -13,7 +13,7 @@ a, summary { color: var(--agentic-control-selected-foreground); }
   outline: var(--agentic-control-focus-width) solid var(--commerce-focus);
   outline-offset: var(--agentic-control-focus-offset);
 }
-.registry-search label, .catalog-meta dt { display: block; font-weight: 600; }
+.registry-search label { display: block; font-weight: 600; }
 input[type=search] {
   inline-size: 100%;
   border: 1px solid var(--commerce-control-border);

@@ -2,7 +2,7 @@
   "schema": "agentic-commerce-design-system-static-release/v1",
   "source": {
     "repository": "github.com/huijoohwee/agentic-design-system",
-    "revision": "ce2f38074ae86846e68f86808693727114f3436b"
+    "revision": "cb062fec5d0923f8da74a9fae3dcabb73e608aa1"
   },
   "route": "https://airvio.co/agentic-design-system/",
   "files": [
@@ -14,7 +14,7 @@
     {
       "path": "catalog.json",
       "bytes": 14006,
-      "sha256": "bb7f06c8ea10d1afb9d87f94527ee8deab1240f2dc18db9fb52d6b8630e7ba0a"
+      "sha256": "0d7f8ec12740a7f7ea8e00a8eefe11f839ebaa85479398f75fc502fa813a1c39"
     },
     {
       "path": "catalog.schema.json",
@@ -128,8 +128,8 @@
     },
     {
       "path": "registry.css",
-      "bytes": 2110,
-      "sha256": "60d49f3559ede3d0ba6d05f7a32cafbb9cd3382d7427054d45858f822abdb0aa"
+      "bytes": 2092,
+      "sha256": "c3c74d6e5bd84360dfaf2991c898037fd13bec33b98b88d0fdd7c65649b11324"
     },
     {
       "path": "rich-text.css",
@@ -149,7 +149,7 @@
     {
       "path": "sw.js",
       "bytes": 2384,
-      "sha256": "f935afc08e9825350a5900312939cfff81047ad4bf38ff82f1dbaa21e4ca66c0"
+      "sha256": "811a6f1c2adb8c784540095ad36e8f23739c904a2043ce05aca79ba973bf0215"
     },
     {
       "path": "THIRD-PARTY-NOTICES.txt",
@@ -203,13 +203,13 @@
     },
     {
       "path": "vendor/shared-ui-profile.css",
-      "bytes": 25018,
-      "sha256": "d649b23f9b0fcf4ed0e4a16b8d12f94bb418a3fe58dc0d0bb37db7fdffcf9de1"
+      "bytes": 25314,
+      "sha256": "ba95bb2de809f84c35aec409c89f305442b536741cbd0987d43ff8ecc6bf9e17"
     },
     {
       "path": "vendor/typography.css",
-      "bytes": 793,
-      "sha256": "fdfc6d72261fb1005339bd43406703cdcff458f5a9fef66577ede5692d0fe43d"
+      "bytes": 1089,
+      "sha256": "22db5d9e9e138a076f6ad5901dcd53742a68d7f146968a7349c56a90fc608cf6"
     },
     {
       "path": "viewer-surface.css",
@@ -227,15 +227,15 @@
       "id": "shared-ui",
       "owner": "github.com/huijoohwee/agentic-design-system",
       "sourceRevision": "0e1a21ff98a02604b7f733c6705380133c3d7d1c",
-      "registryRevision": "ce2f38074ae86846e68f86808693727114f3436b",
+      "registryRevision": "cb062fec5d0923f8da74a9fae3dcabb73e608aa1",
       "sourcePath": "site/tokens/shared-ui-profile.json",
       "sourceSha256": "sha256:bab5811bcd4aa82065d4671d7876c6d9085a25f1c10e63932f8b81a53255bdb3",
       "projectionPath": "site/vendor/shared-ui-profile.css",
-      "projectionSha256": "sha256:d649b23f9b0fcf4ed0e4a16b8d12f94bb418a3fe58dc0d0bb37db7fdffcf9de1"
+      "projectionSha256": "sha256:ba95bb2de809f84c35aec409c89f305442b536741cbd0987d43ff8ecc6bf9e17"
     }
   },
-  "totalBytes": 311533,
-  "payloadDigest": "aeea3767d0002198ab305bece81f569865d0360af21b812f887db92669ea0a04",
+  "totalBytes": 312107,
+  "payloadDigest": "514790aa9428460c25ae3205f96e382fdc2e8fb27bbd9e1285f59d86d7fc5759",
   "excluded": [
     "registry/",
     "site/review-inventory.json",
