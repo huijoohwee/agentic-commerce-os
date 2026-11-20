@@ -54,7 +54,7 @@ test('release-scoped browser modules bypass old caches and role entry links stay
   const html = await (await worker.fetch(request('/agentic-commerce-os/'), env)).text();
   assert.equal(html.includes('__RELEASE__'), false);
   assert.equal(html.match(new RegExp(revision, 'g')).length, 2);
-  assert.equal(seen[0], '/__local-first-index.html');
+  assert.equal(seen[0], '/index.html');
   assert.equal((await worker.fetch(request(`/agentic-commerce-os/assets/${revision}/workspace.js`), env)).status, 200);
   assert.equal(seen.at(-1), '/workspace.js');
   const count = seen.length;
