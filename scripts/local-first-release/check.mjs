@@ -17,7 +17,7 @@ import { checkListingGeo } from '../../test/local-first/listing-geo-browser.mjs'
 import { BROWSER_CHECKS, BROWSER_PROOF_SCHEMA, completeBrowserChecks, assertBrowserProof,
   LIVE_BROWSER_PROOF_SCHEMA, completeLiveBrowserChecks, assertLiveBrowserProof } from './browser-proof.mjs';
 import { LIVE_CHECKOUT_PROFILE_SHA256 } from '../../src/local-first/checkout-offer.ts';
-import { verifySharedThemeOwner } from './artifact.mjs';
+import { prepareLocalFirstAssets, verifySharedThemeOwner } from './artifact.mjs';
 
 const root = process.cwd();
 const themeOwner = verifySharedThemeOwner();
@@ -57,7 +57,7 @@ try {
     const port = await freePort(); base = `http://127.0.0.1:${port}`;
     const config = JSON.parse(fs.readFileSync('wrangler.local-first.jsonc', 'utf8'));
     config.main = path.join(root, 'test/local-first/stripe-fixture.ts');
-    config.assets.directory = path.join(root, 'public/local-first');
+    config.assets.directory = prepareLocalFirstAssets();
     config.vars.STRIPE_TEST_SECRET_KEY = 'sk_test_' + 'f'.repeat(32);
     config.vars.STOREFRONT_SESSION_SECRET = 'local-sandbox-fixture-secret-not-for-production';
     config.vars.CHECKOUT_MODE = checkout;
