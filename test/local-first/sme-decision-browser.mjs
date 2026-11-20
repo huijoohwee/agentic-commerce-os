@@ -56,8 +56,8 @@ export async function checkSmeDecisionBrowser({ browser, url, output }) {
     }
     const assertWorkingRows = async scope => {
       await expect(scope.locator('ul, li, p')).toHaveCount(0)
-      assert.ok(await scope.locator('[data-panel-field-row]').count() > 20)
-      for (const row of await scope.locator('[data-panel-field-row]').all()) {
+      assert.ok(await scope.locator('.agentic-ktv-row').count() > 20)
+      for (const row of await scope.locator('.agentic-ktv-row').all()) {
         assert.deepEqual(await row.evaluate(node => [...node.children].map(cell => cell.tagName)), ['DT', 'DD', 'DD'])
         await expect(row.locator('.agentic-ktv-type > svg[role="img"][aria-label]')).toHaveCount(1)
       }
@@ -68,7 +68,7 @@ export async function checkSmeDecisionBrowser({ browser, url, output }) {
     }
     for (const width of [320, 390, 768, 1280]) {
       await page.setViewportSize({ width, height: 900 })
-      assert.equal(await revenue.locator('[data-panel-field-row]').evaluateAll(rows => rows.every(row => row.scrollWidth <= row.clientWidth)), true, 'working rows overflow at ' + width)
+      assert.equal(await revenue.locator('.agentic-ktv-row').evaluateAll(rows => rows.every(row => row.scrollWidth <= row.clientWidth)), true, 'working rows overflow at ' + width)
     }
     await page.setViewportSize({ width: 1280, height: 900 })
     await revenue.scrollIntoViewIfNeeded()
