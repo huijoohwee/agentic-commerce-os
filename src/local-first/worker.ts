@@ -16,6 +16,7 @@ export type LocalFirstEnv = Readonly<CheckoutEnv & ListingRelayEnv & {
   CF_VERSION_METADATA?: { id?: string }
 }>
 const packDirectory = '/services/workspace-pack/'
+const LOCAL_FIRST_DEV_INDEX_ALIAS = '__local-first-index.html'
 // A bounded, exact allowlist: shared files get the same asset at both route prefixes.
 const sharedPackFiles = import.meta.commerceLiveCheckout === false ? packAssets : [...packAssets, 'viewer-surface.js', 'viewer-surface.css']
 const primaryFiles = [
@@ -109,7 +110,9 @@ export async function fetchLocalFirst(request: Request, env: LocalFirstEnv, tran
     const assetPath = relative.startsWith(versionPrefix) ? '/' + relative.slice(versionPrefix.length) : relative
     const asset = ASSET_PATHS.get(assetPath)
     if (!asset) return notFound()
-    const assetUrl = new URL(asset, url.origin)
+    const assetUrl = new URL(assetPath === '/' && revision === 'local-unreleased'
+      ? `/${LOCAL_FIRST_DEV_INDEX_ALIAS}`
+      : assetPath === '/' ? '/index.html' : asset, url.origin)
     // Do not forward user headers, cookies or credentials to the static asset service.
     const response = await env.ASSETS.fetch(new Request(assetUrl, { method: 'GET' }))
     if (!response.ok) return finish(new Response('Asset unavailable', { status: 503 }))

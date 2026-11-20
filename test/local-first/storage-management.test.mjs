@@ -21,6 +21,7 @@ test('storage guide has one static route owner and is excluded from the Commerce
   const staged = prepareLocalFirstAssets();
   assert.equal(staged, path.resolve(LOCAL_FIRST_ASSET_DIRECTORY));
   assert.equal(fs.existsSync(path.join(staged, 'agentic-commerce-os/storage-management')), false);
+  assert.equal(fs.readFileSync(path.join(staged, '_redirects'), 'utf8').trim(), '/ /agentic-commerce-os/ 308');
 
   const worker = fs.readFileSync('public/local-first/sw.js', 'utf8');
   assert.doesNotMatch(worker, /STORAGE_GUIDE|storage-management/u);

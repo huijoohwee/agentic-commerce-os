@@ -22,6 +22,7 @@ const localPort = local ? await new Promise<number>((resolve, reject) => {
   });
 }) : null
 if (local) console.log('Local-first Dev: isolated loopback origin; use JSON export to retain drafts between sessions.')
+if (local) console.log(`Open http://127.0.0.1:${localPort}/agentic-commerce-os/`)
 const child = pack ? spawn(process.execPath, ['node_modules/.cache/workspace-pack/host.mjs'], {
   env: { ...process.env, COMMERCE_WORKSPACE_PACK_DEV: '1' }, stdio: 'inherit',
 }) : local ? spawn(process.execPath, ['./node_modules/wrangler/bin/wrangler.js', 'dev',
