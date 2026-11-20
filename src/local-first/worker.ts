@@ -27,7 +27,7 @@ const primaryFiles = [
     ...filesWithExtension('workspace-shell sme-business-pack hover housing-comparison graph-gantt-timeline', 'css'), 'favicon.svg',
   ]),
 ]
-const ASSET_PATHS = new Map<string,string>([['/', '/'], [packDirectory, '/workspace-pack.html']])
+const ASSET_PATHS = new Map<string,string>([['/', '/index.html'], [packDirectory, '/workspace-pack.html']])
 for (const file of primaryFiles) ASSET_PATHS.set('/' + file, '/' + file)
 for (const file of [...sharedPackFiles, ...packEntries]) ASSET_PATHS.set(packDirectory + file, '/' + file)
 function secured(response: Response, source: string, head: boolean): Response {
