@@ -109,7 +109,7 @@ export async function fetchLocalFirst(request: Request, env: LocalFirstEnv, tran
     const assetPath = relative.startsWith(versionPrefix) ? '/' + relative.slice(versionPrefix.length) : relative
     const asset = ASSET_PATHS.get(assetPath)
     if (!asset) return notFound()
-    const assetUrl = new URL(assetPath === '/' && revision === 'local-unreleased' ? '/__local-first-index.html' : asset, url.origin)
+    const assetUrl = new URL(assetPath === '/' ? '/__local-first-index.html' : asset, url.origin)
     // Do not forward user headers, cookies or credentials to the static asset service.
     const response = await env.ASSETS.fetch(new Request(assetUrl, { method: 'GET' }))
     if (!response.ok) return finish(new Response('Asset unavailable', { status: 503 }))
