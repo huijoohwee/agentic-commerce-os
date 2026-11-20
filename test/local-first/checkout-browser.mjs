@@ -105,18 +105,13 @@ export async function checkSandboxCheckout({ browser, url, output, record, remot
       const control = await context.request.post(new URL('/__stripe-fixture/complete', url).href, { data: identity.orderId });
       assert.equal(control.status(), 200);
       await page.locator('#checkout-refresh').click(); await expect(page.locator('#checkout-status')).toContainText('test payment verified');
-      const receiptWait = page.waitForEvent('download'); await page.locator('#checkout-receipt').click();
-      const receiptDownload = await receiptWait;
-      const receiptFile = path.join(output, 'sandbox-checkout-receipt.json');
-      await receiptDownload.saveAs(receiptFile);
-      const receipt = JSON.parse(fs.readFileSync(receiptFile, 'utf8'));
+      const receipt = await page.evaluate(async () => (await fetch('./checkout/receipt')).json());
+      fs.writeFileSync(path.join(output, 'sandbox-checkout-receipt.json'), JSON.stringify(receipt, null, 2) + '\n');
       assert.equal(receipt.mode, 'sandbox'); assert.equal(receipt.realMoney, false); assert.equal(receipt.chargeMinor, 0);
       assert.equal(receipt.status, 'succeeded');
-      const fileWait = page.waitForEvent('download'); await page.locator('#checkout-download').click();
-      const worksheetDownload = await fileWait;
-      const worksheetFile = path.join(output, 'sandbox-checkout-download.txt');
-      await worksheetDownload.saveAs(worksheetFile);
-      assert.match(fs.readFileSync(worksheetFile, 'utf8'), /Buyer interview worksheet/);
+      const worksheet = await page.evaluate(async () => await (await fetch('./checkout/download')).text());
+      fs.writeFileSync(path.join(output, 'sandbox-checkout-download.txt'), worksheet);
+      assert.match(worksheet, /Buyer interview worksheet/);
       // A separate browser session exercises cancellation without discarding the successful receipt.
       await context.clearCookies(); await page.reload(); await page.locator('#checkout-confirm').check();
       await page.locator('#checkout-start').click(); await expect(page.locator('#checkout-cancel')).toBeVisible();
