@@ -42,7 +42,7 @@
     {"key": "color.text-muted", "cssVar": "--commerce-text-muted", "type": "color", "value": "#627391"},
     {"key": "focus.color", "cssVar": "--commerce-focus", "type": "alias", "targetKey": "color.action"},
     {"key": "focus.dialog-outline", "cssVar": "--commerce-dialog-outline", "type": "outline", "width": "2px", "style": "solid", "colorKey": "color.action"},
-    {"key": "font.family", "cssVar": "--commerce-font-family", "type": "font-stack", "value": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Arial, sans-serif"},
+    {"key": "font.family", "cssVar": "--commerce-font-family", "type": "font-stack", "value": "var(--agentic-font-sans, sans-serif)"},
     {"key": "radius.control", "cssVar": "--commerce-radius-control", "type": "dimension", "value": "10px"},
     {"key": "radius.dialog", "cssVar": "--commerce-radius-dialog", "type": "dimension", "value": "20px"},
     {"key": "radius.panel", "cssVar": "--commerce-radius-panel", "type": "dimension", "value": "14px"},

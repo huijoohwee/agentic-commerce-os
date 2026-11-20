@@ -1,4 +1,4 @@
-/* Generated from agentic-design-system c18253b35e8bcc0bed548cfb717ec31909422dbe; profile sha256 000adeb267d0d0ff9527e1227faefcd5fd2c15faee463fa70173204783ea7c9e. Do not edit. */
+/* Generated from agentic-design-system c2f5ebf31d828a0e5b41caec76ed6b11a813843e; profile sha256 b67e0ee110c32f113e1296b950602ed649fdf222e4557b000a72e9e487aefe4e. Do not edit. */
 :root {
   color-scheme: light;
   --commerce-accent-soft: #eaf0ff;
@@ -11,7 +11,7 @@
   --commerce-control-border: #7f8fa8;
   --commerce-dialog-outline: 2px solid var(--commerce-action);
   --commerce-focus: var(--commerce-action);
-  --commerce-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  --commerce-font-family: var(--agentic-font-sans, sans-serif);
   --commerce-ink: #202a39;
   --commerce-radius-control: 10px;
   --commerce-radius-dialog: 20px;

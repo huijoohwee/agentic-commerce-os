@@ -37,13 +37,13 @@
 #sme .worksheet-controls p, #sme-agent-tools p { color: var(--commerce-text-muted); font-size: .72rem; line-height: 1.45; }
 #sme .file-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
 #sme .agent-label { display: block; margin: 9px 0 6px; color: var(--commerce-text-muted); font-size: .72rem; font-weight: 600; }
-#sme .agent-details code, #sme-agent-tools code { display: block; max-width: 860px; padding: 10px 12px; border: 1px solid var(--commerce-border); border-radius: 8px; background: var(--commerce-surface-subtle); color: var(--commerce-text-muted); font: .72rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; }
+#sme .agent-details code, #sme-agent-tools code { display: block; max-width: 860px; padding: 10px 12px; border: 1px solid var(--commerce-border); border-radius: 8px; background: var(--commerce-surface-subtle); color: var(--commerce-text-muted); overflow-wrap: anywhere; }
 #sme .footnote, #sme .muted { color: var(--commerce-text-muted); font-size: .7rem; }
 .sme-print-sheet { display: none; }
 @media print {
   @page { size: A4 portrait; margin: 9mm; }
   body.sme-printing > :not(.sme-print-sheet) { display: none !important; }
-  body.sme-printing > .sme-print-sheet { display: block !important; color: var(--commerce-ink); font: 7.5pt/1.25 Arial, sans-serif; }
+  body.sme-printing > .sme-print-sheet { display: block !important; color: var(--commerce-ink); font: 7.5pt/1.25 var(--agentic-font-sans); }
   .sme-print-sheet h1 { margin: 0 0 4mm; font-size: 15pt; }
   .sme-print-sheet h2 { margin: 4mm 0 2mm; font-size: 10pt; }
   .sme-print-sheet p { margin: 2mm 0; }

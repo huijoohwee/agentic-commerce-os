@@ -11,7 +11,7 @@ const CONFIG = join(ROOT, 'config/design-system-static-release.json');
 const PREFIX = '/agentic-design-system';
 const FILES = Object.freeze([
   ['LICENSE', 'LICENSE'],
-  ...['THIRD-PARTY-NOTICES.txt', 'app.js', 'catalog.json', 'catalog.schema.json', 'dashboard-columns.js', 'favicon.svg', 'floating-panel.js', 'inline-editor.js', 'skills-commands.js', 'skills-commands.css', 'collection-layout.js', 'collection-layout.css', 'panels.css', 'floating-panel.css', 'icons.json', 'index.html', 'registry-query.js', 'registry.css', 'sw.js', 'tokens/base-profile.json', 'tokens/commerce-profile.json', 'tokens/graph-profile.json', 'tokens/shared-ui-profile.json', 'toolbar-icons.js', 'toolbar.css', 'key-type-value.js', 'markdown.js', 'markdown-parser.js', 'color.js', 'rich-text.css', 'viewer-surface.js', 'viewer-surface.css', 'panel-section.js', 'panel-section.css', 'hover.js', 'hover-text.js', 'hover.css', 'vendor/base-profile.css', 'vendor/commerce-theme.css', 'vendor/graph-profile.css', 'vendor/shared-ui-profile.css'].map(path => ['site/' + path, path]),
+  ...['THIRD-PARTY-NOTICES.txt', 'app.js', 'catalog.json', 'catalog.schema.json', 'dashboard-columns.js', 'favicon.svg', 'floating-panel.js', 'inline-editor.js', 'skills-commands.js', 'skills-commands.css', 'collection-layout.js', 'collection-layout.css', 'panels.css', 'floating-panel.css', 'icons.json', 'index.html', 'registry-query.js', 'registry.css', 'sw.js', 'tokens/base-profile.json', 'tokens/commerce-profile.json', 'tokens/graph-profile.json', 'tokens/shared-ui-profile.json', 'toolbar-icons.js', 'toolbar.css', 'key-type-value.js', 'markdown.js', 'markdown-parser.js', 'color.js', 'rich-text.css', 'viewer-surface.js', 'viewer-surface.css', 'panel-section.js', 'panel-section.css', 'hover.js', 'hover-text.js', 'hover.css', 'vendor/base-profile.css', 'vendor/commerce-theme.css', 'vendor/graph-profile.css', 'vendor/shared-ui-profile.css', 'vendor/typography.css'].map(path => ['site/' + path, path]),
 ]);
 
 function fail(code) { throw new Error(`design_system_release:${code}`); }
@@ -128,7 +128,17 @@ function syncSource(sourceRoot, expectedRevision) {
   for (const file of ['floating-panel.js', 'collection-layout.css', 'skills-commands.css', 'floating-panel.css', 'icons.json', 'toolbar-icons.js', 'toolbar.css', 'key-type-value.js', 'markdown.js', 'markdown-parser.js', 'color.js', 'rich-text.css', 'viewer-surface.js', 'viewer-surface.css', 'panel-section.js', 'panel-section.css', 'hover.js', 'hover-text.js', 'hover.css']) {
     writeFileSync(join(localFirst, file), sourceBytes('site/' + file));
   }
-  writeFileSync(join(localFirst, 'shared-ui-profile.css'), sourceBytes('site/vendor/shared-ui-profile.css'));
+  for (const name of ['commerce-theme.css', 'shared-ui-profile.css']) {
+    writeFileSync(join(localFirst, name), sourceBytes('site/vendor/' + name));
+  }
+  // The edge HTML and standalone guide each serve their styles in one offline response.
+  const typography = sourceBytes('site/vendor/typography.css').toString('utf8');
+  writeJson(join(ROOT, 'src/generated/design-typography.json'), typography);
+  const guideStyle = join(localFirst, 'agentic-commerce-os/storage-management/style.css');
+  const marker = '/* Storage guide layout */';
+  const guideParts = read(guideStyle).toString('utf8').split(marker);
+  if (guideParts.length !== 2) fail('storage_guide_layout_boundary_invalid');
+  writeFileSync(guideStyle, typography + marker + guideParts[1]);
   const sharedUiConsumerPin = json(join(ROOT, 'config/shared-ui-profile.pin.json'));
   sharedUiConsumerPin.profile = sharedUiPin;
   writeJson(join(ROOT, 'config/shared-ui-profile.pin.json'), sharedUiConsumerPin);

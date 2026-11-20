@@ -20,11 +20,6 @@ export const STORAGE_MANAGEMENT_SOURCE_FILES = Object.freeze([
 ]);
 export const LOCAL_FIRST_ASSET_DIRECTORY = './node_modules/.cache/local-first-assets';
 export const digest = value => createHash('sha256').update(value).digest('hex');
-const COMMERCE_THEME_PIN = Object.freeze({
-  sourceRevision: 'c18253b35e8bcc0bed548cfb717ec31909422dbe',
-  profileDigest: '000adeb267d0d0ff9527e1227faefcd5fd2c15faee463fa70173204783ea7c9e',
-  stylesheetDigest: 'c512ee76dc6160ff41e8bac9706b8e8d0b9e56f42b6c4b128594605e19c93474',
-});
 function readDesignSystemStaticRelease() {
   const release = JSON.parse(fs.readFileSync('config/design-system-static-release.json', 'utf8'));
   if (release.schema !== 'agentic-commerce-design-system-static-release/v1'
@@ -238,9 +233,15 @@ export function verifySharedThemeOwner() {
   const themeBytes = fs.readFileSync(path.join(directory, 'commerce-theme.css'));
   const theme = themeBytes.toString('utf8');
   const provenance = theme.match(/^\/\* Generated from agentic-design-system ([a-f0-9]{40}); profile sha256 ([a-f0-9]{64})\. Do not edit\. \*\//u);
-  if (!provenance || provenance[1] !== COMMERCE_THEME_PIN.sourceRevision
-    || provenance[2] !== COMMERCE_THEME_PIN.profileDigest
-    || digest(themeBytes) !== COMMERCE_THEME_PIN.stylesheetDigest)
+  const release = readDesignSystemStaticRelease();
+  const catalogBytes = fs.readFileSync('public/agentic-design-system/catalog.json');
+  if (digest(catalogBytes) !== release.files.get('catalog.json')?.sha256)
+    throw Error('Commerce theme catalog differs from its pinned Design System release');
+  const profile = JSON.parse(catalogBytes).registry.profiles.find(item => item.id === 'commerce');
+  if (!profile || profile.owner !== release.owner || profile.source !== './tokens/commerce-profile.json'
+    || profile.projection?.path !== './vendor/commerce-theme.css' || provenance?.[1] !== profile.revision
+    || 'sha256:' + provenance?.[2] !== profile.digest || profile.digest !== 'sha256:' + release.files.get('tokens/commerce-profile.json')?.sha256
+    || profile.projection.digest !== 'sha256:' + digest(themeBytes) || digest(themeBytes) !== release.files.get('vendor/commerce-theme.css')?.sha256)
     throw Error('Commerce theme projection differs from its pinned design-system profile');
   if (/@import\b|url\(\s*["']?(?:https?:|\/\/)/i.test(theme))
     throw Error('Commerce theme projection must stay self-contained and offline');

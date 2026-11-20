@@ -179,13 +179,13 @@
         "name": "Commerce theme profile",
         "owner": "github.com/huijoohwee/agentic-design-system",
         "repository": "github.com/huijoohwee/agentic-design-system",
-        "revision": "c18253b35e8bcc0bed548cfb717ec31909422dbe",
+        "revision": "c2f5ebf31d828a0e5b41caec76ed6b11a813843e",
         "source": "./tokens/commerce-profile.json",
         "projection": {
           "path": "./vendor/commerce-theme.css",
-          "digest": "sha256:c512ee76dc6160ff41e8bac9706b8e8d0b9e56f42b6c4b128594605e19c93474"
+          "digest": "sha256:90077db641256cc4c43d618707f64ae0a3d16cf0afc61e573e6cbe9a0dcb54cb"
         },
-        "digest": "sha256:000adeb267d0d0ff9527e1227faefcd5fd2c15faee463fa70173204783ea7c9e",
+        "digest": "sha256:b67e0ee110c32f113e1296b950602ed649fdf222e4557b000a72e9e487aefe4e",
         "scope": [
           "commerce",
           "shop",
@@ -307,7 +307,7 @@
         "consumerPins": [],
         "projection": {
           "path": "./vendor/shared-ui-profile.css",
-          "digest": "sha256:cb69acc13a7a9e9687675b354abd0bbc860ce68bbbb50e4f68d9efa2dbbbacfd"
+          "digest": "sha256:d649b23f9b0fcf4ed0e4a16b8d12f94bb418a3fe58dc0d0bb37db7fdffcf9de1"
         }
       }
     ]

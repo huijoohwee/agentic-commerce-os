@@ -14,7 +14,7 @@
   display: flex; align-items: center; justify-content: center; flex-wrap: wrap; column-gap: var(--commerce-space-md);
   min-height: var(--workspace-banner-height); padding-inline: var(--commerce-space-xs); text-align: center;
   background: var(--commerce-action); color: var(--commerce-surface); pointer-events: auto;
-  font: 500 var(--agentic-font-size-body)/1.25 var(--commerce-font-family);
+  font-weight: 500;
 }
 .commerce-banner strong { text-transform: uppercase; }
 .commerce-flyout {

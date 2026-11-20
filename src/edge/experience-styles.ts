@@ -1,7 +1,7 @@
 export const EXPERIENCE_STYLES = String.raw`
 * { box-sizing: border-box; }
 :root { color-scheme: light; }
-body { margin: 0; min-width: 0; background: var(--background); color: var(--ink); font: 15px/1.55 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+body { margin: 0; min-width: 0; background: var(--background); color: var(--ink); }
 a { color: inherit; text-decoration: none; }
 button, input, select, textarea { font: inherit; color: inherit; min-height: 44px; min-width: 44px; border: 1px solid var(--line); border-radius: 8px; }
 input, select, textarea { background: var(--panel); padding: 10px 12px; max-width: 100%; }
@@ -132,7 +132,7 @@ td button { font-size: 12px; }
 .proposal-card .actions { justify-content: flex-start; flex-wrap: wrap; }
 .proposal-card details { margin: 12px 0; }
 summary { cursor: pointer; min-height: 44px; padding: 10px 0; font-size: 13px; }
-pre { font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; padding: 16px; border-radius: 8px; background: var(--background); }
+pre { white-space: pre-wrap; overflow-wrap: anywhere; padding: 16px; border-radius: 8px; background: var(--background); }
 .notice { font-size: 13px; color: var(--muted); border: 1px solid var(--line); background: var(--panel); padding: 12px 16px; border-radius: 8px; }
 #merchant-status:empty { display: none; }
 #merchant-status { position: sticky; bottom: 16px; z-index: 5; box-shadow: 0 6px 25px #00000012; color: var(--ink); }

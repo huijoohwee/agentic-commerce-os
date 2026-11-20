@@ -329,6 +329,7 @@ async function createSmeBusinessPack() {
           stylesheet.onload = () => { clearTimeout(timer); resolve() }
           stylesheet.onerror = () => { clearTimeout(timer); reject(Error('shared_table_styles_unavailable')) }
         })
+        target.setAttribute('data-agentic-typography', '')
         shadow.append(stylesheet, target)
       }
       await mount.ready
@@ -338,7 +339,7 @@ async function createSmeBusinessPack() {
       if (host === workflowTableHost && !host.shadowRoot.querySelector('#sme-workflow-header-wrap')) {
         const headerStyle = node('style')
         headerStyle.id = 'sme-workflow-header-wrap'
-        headerStyle.textContent = `th button > span { white-space: pre-line !important; overflow: visible !important; text-overflow: clip !important; overflow-wrap: anywhere !important; font-size: 12px !important; line-height: 1.2 !important; } th button { align-items: flex-start !important; } th > section { align-items: flex-start !important; }`
+        headerStyle.textContent = `th button > span { white-space: pre-line !important; overflow: visible !important; text-overflow: clip !important; overflow-wrap: anywhere !important; } th button { align-items: flex-start !important; } th > section { align-items: flex-start !important; }`
         host.shadowRoot.append(headerStyle)
       }
       return true

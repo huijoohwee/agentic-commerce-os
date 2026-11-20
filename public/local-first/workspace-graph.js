@@ -142,6 +142,7 @@ async function surface(host, signal, stylesheetUrl) {
     if (signal?.aborted) abort();
   });
   shadow.replaceChildren(stylesheet, target);
+  target.setAttribute('data-agentic-typography', '');
   await loaded;
   return target;
 }
