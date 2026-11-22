@@ -82,47 +82,62 @@
         "id": "agentic-graph",
         "name": "Agentic Graph",
         "repository": "github.com/huijoohwee/agentic-graph",
-        "revision": "be87de5c3dcc66f58d2cd1b4d96e5920dd284a46",
+        "revision": "746dd7042a23c4b64492026d41a4c2819f477cb9",
         "scopes": [
           "graph"
         ],
-        "role": "Native owner of graph behavior; token values are centrally owned. Reuse is limited to the eight attributed token sources.",
+        "role": "Native owner of graph behavior; token values are centrally owned. Reuse is limited to the eleven attributed token sources, contract adapters and checked projections.",
         "reuseGate": "rights-review-required",
         "sources": [
           {
             "path": "grph-shared/src/ui/kgTokens.ts",
             "kind": "native",
-            "digest": "sha256:5c8235fe34e79eaeaf92befc7c93200fd4a99e060aa5daa1a9eee689159f86a3"
+            "digest": "sha256:4bec1bee87fd4c1558a61113a604283b890dc7a9bc3d68d7dfee76b67e4c9cb1"
           },
           {
             "path": "grph-shared/src/ui/typography.ts",
             "kind": "native",
-            "digest": "sha256:945db1516136ea3c6a1e06e56a2efbc1e100320b6ce42d860b79024b31707734"
+            "digest": "sha256:1d522c1bd928fc92c2cf571a257820d0ed71e4028750b173e57a20d187ad43f1"
           },
           {
             "path": "grph-shared/src/ui/fontStacks.js",
             "kind": "native",
-            "digest": "sha256:cbd531055722036fb0bf7befcd682c8782ad109fe2cd3e7c2ad94fa41d3067ba"
+            "digest": "sha256:59e970b1be4bad6db260427c8d87f1b7707168cc3f18f3892575072e25f93516"
+          },
+          {
+            "path": "grph-shared/src/ui/kgTokenContract.ts",
+            "kind": "native",
+            "digest": "sha256:56c5b7761d0f9f7d619e66d722159fa9edd171b1c3b05408716c59c2a7ae5cf1"
+          },
+          {
+            "path": "grph-shared/src/ui/design-runtime-profile.json",
+            "kind": "native",
+            "digest": "sha256:701630f97347393cc2feea5b2c0aa36b4d224b5c18ebe1e3b1e63b232ddd794a"
+          },
+          {
+            "path": "grph-shared/src/ui/graph-profile.pin.json",
+            "kind": "native",
+            "digest": "sha256:5c6f9fb8b579c14068bf4c890d580dfb041ce5302567746c3359c59a0628de17"
           },
           {
             "path": "canvas/src/styles/kgTokens.generated.css",
             "kind": "generated",
-            "digest": "sha256:0d6e6689a116c969a354a0ac1353fac9363537a0e4691b379e37c80c36f395f5"
+            "digest": "sha256:aeedf2bb331e6d677ba1dcc9c163ed14cdf289169e6a3b44d7caff4975004316"
           },
           {
             "path": "canvas/src/index.css",
             "kind": "generated",
-            "digest": "sha256:57ef092fba4022aaaeb9279d30d3b5d0abd5e2aa1e9e41544b83d04301f8dc5c"
+            "digest": "sha256:2199adaefc3b7f9ace1201a497861902ce496466eeed60b6a6ef0a536767e086"
           },
           {
             "path": "canvas/src/styles/shared-borders.css",
             "kind": "generated",
-            "digest": "sha256:829701ef1acc40dc1dc95de5b5d928d97ac76093bed8bca0b3222ab149a6bdd3"
+            "digest": "sha256:6ed4dfd192fd65eca9f1e95e5b6dc0d2e38476c463ccee71e8b6e3b0a9d01d0c"
           },
           {
             "path": "canvas/src/styles/responsive-toolbar.css",
             "kind": "generated",
-            "digest": "sha256:979e45c2bc7b08f8f802cf231eaf95cdbde44bb8fc0c3db20628254a29f2d72b"
+            "digest": "sha256:69c31aa22652b7bffce4203ff0737a3b940e835c4bc3ff4df26b505ce381b369"
           },
           {
             "path": "canvas/src/styles/design-system-responsive.css",
@@ -224,15 +239,15 @@
         "name": "Base shared data-view profile",
         "owner": "github.com/huijoohwee/agentic-design-system",
         "repository": "github.com/huijoohwee/agentic-design-system",
-        "revision": "bc1921bbcf56e1abb11fef2593917e5459d58df1",
+        "revision": "5319c839789787b74ad3e02196688ba12b251c99",
         "source": "./tokens/base-profile.json",
-        "digest": "sha256:3c231b5a57ae6acac862a4ede882d24657d93e45b1bc7ea32d1799ef4b32e361",
+        "digest": "sha256:b2d1f2a115373c0471c1309f1f371434033791be96b3ad5069a6304a80d2ac7c",
         "scope": [
           "shared-data-view"
         ],
         "status": "candidate",
         "rights": "cleared",
-        "permissionEvidence": "User instruction on 2026-10-29 to centralize the named product repositories; Base MIT license is pinned to the source revision.",
+        "permissionEvidence": "User instruction on 2026-10-29 to centralize the named product repositories; Base MIT license is pinned to the source revision. User instruction on 2026-11-21 converges Base local literal colors into the central base-profile v2 with light, dark and black values aligned to the Graph theme palette, rendered with light-dark() and a black variant override.",
         "licenseEvidence": [
           {
             "repository": "github.com/huijoohwee/agentic-design-system",
@@ -250,7 +265,7 @@
         "consumerPins": [],
         "projection": {
           "path": "./vendor/base-profile.css",
-          "digest": "sha256:9fb7da765d4f597f7e130faa51c10faff9dd977b943818904e4d474236f28758"
+          "digest": "sha256:aeeebf62854d76f79dedd2771a46aa55312f835840249db998ac6c3f37097f5f"
         }
       },
       {
@@ -258,16 +273,16 @@
         "name": "Graph token and typography profile",
         "owner": "github.com/huijoohwee/agentic-design-system",
         "repository": "github.com/huijoohwee/agentic-design-system",
-        "revision": "e52a52111f52b6af85f99195ec9e59a490548575",
+        "revision": "96ed1df5b63d1b487d9f027b6b709d38aca71c0f",
         "source": "./tokens/graph-profile.json",
-        "digest": "sha256:eaa4c5c04aca787a7b6910464f32491f01f6bee9fcd5355ab90183cf04dcdd17",
+        "digest": "sha256:31c443f1d69714a10d8b5d658a3b42475e534d6134f94fcc55e6775604c13b1b",
         "scope": [
           "graph-ui",
           "application-typography"
         ],
         "status": "candidate",
         "rights": "cleared-scoped",
-        "permissionEvidence": "User instructions 2026-11-07: centralize design token values and generated projections from the eight listed Graph token sources in Agentic Design System, with attribution; no broader Graph source grant.",
+        "permissionEvidence": "User instructions 2026-11-07: centralize design token values and generated projections from the eight listed Graph token sources in Agentic Design System, with attribution; no broader Graph source grant. User instruction 2026-11-21: refresh attribution to Graph revision 746dd7042a23c4b64492026d41a4c2819f477cb9 and expand the inventory to eleven paths, adding kgTokenContract.ts, design-runtime-profile.json and graph-profile.pin.json as contract adapters and checked projections of the central profile; token values unchanged.",
         "licenseEvidence": [
           {
             "repository": "github.com/huijoohwee/agentic-design-system",
@@ -279,7 +294,7 @@
         "consumerPins": [],
         "projection": {
           "path": "./vendor/graph-profile.css",
-          "digest": "sha256:aeedf2bb331e6d677ba1dcc9c163ed14cdf289169e6a3b44d7caff4975004316"
+          "digest": "sha256:ef18c4aa218d47f0ca3b92966fa08ff075373d51e11e57983a0915aa593e09e0"
         }
       },
       {

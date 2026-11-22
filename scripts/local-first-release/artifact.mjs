@@ -214,7 +214,12 @@ export function verifyGraphDataView() {
     'node_modules/@agentic-base/views-react/packages/views-react/src/controls/icons.json'];
   if (totalInputBytes > 8000000 || owners.some(owner => !paths.has(owner))) throw Error('Graph data view native owner missing or over budget');
   const panelIndex = fs.readFileSync('public/agentic-design-system/panels.css', 'utf8');
-  for (const file of ['panels.css', ...[...panelIndex.matchAll(/@import "\.\/([^";]+)";/gu)].map(match => match[1])]) {
+  // The Graph data-view adapter bundle excludes collection-layout.css (see agentic-graph
+  // canvas/scripts/build-data-view-adapter.mjs); it is a Commerce-side layout asset sealed from the
+  // same Design System release, so it is not part of the Graph adapter's panel stylesheet inventory.
+  const panelImports = [...panelIndex.matchAll(/@import "\.\/([^";]+)";/gu)].map(match => match[1])
+    .filter(file => file !== 'collection-layout.css');
+  for (const file of ['panels.css', ...panelImports]) {
     const entry = pin.inputs.find(input => input.path === 'node_modules/agentic-design-system/site/' + file);
     if (entry?.sha256 !== digest(fs.readFileSync('public/agentic-design-system/' + file)))
       throw Error('Graph and Commerce must use the same panel stylesheet: ' + file);

@@ -109,6 +109,7 @@
   min-inline-size: 0; gap: var(--agentic-menu-gap);
 }
 .agentic-base-floating-panel .agentic-floating-panel-tab:not([aria-selected="true"]):not(:hover):not(:focus-visible):has(> .agentic-icon) > span { font-size: 0; line-height: 0; }
+.agentic-floating-panel-tabs > .agentic-floating-panel-tab,
 .agentic-base-floating-panel .agentic-floating-panel-tab {
   box-sizing: border-box; display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center;
   min-inline-size: var(--agentic-control-height);
@@ -117,6 +118,7 @@
   padding-inline: var(--agentic-control-padding-inline); border: 0; border-radius: var(--agentic-control-radius);
   color: inherit; background: transparent; cursor: pointer; touch-action: manipulation; white-space: nowrap;
 }
+.agentic-floating-panel-tabs > .agentic-floating-panel-tab:hover,
 .agentic-base-floating-panel .agentic-floating-panel-tab:hover {
   background: var(--agentic-control-hover-background);
   box-shadow: none; transform: none; filter: none;
@@ -138,17 +140,21 @@
   }
   .agentic-panel-header,
   .agentic-base-floating-panel-header { min-block-size: var(--agentic-toolbar-height); }
+  .agentic-floating-panel-tabs > .agentic-floating-panel-tab,
   .agentic-base-floating-panel .agentic-floating-panel-tab {
     block-size: max(var(--agentic-control-height-touch), var(--agentic-icon-size-default));
     min-block-size: max(var(--agentic-control-height-touch), var(--agentic-icon-size-default));
   }
 }
+.agentic-floating-panel-tabs > .agentic-floating-panel-tab[aria-selected="true"],
 .agentic-base-floating-panel .agentic-floating-panel-tab[aria-selected="true"] {
   color: var(--agentic-control-selected-foreground); background: var(--agentic-control-selected-background);
 }
+.agentic-floating-panel-tabs > .agentic-floating-panel-tab[aria-selected="true"]:hover,
 .agentic-base-floating-panel .agentic-floating-panel-tab[aria-selected="true"]:hover {
   background: var(--agentic-control-hover-background);
 }
+.agentic-floating-panel-tabs > .agentic-floating-panel-tab:focus-visible,
 .agentic-base-floating-panel .agentic-floating-panel-tab:focus-visible,
 .agentic-base-floating-panel .agentic-base-floating-panel-close:focus-visible {
   outline: var(--agentic-control-focus-width) solid var(--agentic-control-selected-foreground);

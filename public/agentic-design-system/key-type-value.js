@@ -1,3 +1,22 @@
+import { createDesignIcon } from './toolbar-icons.js'
+
+const fieldTypes = {
+  text: ['Type', 'Text'], number: ['Hash', 'Number'], boolean: ['SquareCheckBig', 'Boolean'],
+  datetime: ['CalendarClock', 'Date and time'], list: ['List', 'List'], object: ['Braces', 'Object'],
+}
+
+/** A named glyph for the compact type slot. Its accessible name and tooltip describe the field type. */
+export function createFieldTypeIcon(type, ownerDocument = globalThis.document) {
+  if (!Object.hasOwn(fieldTypes, type)) throw new RangeError('Unknown field type')
+  const [name, label] = fieldTypes[type]
+  const marker = ownerDocument.createElement('span')
+  marker.setAttribute('role', 'img')
+  marker.setAttribute('aria-label', label)
+  marker.title = label
+  marker.append(createDesignIcon(name, ownerDocument))
+  return marker
+}
+
 /** Shared semantic structure; responsive geometry belongs to shared-ui-profile.css. */
 export const KTV_CONTAINER_CLASS = 'agentic-ktv-container'
 export const KTV_ROW_CLASS = 'agentic-ktv-row'

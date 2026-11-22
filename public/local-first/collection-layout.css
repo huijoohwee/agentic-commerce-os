@@ -1,4 +1,16 @@
 /* Collection geometry, item visuals and interaction states for all hosts. */
+.agentic-table-frame {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  overflow: auto;
+}
+table[data-agentic-table-fit] {
+  inline-size: var(--agentic-table-content-size, max-content);
+}
+table[data-agentic-table-fit="container"] {
+  min-inline-size: 100%;
+}
+
 .agentic-collection {
   display: grid;
   min-inline-size: 0;
