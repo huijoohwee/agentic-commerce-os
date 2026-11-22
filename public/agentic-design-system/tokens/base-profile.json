@@ -1,7 +1,7 @@
 {
-  "schema": "agentic-design-system/base-profile/v1",
+  "schema": "agentic-design-system/base-profile/v2",
   "id": "base",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "status": "candidate",
   "scope": {
     "repository": "github.com/huijoohwee/agentic-base",
@@ -18,14 +18,22 @@
     "digest": "sha256:939721e4008a40f28594af8bdd7c122e388d9b22534ef1e6799dc771023691a1"
   },
   "tokens": [
-    {"key": "data-view.action-hover", "cssVar": "--agentic-base-action-hover", "type": "color", "value": "#f3f4f6"},
-    {"key": "data-view.border", "cssVar": "--agentic-base-border", "type": "color", "value": "#e5e7eb"},
-    {"key": "data-view.row-hover", "cssVar": "--agentic-base-row-hover", "type": "color", "value": "#fffbeb"},
-    {"key": "data-view.table-header-bg", "cssVar": "--agentic-base-table-header-bg", "type": "color", "value": "#f9fafb"},
+    {"key": "data-view.action-hover", "cssVar": "--agentic-base-action-hover", "type": "color", "values": {"light": "#f3f4f6", "dark": "rgba(255, 255, 255, 0.06)", "black": "rgba(255, 255, 255, 0.06)"}},
+    {"key": "data-view.border", "cssVar": "--agentic-base-border", "type": "color", "values": {"light": "#e5e7eb", "dark": "#4b5563", "black": "#404040"}},
+    {"key": "data-view.row-hover", "cssVar": "--agentic-base-row-hover", "type": "color", "values": {"light": "#fffbeb", "dark": "rgb(251 191 36 / 0.16)", "black": "rgb(251 191 36 / 0.16)"}},
+    {"key": "data-view.table-header-bg", "cssVar": "--agentic-base-table-header-bg", "type": "color", "values": {"light": "#f9fafb", "dark": "rgba(11, 18, 32, 0.75)", "black": "rgba(23, 23, 23, 0.85)"}},
     {"key": "data-view.table-sticky-header-bg", "cssVar": "--agentic-base-data-table-sticky-header-bg", "type": "alias", "targetKey": "data-view.table-header-bg"},
-    {"key": "data-view.text-primary", "cssVar": "--agentic-base-text-primary", "type": "color", "value": "#111827"},
-    {"key": "data-view.text-secondary", "cssVar": "--agentic-base-text-secondary", "type": "color", "value": "#4b5563"},
-    {"key": "data-view.text-tertiary", "cssVar": "--agentic-base-text-tertiary", "type": "color", "value": "#6b7280"},
-    {"key": "data-view.tree-cell-padding-inline", "cssVar": "--agentic-base-data-tree-cell-padding-inline", "type": "dimension", "value": "0.75rem"}
+    {"key": "data-view.text-primary", "cssVar": "--agentic-base-text-primary", "type": "color", "values": {"light": "#111827", "dark": "#f3f4f6", "black": "#f3f4f6"}},
+    {"key": "data-view.text-secondary", "cssVar": "--agentic-base-text-secondary", "type": "color", "values": {"light": "#4b5563", "dark": "#9ca3af", "black": "#9ca3af"}},
+    {"key": "data-view.text-tertiary", "cssVar": "--agentic-base-text-tertiary", "type": "color", "values": {"light": "#6b7280", "dark": "#6b7280", "black": "#8a8a8a"}},
+    {"key": "data-view.tree-cell-padding-inline", "cssVar": "--agentic-base-data-tree-cell-padding-inline", "type": "dimension", "value": "0.75rem"},
+    {"key": "data-view.surface", "cssVar": "--agentic-base-surface", "type": "color", "values": {"light": "#ffffff", "dark": "#020b2a", "black": "#0a0a0a"}},
+    {"key": "data-view.selected", "cssVar": "--agentic-base-selected", "type": "color", "values": {"light": "rgba(59, 130, 246, 0.12)", "dark": "rgba(96, 165, 250, 0.16)", "black": "rgba(96, 165, 250, 0.16)"}},
+    {"key": "data-view.accent", "cssVar": "--agentic-base-accent", "type": "color", "values": {"light": "#3b82f6", "dark": "#60a5fa", "black": "#60a5fa"}},
+    {"key": "data-view.focus", "cssVar": "--agentic-base-focus", "type": "alias", "targetKey": "data-view.accent"},
+    {"key": "data-view.muted", "cssVar": "--agentic-base-muted", "type": "alias", "targetKey": "data-view.text-tertiary"},
+    {"key": "data-view.button-hover", "cssVar": "--agentic-base-button-hover", "type": "alias", "targetKey": "data-view.action-hover"},
+    {"key": "data-view.surface-muted", "cssVar": "--agentic-base-surface-muted", "type": "alias", "targetKey": "data-view.table-header-bg"},
+    {"key": "data-view.shadow-overlay", "cssVar": "--agentic-base-shadow-overlay", "type": "shadow", "values": {"light": "0 8px 24px rgba(23, 32, 51, 0.14)", "dark": "0 8px 24px rgba(0, 0, 0, 0.5)", "black": "0 8px 24px rgba(0, 0, 0, 0.6)"}}
   ]
 }

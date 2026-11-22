@@ -7,7 +7,7 @@ import { registerWebMcpTools, searchRegistry, validateRegistryContext } from "./
 import { hydrateDesignIcons, hydratePanelControls } from "./toolbar-icons.js";
 import { installHoverLabels, createHoverPanel } from "./hover.js";
 import { buildSettingsKeyTooltip, buildSettingsValueTooltip } from "./hover-text.js";
-import { createKeyTypeValueRow, createKeyTypeValueRows } from "./key-type-value.js";
+import { createFieldTypeIcon, createKeyTypeValueRow, createKeyTypeValueRows } from "./key-type-value.js";
 
 hydratePanelControls(document);
 const sectionCss = document.createElement('link'); sectionCss.rel = 'stylesheet'; sectionCss.href = './panel-section.css'; document.head.append(sectionCss);
@@ -53,7 +53,7 @@ function addHoverPreview() {
   const trigger = document.createElement("button"); trigger.type = "button"; trigger.textContent = "Hover or focus for help";
   trigger.className = "agentic-toolbar-item";
   createHoverPanel(trigger, { content: input.title });
-  section.append(heading, createKeyTypeValueRow({ keyNode: label, typeNode: "Number", valueNode: input }), trigger);
+  section.append(heading, createKeyTypeValueRow({ keyNode: label, typeNode: createFieldTypeIcon("number"), valueNode: input }), trigger);
   document.querySelector("#catalog-grid").before(section);
 }
 addHoverPreview();
@@ -67,7 +67,7 @@ function addKtvPreview() {
     input.id = "ktv-preview-" + bound; input.type = "number"; input.min = "0";
     label.htmlFor = input.id; label.textContent = "Capacity " + bound;
     input.setAttribute("aria-label", label.textContent);
-    return { id: input.id + "-row", keyNode: label, typeNode: "Number", valueNode: input };
+    return { id: input.id + "-row", keyNode: label, typeNode: createFieldTypeIcon("number"), valueNode: input };
   });
   section.append(heading, createKeyTypeValueRows({ rows }));
   document.querySelector("#catalog-grid").before(section);

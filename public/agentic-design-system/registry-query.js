@@ -94,7 +94,9 @@ export function validateRegistryContext(catalog, profiles) {
     if (!manifest || typeof manifest.id !== "string" || profileIds.has(manifest.id)
       || manifest.status !== "candidate" || !Array.isArray(manifest.scope)
       || !Array.isArray(manifest.consumerPins) || profile.id !== manifest.id
-      || profile.status !== "candidate" || profile.schema !== `agentic-design-system/${manifest.id}-profile/v1`
+      || profile.status !== "candidate"
+      || (profile.schema !== `agentic-design-system/${manifest.id}-profile/v1`
+        && !(manifest.id === "base" && profile.schema === "agentic-design-system/base-profile/v2"))
       || !Array.isArray(profile.tokens) || profile.tokens.length > 256) {
       throw new TypeError("Candidate profile inventory is incomplete or duplicated");
     }

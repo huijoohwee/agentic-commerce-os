@@ -1,12 +1,33 @@
-/* Generated from agentic-design-system Base profile; origin agentic-base@a5d0f2d87d8c6871e9639f8224f5eaee056c5b6e; profile sha256 3c231b5a57ae6acac862a4ede882d24657d93e45b1bc7ea32d1799ef4b32e361. Do not edit. */
+/* Generated from agentic-design-system Base profile; origin agentic-base@a5d0f2d87d8c6871e9639f8224f5eaee056c5b6e; profile sha256 b2d1f2a115373c0471c1309f1f371434033791be96b3ad5069a6304a80d2ac7c. Do not edit. */
 :root, :host {
-  --agentic-base-action-hover: #f3f4f6;
-  --agentic-base-border: #e5e7eb;
+  --agentic-base-accent: light-dark(#3b82f6, #60a5fa);
+  --agentic-base-action-hover: light-dark(#f3f4f6, rgba(255, 255, 255, 0.06));
+  --agentic-base-border: light-dark(#e5e7eb, #4b5563);
+  --agentic-base-button-hover: var(--agentic-base-action-hover);
   --agentic-base-data-table-sticky-header-bg: var(--agentic-base-table-header-bg);
   --agentic-base-data-tree-cell-padding-inline: 0.75rem;
-  --agentic-base-row-hover: #fffbeb;
-  --agentic-base-table-header-bg: #f9fafb;
-  --agentic-base-text-primary: #111827;
-  --agentic-base-text-secondary: #4b5563;
-  --agentic-base-text-tertiary: #6b7280;
+  --agentic-base-focus: var(--agentic-base-accent);
+  --agentic-base-muted: var(--agentic-base-text-tertiary);
+  --agentic-base-row-hover: light-dark(#fffbeb, rgb(251 191 36 / 0.16));
+  --agentic-base-selected: light-dark(rgba(59, 130, 246, 0.12), rgba(96, 165, 250, 0.16));
+  --agentic-base-shadow-overlay: light-dark(0 8px 24px rgba(23, 32, 51, 0.14), 0 8px 24px rgba(0, 0, 0, 0.5));
+  --agentic-base-surface: light-dark(#ffffff, #020b2a);
+  --agentic-base-surface-muted: var(--agentic-base-table-header-bg);
+  --agentic-base-table-header-bg: light-dark(#f9fafb, rgba(11, 18, 32, 0.75));
+  --agentic-base-text-primary: light-dark(#111827, #f3f4f6);
+  --agentic-base-text-secondary: light-dark(#4b5563, #9ca3af);
+  --agentic-base-text-tertiary: light-dark(#6b7280, #6b7280);
+}
+:root[data-dark-variant="black"], :host([data-dark-variant="black"]) {
+  --agentic-base-accent: #60a5fa;
+  --agentic-base-action-hover: rgba(255, 255, 255, 0.06);
+  --agentic-base-border: #404040;
+  --agentic-base-row-hover: rgb(251 191 36 / 0.16);
+  --agentic-base-selected: rgba(96, 165, 250, 0.16);
+  --agentic-base-shadow-overlay: 0 8px 24px rgba(0, 0, 0, 0.6);
+  --agentic-base-surface: #0a0a0a;
+  --agentic-base-table-header-bg: rgba(23, 23, 23, 0.85);
+  --agentic-base-text-primary: #f3f4f6;
+  --agentic-base-text-secondary: #9ca3af;
+  --agentic-base-text-tertiary: #8a8a8a;
 }
