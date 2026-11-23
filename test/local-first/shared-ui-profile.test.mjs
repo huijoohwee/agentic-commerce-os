@@ -152,7 +152,7 @@ test('Workspace Pack takes panel geometry and colors from the pinned stylesheets
   const css = fs.readFileSync('public/local-first/workspace-pack.css', 'utf8');
   const owners = [...css.matchAll(/@import\s+([^;]+);/gi)].map(match => match[1].trim());
   assert.match(fs.readFileSync('public/local-first/commerce-shell.css', 'utf8'), /@import "\.\/floating-panel\.css";/);
-  assert.deepEqual(owners, ['"./graph-ui-tokens.css"', '"./commerce-theme.css"', '"./commerce-shell.css"']);
+  assert.deepEqual(owners, ['"./graph-ui-tokens.css"', '"./commerce-theme.css"', '"./commerce-shell.css"', '"./viewer-surface.css"']);
   assert.match(html, /id="builder" class="agentic-dashboard-layout"/);
   assert.match(html, /class="agentic-dashboard-region">\s*<div class="agentic-dashboard-grid" data-columns="2" data-dashboard-columns-for="builder">/);
   assert.match(html, /id="formats" class="agentic-dashboard-layout"/);
@@ -254,7 +254,7 @@ test('Base browser controls reuse the central shared border utility', () => {
   const profile = fs.readFileSync('public/agentic-design-system/vendor/shared-ui-profile.css', 'utf8');
   const css = fs.readFileSync('public/local-first/agentic-base-data-view.css', 'utf8');
   const profileDigest = digest(profile);
-  assert.equal(pin.source.revision, '801e7923daa87516a8c694cae535801881168ef8');
+  assert.equal(pin.source.revision, '6326e72f63ed9156a76aa69e71159c9533b9301c');
   assert.equal(pin.inputs.find(input => input.path === 'packages/views-react/src/browser/shared-ui-profile.css')?.sha256,
     profileDigest);
   assert.match(profile, /--agentic-control-border:\s*1px solid var\(--agentic-base-border,/u);
