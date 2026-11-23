@@ -1,6 +1,7 @@
 @import "./graph-ui-tokens.css";
 @import "./commerce-theme.css";
 @import "./commerce-shell.css";
+@import "./viewer-surface.css";
 
 :root { color: var(--kg-text-primary); background: var(--commerce-canvas); }
 * { box-sizing: border-box; }
@@ -81,11 +82,7 @@ input,textarea {
 #status { font-size: var(--kg-text-xs); line-height: 1.7; color: var(--kg-text-secondary); margin: 0 0 20px; }
 #empty { text-align: center; color: var(--kg-text-secondary); font-size: 13px; line-height: 1.7; }
 .empty-mark { display: block; margin: 0 auto 28px; font-size: 40px; color: var(--commerce-action); }
-pre {
-  white-space: pre; overflow: auto; padding: 16px;
-  background: var(--commerce-canvas); border: 1px solid var(--kg-border); height: 280px;
-  color: var(--kg-text-primary);
-}
+#preview { block-size: 280px; }
 #file-info { overflow-wrap: anywhere; }
 .canvas-next {
   border-top: 1px solid var(--kg-border); padding-top: 22px; margin-top: 26px;

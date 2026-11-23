@@ -101,7 +101,7 @@ dialog{border:1px solid var(--commerce-border-strong);border-radius:20px;width:m
 .workspace-tool-panel h3 { margin-top:24px; font-size:var(--agentic-font-size-body); }
 .workspace-tool-panel code { display:block;   }
 .workspace-tool-output { margin-top:20px; }
-.workspace-tool-output pre { min-height:90px; max-height:440px; overflow:auto; white-space:pre-wrap; overflow-wrap:anywhere;   }
+.workspace-tool-output pre { min-height:90px; max-height:440px; overflow:auto;   }
 /* Keep initial fragment restoration clear of the sticky shared shell before app bootstrap. */
 /* Role-specific content composes the shared console panels. */
 .console-mode .badge{white-space:normal}
@@ -195,7 +195,7 @@ dialog{border:1px solid var(--commerce-border-strong);border-radius:20px;width:m
 .environment-check-detail dd{margin:0;overflow-wrap:anywhere;text-align:left}
 .environment-check-detail p{font-size:var(--agentic-font-size-body);line-height:var(--agentic-line-height-body)}
 
-.environment-check-detail pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:250px;overflow:auto}
+.environment-check-detail pre{max-height:250px;overflow:auto}
 @media(max-width:1000px){.environment-history-filters{flex-wrap:wrap}.environment-history .data-table th{white-space:normal}}
 @media(max-width:680px){.environment-history-filters{width:100%}.environment-history-filters>label{flex:1;min-width:0}.environment-history-filters :is(select, .agentic-select-trigger){width:100%}.environment-history-filters .console-query{flex-basis:100%}.environment-check-detail .readiness{grid-template-columns:1fr;gap:5px}.environment-check-detail dd{margin-bottom:10px}}
 /* Navigation visibility is handled by the shared shell; these rules align console content. */

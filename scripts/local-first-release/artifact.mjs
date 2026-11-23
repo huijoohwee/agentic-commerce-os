@@ -70,7 +70,7 @@ export function verifyAgenticBaseDataView() {
     || pin.contract?.cssScope !== 'shadow-root' || pin.contract?.defaultLayout !== 'table'
     || JSON.stringify(pin.contract?.layoutModes) !== JSON.stringify(['table', 'multiDimensional'])
     || JSON.stringify(pin.contract?.hostThemeSlots) !== JSON.stringify(['--agentic-base-text', '--agentic-base-surface', '--agentic-base-border', '--agentic-base-muted', '--agentic-base-header', '--agentic-base-selected', '--agentic-base-hover', '--agentic-base-focus'])
-    || !Array.isArray(pin.inputs) || !pin.inputs.length || pin.inputs.length > 24
+    || !Array.isArray(pin.inputs) || !pin.inputs.length || pin.inputs.length > 32
     || !/^\d+\.\d+\.\d+$/.test(pin.build?.esbuild ?? '')) throw Error('Agentic Base data view source contract invalid');
   const inputPaths = new Set(); let totalInputBytes = 0;
   for (const input of pin.inputs) {
