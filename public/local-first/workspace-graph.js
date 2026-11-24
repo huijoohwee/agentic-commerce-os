@@ -1,7 +1,9 @@
-import { LISTING_FIELDS, LISTING_LABELS, indexOfferProjects, isArchived } from './drafts.js';
+import { createRecordLinkCodec } from './record-links.js';
+import { LISTING_FIELDS, LISTING_LABELS, offerProjectId, isArchived } from './drafts.js';
 import { formatMoney } from './launch.js';
 // Commerce projects offer records. Base renders the selected record view.
 import { openCommercePanel, closeCommercePanel } from './commerce-toolbar.js';
+const projectLinks = createRecordLinkCodec({ fragment: 'admin-project', views: [{ view: 'project' }] });
 const mounts = new WeakMap();
 const listLayouts = new WeakMap();
 const baseCssUrl = new URL('./agentic-base-data-view.css', import.meta.url).href;
@@ -160,7 +162,7 @@ export async function mountCommerceTable(container, offers, presentation, action
   try {
     const native = cards ? null : await loadBaseAdapter();
     if (state.disposed || mounts.get(container) !== state) return;
-    let selection = 0, selectedId = null, projects;
+    let selection = 0, selectedId = null;
     const listHost = container.parentElement ?? container;
     const preference = listLayouts.get(listHost) ?? { layout: 'table', orientation: 'rows' };
     listLayouts.set(listHost, preference);
@@ -199,11 +201,10 @@ export async function mountCommerceTable(container, offers, presentation, action
       applyBaseTheme(detailHost);
       const edit = el('a', isArchived(offer) ? 'Edit or restore listing ↗' : actions.editLabel, 'button secondary'); edit.href = '#vendor-editor';
       edit.addEventListener('click', event => { event.preventDefault(); actions.open(offer); }); controls.append(edit);
-      projects ??= indexOfferProjects(offers);
-      const project = projects.projectFor(id);
-      if (project) {
-        const link = el('a', 'View offers for ' + project.name, 'button secondary');
-        link.href = project.href; controls.append(link);
+      if (!isArchived(offer)) {
+        const project = offerProjectId(offer);
+        const link = el('a', 'View offers for ' + (offer.launch?.merchantId || 'Personal workspace'), 'button secondary');
+        link.href = projectLinks.href({ view: 'project', record: project }); controls.append(link);
       }
       if (actions.inspect) { const inspect = el('button', 'Inspect with tools', 'secondary'); inspect.type = 'button'; inspect.setAttribute('aria-label', 'Inspect ' + offer.title + ' with agent tools'); inspect.addEventListener('click', () => actions.inspect(offer, inspect)); controls.append(inspect); }
       details.replaceChildren(header, note, detailHost, controls); details.hidden = false; layout.classList.add('has-selection');

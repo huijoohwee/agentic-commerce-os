@@ -17,7 +17,7 @@ export async function startWorkspacePackHost(options: Options) {
   const assets = new Map([[PACK_PATH + '/', 'workspace-pack.html']])
   for (const name of [...packAssets, ...packEntries]) assets.set(PACK_PATH + '/' + name, name)
   // The guide lazily imports the same Graph adapter relative to the storefront on either host.
-  for (const name of [...packAssets, 'workspace-graph.js', 'drafts.js', 'launch.js', 'graph-data-view.js', 'graph-data-view.css']) {
+  for (const name of [...packAssets, 'workspace-graph.js', 'drafts.js', 'record-links.js', 'launch.js', 'graph-data-view.js', 'graph-data-view.css']) {
     assets.set('/agentic-commerce-os/' + name, name)
   }
   const types: Record<string, string> = { '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.html': 'text/html' }
