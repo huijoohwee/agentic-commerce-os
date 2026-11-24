@@ -1,12 +1,11 @@
 import { renderStorefrontTemplate } from '../../src/local-first/checkout-offer.ts';
-import fs from 'node:fs';
 import { createHash } from 'node:crypto';
-import { FILES, digest } from './artifact.mjs';
+import { FILES, digest, readLocalFirstAsset } from './artifact.mjs';
 const pause = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
 export function authoredAssets(revision, checkout = 'sandbox') {
   if (!['sandbox', 'live-reader', 'live'].includes(checkout)) throw Error('asset_checkout_invalid');
   return FILES.map(file => {
-    let bytes = fs.readFileSync('public/local-first/' + file);
+    let bytes = readLocalFirstAsset(file);
     if (file === 'sw.js' || file === 'index.html') bytes = Buffer.from(renderStorefrontTemplate(bytes.toString(), revision, checkout));
     const packAsset = (file.startsWith('workspace-pack.') && file !== 'workspace-pack.route.js') || file === 'floating-panel.css';
     let path = file === 'index.html' ? '' : file;

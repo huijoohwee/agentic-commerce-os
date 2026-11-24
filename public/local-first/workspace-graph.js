@@ -3,6 +3,7 @@ import { formatMoney } from './launch.js';
 // Commerce projects offer records. Base renders the selected record view.
 import { openCommercePanel, closeCommercePanel } from './commerce-toolbar.js';
 const mounts = new WeakMap();
+const listLayouts = new WeakMap();
 const baseCssUrl = new URL('./agentic-base-data-view.css', import.meta.url).href;
 const graphCssUrl = new URL('./graph-data-view.css', import.meta.url).href;
 const displayLocale = globalThis.document?.documentElement?.lang || 'en';
@@ -160,14 +161,17 @@ export async function mountCommerceTable(container, offers, presentation, action
     const native = cards ? null : await loadBaseAdapter();
     if (state.disposed || mounts.get(container) !== state) return;
     let selection = 0, selectedId = null;
-    let mode = 'table', orientation = 'rows', returnFocus;
+    const listHost = container.parentElement ?? container;
+    const preference = listLayouts.get(listHost) ?? { layout: 'table', orientation: 'rows' };
+    listLayouts.set(listHost, preference);
+    let mode = preference.layout, orientation = preference.orientation, returnFocus;
     const project = () => mode === 'table' ? responsiveOfferView(offers, presentation, gridHost.clientWidth)
       : { columns: OFFER_COLUMNS, rows: projectOfferRows(offers, presentation) };
     let view = project(), viewKey = view.columns.map(column => column.id).join(':');
     function gridOptions() {
       return { ...view, layout: mode, ariaLabel: actions.label, selectedRowId: selectedId, onActivateRow: select,
         ...(mode === 'kanban' ? { groupByColumnId: 'offer-2' } : {}),
-        ...(mode === 'multiDimensional' ? { orientation, onOrientationChange(value) { orientation = value; updateGrid(); } } : {}) };
+        ...(mode === 'multiDimensional' ? { orientation, onOrientationChange(value) { orientation = preference.orientation = value; updateGrid(); } } : {}) };
     }
     const updateGrid = () => {
       if (cards) mountOfferCards(gridHost, offers, presentation, selectedId, select);
@@ -224,7 +228,7 @@ export async function mountCommerceTable(container, offers, presentation, action
       const controls = el('div'), body = el('div'); target.replaceChildren(controls, body);
       function toolbarOptions() {
         return { label: 'Offer views', layout: mode, status: offers.length + (offers.length === 1 ? ' offer' : ' offers'), actions: [],
-          onLayoutChange(value) { mode = value; view = project(); viewKey = view.columns.map(column => column.id).join(':');
+          onLayoutChange(value) { mode = preference.layout = value; view = project(); viewKey = view.columns.map(column => column.id).join(':');
             state.toolbar.update(toolbarOptions()); updateGrid(); } };
       }
       state.toolbar = native.mountRecordViewToolbar(controls, toolbarOptions());

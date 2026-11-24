@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import { createHash } from 'node:crypto';
 import worker from '../../src/local-first/worker.ts';
 import { OFFER_COLUMNS, projectOfferRows, projectOfferDetail, listingSummary } from '../../public/local-first/workspace-graph.js';
-import { FILES, verifyAgenticBaseDataView, verifyGraphDataView } from '../../scripts/local-first-release/artifact.mjs';
+import { FILES, readLocalFirstAsset, verifyAgenticBaseDataView, verifyGraphDataView } from '../../scripts/local-first-release/artifact.mjs';
 
 const baseAssets = ['agentic-base-data-view.js', 'agentic-base-data-view.css', 'dropdown-menus.js'];
 const graphAssets = ['graph-data-view.js', 'graph-data-view.css', 'graph-ui-tokens.css'];
@@ -69,7 +69,7 @@ test('Commerce table uses the exact Agentic Base browser artifact candidate', ()
   assert.deepEqual(pin.outputs.map(output => output.path).sort(), [...baseAssets].sort());
   const verified = verifyAgenticBaseDataView();
   assert.deepEqual(verified.outputs, pin.outputs);
-  const baseJs = fs.readFileSync('public/local-first/agentic-base-data-view.js', 'utf8');
+  const baseJs = readLocalFirstAsset('agentic-base-data-view.js').toString('utf8');
   const baseCss = fs.readFileSync('public/local-first/agentic-base-data-view.css', 'utf8');
   const housing = fs.readFileSync('public/local-first/housing-comparison.js', 'utf8');
   assert.match(baseJs, /multiDimensional/);
