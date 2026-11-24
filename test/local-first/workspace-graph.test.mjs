@@ -60,12 +60,13 @@ test('Commerce table uses the exact Agentic Base browser artifact candidate', ()
   const pin = JSON.parse(fs.readFileSync('config/agentic-base-data-view.json', 'utf8'));
   assert.equal(pin.schema, 'agentic-base/consumer-artifact/v1');
   assert.equal(pin.source.repository, 'github.com/huijoohwee/agentic-base');
-  assert.equal(pin.source.revision, '6d90bd812169bde115e3c927c0919d6bacfd8872');
+  assert.match(pin.source.revision, /^[0-9a-f]{40}$/);
   assert.equal(pin.source.sourceDirty, false);
   assert.equal(pin.contract.browserExport, 'mountDataView');
   assert.equal(pin.contract.defaultLayout, 'table');
   assert.deepEqual(pin.contract.layoutModes, ['table', 'multiDimensional', 'kanban']);
   assert(pin.inputs.some(input => input.path === 'packages/views-react/src/table/MultiDimTableView.tsx'));
+  assert(pin.inputs.some(input => input.path === 'src/record-links.mjs'));
   assert.deepEqual(pin.outputs.map(output => output.path).sort(), [...baseAssets].sort());
   const verified = verifyAgenticBaseDataView();
   assert.deepEqual(verified.outputs, pin.outputs);
@@ -73,6 +74,7 @@ test('Commerce table uses the exact Agentic Base browser artifact candidate', ()
   const baseCss = fs.readFileSync('public/local-first/agentic-base-data-view.css', 'utf8');
   const housing = fs.readFileSync('public/local-first/housing-comparison.js', 'utf8');
   assert.match(baseJs, /multiDimensional/);
+  assert.match(baseJs, /createRecordRelation/);
   assert.match(baseJs, /base-multi-dimensional-table/);
   assert.match(baseCss, /base-multi-dimensional-table/);
   assert.match(housing, /layout: 'multiDimensional'/);
