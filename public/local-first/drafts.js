@@ -1,3 +1,5 @@
+import { createRecordRelation } from './record-links.js';
+
 export const LIMITS = Object.freeze({ count: 100, title: 120, description: 10000, price: 120, transferBytes: 8000000 });
 export const MAXIMUM_AMOUNT_MINOR = 1_000_000_000;
 export const LAUNCH_ID_FIELDS = Object.freeze(['merchantId', 'agentId']);
@@ -276,14 +278,22 @@ export async function exportDrafts() {
     drafts: workflows ? drafts : drafts.map(({ workflow: _workflow, ...draft }) => draft) }, null, 2);
 }
 
+export function offerProjectId(draft) {
+  return draft.launch ? 'store:' + draft.launch.merchantId : 'local:unassigned';
+}
+
 export function groupProjects(drafts) {
-  const projects = new Map();
+  const offers = new Map(), names = new Map(), links = [];
   for (const draft of drafts) {
     if (isArchived(draft)) continue;
-    const id = draft.launch ? 'store:' + draft.launch.merchantId : 'local:unassigned';
-    if (!projects.has(id)) projects.set(id, { id, name: draft.launch?.merchantId || 'Personal workspace', offers: [] });
-    projects.get(id).offers.push(draft);
+    const project = offerProjectId(draft);
+    names.set(project, draft.launch?.merchantId || 'Personal workspace');
+    offers.set(draft.id, draft);
+    links.push({ source: draft.id, target: project });
   }
-  if (!projects.size) projects.set('local:unassigned', { id: 'local:unassigned', name: 'Personal workspace', offers: [] });
-  return [...projects.values()].sort((a, b) => a.name.localeCompare(b.name));
+  if (!names.size) names.set('local:unassigned', 'Personal workspace');
+  const relation = createRecordRelation({ sources: offers.keys(), targets: names.keys(), links });
+  return [...names].map(([id, name]) => ({
+    id, name, offers: relation.to(id).map(link => offers.get(link.source)),
+  })).sort((a, b) => a.name.localeCompare(b.name));
 }

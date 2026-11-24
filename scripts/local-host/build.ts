@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { createHash } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
 import { generateFile, generationManifest } from 'agentic-os/generation'
+import { minify } from 'rolldown/utils'
 
 const root = fileURLToPath(new URL('../..', import.meta.url))
 const require = createRequire(new URL('../../package.json', import.meta.url))
@@ -24,7 +25,12 @@ export async function optimizeListingBundle(source: string, signal: AbortSignal,
     const result = await context.rebuild()
     if (signal.aborted) throw new Error('local_host_build_cancelled')
     if (result.outputFiles?.length !== 1) throw new Error('local_host_bundle_output_invalid')
-    bytes = result.outputFiles[0]!.contents
+    if (signal.aborted) throw new Error('local_host_build_cancelled')
+    // Compress the reachable device program as one ESM file, preserving property names.
+    const compact = await minify('listing-final.mjs', result.outputFiles[0]!.text,
+      { module: true, compress: { target: 'es2023' } })
+    if (compact.errors.length) throw new Error('local_host_bundle_output_invalid')
+    bytes = new TextEncoder().encode(compact.code)
   } finally { signal.removeEventListener('abort', cancel); await context.dispose() }
   if (signal.aborted) throw new Error('local_host_build_cancelled')
   return bytes
