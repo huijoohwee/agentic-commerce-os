@@ -1,3 +1,4 @@
+import { gunzipSync } from 'node:zlib';
 import { verifyGeoProjection } from '../agentic-geo-projection.mjs';
 import fs from 'node:fs';
 import { verifyTimelineBundle } from '../sme-review/build-timeline.mjs';
@@ -57,6 +58,22 @@ export function assertLocalFirstConfig(config) {
     throw Error('Local-first configuration must remain sandbox-only, private until route activation, and free of payment providers or financial resources.');
   }
 }
+const baseBundle = 'agentic-base-data-view.js';
+const sourceName = name => name === baseBundle ? name + '.gz' : name;
+export function readLocalFirstAsset(name) {
+  const source = path.resolve('public/local-first'), input = path.resolve(source, sourceName(name));
+  if (!input.startsWith(source + path.sep)) throw Error('Local-first asset escaped its source directory');
+  const stat = fs.lstatSync(input);
+  if (!stat.isFile() || stat.isSymbolicLink() || stat.size >= 500000) throw Error('Invalid local-first asset source');
+  const bytes = fs.readFileSync(input);
+  if (name !== baseBundle) return bytes;
+  const raw = gunzipSync(bytes, { maxOutputLength: 499999 });
+  const pin = JSON.parse(fs.readFileSync('config/agentic-base-data-view.json', 'utf8'));
+  const output = pin.outputs.find(row => row.path === baseBundle);
+  if (output?.bytes !== raw.length || output.sha256 !== digest(raw)) throw Error('Packed Base bundle differs from its pinned source');
+  return raw;
+}
+
 export function verifyAgenticBaseDataView() {
   const manifestFile = 'config/agentic-base-data-view.json', manifestStat = fs.lstatSync(manifestFile);
   if (!manifestStat.isFile() || manifestStat.isSymbolicLink() || manifestStat.size < 1 || manifestStat.size >= 500000) throw Error('Agentic Base data view manifest invalid');
@@ -68,9 +85,9 @@ export function verifyAgenticBaseDataView() {
     || !/^[0-9a-f]{64}$/.test(pin.source?.buildManifestSha256 ?? '')) throw Error('Agentic Base data view provenance invalid');
   if (pin.contract?.source !== 'agentic-base/browser-data-view/v1' || pin.contract?.browserExport !== 'mountDataView'
     || pin.contract?.cssScope !== 'shadow-root' || pin.contract?.defaultLayout !== 'table'
-    || JSON.stringify(pin.contract?.layoutModes) !== JSON.stringify(['table', 'multiDimensional'])
+    || JSON.stringify(pin.contract?.layoutModes) !== JSON.stringify(['table', 'multiDimensional', 'kanban'])
     || JSON.stringify(pin.contract?.hostThemeSlots) !== JSON.stringify(['--agentic-base-text', '--agentic-base-surface', '--agentic-base-border', '--agentic-base-muted', '--agentic-base-header', '--agentic-base-selected', '--agentic-base-hover', '--agentic-base-focus'])
-    || !Array.isArray(pin.inputs) || !pin.inputs.length || pin.inputs.length > 32
+    || !Array.isArray(pin.inputs) || !pin.inputs.length || pin.inputs.length > 64
     || !/^\d+\.\d+\.\d+$/.test(pin.build?.esbuild ?? '')) throw Error('Agentic Base data view source contract invalid');
   const inputPaths = new Set(); let totalInputBytes = 0;
   for (const input of pin.inputs) {
@@ -80,6 +97,7 @@ export function verifyAgenticBaseDataView() {
     inputPaths.add(input.path); totalInputBytes += input.bytes;
   }
   if (totalInputBytes > 8000000 || !inputPaths.has('packages/views-react/src/browser/DataViewBrowserAdapter.tsx')
+    || !inputPaths.has('packages/views-react/src/kanban/KanbanView.tsx') || !inputPaths.has('packages/views-react/src/browser/RecordViewToolbar.tsx')
     || !inputPaths.has('packages/views-react/src/table/MultiDimTableView.tsx')
     || !inputPaths.has('packages/views-react/src/controls/icons.json') || !inputPaths.has('packages/views-react/src/controls/icons.pin.json')
     || !inputPaths.has('packages/views-react/src/browser/base-profile.css') || !inputPaths.has('packages/views-react/src/browser/base-profile.pin.json')
@@ -94,14 +112,12 @@ export function verifyAgenticBaseDataView() {
   if (!Array.isArray(pin.outputs) || pin.outputs.length !== outputs.length || outputs.some(name => !pin.outputs.some(row => row.path === name))) throw Error('Agentic Base data view inventory invalid');
   for (const output of pin.outputs) {
     if (output.sourcePath !== (output.path === 'dropdown-menus.js' ? 'dropdown-menus.js' : output.path.endsWith('.js') ? 'browser-data-view.js' : 'browser-data-view.css')) throw Error('Agentic Base output source invalid');
-    const file = 'public/local-first/' + output.path, stat = fs.lstatSync(file);
-    if (!stat.isFile() || stat.isSymbolicLink() || stat.size < 1 || stat.size >= 500000) throw Error('Agentic Base data view asset invalid');
-    const bytes = fs.readFileSync(file);
+    const bytes = readLocalFirstAsset(output.path);
     if (bytes.length !== output.bytes || digest(bytes) !== output.sha256) throw Error('Agentic Base data view asset differs from its pinned source');
     const text = bytes.toString('utf8');
     if (output.path.endsWith('.css') ? /@import\b|url\(\s*['"]?(?:https?:|\/\/)/i.test(text)
       : /\bimport\s*(?:\(|['"]|[^;\n]*?\bfrom\s*['"])|\b(?:fetch|XMLHttpRequest|WebSocket|EventSource)\s*\(/.test(text)
-        || (output.path === 'dropdown-menus.js' ? !text.includes('enhanceSelects') || !text.includes('agentic-menu') : !text.includes('mountDataView') || !text.includes('multiDimensional') || !text.includes('DATA_VIEW_BROWSER_LIMITS'))) throw Error('Agentic Base data view asset must remain self-contained and offline');
+        || (output.path === 'dropdown-menus.js' ? !text.includes('enhanceSelects') || !text.includes('agentic-menu') : !text.includes('mountDataView') || !text.includes('mountRecordViewToolbar') || !text.includes('multiDimensional') || !text.includes('DATA_VIEW_BROWSER_LIMITS'))) throw Error('Agentic Base data view asset must remain self-contained and offline');
   }
   return pin;
 }
@@ -155,17 +171,13 @@ export function verifyStorageManagementSourceIndex() {
     servedFiles: STORAGE_MANAGEMENT_ASSETS.length }
 }
 export function prepareLocalFirstAssets() {
-  const source = path.resolve('public/local-first'), output = path.resolve(LOCAL_FIRST_ASSET_DIRECTORY)
+  const output = path.resolve(LOCAL_FIRST_ASSET_DIRECTORY)
   fs.rmSync(output, { recursive: true, force: true })
   fs.mkdirSync(output, { recursive: true })
   for (const file of [...FILES, ...PRIVATE_FILES]) {
-    const input = path.resolve(source, file)
-    if (!input.startsWith(source + path.sep)) throw Error('Local-first asset path escaped its source directory')
-    const stat = fs.lstatSync(input)
-    if (!stat.isFile() || stat.isSymbolicLink()) throw Error('Local-first asset source must be a regular file')
     const target = path.resolve(output, file)
     fs.mkdirSync(path.dirname(target), { recursive: true })
-    fs.copyFileSync(input, target, fs.constants.COPYFILE_EXCL)
+    fs.writeFileSync(target, readLocalFirstAsset(file), { flag: 'wx' })
   }
   fs.copyFileSync(path.join(output, 'index.html'), path.join(output, LOCAL_FIRST_DEV_INDEX_ALIAS), fs.constants.COPYFILE_EXCL)
   if (listRegularFiles(output).join() !== [...FILES, ...PRIVATE_FILES, LOCAL_FIRST_DEV_INDEX_ALIAS].sort().join()) {
@@ -276,7 +288,7 @@ export function verifySharedThemeOwner() {
     }
   }
   for (const file of FILES.filter(name => !name.endsWith('.css'))) {
-    const source = fs.readFileSync(path.join(directory, file), 'utf8');
+    const source = readLocalFirstAsset(file).toString('utf8');
     if (/(?:^|[;{])\s*--commerce-[\w-]+\s*:/i.test(source)) throw Error(`Non-CSS Commerce theme override found in ${file}`);
   }
   if (unresolvedTokens.size) throw Error(`Unresolved Commerce theme tokens: ${[...unresolvedTokens].join(', ')}`);
@@ -416,13 +428,13 @@ export function sourceManifest(revision, selection = readCheckoutRelease()) {
   }
   verifyStorageManagementSourceIndex();
   assertLocalFirstConfig(JSON.parse(fs.readFileSync(CONFIG, 'utf8')));
-  if (listRegularFiles('public/local-first').join() !== [...FILES, ...PRIVATE_FILES, ...STORAGE_MANAGEMENT_SOURCE_FILES].sort().join()) throw Error('Unexpected static asset inventory');
+  if (listRegularFiles('public/local-first').join() !== [...FILES.map(sourceName), ...PRIVATE_FILES, ...STORAGE_MANAGEMENT_SOURCE_FILES].sort().join()) throw Error('Unexpected static asset inventory');
   const paths = [CONFIG, 'src/local-first/worker.ts', 'src/local-first/pack-assets.ts', 'src/local-first/workspace-pack.ts', 'src/local-first/workspace-service.ts', 'src/local-first/sme-business-pack.ts', 'public/local-first/sme-business-pack-core.js', 'config/capability-token-map.json', 'config/shared-ui-profile.pin.json', 'config/floating-panel.pin.json', 'config/toolbar.pin.json',
     'config/dashboard-columns.pin.json', 'config/collection-layout.pin.json', 'config/agentic-base-data-view.json', 'config/graph-data-view.json', 'config/workspace-pack-graph.json', 'src/generated/graph-workspace-pack.js', 'src/generated/graph-workspace-pack.d.ts',
     'scripts/workspace-pack/build-graph.mjs', 'src/edge/production-prefix.ts', 'src/shared/http.ts',
     ...['checkout', 'session', 'fulfillment-contract', 'fulfillment-definition', 'fulfillment', 'fulfillment-relay', 'stripe-checkout', 'checkout-offer', 'checkout-recovery', 'stripe-webhook'].map(file => `src/local-first/${file}.ts`),
     'src/sandbox/device-host.ts', 'package.json', 'package-lock.json',
-    ...[...FILES, ...PRIVATE_FILES].map(file => 'public/local-first/' + file)];
+    ...[...FILES, ...PRIVATE_FILES].map(file => 'public/local-first/' + sourceName(file))];
   if (readFulfillmentRelease()) paths.push(FULFILLMENT_CONFIG);
   const entries = paths.sort().map(file => {
     const stat = fs.lstatSync(file); if (!stat.isFile() || stat.isSymbolicLink()) throw Error('Non-regular artifact source');
