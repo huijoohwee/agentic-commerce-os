@@ -1,4 +1,4 @@
-import { LISTING_FIELDS, LISTING_LABELS, isArchived } from './drafts.js';
+import { LISTING_FIELDS, LISTING_LABELS, indexOfferProjects, isArchived } from './drafts.js';
 import { formatMoney } from './launch.js';
 // Commerce projects offer records. Base renders the selected record view.
 import { openCommercePanel, closeCommercePanel } from './commerce-toolbar.js';
@@ -156,54 +156,29 @@ export async function mountCommerceTable(container, offers, presentation, action
   else applyBaseTheme(gridHost);
   const details = el('section', undefined, 'graph-record-detail'); details.hidden = true;
   details.setAttribute('aria-label', 'Selected offer');
-  const scope = el('div', undefined, 'record-actions'), scopeLabel = el('span');
-  const resetScope = el('button', 'Show all offers', 'secondary'); resetScope.type = 'button';
-  scope.append(scopeLabel, resetScope); scope.hidden = true;
-  layout.append(gridHost, details); container.replaceChildren(scope, layout);
+  layout.append(gridHost, details); container.replaceChildren(layout);
   try {
     const native = cards ? null : await loadBaseAdapter();
     if (state.disposed || mounts.get(container) !== state) return;
-    const byId = new Map(offers.map(offer => [offer.id, offer]));
-    let selection = 0, selectedId = null, storeLinks, visibleOffers = offers;
-    function indexStores(adapter) {
-      const links = offers.filter(offer => offer.launch?.merchantId).map(offer => ({ source: offer.id, target: offer.launch.merchantId }));
-      return adapter.createRecordRelation({ sources: byId.keys(), targets: new Set(links.map(link => link.target)), links });
-    }
+    let selection = 0, selectedId = null, projects;
     const listHost = container.parentElement ?? container;
     const preference = listLayouts.get(listHost) ?? { layout: 'table', orientation: 'rows' };
     listLayouts.set(listHost, preference);
     let mode = preference.layout, orientation = preference.orientation, returnFocus;
-    const project = () => mode === 'table' ? responsiveOfferView(visibleOffers, presentation, gridHost.clientWidth)
-      : { columns: OFFER_COLUMNS, rows: projectOfferRows(visibleOffers, presentation) };
+    const project = () => mode === 'table' ? responsiveOfferView(offers, presentation, gridHost.clientWidth)
+      : { columns: OFFER_COLUMNS, rows: projectOfferRows(offers, presentation) };
     let view = project(), viewKey = view.columns.map(column => column.id).join(':');
     function gridOptions() {
       return { ...view, layout: mode, ariaLabel: actions.label, selectedRowId: selectedId, onActivateRow: select,
         ...(mode === 'kanban' ? { groupByColumnId: 'offer-2' } : {}),
         ...(mode === 'multiDimensional' ? { orientation, onOrientationChange(value) { orientation = preference.orientation = value; updateGrid(); } } : {}) };
     }
-    function toolbarOptions() {
-      return { label: 'Offer views', layout: mode, status: visibleOffers.length + (visibleOffers.length === 1 ? ' offer' : ' offers'), actions: [],
-        onLayoutChange(value) { mode = preference.layout = value; view = project(); viewKey = view.columns.map(column => column.id).join(':');
-          state.toolbar.update(toolbarOptions()); updateGrid(); } };
-    }
     const updateGrid = () => {
-      if (cards) mountOfferCards(gridHost, visibleOffers, presentation, selectedId, select);
+      if (cards) mountOfferCards(gridHost, offers, presentation, selectedId, select);
       else state.grid?.update(gridOptions());
     };
-    const merchantName = id => presentation.merchantName?.(id) || id;
-    function showStore(id) {
-      visibleOffers = id ? storeLinks.to(id).map(link => byId.get(link.source)) : offers;
-      scopeLabel.textContent = id ? 'Offers for ' + merchantName(id) : '';
-      scope.hidden = !id;
-      view = project(); viewKey = view.columns.map(column => column.id).join(':');
-      state.toolbar?.update(toolbarOptions()); updateGrid();
-      if (id) resetScope.focus();
-      else if (cards) gridHost.querySelector('button')?.focus();
-      else gridHost.shadowRoot.querySelector('select[aria-label="View layout"]')?.focus();
-    }
-    resetScope.addEventListener('click', () => showStore(null));
     const select = async id => {
-      const offer = byId.get(id);
+      const offer = offers.find(value => value.id === id);
       if (!offer || state.disposed) return;
       const revision = ++selection; selectedId = id;
       if (!cards) returnFocus = gridHost.shadowRoot.activeElement;
@@ -224,6 +199,12 @@ export async function mountCommerceTable(container, offers, presentation, action
       applyBaseTheme(detailHost);
       const edit = el('a', isArchived(offer) ? 'Edit or restore listing ↗' : actions.editLabel, 'button secondary'); edit.href = '#vendor-editor';
       edit.addEventListener('click', event => { event.preventDefault(); actions.open(offer); }); controls.append(edit);
+      projects ??= indexOfferProjects(offers);
+      const project = projects.projectFor(id);
+      if (project) {
+        const link = el('a', 'View offers for ' + project.name, 'button secondary');
+        link.href = project.href; controls.append(link);
+      }
       if (actions.inspect) { const inspect = el('button', 'Inspect with tools', 'secondary'); inspect.type = 'button'; inspect.setAttribute('aria-label', 'Inspect ' + offer.title + ' with agent tools'); inspect.addEventListener('click', () => actions.inspect(offer, inspect)); controls.append(inspect); }
       details.replaceChildren(header, note, detailHost, controls); details.hidden = false; layout.classList.add('has-selection');
       try {
@@ -232,12 +213,6 @@ export async function mountCommerceTable(container, offers, presentation, action
         const detailTarget = await surface(detailHost, undefined, baseCssUrl);
         if (state.disposed || selection !== revision) return;
         state.detail = mountOfferDetail(detailTarget, adapter, offer, presentation);
-        storeLinks ??= indexStores(adapter);
-        for (const { target: storeId } of storeLinks.from(id)) {
-          const store = el('button', 'View offers for ' + merchantName(storeId), 'secondary');
-          store.type = 'button'; store.addEventListener('click', () => showStore(storeId));
-          controls.append(store);
-        }
         if (matchMedia('(max-width:680px)').matches) details.scrollIntoView({ block: 'start',
           behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
         heading.focus({ preventScroll: true });
@@ -251,12 +226,17 @@ export async function mountCommerceTable(container, offers, presentation, action
       updateGrid();
     };
     if (cards) {
-      state.grid = { update: next => { selectedId = next.selectedRowId || null; mountOfferCards(gridHost, visibleOffers, presentation, selectedId, select); }, destroy: () => gridHost.replaceChildren() };
-      mountOfferCards(gridHost, visibleOffers, presentation, selectedId, select);
+      state.grid = { update: next => { selectedId = next.selectedRowId || null; mountOfferCards(gridHost, offers, presentation, selectedId, select); }, destroy: () => gridHost.replaceChildren() };
+      mountOfferCards(gridHost, offers, presentation, selectedId, select);
     } else {
       const target = await surface(gridHost, undefined, baseCssUrl);
       if (state.disposed || mounts.get(container) !== state) return;
       const controls = el('div'), body = el('div'); target.replaceChildren(controls, body);
+      function toolbarOptions() {
+        return { label: 'Offer views', layout: mode, status: offers.length + (offers.length === 1 ? ' offer' : ' offers'), actions: [],
+          onLayoutChange(value) { mode = preference.layout = value; view = project(); viewKey = view.columns.map(column => column.id).join(':');
+            state.toolbar.update(toolbarOptions()); updateGrid(); } };
+      }
       state.toolbar = native.mountRecordViewToolbar(controls, toolbarOptions());
       state.grid = native.mountDataView(body, gridOptions());
       if (typeof ResizeObserver === 'function') { state.observer = new ResizeObserver(refresh); state.observer.observe(gridHost); }

@@ -103,6 +103,23 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await expect(page.locator('#vendor-table .vendor-offer-card-grid > li')).toHaveCount(10);
   await page.getByRole('navigation', { name: 'vendor pagination' }).getByRole('button', { name: 'Next' }).click();
   await expect(page.locator('#vendor-table .vendor-offer-card-grid > li')).toHaveCount(3);
+  await context.setOffline(true);
+  for (const width of [360, 1031]) {
+    await page.setViewportSize({ width, height: 900 });
+    const card = page.locator('#vendor-table .vendor-offer-card-grid button').first();
+    const id = await card.getAttribute('data-offer-id');
+    const merchant = drafts.find(draft => draft.id === id).launch.merchantId;
+    await card.click();
+    await page.getByRole('link', { name: 'View offers for ' + merchant, exact: true }).click();
+    await expect(page.locator('#project-heading')).toHaveText(merchant);
+    const projectTable = page.getByRole('table', { name: 'Project offers', exact: true });
+    await expect(projectTable.locator('tbody tr')).toHaveCount(drafts.filter(d => d.launch.merchantId === merchant).length);
+    await projectTable.locator('tbody tr').first().click();
+    await expect(page.locator('#project-detail').getByRole('link', { name: 'View offers for ' + merchant })).toBeVisible();
+    await page.locator('[data-workspace-destination="vendor"]').click();
+  }
+  await context.setOffline(false);
+  await page.setViewportSize({ width: 1440, height: 1000 });
   await chooseDropdown(page.locator('#vendor-state'), 'revise');
   await expect(page.locator('#vendor-table .vendor-offer-card-grid > li')).toHaveCount(1);
   await chooseDropdown(page.locator('#vendor-state'), '');

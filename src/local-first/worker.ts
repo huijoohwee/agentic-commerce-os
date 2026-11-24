@@ -19,7 +19,7 @@ const packDirectory = '/services/workspace-pack/'
 // A bounded, exact allowlist: shared files get the same asset at both route prefixes.
 const sharedPackFiles = import.meta.commerceLiveCheckout === false ? packAssets : [...packAssets, 'viewer-surface.js', 'viewer-surface.css']
 const primaryFiles = [
-  ...filesWithExtension('app drafts listing-geo checkout launch workspace workspace-graph agentic-base-data-view graph-data-view sw workflow workspace-capabilities workspace-tools', 'js'),
+  ...filesWithExtension('app drafts record-links listing-geo checkout launch workspace workspace-graph agentic-base-data-view graph-data-view sw workflow workspace-capabilities workspace-tools', 'js'),
   'agentic-geo-core.mjs', 'agentic-base-data-view.css', 'graph-data-view.css', 'style.css',
   ...(import.meta.commerceLiveCheckout === false ? ['dropdown-menus.js', 'graph-ui-tokens.css'] : [
     ...sharedPackFiles,
