@@ -60,11 +60,11 @@ test('Commerce table uses the exact Agentic Base browser artifact candidate', ()
   const pin = JSON.parse(fs.readFileSync('config/agentic-base-data-view.json', 'utf8'));
   assert.equal(pin.schema, 'agentic-base/consumer-artifact/v1');
   assert.equal(pin.source.repository, 'github.com/huijoohwee/agentic-base');
-  assert.equal(pin.source.revision, '6326e72f63ed9156a76aa69e71159c9533b9301c');
+  assert.equal(pin.source.revision, '6d90bd812169bde115e3c927c0919d6bacfd8872');
   assert.equal(pin.source.sourceDirty, false);
   assert.equal(pin.contract.browserExport, 'mountDataView');
   assert.equal(pin.contract.defaultLayout, 'table');
-  assert.deepEqual(pin.contract.layoutModes, ['table', 'multiDimensional']);
+  assert.deepEqual(pin.contract.layoutModes, ['table', 'multiDimensional', 'kanban']);
   assert(pin.inputs.some(input => input.path === 'packages/views-react/src/table/MultiDimTableView.tsx'));
   assert.deepEqual(pin.outputs.map(output => output.path).sort(), [...baseAssets].sort());
   const verified = verifyAgenticBaseDataView();

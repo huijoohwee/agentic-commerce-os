@@ -1,6 +1,6 @@
 import { LISTING_FIELDS, LISTING_LABELS, isArchived } from './drafts.js';
 import { formatMoney } from './launch.js';
-// Commerce owns record projection and actions; Agentic Base owns the portable table.
+// Commerce projects offer records. Base renders the selected record view.
 import { openCommercePanel, closeCommercePanel } from './commerce-toolbar.js';
 const mounts = new WeakMap();
 const baseCssUrl = new URL('./agentic-base-data-view.css', import.meta.url).href;
@@ -14,7 +14,7 @@ const el = (tag, text, className) => {
   if (className) item.className = className;
   return item;
 };
-export const OFFER_COLUMNS = Object.freeze(['Offer', 'Merchant', 'Review status', 'Planned price', 'Updated'].map((name, i) => ({ id: 'offer-' + i, name })));
+export const OFFER_COLUMNS = Object.freeze(['Offer', 'Merchant', 'Review status', 'Planned price', 'Updated'].map((name, i) => ({ id: 'offer-' + i, name, ...(i === 2 ? { kind: 'select' } : {}) })));
 /** Private management summary; never used by shopper or agent projections. */
 export function listingSummary(offer) {
   if (!offer.listing) return '';
@@ -120,7 +120,7 @@ export function disposeTable(container) {
   if (!state) return;
   state.disposed = true; state.observer?.disconnect();
   if (state.resizeListener) window.removeEventListener('resize', state.resizeListener);
-  state.grid?.destroy(); state.detail?.destroy(); mounts.delete(container);
+  state.grid?.destroy(); state.toolbar?.destroy(); state.detail?.destroy(); mounts.delete(container);
 }
 async function surface(host, signal, stylesheetUrl) {
   const shadow = host.shadowRoot ?? host.attachShadow({ mode: 'open' }), stylesheet = el('link'), target = el('div');
@@ -160,24 +160,36 @@ export async function mountCommerceTable(container, offers, presentation, action
     const native = cards ? null : await loadBaseAdapter();
     if (state.disposed || mounts.get(container) !== state) return;
     let selection = 0, selectedId = null;
-    let view = responsiveOfferView(offers, presentation, gridHost.clientWidth);
-    let viewKey = view.columns.map(column => column.id).join(':');
-    let refreshGrid;
+    let mode = 'table', orientation = 'rows', returnFocus;
+    const project = () => mode === 'table' ? responsiveOfferView(offers, presentation, gridHost.clientWidth)
+      : { columns: OFFER_COLUMNS, rows: projectOfferRows(offers, presentation) };
+    let view = project(), viewKey = view.columns.map(column => column.id).join(':');
+    function gridOptions() {
+      return { ...view, layout: mode, ariaLabel: actions.label, selectedRowId: selectedId, onActivateRow: select,
+        ...(mode === 'kanban' ? { groupByColumnId: 'offer-2' } : {}),
+        ...(mode === 'multiDimensional' ? { orientation, onOrientationChange(value) { orientation = value; updateGrid(); } } : {}) };
+    }
     const updateGrid = () => {
       if (cards) mountOfferCards(gridHost, offers, presentation, selectedId, select);
-      else state.grid?.update({ ...view, selectedRowId: selectedId || undefined, ariaLabel: actions.label, onActivateRow: select });
+      else state.grid?.update(gridOptions());
     };
     const select = async id => {
       const offer = offers.find(value => value.id === id);
       if (!offer || state.disposed) return;
       const revision = ++selection; selectedId = id;
-      if (!cards) { view = responsiveOfferView(offers, presentation, gridHost.clientWidth); viewKey = view.columns.map(column => column.id).join(':'); }
+      if (!cards) returnFocus = gridHost.shadowRoot.activeElement;
       updateGrid();
       state.detail?.destroy(); state.detail = null;
       const heading = el('h3', offer.title), note = el('p', 'Saved on this device · revision ' + offer.revision, 'footnote');
       heading.tabIndex = -1;
       const header = el('div', undefined, 'records-heading'), close = el('button', 'Close details', 'secondary'); close.type = 'button';
-      close.addEventListener('click', () => { selection++; selectedId = null; state.detail?.destroy(); state.detail = null; details.hidden = true; layout.classList.remove('has-selection'); if (cards) { updateGrid(); [...gridHost.querySelectorAll('button')].find(button => button.dataset.offerId === id)?.focus(); } else { refreshGrid(true); gridHost.shadowRoot.querySelectorAll('tr[tabindex="0"]')[view.rows.findIndex(row => row.id === id)]?.focus(); } });
+      close.addEventListener('click', () => {
+        selection++; selectedId = null; state.detail?.destroy(); state.detail = null;
+        details.hidden = true; layout.classList.remove('has-selection'); updateGrid();
+        if (cards) [...gridHost.querySelectorAll('button')].find(button => button.dataset.offerId === id)?.focus();
+        else if (returnFocus?.isConnected) returnFocus.focus();
+        else gridHost.shadowRoot.querySelector('select[aria-label="View layout"]')?.focus();
+      });
       header.append(heading, close);
       const detailHost = el('div', undefined, 'graph-record-fields'), controls = el('div', undefined, 'record-actions');
       applyBaseTheme(detailHost);
@@ -197,20 +209,26 @@ export async function mountCommerceTable(container, offers, presentation, action
       } catch (error) { if (!state.disposed && selection === revision) detailHost.replaceChildren(el('p', error.message, 'muted')); }
     };
     const refresh = () => {
-      if (cards) return;
-      const next = responsiveOfferView(offers, presentation, gridHost.clientWidth), key = next.columns.map(column => column.id).join(':');
+      if (cards || mode !== 'table') return;
+      const next = project(), key = next.columns.map(column => column.id).join(':');
       if (key === viewKey) return;
       view = next; viewKey = key;
-      state.grid?.update({ ...view, selectedRowId: selectedId || undefined, ariaLabel: actions.label, onActivateRow: select });
+      updateGrid();
     };
-    refreshGrid = force => { if (force) viewKey = ''; refresh(); };
     if (cards) {
       state.grid = { update: next => { selectedId = next.selectedRowId || null; mountOfferCards(gridHost, offers, presentation, selectedId, select); }, destroy: () => gridHost.replaceChildren() };
       mountOfferCards(gridHost, offers, presentation, selectedId, select);
     } else {
       const target = await surface(gridHost, undefined, baseCssUrl);
       if (state.disposed || mounts.get(container) !== state) return;
-      state.grid = native.mountDataView(target, { ...view, ariaLabel: actions.label, onActivateRow: select });
+      const controls = el('div'), body = el('div'); target.replaceChildren(controls, body);
+      function toolbarOptions() {
+        return { label: 'Offer views', layout: mode, status: offers.length + (offers.length === 1 ? ' offer' : ' offers'), actions: [],
+          onLayoutChange(value) { mode = value; view = project(); viewKey = view.columns.map(column => column.id).join(':');
+            state.toolbar.update(toolbarOptions()); updateGrid(); } };
+      }
+      state.toolbar = native.mountRecordViewToolbar(controls, toolbarOptions());
+      state.grid = native.mountDataView(body, gridOptions());
       if (typeof ResizeObserver === 'function') { state.observer = new ResizeObserver(refresh); state.observer.observe(gridHost); }
       else { state.resizeListener = refresh; window.addEventListener('resize', refresh); }
     }

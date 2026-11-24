@@ -68,9 +68,9 @@ export function verifyAgenticBaseDataView() {
     || !/^[0-9a-f]{64}$/.test(pin.source?.buildManifestSha256 ?? '')) throw Error('Agentic Base data view provenance invalid');
   if (pin.contract?.source !== 'agentic-base/browser-data-view/v1' || pin.contract?.browserExport !== 'mountDataView'
     || pin.contract?.cssScope !== 'shadow-root' || pin.contract?.defaultLayout !== 'table'
-    || JSON.stringify(pin.contract?.layoutModes) !== JSON.stringify(['table', 'multiDimensional'])
+    || JSON.stringify(pin.contract?.layoutModes) !== JSON.stringify(['table', 'multiDimensional', 'kanban'])
     || JSON.stringify(pin.contract?.hostThemeSlots) !== JSON.stringify(['--agentic-base-text', '--agentic-base-surface', '--agentic-base-border', '--agentic-base-muted', '--agentic-base-header', '--agentic-base-selected', '--agentic-base-hover', '--agentic-base-focus'])
-    || !Array.isArray(pin.inputs) || !pin.inputs.length || pin.inputs.length > 32
+    || !Array.isArray(pin.inputs) || !pin.inputs.length || pin.inputs.length > 64
     || !/^\d+\.\d+\.\d+$/.test(pin.build?.esbuild ?? '')) throw Error('Agentic Base data view source contract invalid');
   const inputPaths = new Set(); let totalInputBytes = 0;
   for (const input of pin.inputs) {
@@ -80,6 +80,7 @@ export function verifyAgenticBaseDataView() {
     inputPaths.add(input.path); totalInputBytes += input.bytes;
   }
   if (totalInputBytes > 8000000 || !inputPaths.has('packages/views-react/src/browser/DataViewBrowserAdapter.tsx')
+    || !inputPaths.has('packages/views-react/src/kanban/KanbanView.tsx') || !inputPaths.has('packages/views-react/src/browser/RecordViewToolbar.tsx')
     || !inputPaths.has('packages/views-react/src/table/MultiDimTableView.tsx')
     || !inputPaths.has('packages/views-react/src/controls/icons.json') || !inputPaths.has('packages/views-react/src/controls/icons.pin.json')
     || !inputPaths.has('packages/views-react/src/browser/base-profile.css') || !inputPaths.has('packages/views-react/src/browser/base-profile.pin.json')
@@ -101,7 +102,7 @@ export function verifyAgenticBaseDataView() {
     const text = bytes.toString('utf8');
     if (output.path.endsWith('.css') ? /@import\b|url\(\s*['"]?(?:https?:|\/\/)/i.test(text)
       : /\bimport\s*(?:\(|['"]|[^;\n]*?\bfrom\s*['"])|\b(?:fetch|XMLHttpRequest|WebSocket|EventSource)\s*\(/.test(text)
-        || (output.path === 'dropdown-menus.js' ? !text.includes('enhanceSelects') || !text.includes('agentic-menu') : !text.includes('mountDataView') || !text.includes('multiDimensional') || !text.includes('DATA_VIEW_BROWSER_LIMITS'))) throw Error('Agentic Base data view asset must remain self-contained and offline');
+        || (output.path === 'dropdown-menus.js' ? !text.includes('enhanceSelects') || !text.includes('agentic-menu') : !text.includes('mountDataView') || !text.includes('mountRecordViewToolbar') || !text.includes('multiDimensional') || !text.includes('DATA_VIEW_BROWSER_LIMITS'))) throw Error('Agentic Base data view asset must remain self-contained and offline');
   }
   return pin;
 }
