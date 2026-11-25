@@ -185,7 +185,42 @@ function message(text, error = false) { $('#status').textContent = text; $('#sta
 function invalidateReview() { reviewed = null; $('#launch-review').hidden = true; $('#approve-launch').checked = false; $('#export-launch').disabled = true; }
 function rawLaunch() { return Object.fromEntries(Object.entries({ ...textFields, ...moneyFields }).map(([key, selector]) => [key, $(selector).value])); }
 function setupState() { return evaluateOfferSetup({ title: $('#title').value, launch: inspectLaunchInput(rawLaunch()).terms }); }
+const simulator = document.createElement('details');
+const simulatorLauncher = document.createElement('summary');
+simulatorLauncher.textContent = 'Simulate offer terms';
+const simulatorBody = document.createElement('section');
+simulator.append(simulatorLauncher, simulatorBody);
+$('#offer-setup').after(simulator);
+let simulatorView;
+function syncSimulator() {
+  simulatorView?.update(selected, { dirty, busy });
+}
+simulator.addEventListener('toggle', async () => {
+  if (!simulator.open) return;
+  try {
+    const { createOfferSimulator } = await import('./offer-simulator-view.js');
+    simulatorView ??= createOfferSimulator(simulatorBody, adoptPreview);
+    syncSimulator();
+  } catch (error) { simulatorBody.textContent = error.message; }
+});
+function adoptPreview(baseline, launch) {
+  return run(async () => {
+    if (selected !== baseline || dirty || isArchived(selected)) throw Error('Reopen the saved offer before adopting terms.');
+    let saved;
+    try { saved = await saveDraft({ ...baseline, launch }, baseline.revision); }
+    catch (error) {
+      if (error.code !== 'draft_revision_conflict') throw error;
+      const current = (await listDrafts()).find(draft => draft.id === baseline.id);
+      simulatorView.keepEditsOnReload();
+      show(current ?? null); await refresh();
+      message('The saved offer changed. Check the latest terms and your preview before adopting again.');
+      return;
+    }
+    show(saved); await refresh(); changed(); message(`Preview adopted as revision ${saved.revision}.`);
+  });
+}
 function renderSetup() {
+  syncSimulator();
   const setup = setupState(), saved = selected && !isArchived(selected) && !dirty && !stale && !actionFailed;
   const currentReview = saved && reviewed?.draftId === selected.id && reviewed?.revision === selected.revision;
   const acknowledged = Boolean(currentReview && $('#approve-launch').checked);
