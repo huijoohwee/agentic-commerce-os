@@ -1,3 +1,4 @@
+import { checkPlanning } from '../../test/local-first/planning-browser.mjs';
 import { checkSandboxCheckout } from '../../test/local-first/checkout-browser.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -95,7 +96,8 @@ try {
   let proof;
   if (checkout !== 'sandbox') {
     browser = await chromium.launch({headless:true});
-    await checkListingEntry({ browser, url, output: path.join(output, 'listing-entry'), revision, observeContext });
+    await checkPlanning({ browser, url });
+  await checkListingEntry({ browser, url, output: path.join(output, 'listing-entry'), revision, observeContext });
     await checkListingGeo({ browser, url, output: path.join(output, 'listing-geo'), revision });
     record(BROWSER_CHECKS.listing);
     await (await import('../../test/local-first/live-checkout-browser.mjs')).checkLiveCheckout({

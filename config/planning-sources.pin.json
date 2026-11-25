@@ -1,0 +1,30 @@
+[
+  {
+    "owner": "agentic-design-system",
+    "revision": "7e1a451882142ef601606bf00d39f1fb82cbe082",
+    "path": "site/source-explorer.js",
+    "asset": "source-explorer.js",
+    "sha256": "3c6a414984f69e8eeb6b7394771cefba778580f1712397f0a9224f10237f8605"
+  },
+  {
+    "owner": "agentic-design-system",
+    "revision": "7e1a451882142ef601606bf00d39f1fb82cbe082",
+    "path": "site/source-explorer.css",
+    "asset": "planning-explorer.css",
+    "sha256": "37177a2620050f92f7c317985723d8d1b00c2fa7809d4622645a08d68867ffc6"
+  },
+  {
+    "owner": "agentic-sheets",
+    "revision": "87a0f0f95f1fc08a5db4871e49005da351b96e61",
+    "path": "sheets/formula.mjs",
+    "asset": "formula.mjs",
+    "sha256": "726b053ecfbd24b347a2542a0363499145472711168bf103adc5c41806c57d1f"
+  },
+  {
+    "owner": "agentic-sheets",
+    "revision": "87a0f0f95f1fc08a5db4871e49005da351b96e61",
+    "path": "sheets/schema.mjs",
+    "asset": "schema.mjs",
+    "sha256": "8e2605a7e175480f60533ee1d6d00f5d2d287d91e67913b67e5305a16cd6c3f7"
+  }
+]

@@ -22,7 +22,8 @@ const primaryFiles = [
   ...filesWithExtension('app offer-simulator offer-simulator-view drafts record-links listing-geo checkout launch workspace workspace-graph agentic-base-data-view graph-data-view sw workflow workspace-capabilities workspace-tools', 'js'),
   'agentic-geo-core.mjs', 'agentic-base-data-view.css', 'graph-data-view.css', 'style.css',
   ...(import.meta.commerceLiveCheckout === false ? ['dropdown-menus.js', 'graph-ui-tokens.css'] : [
-    ...sharedPackFiles,
+    ...sharedPackFiles, 'formula.mjs', 'schema.mjs', 'planning-explorer.css',
+    ...filesWithExtension('planning-workspace planning-catalog planning-grid planning-scenarios planning-model planning-sources source-explorer', 'js'),
     ...filesWithExtension('workspace-tour workspace-navigation workspace-pack.route workspace-view-styles workspace-singleton shopper-demo-detail sme-business-pack sme-business-pack-core sme-decision-contract sme-workflow-editor key-type-value hover hover-text sme-pack-dictionary sme-pack-business-plan housing-comparison housing-engine housing-sample sme-review-workflow graph-gantt-timeline', 'js'),
     ...filesWithExtension('workspace-shell sme-business-pack hover housing-comparison graph-gantt-timeline', 'css'), 'favicon.svg',
   ]),

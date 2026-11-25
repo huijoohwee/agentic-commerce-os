@@ -65,8 +65,8 @@ export function createOfferSimulator(host, adopt) {
       const display = value => value === null ? 'Not reachable'
         : field === 'breakEvenSales' ? String(value) : formatMoney(value, saved.currency);
       const delta = deltas[field];
-      return { id: field, title: labels[field], eyebrow: 'Saved ' + display(saved[field]),
-        description: 'Preview ' + display(preview[field]), content: 'Change ' + (delta > 0 ? '+' : '') + display(delta) };
+      return { id: field, title: labels[field],
+        description: 'Saved ' + display(saved[field]) + ' · Preview ' + display(preview[field]), content: 'Change ' + (delta > 0 ? '+' : '') + display(delta) };
     });
     const table = element('table'), caption = element('caption', `Effect on estimated net after ten sales at ±${bandPercent}% of each preview driver`);
     table.append(caption);
