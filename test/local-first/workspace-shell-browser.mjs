@@ -86,6 +86,9 @@ export async function checkSharedWorkspaceShell({ page, url, output }) {
     for (const role of ['shop', 'vendor', 'admin']) {
       await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }));
       await page.locator(`[data-workspace-destination="${role}"]`).click(); await expect(page.locator('#' + role)).toBeVisible();
+      const dashboard = page.locator('#' + role + ' [data-agentic-base-dashboard-layout]:visible');
+      await expect(dashboard).toHaveCount(1);
+      await expect(dashboard.locator(':scope > header h1')).toBeVisible();
       await expect.poll(() => page.evaluate(() => Math.abs(window.scrollY) <= 1)).toBe(true);
       await expect(toggle).toHaveAttribute('aria-controls', role + '-navigation'); await expect(toggle).toHaveAttribute('aria-expanded', 'false');
       await expect(page.locator('#' + role + '-navigation')).toBeHidden();

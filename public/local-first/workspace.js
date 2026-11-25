@@ -1,10 +1,11 @@
+import { mountCommerceDashboards } from './commerce-dashboard.js'
 import { installPanelSections } from './panel-section.js'; import { installHoverLabels } from './hover.js';
 import { createPackRoute, isPackRoute } from './workspace-pack.route.js';
 import { enhanceSelects } from './dropdown-menus.js';
 import { isArchived, listDrafts, groupProjects } from './drafts.js'; import { getOrCreateSingleton } from './workspace-singleton.js'; import { bindDemoOfferDetails, bindExampleFilters, offerDetailsButton } from './shopper-demo-detail.js';
 import { openCommercePanel, getCommercePanelView, isCommercePanelOpen, closeCommercePanel } from './commerce-toolbar.js';
 import { WORKSPACE_ROLES, bindWorkspaceNavigation, selectWorkspaceDestination, mountWorkspaceShell, mountWorkspaceSidebar } from './workspace-navigation.js?v=workspace-navigation-mobile-51';
-if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; await getOrCreateSingleton('workspace-application', async () => { installHoverLabels(document); installPanelSections(document); mountWorkspaceShell(); const packRoute = createPackRoute(); enhanceSelects();
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; await getOrCreateSingleton('workspace-application', async () => { mountCommerceDashboards(document); installHoverLabels(document); installPanelSections(document); mountWorkspaceShell(); const packRoute = createPackRoute(); enhanceSelects();
 const agentPanel = document.getElementById('commerce-panel-agent-tools'), packAgentPanel = document.getElementById('commerce-pack-agent-content');
 const agentPanelContent = document.getElementById('workspace-agent-content'); if (!agentPanel || !packAgentPanel || !agentPanelContent) throw new Error('Commerce Agent tools panel is incomplete.');
 agentPanel.append(agentPanelContent);
