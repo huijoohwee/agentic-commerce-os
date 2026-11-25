@@ -45,6 +45,46 @@ const pitchDeckRoles = Object.freeze([
   { id: 'risks-milestones', slide: 12, label: 'Risks and milestones', content_kind: 'input_fields', input_fields: ['key_risks', 'milestones'] },
 ].map(role => Object.freeze(role)))
 
+// Gateway guideline projection
+const gatewaySources = {
+  "guideline/prd-tad-adr-mvp-gtm": {
+    "reference_id": "guideline/prd-tad-adr-mvp-gtm",
+    "path": "huijoohwee.github.io/guidelines/prd-tad-adr-mvp-gtm-guidelines.md",
+    "version": "3.5.1",
+    "revision": "f07f1a3c27d6936f86233d750d8db7b7690d5fb4",
+    "digest": "2bfe506681780ffe609eec676e61fe7ee5e5080edd3f26802c50217ee248bb88"
+  },
+  "guideline/pitch-deck": {
+    "reference_id": "guideline/pitch-deck",
+    "path": "huijoohwee.github.io/guidelines/pitch-deck-guidelines.md",
+    "version": "1.3.0",
+    "revision": "f07f1a3c27d6936f86233d750d8db7b7690d5fb4",
+    "digest": "eb183c27c0109029c523c45c99b8f6bf0525342532bd72d814cea34032199211"
+  },
+  "guideline/business-plan": {
+    "reference_id": "guideline/business-plan",
+    "path": "huijoohwee.github.io/guidelines/business-plan-guidelines.md",
+    "version": "1.2.1",
+    "revision": "f07f1a3c27d6936f86233d750d8db7b7690d5fb4",
+    "digest": "2f0d9a975a6f9f05b0f5a04a876dbd93d824e07449ea8490de04fece43e4bae1"
+  },
+  "guideline/financial-model": {
+    "reference_id": "guideline/financial-model",
+    "path": "huijoohwee.github.io/guidelines/financial-model-guidelines.md",
+    "version": "1.2.0",
+    "revision": "f07f1a3c27d6936f86233d750d8db7b7690d5fb4",
+    "digest": "795293db57eedda976c7ee91cfc8ce4d474910497e9f9513bac5e24930954818"
+  },
+  "guideline/pd-bp-fm": {
+    "reference_id": "guideline/pd-bp-fm",
+    "path": "huijoohwee.github.io/guidelines/pd-bp-fm-guidelines.md",
+    "version": "2.2.1",
+    "revision": "f07f1a3c27d6936f86233d750d8db7b7690d5fb4",
+    "digest": "3089f3126485098e4be3cc6218af74862ec73259d40ce1d9f29956147826c46b"
+  }
+};
+// End Gateway guideline projection
+
 export const PACK = Object.freeze({
   id: 'sme.business-plan', label: 'General business plan',
   version: '2.3.0', as_of: '2026-11-04', review_status: 'provisional', reviewer: null,
@@ -55,11 +95,11 @@ export const PACK = Object.freeze({
   sources: [], parameters: [], ratios: [], tolerances: [],
   review_note: 'User-defined facts and assumptions only. No market data, benchmark, probability, currency conversion, advice, or persistence is provided.',
   guideline_sources: [
-    { id: 'parent_prd', title: 'PRD, TAD & ADR Guidelines', path: 'huijoohwee.github.io/guidelines/prd-tad-adr-mvp-gtm-guidelines.md', version: '3.4.0', anchors: ['scope-neutrality-contract', 'from-0-to-1-coverage-contract', 'venture-record-pitch-deck-business-plan-financial-model'] },
-    { id: 'pitch_deck', title: 'Pitch Deck Guidelines', path: 'huijoohwee.github.io/guidelines/pitch-deck-guidelines.md', version: '1.2.0', anchors: ['slide-composition', 'claim-manifest', 'the-ask', 'numbers-and-charts', 'reveal-delivery'] },
-    { id: 'business_plan', title: 'Business Plan Guidelines', path: 'huijoohwee.github.io/guidelines/business-plan-guidelines.md', version: '1.1.0', anchors: ['plan-lifecycle', 'section-composition', 'section-claim-record', 'risk-presentation', 'cross-projection-reconciliation', 'review-and-assurance'] },
-    { id: 'financial_model', title: 'Financial Model Guidelines', path: 'huijoohwee.github.io/guidelines/financial-model-guidelines.md', version: '1.1.0', anchors: ['model-structure', 'input-provenance', 'headline-register', 'scenarios-and-sensitivity', 'actuals-variance-and-re-forecast', 'adlc-cost-ingestion'] },
-    { id: 'venture_record', title: 'PRD, TAD & ADR Venture Record Module', path: 'huijoohwee.github.io/guidelines/prd-tad-adr-mvp-gtm-venture.md', version: '2.1.3', anchors: ['projection-contract', 'slide-register', 'section-contract', 'financial-model'] },
+    { id: 'parent_prd', title: 'PRD, TAD & ADR Guidelines', ...gatewaySources['guideline/prd-tad-adr-mvp-gtm'], anchors: ['scope-neutrality-contract', 'from-0-to-1-coverage-contract', 'venture-record-pitch-deck-business-plan-financial-model'] },
+    { id: 'pitch_deck', title: 'Pitch Deck Guidelines', ...gatewaySources['guideline/pitch-deck'], anchors: ['slide-composition', 'claim-manifest', 'the-ask', 'numbers-and-charts', 'reveal-delivery'] },
+    { id: 'business_plan', title: 'Business Plan Guidelines', ...gatewaySources['guideline/business-plan'], anchors: ['plan-lifecycle', 'section-composition', 'section-claim-record', 'risk-presentation', 'cross-projection-reconciliation', 'review-and-assurance'] },
+    { id: 'financial_model', title: 'Financial Model Guidelines', ...gatewaySources['guideline/financial-model'], anchors: ['model-structure', 'input-provenance', 'headline-register', 'scenarios-and-sensitivity', 'actuals-variance-and-re-forecast', 'adlc-cost-ingestion'] },
+    { id: 'venture_record', title: 'Pitch Deck, Business Plan & Financial Model Module', ...gatewaySources['guideline/pd-bp-fm'], anchors: ['projection-contract', 'slide-register', 'section-contract', 'financial-model'] },
   ],
   guideline_alignment: {
     schema: 'sme-business-plan/guideline-alignment/v1',
