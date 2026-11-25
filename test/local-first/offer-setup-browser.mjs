@@ -238,11 +238,18 @@ async function delayedGuideLifecycle({ browser, url, observeContext }) {
   observeContext(context);
   let release, requested = false;
   const held = new Promise(resolve => { release = resolve; });
+  let releaseEditor;
+  const editorHeld = new Promise(resolve => { releaseEditor = resolve; });
   try {
+    await context.route('**/app.js', async route => { await editorHeld; await route.continue(); });
     await context.route('**/graph-data-view.js', async route => { requested = true; await held; await route.continue(); });
     const page = await context.newPage();
-    await page.goto(url + '#vendor-editor');
+    const loadingEditor = page.waitForRequest(request => new URL(request.url()).pathname.endsWith('/app.js'));
+    await page.goto(url + '#vendor-editor', { waitUntil: 'commit' });
+    await loadingEditor;
     const launcher = page.locator('#open-setup-guide');
+    await expect(launcher).toBeHidden();
+    releaseEditor();
     await launcher.click();
     await expect.poll(() => requested).toBe(true);
     await expect(launcher).toHaveAttribute('aria-expanded', 'true');
@@ -264,7 +271,7 @@ async function delayedGuideLifecycle({ browser, url, observeContext }) {
     await closeGuide(page);
     await expect(launcher).toBeFocused();
   } finally {
-    release(); await context.close();
+    releaseEditor(); release(); await context.close();
   }
 }
 

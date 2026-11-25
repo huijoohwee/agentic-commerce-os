@@ -196,6 +196,8 @@ async function route() {
   $('#status').textContent = ''; $('#status').removeAttribute('data-error');
   if (role === 'sme') try { const module = await import('./sme-business-pack.js?v=workspace-singleton-4'); if (revision !== navigation) return; await module.prepareSmeBusinessPackStyles(); if (revision !== navigation) return; if (!smeRoute) smeRoute = await module.mountSmeBusinessPack(); if (revision !== navigation) { smeRoute?.deactivate(); return; } } catch (error) { if (revision === navigation) throw error; return; }
   if (role === 'housing') try { const module = await import('./housing-comparison.js?v=housing-comparison-23'); if (revision !== navigation) return; await module.prepareHousingStyles(); if (revision !== navigation) return; if (!housingRoute) housingRoute = module.mountHousingWorkspace($('#housing-root')); if (revision !== navigation) { housingRoute?.deactivate(); housingRoute = null; return; } housingRoute.activate(requested); } catch (error) { if (revision === navigation) throw error; return; } else if (housingRoute) { housingRoute.deactivate(); housingRoute = null; }
+  if (view === 'vendor-editor' || view === 'admin-data') await loadEditor();
+  if (revision !== navigation) return;
   packRoute.leave(); document.body.classList.add('console-mode'); document.body.dataset.workspaceRole = role;
   renderNavigation(role); if (role === 'sme') smeRoute?.updateSectionNavigation(); if (role !== 'sme') $('#' + role + ' .workspace-content').prepend($('#draft-storage-state'));
   const workspaceRole = role === 'checkout' ? 'shop' : role;
@@ -207,8 +209,6 @@ async function route() {
   document.querySelectorAll('[data-view]').forEach(link => { if (link.dataset.view === view || (view === 'admin-project' && link.dataset.view === 'admin')) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current'); });
   $('#workspace-context').hidden = role !== 'vendor';
   document.title = `${role === 'checkout' ? 'Checkout' : WORKSPACE_ROLES[role].title} · Airvio`;
-  if (view === 'vendor-editor' || view === 'admin-data') await loadEditor();
-  if (revision !== navigation) return;
   if (view === 'admin-tools') await loadTools();
   if (revision !== navigation) return;
   if (view === 'checkout') await (await import('./checkout.js')).openCheckout();
