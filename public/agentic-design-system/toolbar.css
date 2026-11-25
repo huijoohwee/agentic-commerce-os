@@ -1,5 +1,5 @@
 /* Compact toolbar surface, shared by native HTML and component hosts. */
-:root {
+:root, :host {
   --agentic-toolbar-inset: var(--kg-canvas-viewport-edge-gap, .5rem);
   --agentic-toolbar-height: var(--agentic-row-height);
   --agentic-toolbar-dock-height: calc(var(--agentic-toolbar-height) + 2 * var(--agentic-toolbar-inset) + env(safe-area-inset-top));
@@ -92,6 +92,6 @@
 .agentic-toolbar-status { color: var(--kg-text-secondary, GrayText); }
 .agentic-toolbar-item small { text-transform: uppercase; }
 @media (pointer: coarse) {
-  :root { --agentic-toolbar-height: max(var(--agentic-row-height), 46px); }
+  :root, :host { --agentic-toolbar-height: max(var(--agentic-row-height), 46px); }
   .agentic-toolbar-item { min-block-size: 44px; min-inline-size: 44px; }
 }

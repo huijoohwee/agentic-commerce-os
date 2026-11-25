@@ -1,3 +1,5 @@
+@import "./toolbar.css";
+
 /* Collection geometry, item visuals and interaction states for all hosts. */
 .agentic-table-frame {
   min-inline-size: 0;
@@ -107,6 +109,13 @@ table[data-agentic-table-fit="container"] {
   isolation: isolate;
   background: var(--agentic-panel-background);
 }
+/* Data views align their control strip and column headings with the main toolbar. */
+.agentic-table-toolbar,
+.agentic-table-column-header[scope="col"] {
+  box-sizing: border-box;
+  block-size: var(--agentic-toolbar-height);
+  padding-block: 0;
+}
 .agentic-table-column-header {
   position: relative;
   text-align: start;
@@ -120,7 +129,7 @@ table[data-agentic-table-fit="container"] {
   display: flex;
   align-items: center;
   gap: var(--agentic-control-padding-inline);
-  padding: var(--agentic-control-padding-block) var(--agentic-control-padding-inline);
+  padding-inline: var(--agentic-control-padding-inline);
   min-inline-size: 0;
   max-inline-size: 100%;
   overflow-x: auto;

@@ -42,7 +42,7 @@ export function createRecordRelation({ sources, targets, links }) {
 export function createRecordLinkCodec({ fragment, views }) {
   if (/[#?\s]/u.test(identifier(fragment))) throw new TypeError('Invalid record link fragment.');
   const prefix = '#' + encodeURIComponent(fragment) + '?', names = new Map(), params = new Map();
-  for (const { view, record = view, group } of views) {
+  for (const { view, record = view, group, requireGroup = false } of views) {
     if (names.has(identifier(view))) throw new TypeError('Duplicate record view.');
     const fields = { record: identifier(record) };
     if (group !== undefined) fields.group = identifier(group);
@@ -50,11 +50,12 @@ export function createRecordLinkCodec({ fragment, views }) {
       if (params.has(name)) throw new TypeError('Ambiguous record link parameter.');
       params.set(name, { view, key });
     }
-    names.set(view, fields);
+    if (typeof requireGroup !== 'boolean' || (requireGroup && !fields.group)) throw new TypeError('A scoped bookmark needs a group parameter.');
+    names.set(view, { ...fields, requireGroup });
   }
   function href({ view, record, group }) {
     const namesForView = names.get(view);
-    if (!namesForView || (group !== undefined && !namesForView.group) || (record === undefined && group === undefined)) {
+    if (!namesForView || (namesForView.requireGroup && group === undefined) || (group !== undefined && !namesForView.group) || (record === undefined && group === undefined)) {
       throw new TypeError('Invalid record link destination.');
     }
     const search = new URLSearchParams();
@@ -74,6 +75,7 @@ export function createRecordLinkCodec({ fragment, views }) {
       destination ??= { view: field.view };
       destination[field.key] = value;
     }
+    if (destination && names.get(destination.view).requireGroup && destination.group === undefined) return null;
     return destination ?? null;
   }
   return Object.freeze({ href, parse });
