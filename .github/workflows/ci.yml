@@ -32,6 +32,11 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Enforce shared owner reuse
+        uses: huijoohwee/agentic-os/.github/actions/owner-reuse@d2accfda2bbf1f96175267d2ae2bf9be596801c6
+        with:
+          baseline: 3898af8a485c13c6c323173ee8ca74474b8c5d37
+
       - name: Qualify registered fleet reuse
         uses: huijoohwee/agentic-os/.github/actions/fleet-reuse@3ed239e9f3591ade6bfb84b5262e2c0487bd7039
 
