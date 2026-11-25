@@ -1,14 +1,14 @@
 [
   {
     "owner": "agentic-design-system",
-    "revision": "7e1a451882142ef601606bf00d39f1fb82cbe082",
+    "revision": "efb6c8e3b19898ccfe48b060a9ecc99c24a4000e",
     "path": "site/source-explorer.js",
     "asset": "source-explorer.js",
     "sha256": "3c6a414984f69e8eeb6b7394771cefba778580f1712397f0a9224f10237f8605"
   },
   {
     "owner": "agentic-design-system",
-    "revision": "7e1a451882142ef601606bf00d39f1fb82cbe082",
+    "revision": "efb6c8e3b19898ccfe48b060a9ecc99c24a4000e",
     "path": "site/source-explorer.css",
     "asset": "planning-explorer.css",
     "sha256": "37177a2620050f92f7c317985723d8d1b00c2fa7809d4622645a08d68867ffc6"
