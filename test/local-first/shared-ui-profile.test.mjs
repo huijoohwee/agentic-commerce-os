@@ -153,9 +153,9 @@ test('Workspace Pack takes panel geometry and colors from the pinned stylesheets
   const owners = [...css.matchAll(/@import\s+([^;]+);/gi)].map(match => match[1].trim());
   assert.match(fs.readFileSync('public/local-first/commerce-shell.css', 'utf8'), /@import "\.\/floating-panel\.css";/);
   assert.deepEqual(owners, ['"./graph-ui-tokens.css"', '"./commerce-theme.css"', '"./commerce-shell.css"', '"./viewer-surface.css"']);
-  assert.match(html, /id="builder" class="agentic-dashboard-layout"/);
+  assert.match(html, /id="builder" data-commerce-dashboard/);
   assert.match(html, /class="agentic-dashboard-region">\s*<div class="agentic-dashboard-grid" data-columns="2" data-dashboard-columns-for="builder">/);
-  assert.match(html, /id="formats" class="agentic-dashboard-layout"/);
+  assert.match(html, /id="formats" data-commerce-dashboard/);
   assert.match(html, /class="format-grid" data-dashboard-primitive="container" data-columns="4"/);
   assert.doesNotMatch(css, /\.console-(?:panel|top)\b|#console-panel\s*\{/, 'do not recreate the shared FloatingPanel shell');
   assert.doesNotMatch(html, /\sstyle\s*=/i, 'local inline styles bypass the owner');

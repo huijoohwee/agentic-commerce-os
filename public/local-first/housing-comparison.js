@@ -1,3 +1,4 @@
+import { mountCommerceDashboards } from './commerce-dashboard.js'
 import { createKeyTypeValueRow } from './key-type-value.js'
 import { createDesignIcon } from './toolbar-icons.js'
 import { prepareViewStylesheet } from './workspace-view-styles.js'
@@ -326,7 +327,7 @@ function comparisonPanel(reports) {
   const table = reports.length
     ? `<div class="housing-comparison-table-scroll" data-orientation="${state.orientation}" tabindex="0" role="region" aria-label="${regionLabel}"><div class="housing-comparison-table-host" data-housing-table-host></div></div><p class="housing-status" data-housing-table-status role="status" aria-live="polite">Loading the shared comparison table…</p>`
     : `<div class="housing-table-empty" role="status">Choose up to three options to add listings to the table.<button type="button" class="secondary" data-action="show-inputs">Choose listings</button></div>`
-  return `<section class="agentic-dashboard-region" aria-labelledby="housing-table-title"><header class="agentic-dashboard-header"><p class="agentic-dashboard-observation">HOUSING · LOCAL WORKSPACE</p><h1 data-dashboard-primitive="heading" id="housing-table-title" tabindex="-1">Multi-dimensional Table</h1><p data-dashboard-primitive="text">Stay context and listing facts share one matrix. Pivot to place each listing in rows or columns; shared facts stay the same. Samples are fictional and unverified.</p></header><details data-agentic-section data-agentic-sticky="false" data-dashboard-primitive="disclosure" data-housing-workflow${state.inputsOpen ? ' open' : ''}><summary>Workflow inputs &amp; listing actions <span>${selectedCount} of 3 listings selected</span></summary><div class="agentic-ktv-container" data-housing-inputs>${profilePanel()}${listingPanel()}</div>${listingActions(reports)}</details>${dimensionControls}${table}${reports.map(planDialog).join('')}<p>No listing is contacted, submitted, or saved remotely.</p>${statusLine('Local only · no listing search or contact.')}</section>`
+  return `<section data-commerce-dashboard class="agentic-dashboard-region" aria-labelledby="housing-table-title"><header class="agentic-dashboard-header"><p class="agentic-dashboard-observation">HOUSING · LOCAL WORKSPACE</p><h1 data-dashboard-primitive="heading" id="housing-table-title" tabindex="-1">Multi-dimensional Table</h1><p data-dashboard-primitive="text">Stay context and listing facts share one matrix. Pivot to place each listing in rows or columns; shared facts stay the same. Samples are fictional and unverified.</p></header><details data-agentic-section data-agentic-sticky="false" data-dashboard-primitive="disclosure" data-housing-workflow${state.inputsOpen ? ' open' : ''}><summary>Workflow inputs &amp; listing actions <span>${selectedCount} of 3 listings selected</span></summary><div class="agentic-ktv-container" data-housing-inputs>${profilePanel()}${listingPanel()}</div>${listingActions(reports)}</details>${dimensionControls}${table}${reports.map(planDialog).join('')}<p>No listing is contacted, submitted, or saved remotely.</p>${statusLine('Local only · no listing search or contact.')}</section>`
 }
 function syncComparisonOrientation() {
   const orientation = state.orientation
@@ -386,6 +387,7 @@ function housingWorkspace() {
   for (const group of root.querySelectorAll('[data-housing-section]')) state[group.dataset.housingSection + 'Open'] = group.open
   const reports = state.selected.map(currentListing).filter(Boolean).map(reportFor)
   root.innerHTML = comparisonPanel(reports)
+  mountCommerceDashboards(root)
   bindHousingRows()
   filterChoices()
   if (reports.length) mountComparisonTable(reports, tableGeneration)

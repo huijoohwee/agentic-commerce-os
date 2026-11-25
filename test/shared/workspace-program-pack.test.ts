@@ -145,7 +145,7 @@ describe('Workspace Pack browser tool lifecycle', () => {
       PACK_TOOL, mountCommerceChrome: () => ({ querySelectorAll: () => [], querySelector: () => null }),
       openCommercePanel() {}, closeCommercePanel() {}, selectToolbarItem() {},
       observePackService: async (_toolbar: unknown, changed: (available: boolean) => void) => changed(true),
-      HTMLTemplateElement: FakeHTMLTemplateElement, enhanceSelects, installPanelSections,
+      HTMLTemplateElement: FakeHTMLTemplateElement, enhanceSelects, installPanelSections, mountCommerceDashboards() {},
       document: { getElementById: node, createElement: element, addEventListener() {}, querySelectorAll: () => [],
         documentElement: element(), modelContext: registerTool ? { registerTool } : undefined },
       matchMedia: () => ({ matches: false }), navigator: { modelContext: legacy }, location: { href: 'http://localhost/services/workspace-pack/' },

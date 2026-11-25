@@ -1,6 +1,8 @@
+import { mountCommerceDashboards } from './commerce-dashboard.js';
 import { installPanelSections } from './panel-section.js'; import { enhanceSelects } from './dropdown-menus.js';
 import { mountCommerceChrome, observePackService, selectToolbarItem, PACK_TOOL, openCommercePanel, closeCommercePanel, getCommercePanelView, isCommercePanelOpen } from './commerce-toolbar.js';
 export function mountWorkspacePack({ root, toolbar, service, active, readiness }) {
+  mountCommerceDashboards(root);
   enhanceSelects(root); installPanelSections(root.ownerDocument || root);
   const mountPanelContent = (hostId, templateId) => {
     const host = document.getElementById(hostId), template = root.getElementById(templateId)
