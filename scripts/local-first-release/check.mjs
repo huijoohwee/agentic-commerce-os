@@ -97,7 +97,7 @@ try {
   if (checkout !== 'sandbox') {
     browser = await chromium.launch({headless:true});
     await checkPlanning({ browser, url });
-  await checkListingEntry({ browser, url, output: path.join(output, 'listing-entry'), revision, observeContext });
+    await checkListingEntry({ browser, url, output: path.join(output, 'listing-entry'), revision, observeContext });
     await checkListingGeo({ browser, url, output: path.join(output, 'listing-geo'), revision });
     record(BROWSER_CHECKS.listing);
     await (await import('../../test/local-first/live-checkout-browser.mjs')).checkLiveCheckout({
@@ -115,6 +115,7 @@ try {
   }
   record(BROWSER_CHECKS.scope);
   browser = await chromium.launch({ headless: true });
+  await checkPlanning({ browser, url });
   await checkListingEntry({ browser, url, output: path.join(output, 'listing-entry'), revision, observeContext });
   await checkListingGeo({ browser, url, output: path.join(output, 'listing-geo'), revision });
   record(BROWSER_CHECKS.listing);
