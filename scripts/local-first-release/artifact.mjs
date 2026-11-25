@@ -204,7 +204,7 @@ export function verifyGraphDataView() {
   if (pin.schema !== 'agentic-graph/data-view-artifact/v1' || pin.sourceDirty !== false || !/^[0-9a-f]{40}$/.test(pin.sourceRevision)) throw Error('Graph data view provenance invalid');
   if (pin.entry !== 'canvas/src/features/markdown/ui/dataViewBrowserAdapter.tsx' || pin.browserExport !== 'mountDataView' || pin.cssScope !== 'shadow-root' || pin.hostTokens !== 'graph-ui-tokens.css'
     || JSON.stringify(pin.browserExports) !== JSON.stringify(['mountDataView', 'mountSequenceGuide', 'mountSequenceGuideContent'])
-    || !Array.isArray(pin.inputs) || !pin.inputs.length || pin.inputs.length > 128 || digest(JSON.stringify(pin.inputs)) !== pin.inputDigest) throw Error('Graph data view source contract invalid');
+    || !Array.isArray(pin.inputs) || !pin.inputs.length || pin.inputs.length > 160 || digest(JSON.stringify(pin.inputs)) !== pin.inputDigest) throw Error('Graph data view source contract invalid');
   const paths = new Set(); let totalInputBytes = 0, previousPath = '';
   for (const input of pin.inputs) {
     if (!input || typeof input.path !== 'string' || input.path.startsWith('/') || input.path.includes('..') || input.path.includes('\\') || input.path <= previousPath
