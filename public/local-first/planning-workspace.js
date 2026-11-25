@@ -24,12 +24,15 @@ function createWorkspace(host,initial) {
  const status=node('p'); status.setAttribute('role','status');
  const controls=node('div',undefined,'agentic-model-controls'), shell=node('div',undefined,'agentic-model-workspace');
  const sidebar=node('nav'),tree=node('div'),content=node('article');
- sidebar.setAttribute('aria-label','Planning navigation');sidebar.append(node('h2','Explorer'),tree);
+ sidebar.setAttribute('aria-label','Planning navigation');
+ const explorer=node('details'),wide=matchMedia('(min-width: 48rem)');
+ explorer.open=wide.matches;wide.addEventListener('change',()=>{explorer.open=wide.matches;});
+ explorer.append(node('summary','Explorer'),tree);sidebar.append(explorer);
  shell.append(sidebar,content);host.replaceChildren(controls,status,shell);
  function items(){
    return [...PAGES,...plan().segments.map(s=>({id:'source-'+s.id,name:'Source files/Offer assumptions/'+s.name.replaceAll('/',' ∕ ')}))];
  }
- const go=id=>{location.hash='vendor-planning?page='+encodeURIComponent(id);};
+ const go=id=>{if(!wide.matches)explorer.open=false;location.hash='vendor-planning?page='+encodeURIComponent(id);};
  function showTree(){mountSourceExplorer(tree,{items:items(),label:'Planning pages and source files', selectedId:page,onOpen:go});}
  function say(text){status.textContent=text;}
  function mark(){dirty.add(current);say('Unsaved scenario changes');save.disabled=false;}

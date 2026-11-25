@@ -9,6 +9,7 @@ export async function checkPlanning({browser,url,screenshot}) {
   const period=await root.getByRole('columnheader').nth(1).textContent();
   const choose=async(label,value)=>{await root.getByRole('button',{name:label,exact:true}).click();await page.getByRole('menuitemradio',{name:value,exact:true}).click();};
   const pageLink=async(section,name)=>{
+    if(!await nav.isVisible())await root.locator('summary').filter({hasText:/^Explorer$/}).click();
     const folder=nav.getByRole('treeitem',{name:new RegExp(section+'$')});
     if(await folder.getAttribute('aria-expanded')==='false')await folder.click();
     await nav.getByRole('treeitem',{name,exact:true}).click();await expect(root.getByRole('heading',{name,exact:true})).toBeVisible();
