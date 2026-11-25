@@ -70,6 +70,7 @@ export async function verifyWorkspaceToolRefinements({ page, context, url, draft
     await run.click(); await expect(summary).toContainText('Estimated net after ten sales');
     await expect(summary).toContainText('unvalidated');
     await page.locator('#workspace-prepare').click();
+    await expect(summary).toContainText('Request ready to inspect');
     assert.deepEqual(JSON.parse(await output.textContent()).params.arguments.snapshot.offers.map(offer => offer.id), [drafts[1].id]);
     await chooseDropdown(tool, 'commerce.workspace.environment.read');
     await expect(page.locator('#workspace-fields input')).toHaveCount(0);
