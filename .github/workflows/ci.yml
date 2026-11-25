@@ -33,7 +33,7 @@ jobs:
           cache: npm
 
       - name: Qualify registered fleet reuse
-        uses: huijoohwee/agentic-os/.github/actions/fleet-reuse@b9b13e19b16f0b55eb169fa4bfaa1cfce4241d75
+        uses: huijoohwee/agentic-os/.github/actions/fleet-reuse@9c5b27d7dcacadce750a7c2d4efc0d3520ea16d0
 
       - name: Verify public Agentic Base source
         run: git ls-remote https://github.com/huijoohwee/agentic-base.git HEAD
