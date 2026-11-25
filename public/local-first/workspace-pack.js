@@ -1,4 +1,4 @@
-import { mountCommerceDashboards } from './commerce-dashboard.js'
+import { mountCommerceDashboards } from './commerce-dashboard.js';
 import { installPanelSections } from './panel-section.js'; import { enhanceSelects } from './dropdown-menus.js';
 import { mountCommerceChrome, observePackService, selectToolbarItem, PACK_TOOL, openCommercePanel, closeCommercePanel, getCommercePanelView, isCommercePanelOpen } from './commerce-toolbar.js';
 export function mountWorkspacePack({ root, toolbar, service, active, readiness }) {
