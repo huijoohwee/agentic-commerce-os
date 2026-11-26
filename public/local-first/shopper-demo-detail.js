@@ -68,11 +68,9 @@ function bind({ dialog, onError }) {
     heading.focus({ preventScroll: true })
   }
   const activate = event => {
-    const isKeyboard = event.type === 'keydown'
-    if (isKeyboard && !['Enter', ' '].includes(event.key)) return
-    const target = event.target instanceof Element ? event.target.closest('[data-demo-detail]') : null
-    if (!(target instanceof HTMLElement) || !shelf.contains(target)) return
-    if (isKeyboard) event.preventDefault()
+    const target = event.target instanceof Element ? event.target.closest('a[data-demo-detail]') : null
+    if (!(target instanceof HTMLAnchorElement) || !shelf.contains(target)) return
+    event.preventDefault()
     try { open(target) } catch (error) { onError(error) }
   }
   const restoreFocus = () => {
@@ -80,11 +78,9 @@ function bind({ dialog, onError }) {
     opener = null
   }
   shelf.addEventListener('click', activate)
-  shelf.addEventListener('keydown', activate)
   dialog.addEventListener('close', restoreFocus)
   return () => {
     shelf.removeEventListener('click', activate)
-    shelf.removeEventListener('keydown', activate)
     dialog.removeEventListener('close', restoreFocus)
   }
 }

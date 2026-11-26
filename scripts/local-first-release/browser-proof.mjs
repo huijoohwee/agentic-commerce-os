@@ -1,7 +1,15 @@
 /** Shared completeness contract for the browser producer and protected release consumer. */
-export const BROWSER_PROOF_SCHEMA = 'commerce.local-first-browser-proof/v3';
+export const BROWSER_PROOF_SCHEMA = 'commerce.local-first-browser-proof/v4';
+const ANNOTATION_TARGET_AUDIT_SCHEMA = 'agentic-design-system/annotation-target-audit/v1';
+function completeAnnotationTargetAudit(audit) {
+  return audit?.schema === ANNOTATION_TARGET_AUDIT_SCHEMA && audit.ok === true
+    && Number.isSafeInteger(audit.targetCount) && audit.targetCount >= 3
+    && Array.isArray(audit.targets) && audit.targets.length === audit.targetCount
+    && audit.targets.every(target => target.ok === true) && Array.isArray(audit.issues) && audit.issues.length === 0;
+}
 export const BROWSER_CHECKS = Object.freeze({
   listing: 'private listing create/edit/search/archive/restore, offline reload, strict validation, revision conflict and lossless v4 backup with GET-only transport',
+  annotationTargets: 'shared Design System audit confirms visible, semantic and hit-testable shopper annotation targets',
   scope: 'exact production scope and server mutation refusal',
   mobile: 'mobile draft creation, safe canvas link and responsive layout',
   offline: 'offline navigation, editing and durable reload',
@@ -25,12 +33,14 @@ export function completeBrowserChecks(checks) {
 export function assertBrowserProof(proof, revision) {
   if (!/^[0-9a-f]{40}$/.test(revision) || proof?.ok !== true || proof.sourceRevision !== revision
     || proof.checkout !== 'sandbox' || proof.schema !== BROWSER_PROOF_SCHEMA
-    || !completeBrowserChecks(proof.checks)) throw Error('Candidate browser proof missing or incomplete');
+    || !completeBrowserChecks(proof.checks) || !completeAnnotationTargetAudit(proof.annotationTargets)) {
+    throw Error('Candidate browser proof missing or incomplete');
+  }
   return proof;
 }
 
 // Live evidence deliberately does not claim the sandbox suite or a customer sale.
-export const LIVE_BROWSER_PROOF_SCHEMA = 'commerce.local-first-live-browser-proof/v1';
+export const LIVE_BROWSER_PROOF_SCHEMA = 'commerce.local-first-live-browser-proof/v2';
 export const LIVE_BROWSER_CHECKS = Object.freeze({
   identity: 'exact candidate, live offer profile and explicit checkout mode',
   layout: 'mobile and desktop education review with explicit price and private recovery controls',
@@ -40,8 +50,10 @@ export const LIVE_BROWSER_CHECKS = Object.freeze({
   safety: 'local-fixture: offline entitlement hiding, uncached receipts and same-origin requests',
 });
 function liveRequired(scope) {
-  if (scope === 'live-read-only') return [BROWSER_CHECKS.listing, LIVE_BROWSER_CHECKS.identity, LIVE_BROWSER_CHECKS.layout, LIVE_BROWSER_CHECKS.readOnly];
-  if (scope === 'local-fixture') return [BROWSER_CHECKS.listing, LIVE_BROWSER_CHECKS.identity, LIVE_BROWSER_CHECKS.layout,
+  if (scope === 'live-read-only') return [BROWSER_CHECKS.listing, BROWSER_CHECKS.annotationTargets,
+    LIVE_BROWSER_CHECKS.identity, LIVE_BROWSER_CHECKS.layout, LIVE_BROWSER_CHECKS.readOnly];
+  if (scope === 'local-fixture') return [BROWSER_CHECKS.listing, BROWSER_CHECKS.annotationTargets,
+    LIVE_BROWSER_CHECKS.identity, LIVE_BROWSER_CHECKS.layout,
     LIVE_BROWSER_CHECKS.fixture, LIVE_BROWSER_CHECKS.recovery, LIVE_BROWSER_CHECKS.safety];
   return [];
 }
@@ -57,6 +69,8 @@ export function assertLiveBrowserProof(proof, revision, {checkout, profileDigest
     || proof.checkout !== checkout || proof.profileDigest !== profileDigest || proof.scope !== scope
     || proof.hostedPaymentSubmitted !== false || proof.liveSessionCreated !== false || proof.customerRevenueVerified !== false
     || proof.provider !== (scope === 'local-fixture' ? 'local-stripe-contract-fixture' : 'read-only-live')
-    || !completeLiveBrowserChecks(proof.checks, scope)) throw Error('Candidate live browser proof missing or incomplete');
+    || !completeLiveBrowserChecks(proof.checks, scope) || !completeAnnotationTargetAudit(proof.annotationTargets)) {
+    throw Error('Candidate live browser proof missing or incomplete');
+  }
   return proof;
 }

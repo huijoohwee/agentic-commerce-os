@@ -3,8 +3,10 @@ import { test } from 'node:test';
 import { BROWSER_CHECKS, BROWSER_PROOF_SCHEMA, assertBrowserProof } from '../../scripts/local-first-release/browser-proof.mjs';
 
 const revision = 'a'.repeat(40);
+const annotationTargets = { schema: 'agentic-design-system/annotation-target-audit/v1', ok: true,
+  targetCount: 3, targets: [{ ok: true }, { ok: true }, { ok: true }], issues: [] };
 const proof = { schema: BROWSER_PROOF_SCHEMA, ok: true, sourceRevision: revision,
-  checkout: 'sandbox', checks: Object.values(BROWSER_CHECKS) };
+  checkout: 'sandbox', checks: Object.values(BROWSER_CHECKS), annotationTargets };
 
 test('release accepts the complete browser suite bound to the candidate', () => {
   assert.equal(assertBrowserProof(proof, revision), proof);
@@ -12,7 +14,8 @@ test('release accepts the complete browser suite bound to the candidate', () => 
 });
 
 test('release rejects missing merchant checks, duplicates and unknown results even at the expected count', () => {
-  const legacy = proof.checks.filter(check => ![BROWSER_CHECKS.launch, BROWSER_CHECKS.review, BROWSER_CHECKS.economics].includes(check));
+  const legacy = proof.checks.filter(check => ![BROWSER_CHECKS.launch, BROWSER_CHECKS.review,
+    BROWSER_CHECKS.economics, BROWSER_CHECKS.annotationTargets].includes(check));
   for (const checks of [legacy, undefined, {}, [], [...proof.checks, 'unknown'],
     [...proof.checks.slice(0, -1), 'unknown'], [...legacy, ...legacy.slice(0, 3)]]) {
     assert.throws(() => assertBrowserProof({ ...proof, checks }, revision), /browser proof/);
@@ -27,6 +30,16 @@ test('release rejects a proof that omits the SME comparison browser check', () =
 test('release refuses a complete legacy proof without the listing lifecycle drill', () => {
   const checks = proof.checks.filter(check => check !== BROWSER_CHECKS.listing);
   assert.throws(() => assertBrowserProof({ ...proof, checks }, revision), /browser proof/);
+});
+
+test('release requires the complete shared annotation audit report', () => {
+  for (const audit of [undefined, { ...annotationTargets, ok: false },
+    { ...annotationTargets, issues: ['offer-card:not-hit-testable'] },
+    { ...annotationTargets, targetCount: 2 }, { ...annotationTargets, targets: [{ ok: true }] }]) {
+    assert.throws(() => assertBrowserProof({ ...proof, annotationTargets: audit }, revision), /browser proof/);
+  }
+  assert.throws(() => assertBrowserProof({ ...proof,
+    checks: proof.checks.filter(check => check !== BROWSER_CHECKS.annotationTargets) }, revision), /browser proof/);
 });
 
 test('a complete suite cannot substitute a different source, profile or failed proof', () => {
