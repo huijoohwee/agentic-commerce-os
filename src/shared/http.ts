@@ -1,3 +1,5 @@
+import { setContentSecurityPolicy } from 'agentic-os/content-security-policy'
+
 export const MAX_REQUEST_BYTES = 65_536
 
 export type HttpFailure = Readonly<{
@@ -7,13 +9,14 @@ export type HttpFailure = Readonly<{
 }>
 
 export function jsonResponse(value: unknown, status = 200): Response {
+  const headers = new Headers({
+    'cache-control': 'no-store',
+    'x-content-type-options': 'nosniff',
+  })
+  setContentSecurityPolicy(headers, { mode: 'enforce', policy: "default-src 'none'; frame-ancestors 'none'" })
   return Response.json(value, {
     status,
-    headers: {
-      'cache-control': 'no-store',
-      'content-security-policy': "default-src 'none'; frame-ancestors 'none'",
-      'x-content-type-options': 'nosniff',
-    },
+    headers,
   })
 }
 
