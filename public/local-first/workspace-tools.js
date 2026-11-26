@@ -5,7 +5,7 @@ import { formatMoney } from './launch.js';
 const $ = id => document.getElementById(id);
 const node = (tag, text) => { const element = document.createElement(tag); if (text !== undefined) element.textContent = text; return element; };
 const SOURCES = { 'browser-local': 'Saved on this device', 'provided-snapshot': 'Supplied snapshot', 'runtime-observation': 'Current runtime observation' };
-const FIELD_LABELS = { query: 'Find a project or offer', projectId: 'Project ID', offerId: 'Offer ID', expectedRevision: 'Saved revision' };
+const FIELD_LABELS = { query: 'Find a project or offer', projectId: 'Project ID', offerId: 'Offer ID', expectedRevision: 'Saved revision', bandPercent: 'Sensitivity band (%)' };
 function summarize(result, prepare) {
   const summary = $('workspace-summary'); summary.replaceChildren();
   const facts = node('dl'); facts.className = 'readiness';
@@ -32,6 +32,11 @@ function summarize(result, prepare) {
         fact('Estimated contribution', formatMoney(value.economics.contributionMinor, value.economics.currency));
       }
       fact('Next action', 'Review the exact saved offer before exporting. Human launch review is still required.');
+    } else if (result.tool.endsWith('.offer.simulate')) {
+      fact('Offer', value.title); fact('Saved revision', value.revision);
+      fact('Estimated net after ten sales', formatMoney(value.preview.tenSalesNetMinor, value.preview.currency));
+      fact('Change from saved', formatMoney(value.deltas.tenSalesNetMinor, value.preview.currency));
+      fact('Demand', value.flags.demandStatus);
     } else {
       fact('Profile', value.profile); fact('Configuration', value.ok ? 'Configured at observation time' : 'Unavailable');
       fact('Source revision', value.sourceRevision); fact('Checkout mode', value.checkout); fact('Fulfillment', value.fulfillment);
@@ -112,6 +117,10 @@ export async function mountWorkspaceTools({ checkEnvironment, sourceRevision }) 
     const tool = selected(), fields = $('workspace-fields'); fields.replaceChildren();
     for (const [key, schema] of Object.entries(tool.inputSchema.properties)) {
       if (key === 'snapshot') continue;
+      if (key === 'preview') {
+        fields.append(node('p', 'To change price or costs, enter preview overrides in advanced arguments using integer minor units.'));
+        continue;
+      }
       const label = node('label', FIELD_LABELS[key] ?? key), input = node('input');
       input.id = 'workspace-field-' + key; input.dataset.field = key; label.htmlFor = input.id;
       input.type = schema.type === 'integer' ? 'number' : key === 'query' ? 'search' : 'text';
@@ -168,7 +177,7 @@ export async function mountWorkspaceTools({ checkEnvironment, sourceRevision }) 
           await invokeWorkspace(request.name, { ...request.arguments, snapshot }, { signal: controller.signal });
           const offers = request.name.endsWith('.project.read')
             ? groupProjects(snapshot.offers).find(project => project.id === request.arguments.projectId).offers
-            : request.name.endsWith('.offer.review') ? snapshot.offers.filter(offer => offer.id === request.arguments.offerId) : snapshot.offers;
+            : request.arguments.offerId ? snapshot.offers.filter(offer => offer.id === request.arguments.offerId) : snapshot.offers;
           request.arguments.snapshot = { ...snapshot, offers };
         }
         result = { jsonrpc: '2.0', id: 1, method: 'tools/call', params: request };
@@ -214,7 +223,7 @@ export async function mountWorkspaceTools({ checkEnvironment, sourceRevision }) 
           return invokeWorkspace(tool.name, input, { ...context, signal });
         } }, { signal: controller.signal }))).then(verifyRegistered);
       await Promise.race([work, cancelled]);
-      $('workspace-webmcp-status').textContent = 'Enabled · Four read-only tools registered in this document.';
+      $('workspace-webmcp-status').textContent = `Enabled · ${WORKSPACE_TOOLS.length} read-only tools registered in this document.`;
       $('workspace-webmcp-disable').hidden = false; $('workspace-webmcp-enable').disabled = true;
     } catch (error) { controller.abort(); registration = null; $('workspace-webmcp-status').textContent = error.message; }
     finally { clearTimeout(timer); registerPending = false; }

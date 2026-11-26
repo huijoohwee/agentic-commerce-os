@@ -1,0 +1,62 @@
+import { expect } from '@playwright/test';
+export async function checkPlanning({browser,url,screenshot}) {
+ const context=await browser.newContext({viewport:{width:1200,height:850},acceptDownloads:true});
+ try{
+  const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto(url+'#vendor');await page.getByRole('link',{name:'Planning model',exact:true}).click();
+  const root=page.locator('#planning-root'), nav=root.getByRole('tree',{name:'Planning pages and source files'});
+  await expect(nav).toBeVisible();await expect(root.getByRole('heading',{name:'Volume and revenue'})).toBeVisible();
+  const period=await root.getByRole('columnheader').nth(1).textContent();
+  const choose=async(label,value)=>{await root.getByRole('button',{name:label,exact:true}).click();await page.getByRole('menuitemradio',{name:value,exact:true}).click();};
+  const pageLink=async(section,name)=>{
+    if(!await nav.isVisible())await root.locator('summary').filter({hasText:/^Explorer$/}).click();
+    const folder=nav.getByRole('treeitem',{name:new RegExp(section+'$')});
+    if(await folder.getAttribute('aria-expanded')==='false')await folder.click();
+    await nav.getByRole('treeitem',{name,exact:true}).click();await expect(root.getByRole('heading',{name,exact:true})).toBeVisible();
+  };
+  const cell=(key)=>root.getByRole('button',{name:new RegExp('^'+key+' · '+period+' ·')}).first();
+  const baseline=await cell('Subscription billings').textContent();
+  await cell('Subscription billings').click();await expect(root.getByLabel('Cell formula')).toContainText('Sum across offers');
+  await root.getByRole('button',{name:'▸ Subscription billings',exact:true}).click();
+  await root.getByRole('button',{name:new RegExp('Subscription billings · Service membership · '+period)}).click();
+  await expect(root.getByLabel('Cell formula')).toContainText('active * price');
+  await root.getByRole('button',{name:'Duplicate scenario'}).click();
+  await pageLink('Commercial plan','Assumptions');
+  await root.getByLabel('Recurring price').fill('54');await root.getByLabel('Recurring price').press('Tab');
+  await root.getByRole('button',{name:'Save scenario'}).click();await expect(root.getByRole('status')).toContainText('Saved scenario revision 1');
+  await pageLink('Commercial plan','Volume and revenue');await expect(cell('Subscription billings')).not.toHaveText(baseline);
+  await choose('Scenario','Example plan');await expect(cell('Subscription billings')).toHaveText(baseline);
+  await choose('Period grouping','Quarterly');await expect(root.getByRole('columnheader').nth(1)).toContainText('Q');
+  await pageLink('Growth','Unit economics');const slider=root.getByRole('slider',{name:'Recurring price'});
+  const initial=await root.getByText(/Estimated lifetime value \/ acquisition cost/).textContent();
+  await slider.focus();await slider.press('ArrowRight');await expect(root.getByText(/Estimated lifetime value \/ acquisition cost/)).not.toHaveText(initial);
+  await pageLink('Decisions','Driver sensitivity');await expect(root.getByRole('listitem')).toHaveCount(6);
+  await pageLink('Commercial plan','Financial statements');await expect(root.getByRole('rowheader',{name:'Total assets'})).toBeVisible();
+  if(screenshot)await page.screenshot({path:screenshot});
+  await pageLink('Source files','Model sources');await expect(root.getByText('Calculation workbook',{exact:true}).first()).toBeVisible();
+  const query=root.getByRole('searchbox',{name:'Filter pages and files'});await query.fill('Offer assumptions');
+  await nav.getByRole('treeitem',{name:'Service membership',exact:true}).click();await expect(root.getByRole('button',{name:'Download source JSON'})).toBeVisible();
+  await query.fill('');
+  await pageLink('Growth','Subscriber retention');await expect(root.getByRole('heading',{name:'Acquisition cohorts'})).toBeVisible();
+  await pageLink('Operations','Expense requests');await root.getByLabel('Expense description').fill('Workshop supplies');
+  await root.getByLabel('Requested amount').fill('22');await root.getByLabel('Expense date').fill(period+'-03');await root.getByRole('button',{name:'Record request'}).click();
+  await root.getByRole('button',{name:'Mark reviewed · Workshop supplies'}).click();await expect(root.getByRole('cell',{name:'Reviewed',exact:true})).toBeVisible();
+  await pageLink('Decisions','Scenario comparison');await expect(root.getByText('Difference',{exact:true}).first()).toBeVisible();
+  await pageLink('Commercial plan','Plan and settlements');
+  const start=Date.parse(period+'-01T00:00:00Z'),end=new Date(start);end.setUTCMonth(end.getUTCMonth()+1);
+  const receipt={ok:true,startInclusiveMs:start,endExclusiveMs:+end,lineCount:0,lines:[],summedMarkupMinor:0};
+  await root.getByLabel('Revenue period JSON').setInputFiles({name:'recorded-period.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(receipt))});
+  await expect(root.getByText('recorded-period.json · 0 settlement lines · USD')).toBeVisible();
+  for(const [section,leaf] of [['Growth','Subscriber dashboard'],['Growth','Acquisition funnel'],['Operations','Staffing schedule'],['Operations','Budget timeline'],['Operations','Operating budget'],['Operations','Tool spending'],['Operations','Balance checks'],['Decisions','Profitability and runway'],['Commercial plan','Offer mapping'],['Reporting','Brand notes'],['Reporting','Message draft'],['Reporting','Management brief'],['Reporting','Board packet']]) await pageLink(section,leaf);
+  const file=page.waitForEvent('download');await root.getByRole('button',{name:'Download board-packet.txt'}).click();expect((await file).suggestedFilename()).toBe('board-packet.txt');
+  await pageLink('Source files','Model sources');
+  await page.getByText('Offline access is ready.',{exact:false}).waitFor({state:'attached'});
+  await page.evaluate(()=>navigator.serviceWorker.ready);await context.setOffline(true);await page.setViewportSize({width:390,height:844});await page.reload();
+  await expect(root.getByRole('heading',{name:'Model sources'})).toBeVisible();
+  await pageLink('Commercial plan','Assumptions');await choose('Scenario','Example plan copy');
+  await expect(root.getByLabel('Recurring price')).toHaveValue('54');
+  if(screenshot)await page.screenshot({path:screenshot.replace(/\.png$/,'-mobile.png')});
+  if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1))throw Error('Mobile planning page overflows the viewport');
+  expect(errors).toEqual([]);
+ } finally {await context.close();}
+}

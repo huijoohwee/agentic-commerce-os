@@ -331,7 +331,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   const panelRead = JSON.parse(await page.locator('#workspace-result').textContent());
   assert.equal(panelRead.value.offers.length, 6);
   await page.locator('#workspace-webmcp-enable').click();
-  await expect(page.locator('#workspace-webmcp-status')).toContainText('Four read-only tools registered');
+  await expect(page.locator('#workspace-webmcp-status')).toContainText('5 read-only tools registered');
   const browserRead = await page.evaluate(async () => {
     const api = document.modelContext, tools = await api.getTools();
     return api.executeTool(tools.find(tool => tool.name.endsWith('.project.read')), { projectId: 'store:studio-north' });
@@ -390,7 +390,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   await expect(page.locator('#workspace-result')).toContainText('studio-north');
   await expect(page.locator('#workspace-result')).not.toContainText('PRIVATE');
   await page.locator('#workspace-webmcp-enable').click();
-  await expect(page.locator('#workspace-webmcp-status')).toContainText('Four read-only tools registered');
+  await expect(page.locator('#workspace-webmcp-status')).toContainText('5 read-only tools registered');
   const nativeList = await page.evaluate(async () => {
     const tools = await document.modelContext.getTools();
     return document.modelContext.executeTool(tools.find(tool => tool.name.endsWith('.projects.list')), {});
@@ -436,7 +436,7 @@ export async function checkRoleWorkspace({ browser, url, output, observeContext,
   assert.match(drift, /registration changed/);
   await expect(page.locator('#workspace-webmcp-status')).toContainText('Disabled.');
   await page.locator('#workspace-webmcp-enable').click();
-  await expect(page.locator('#workspace-webmcp-status')).toContainText('Four read-only tools registered');
+  await expect(page.locator('#workspace-webmcp-status')).toContainText('5 read-only tools registered');
   await page.locator('#workspace-webmcp-disable').click();
   assert.equal(await page.evaluate(async () => (await document.modelContext.getTools()).length), 0);
   await context.setOffline(true); await page.reload();

@@ -1,0 +1,29 @@
+.agentic-source-explorer { display: grid; align-content: start; min-inline-size: 0; }
+.agentic-source-explorer > [role=treeitem] {
+  padding: .45em .65em; min-block-size: var(--agentic-row-height, 2rem); text-align: start;
+  color: inherit; background: transparent; box-shadow: none; border: 0; border-radius: var(--agentic-control-radius, .25em);
+  font: inherit; cursor: pointer; overflow-wrap: anywhere;
+}
+.agentic-source-explorer > [aria-selected=true], .agentic-source-explorer > button:hover {
+  background: var(--agentic-control-hover-background, ButtonFace); color: var(--agentic-base-foreground, CanvasText);
+}
+.agentic-source-explorer > button:focus-visible { outline: 2px solid var(--agentic-control-focus, Highlight); outline-offset: -2px; }
+.agentic-model-workspace { display: grid; grid-template-columns: minmax(10rem, 13rem) minmax(0,1fr); gap: 1rem; align-items: start; }
+.agentic-model-workspace > * { min-inline-size: 0; }
+.agentic-model-controls { display: flex; align-items: end; flex-wrap: wrap; gap: .75rem; }
+.agentic-model-controls label { display: grid; gap: .25rem; }
+.agentic-model-scroll { overflow: auto; max-inline-size: 100%; }
+.agentic-model-scroll th { text-align: start; }
+.agentic-model-scroll button { color: inherit; background: transparent; border: 0; box-shadow: none; font: inherit; }
+.agentic-model-scroll [aria-pressed=true] { outline: 2px solid var(--agentic-control-focus, Highlight); outline-offset: -2px; }
+@media (max-width: 48rem) { .agentic-model-workspace { grid-template-columns: minmax(0,1fr); } }
+.agentic-model-scroll { margin-block: .6rem; }
+.agentic-model-scroll table { width: max-content; min-width: 100%; border-collapse: collapse; }
+.agentic-model-scroll :is(td,th) { padding: .24em .48em; border-block-end: 1px solid var(--agentic-base-border, ButtonBorder); }
+.agentic-model-scroll :is(td,th):not(:first-child) { font-variant-numeric: tabular-nums; text-align: end; white-space: nowrap; }
+.agentic-model-workspace article > :is(h2,p,details,fieldset) { margin-block: .65rem; }
+.agentic-model-workspace fieldset { min-width: 0; }
+.agentic-model-workspace pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.agentic-variance-bar { display: grid; grid-template-columns: 1fr 1fr; align-items: center; max-width: 34rem; }
+.agentic-variance-bar progress { width: 100%; height: .65em; }
+.agentic-variance-bar progress:first-child { direction: rtl; }

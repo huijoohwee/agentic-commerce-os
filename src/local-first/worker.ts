@@ -9,6 +9,7 @@ import { handleFulfillment } from './fulfillment.ts'
 import type { FulfillmentRuntime } from './fulfillment-contract.ts'
 import { createFulfillmentRelay, type ListingRelayEnv } from './fulfillment-relay.ts'
 import { LOCAL_FIRST_CSP, LOCAL_FIRST_DEV_CSP } from './content-security-policy.ts'
+import { setContentSecurityPolicy } from 'agentic-os/content-security-policy'
 
 export type LocalFirstEnv = Readonly<CheckoutEnv & ListingRelayEnv & {
   RELEASE_CANDIDATE_SHA: string
@@ -19,10 +20,11 @@ const packDirectory = '/services/workspace-pack/'
 // A bounded, exact allowlist: shared files get the same asset at both route prefixes.
 const sharedPackFiles = import.meta.commerceLiveCheckout === false ? packAssets : [...packAssets, 'viewer-surface.js', 'viewer-surface.css']
 const primaryFiles = [
-  ...filesWithExtension('app drafts record-links listing-geo checkout launch workspace workspace-graph agentic-base-data-view graph-data-view sw workflow workspace-capabilities workspace-tools', 'js'),
+  ...filesWithExtension('app offer-simulator offer-simulator-view drafts record-links listing-geo checkout launch workspace workspace-graph agentic-base-data-view graph-data-view sw workflow workspace-capabilities workspace-tools', 'js'),
   'agentic-geo-core.mjs', 'agentic-base-data-view.css', 'graph-data-view.css', 'style.css',
   ...(import.meta.commerceLiveCheckout === false ? ['dropdown-menus.js', 'graph-ui-tokens.css'] : [
-    ...sharedPackFiles,
+    ...sharedPackFiles, 'formula.mjs', 'schema.mjs', 'planning-explorer.css',
+    ...filesWithExtension('planning-workspace planning-catalog planning-grid planning-scenarios planning-model planning-sources source-explorer', 'js'),
     ...filesWithExtension('workspace-tour workspace-navigation workspace-pack.route workspace-view-styles workspace-singleton shopper-demo-detail sme-business-pack sme-business-pack-core sme-decision-contract sme-workflow-editor key-type-value hover hover-text sme-pack-dictionary sme-pack-business-plan housing-comparison housing-engine housing-sample sme-review-workflow graph-gantt-timeline', 'js'),
     ...filesWithExtension('workspace-shell sme-business-pack hover housing-comparison graph-gantt-timeline', 'css'), 'favicon.svg',
   ]),
@@ -30,10 +32,15 @@ const primaryFiles = [
 const ASSET_PATHS = new Map<string,string>([['/', '/index.html'], [packDirectory, '/workspace-pack.html']])
 for (const file of primaryFiles) ASSET_PATHS.set('/' + file, '/' + file)
 for (const file of [...sharedPackFiles, ...packEntries]) ASSET_PATHS.set(packDirectory + file, '/' + file)
-function secured(response: Response, source: string, head: boolean): Response {
+const LOCAL_DEV_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]'])
+function secured(response: Response, source: string, head: boolean, localDevHost: boolean): Response {
   const headers = new Headers(response.headers)
-  headers.set('content-security-policy', source === 'local-unreleased' && headers.get('content-type')?.startsWith('text/html')
-    ? LOCAL_FIRST_DEV_CSP : LOCAL_FIRST_CSP)
+  const devHtml = (source === 'local-unreleased' || localDevHost)
+    && headers.get('content-type')?.startsWith('text/html')
+  setContentSecurityPolicy(headers, {
+    mode: devHtml ? 'report-only' : 'enforce',
+    policy: devHtml ? LOCAL_FIRST_DEV_CSP : LOCAL_FIRST_CSP,
+  })
   headers.set('x-content-type-options', 'nosniff')
   headers.set('referrer-policy', 'no-referrer')
   headers.set('permissions-policy', 'camera=(), microphone=(), geolocation=(), payment=()')
@@ -49,7 +56,7 @@ export async function fetchLocalFirst(request: Request, env: LocalFirstEnv, tran
     const url = new URL(request.url), prefix = PRODUCTION_STOREFRONT_PREFIX
     const revision = env.RELEASE_CANDIDATE_SHA
     const head = request.method === 'HEAD', read = head || request.method === 'GET'
-    const finish = (response: Response) => secured(response, revision, head)
+    const finish = (response: Response) => secured(response, revision, head, LOCAL_DEV_HOSTS.has(url.hostname))
     const notFound = () => finish(Response.json({ ok: false, code: 'not_found' }, { status: 404 }))
     if (url.pathname !== prefix && !url.pathname.startsWith(`${prefix}/`)) {
       return notFound()

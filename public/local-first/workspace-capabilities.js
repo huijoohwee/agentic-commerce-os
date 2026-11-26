@@ -36,6 +36,10 @@ export const WORKSPACE_TOOLS = Object.freeze([
   definition('offer.review', 'Check offer readiness', 'Estimate an exact offer revision; no approval, export or publishing.',
     { offerId: id, expectedRevision: integer }),
   definition('environment.read', 'Inspect environment', 'Read local runtime config; no deployment, payment or fulfillment proof.'),
+  definition('offer.simulate', 'Simulate offer terms', 'Compare price and cost estimates for a saved offer. Rank each driver by its effect on estimated net after ten sales.',
+    { offerId: id, preview: { type: 'object', additionalProperties: false,
+      properties: Object.fromEntries(LAUNCH_MONEY_FIELDS.map(field => [field, termProperties[field]])) },
+      bandPercent: { type: 'integer', minimum: 1, maximum: 50 } }, ['offerId']),
 ]);
 export function workspaceSnapshot(drafts) {
   if (!Array.isArray(drafts) || drafts.length > DRAFT_LIMITS.count || !drafts.every(draft => validDraft(draft))) fail('drafts_invalid');
@@ -65,7 +69,10 @@ export function validateWorkspaceInput(name, args) {
   if ('projectId' in args && (typeof args.projectId !== 'string' || !/^(?:local:unassigned|store:[a-z0-9][a-z0-9._-]{0,127})$/.test(args.projectId))) fail('project_invalid');
   if ('offerId' in args && !validOfferId(args.offerId)) fail('offer_invalid');
   if ('expectedRevision' in args && (!Number.isSafeInteger(args.expectedRevision) || args.expectedRevision < 1)) fail('revision_invalid');
-  return { ...args, ...('snapshot' in args ? { snapshot: validateSnapshot(args.snapshot) } : {}) };
+  // Browser callers can change their argument object while IndexedDB or the lazy module is loading.
+  const preview = args.preview;
+  const copied = record(preview) && [Object.prototype, null].includes(Object.getPrototypeOf(preview)) ? { preview: { ...preview } } : {};
+  return { ...args, ...copied, ...('snapshot' in args ? { snapshot: validateSnapshot(args.snapshot) } : {}) };
 }
 export function parseWorkspaceInvocation(expression, routing) {
   if (typeof expression !== 'string' || expression.length > 300 || !record(routing)) fail('invocation_invalid');
@@ -108,10 +115,16 @@ export async function invokeWorkspace(name, input, context = {}) {
     } else {
       const offer = offers.find(offer => offer.id === args.offerId);
       if (!offer) fail('offer_missing');
-      if (offer.revision !== args.expectedRevision) fail('revision_changed');
-      const setup = evaluateOfferSetup(offer);
-      value = { id: offer.id, title: offer.title, revision: offer.revision, status: setup.status,
-        economics: setup.economics, humanReview: 'still-required', setup };
+      if (name.endsWith('.offer.simulate')) {
+        const { compareOfferDrivers } = await import('./offer-simulator.js');
+        value = { id: offer.id, title: offer.title, revision: offer.revision,
+          ...compareOfferDrivers({ saved: offer.launch, preview: args.preview, bandPercent: args.bandPercent }) };
+      } else {
+        if (offer.revision !== args.expectedRevision) fail('revision_changed');
+        const setup = evaluateOfferSetup(offer);
+        value = { id: offer.id, title: offer.title, revision: offer.revision, status: setup.status,
+          economics: setup.economics, humanReview: 'still-required', setup };
+      }
     }
   }
   if (context.signal?.aborted) fail('cancelled');
