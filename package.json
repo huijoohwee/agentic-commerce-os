@@ -85,16 +85,18 @@
     "@cloudflare/sandbox": "0.12.9",
     "@modelcontextprotocol/sdk": "1.30.0",
     "agentic-geo": "github:huijoohwee/agentic-geo#3256385c98864dbfde7a4e3fd1a1e5901f20f294",
-    "zod": "4.4.3"
+    "zod": "4.4.3",
+    "agentic-os": "https://codeload.github.com/huijoohwee/agentic-os/tar.gz/3e35cdc1ccc7d294b142f3fc35e2d7cb21be8497",
+    "agentic-design-system": "github:huijoohwee/agentic-design-system#d3e2b027a68adc21cda6aef6eb39cbe958f5aaa2"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "0.22.0",
     "@cloudflare/workers-types": "5.20260829.1",
     "@playwright/test": "1.62.1",
     "@types/node": "26.3.0",
-    "agentic-design-system": "github:huijoohwee/agentic-design-system#ed9c56c48a2d3c4a10534a0dbd06a5c727664be2",
+    "agentic-design-system": "github:huijoohwee/agentic-design-system#d3e2b027a68adc21cda6aef6eb39cbe958f5aaa2",
     "agentic-gateway": "https://codeload.github.com/huijoohwee/agentic-gateway/tar.gz/cdb000925729a729732206a32de36e6bc7db011c",
-    "agentic-os": "https://codeload.github.com/huijoohwee/agentic-os/tar.gz/6db82b8298e7dc6d4a0d11391e3509e58c450e7e",
+    "agentic-os": "https://codeload.github.com/huijoohwee/agentic-os/tar.gz/3e35cdc1ccc7d294b142f3fc35e2d7cb21be8497",
     "fast-check": "4.9.0",
     "rolldown": "1.2.5",
     "typescript": "5.9.3",
