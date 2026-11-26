@@ -32,8 +32,13 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Enforce shared owner reuse
+        uses: huijoohwee/agentic-os/.github/actions/owner-reuse@3e35cdc1ccc7d294b142f3fc35e2d7cb21be8497
+        with:
+          baseline: 3898af8a485c13c6c323173ee8ca74474b8c5d37
+
       - name: Qualify registered fleet reuse
-        uses: huijoohwee/agentic-os/.github/actions/fleet-reuse@b9b13e19b16f0b55eb169fa4bfaa1cfce4241d75
+        uses: huijoohwee/agentic-os/.github/actions/fleet-reuse@3e35cdc1ccc7d294b142f3fc35e2d7cb21be8497
 
       - name: Verify public Agentic Base source
         run: git ls-remote https://github.com/huijoohwee/agentic-base.git HEAD
@@ -44,6 +49,9 @@ jobs:
           export GIT_TERMINAL_PROMPT=0
           npm ci --ignore-scripts --no-audit --no-fund
           npm rebuild --no-audit --no-fund
+
+      - name: Verify Gateway guideline sources in the assembled SME pack
+        run: node scripts/project-guideline-sources.mjs
 
       - name: Set up Commerce verification runtime
         uses: ./.github/actions/setup-commerce-runtime

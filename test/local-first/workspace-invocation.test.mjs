@@ -11,6 +11,8 @@ const draft = { id: '12345678-1234-1234-1234-123456789012', title: 'A useful off
     audience: 'Independent founders', outcome: 'A practical worksheet', priceMinor: 1000, deliveryCostMinor: 100,
     providerFeeMinor: 0, agentCostMinor: 10, acquisitionCostMinor: 0, fixedCostMinor: 100 } };
 const snapshot = workspaceSnapshot([draft]);
+const simulate = 'commerce.workspace.offer.simulate';
+const simulationArgs = { snapshot, offerId: draft.id, preview: { priceMinor: 1100 }, bandPercent: 25 };
 const post = (body, route = '/api', headers = {}) => new Request(base + route, { method: 'POST',
   headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(body) });
 const list = WORKSPACE_TOOLS[0].name, project = WORKSPACE_TOOLS[1].name, review = WORKSPACE_TOOLS[2].name, environment = WORKSPACE_TOOLS[3].name;
@@ -27,6 +29,25 @@ test('browser and explicit snapshot results reuse native grouping and exact-revi
   assert.equal((await invokeWorkspace(list, { snapshot: workspaceSnapshot([]) })).value.projects[0].id, 'local:unassigned');
   await assert.rejects(invokeWorkspace(review, { snapshot, offerId: draft.id, expectedRevision: 1 }), /revision_changed/);
   await assert.rejects(invokeWorkspace(list, {}), /snapshot_required/);
+});
+test('simulation is appended once, read-only, idempotent and scoped to the selected offer revision', async () => {
+  assert.deepEqual(WORKSPACE_TOOLS.map(tool => tool.name), [list, project, review, environment, simulate]);
+  assert.deepEqual(WORKSPACE_TOOLS.at(-1).annotations, { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false });
+  const before = JSON.stringify(snapshot);
+  const result = await invokeWorkspace(simulate, simulationArgs);
+  assert.equal(result.readOnly, true); assert.equal(result.value.revision, draft.revision);
+  assert.equal(result.value.flags.estimate, true); assert.equal(result.value.flags.demandStatus, 'unvalidated');
+  assert.equal(result.value.deltas.tenSalesNetMinor, 1000); assert.equal(result.value.ranking.length, 6);
+  assert.deepEqual(result, await invokeWorkspace(simulate, simulationArgs));
+  const overrides = { priceMinor: 1500 };
+  const inFlight = invokeWorkspace(simulate, { offerId: draft.id, preview: overrides }, { snapshot: () => snapshot });
+  overrides.priceMinor = 0;
+  assert.equal((await inFlight).value.preview.priceMinor, 1500);
+  const local = await invokeWorkspace(simulate, { offerId: draft.id }, { snapshot: () => snapshot });
+  assert.equal(local.value.deltas.tenSalesNetMinor, 0);
+  assert.equal(JSON.stringify(snapshot), before);
+  const invalid = await worker.fetch(post({ name: simulate, arguments: { ...simulationArgs, preview: { priceMinor: 0 } } }), env);
+  assert.equal(invalid.status, 422); assert.equal((await invalid.json()).code, 'workspace_preview_invalid_price_minor');
 });
 test('strict snapshots and inputs reject private fields, duplicates, unsafe numbers and cancellation', async () => {
   for (const invalid of [{ ...snapshot, private: true }, { ...snapshot, offers: [{ ...snapshot.offers[0], description: 'private' }] },
@@ -57,7 +78,7 @@ test('REST, invocation grammar and environment use one read-only contract with n
   assert.equal(rest.status, 200); const result = await rest.json();
   const routed = await worker.fetch(post({ invocation, arguments: { snapshot } }, '/invoke'), env);
   assert.deepEqual(await routed.json(), result);
-  for (const [name, args] of [[project, { snapshot, projectId: 'store:studio' }], [review, { snapshot, offerId: draft.id, expectedRevision: 2 }]]) {
+  for (const [name, args] of [[project, { snapshot, projectId: 'store:studio' }], [review, { snapshot, offerId: draft.id, expectedRevision: 2 }], [simulate, simulationArgs]]) {
     const expression = `${routing.commandToken} ${routing.bindingToken} ${routing.semanticToken} ${name}`;
     const response = await worker.fetch(post({ invocation: expression, arguments: args }, '/invoke'), env);
     assert.equal(response.status, 200); assert.deepEqual(await response.json(), await invokeWorkspace(name, args));
@@ -83,7 +104,7 @@ test('cancelled input stream is interrupted and never retained', async () => {
   const pending = worker.fetch(request, env); controller.abort();
   assert.equal((await pending).status, 504); assert.equal(cancelled, true);
 });
-test('actual workerd MCP client initializes, discovers four tools and matches REST for every capability', { timeout: 20000 }, async t => {
+test('actual workerd MCP client initializes, discovers the read-only tools and matches REST for every capability', { timeout: 20000 }, async t => {
   const require = createRequire(import.meta.url), toolRequire = createRequire(require.resolve('wrangler/package.json'));
   const { build } = toolRequire('esbuild'), { Miniflare, convertV4MiniflareOptions } = toolRequire('miniflare');
   const built = await build({ entryPoints: ['src/local-first/worker.ts'], bundle: true, format: 'esm', platform: 'browser', target: 'es2022', minify: true, write: false });
@@ -102,7 +123,7 @@ test('actual workerd MCP client initializes, discovers four tools and matches RE
   } }));
   assert.deepEqual((await client.listTools()).tools, WORKSPACE_TOOLS);
   for (const [name, args] of [[list, { snapshot }], [project, { snapshot, projectId: 'store:studio' }],
-    [review, { snapshot, offerId: draft.id, expectedRevision: 2 }], [environment, {}]]) {
+    [review, { snapshot, offerId: draft.id, expectedRevision: 2 }], [environment, {}], [simulate, simulationArgs]]) {
     const result = await client.callTool({ name, arguments: args }); assert.notEqual(result.isError, true);
     const rest = await runtime.dispatchFetch(base + '/api', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name, arguments: args }) });
     assert.deepEqual(JSON.parse(result.content[0].text), await rest.json());

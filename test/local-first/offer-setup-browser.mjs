@@ -1,3 +1,4 @@
+import { checkOfferSimulator } from './offer-simulator-browser.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import assert from 'node:assert/strict';
@@ -276,6 +277,7 @@ async function delayedGuideLifecycle({ browser, url, observeContext }) {
 }
 
 export async function checkOfferSetup({ browser, url, output, observeContext }) {
+  await checkOfferSimulator({ browser, url });
   await delayedGuideLifecycle({ browser, url, observeContext });
   await coarseGuideControls({ browser, url, observeContext });
   const context = await browser.newContext({ viewport: { width: 768, height: 900 }, acceptDownloads: true });

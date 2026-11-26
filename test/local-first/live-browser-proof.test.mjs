@@ -6,11 +6,14 @@ import { renderStorefrontTemplate } from '../../src/local-first/checkout-offer.t
 import { BROWSER_CHECKS, BROWSER_PROOF_SCHEMA, assertBrowserProof, LIVE_BROWSER_CHECKS,
   LIVE_BROWSER_PROOF_SCHEMA, assertLiveBrowserProof, completeLiveBrowserChecks } from '../../scripts/local-first-release/browser-proof.mjs';
 const revision = 'a'.repeat(40), profileDigest = 'b'.repeat(64);
+const annotationTargets = { schema: 'agentic-design-system/annotation-target-audit/v1', ok: true,
+  targetCount: 3, targets: [{ ok: true }, { ok: true }, { ok: true }], issues: [] };
 function fixture(checkout = 'live', scope = 'live-read-only') {
   return {schema:LIVE_BROWSER_PROOF_SCHEMA,ok:true,sourceRevision:revision,profileDigest,checkout,scope,
+    annotationTargets,
     hostedPaymentSubmitted:false,liveSessionCreated:false,customerRevenueVerified:false,
     provider:scope === 'local-fixture' ? 'local-stripe-contract-fixture' : 'read-only-live',
-    checks:[BROWSER_CHECKS.listing,LIVE_BROWSER_CHECKS.identity,LIVE_BROWSER_CHECKS.layout,...(scope === 'local-fixture'
+    checks:[BROWSER_CHECKS.listing,BROWSER_CHECKS.annotationTargets,LIVE_BROWSER_CHECKS.identity,LIVE_BROWSER_CHECKS.layout,...(scope === 'local-fixture'
       ? [LIVE_BROWSER_CHECKS.fixture,LIVE_BROWSER_CHECKS.recovery,LIVE_BROWSER_CHECKS.safety] : [LIVE_BROWSER_CHECKS.readOnly])]};
 }
 test('live proofs bind exact candidate, profile, mode and independent verification scope', () => {
@@ -44,8 +47,18 @@ test('both live profiles require the private listing drill in local and delivere
     { checkout, scope, profileDigest }), /live browser proof/);
   }
 });
+test('both live profiles require a valid shared annotation audit in local and delivered proofs', () => {
+  for (const checkout of ['live','live-reader']) for (const scope of ['local-fixture','live-read-only']) {
+    const proof = fixture(checkout,scope);
+    assert.throws(() => assertLiveBrowserProof({ ...proof, annotationTargets: undefined }, revision,
+      { checkout, scope, profileDigest }), /live browser proof/);
+    assert.throws(() => assertLiveBrowserProof({ ...proof,
+      checks: proof.checks.filter(check => check !== BROWSER_CHECKS.annotationTargets) }, revision,
+    { checkout, scope, profileDigest }), /live browser proof/);
+  }
+});
 test('live and sandbox proof schemas cannot satisfy one another', () => {
-  const sandbox={schema:BROWSER_PROOF_SCHEMA,ok:true,sourceRevision:revision,checkout:'sandbox',checks:Object.values(BROWSER_CHECKS)};
+  const sandbox={schema:BROWSER_PROOF_SCHEMA,ok:true,sourceRevision:revision,checkout:'sandbox',checks:Object.values(BROWSER_CHECKS),annotationTargets};
   assert.equal(assertBrowserProof(sandbox,revision),sandbox);
   assert.throws(() => assertBrowserProof(fixture(),revision),/browser proof/);
   assert.throws(() => assertLiveBrowserProof(sandbox,revision,{checkout:'live',scope:'live-read-only',profileDigest}),/live browser proof/);

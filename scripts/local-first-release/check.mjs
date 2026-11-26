@@ -1,3 +1,4 @@
+import { checkPlanning } from '../../test/local-first/planning-browser.mjs';
 import { checkSandboxCheckout } from '../../test/local-first/checkout-browser.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -14,6 +15,7 @@ import { checkOfferSetup } from '../../test/local-first/offer-setup-browser.mjs'
 import { checkHousingWorkspace } from '../../test/local-first/housing-browser.mjs';
 import { checkListingEntry } from '../../test/local-first/listing-entry-browser.mjs';
 import { checkListingGeo } from '../../test/local-first/listing-geo-browser.mjs';
+import { auditAnnotationTargets } from './annotation-targets.mjs';
 import { BROWSER_CHECKS, BROWSER_PROOF_SCHEMA, completeBrowserChecks, assertBrowserProof,
   LIVE_BROWSER_PROOF_SCHEMA, completeLiveBrowserChecks, assertLiveBrowserProof } from './browser-proof.mjs';
 import { LIVE_CHECKOUT_PROFILE_SHA256 } from '../../src/local-first/checkout-offer.ts';
@@ -92,17 +94,23 @@ try {
   await waitForAssets({ baseUrl: url, revision, checkout, previous, stableMs: remote ? 15000 : 0,
     observe: observation => assetObservations.push(observation) });
   assert.equal((await fetch(origin + '/agentic-commerce-os')).url, url);
-  let proof;
+  let proof, annotationTargets;
   if (checkout !== 'sandbox') {
     browser = await chromium.launch({headless:true});
+    await checkPlanning({ browser, url });
     await checkListingEntry({ browser, url, output: path.join(output, 'listing-entry'), revision, observeContext });
     await checkListingGeo({ browser, url, output: path.join(output, 'listing-geo'), revision });
     record(BROWSER_CHECKS.listing);
+    annotationTargets = await auditAnnotationTargets({ browser, url });
+    fs.writeFileSync(path.join(output, 'annotation-target-audit.json'), JSON.stringify({
+      sourceRevision: revision, origin, verifiedAt: new Date().toISOString(), ...annotationTargets,
+    }, null, 2) + '\n');
+    record(BROWSER_CHECKS.annotationTargets);
     await (await import('../../test/local-first/live-checkout-browser.mjs')).checkLiveCheckout({
       browser, url, output, record, remote:!!remote, checkout, revision, profileDigest:LIVE_CHECKOUT_PROFILE_SHA256, readiness,
     });
     proof = assertLiveBrowserProof({schema:LIVE_BROWSER_PROOF_SCHEMA,ok:true,sourceRevision:revision,
-      origin,checkout,profileDigest:LIVE_CHECKOUT_PROFILE_SHA256,scope:liveScope,checks,
+      origin,checkout,profileDigest:LIVE_CHECKOUT_PROFILE_SHA256,scope:liveScope,checks,annotationTargets,
       provider:remote ? 'read-only-live' : 'local-stripe-contract-fixture',
       hostedPaymentSubmitted:false,liveSessionCreated:false,customerRevenueVerified:false,verifiedAt:new Date().toISOString()},
     revision,{checkout,profileDigest:LIVE_CHECKOUT_PROFILE_SHA256,scope:liveScope});
@@ -113,9 +121,15 @@ try {
   }
   record(BROWSER_CHECKS.scope);
   browser = await chromium.launch({ headless: true });
+  await checkPlanning({ browser, url });
   await checkListingEntry({ browser, url, output: path.join(output, 'listing-entry'), revision, observeContext });
   await checkListingGeo({ browser, url, output: path.join(output, 'listing-geo'), revision });
   record(BROWSER_CHECKS.listing);
+  annotationTargets = await auditAnnotationTargets({ browser, url });
+  fs.writeFileSync(path.join(output, 'annotation-target-audit.json'), JSON.stringify({
+    sourceRevision: revision, origin, verifiedAt: new Date().toISOString(), ...annotationTargets,
+  }, null, 2) + '\n');
+  record(BROWSER_CHECKS.annotationTargets);
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, acceptDownloads: true });
   observeContext(context);
   const page = await context.newPage();
@@ -188,7 +202,7 @@ try {
     .checkDurableFulfillment({ browser, url, output, revision });
   if (!remote && checkout === 'sandbox') await checkHousingWorkspace({ browser, url, output, observeContext, record });
   proof = assertBrowserProof({ schema: BROWSER_PROOF_SCHEMA, ok: true, sourceRevision: revision,
-    origin, checkout: 'sandbox', checks, verifiedAt: new Date().toISOString() }, revision);
+    origin, checkout: 'sandbox', checks, annotationTargets, verifiedAt: new Date().toISOString() }, revision);
   }
   fs.writeFileSync(path.join(output, 'browser-proof.json'), JSON.stringify(proof, null, 2) + '\n');
   console.log(JSON.stringify(proof));

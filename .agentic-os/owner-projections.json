@@ -1,0 +1,22 @@
+{
+  "public/local-first/formula.mjs": {
+    "owner": "agentic-sheets",
+    "source": "sheets/formula.mjs",
+    "pin": "87a0f0f95f1fc08a5db4871e49005da351b96e61"
+  },
+  "public/local-first/planning-explorer.css": {
+    "owner": "agentic-design-system",
+    "source": "site/source-explorer.css",
+    "pin": "efb6c8e3b19898ccfe48b060a9ecc99c24a4000e"
+  },
+  "public/local-first/schema.mjs": {
+    "owner": "agentic-sheets",
+    "source": "sheets/schema.mjs",
+    "pin": "87a0f0f95f1fc08a5db4871e49005da351b96e61"
+  },
+  "public/local-first/source-explorer.js": {
+    "owner": "agentic-design-system",
+    "source": "site/source-explorer.js",
+    "pin": "efb6c8e3b19898ccfe48b060a9ecc99c24a4000e"
+  }
+}

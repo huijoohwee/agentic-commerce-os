@@ -65,6 +65,13 @@ export async function verifyWorkspaceToolRefinements({ page, context, url, draft
     await expect(summary).toContainText('Personal workspace');
     await expect(output).toContainText('provided-snapshot');
 
+    await chooseDropdown(tool, 'commerce.workspace.offer.simulate');
+    await args.fill(JSON.stringify({ offerId: drafts[1].id, preview: { priceMinor: 3000 }, bandPercent: 25 }));
+    await run.click(); await expect(summary).toContainText('Estimated net after ten sales');
+    await expect(summary).toContainText('unvalidated');
+    await page.locator('#workspace-prepare').click();
+    await expect(summary).toContainText('Request ready to inspect');
+    assert.deepEqual(JSON.parse(await output.textContent()).params.arguments.snapshot.offers.map(offer => offer.id), [drafts[1].id]);
     await chooseDropdown(tool, 'commerce.workspace.environment.read');
     await expect(page.locator('#workspace-fields input')).toHaveCount(0);
     await expect(page.locator('#workspace-provenance')).toContainText('Current runtime observation');
