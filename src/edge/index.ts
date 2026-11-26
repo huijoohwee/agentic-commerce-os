@@ -1,3 +1,4 @@
+import { setContentSecurityPolicy } from 'agentic-os/content-security-policy'
 import { routeToCore } from './core-routes'
 import { merchantClientModule } from './client/merchant-module'
 import { bearerAuthorized, originAllowed, validateSecretConfiguration } from '../shared/auth'
@@ -243,13 +244,14 @@ async function routePublic(
     return consoleResponse(metadata(env), undefined, { basePath, workspaceRole: url.pathname === '/admin' ? 'admin' : 'vendor' })
   }
   if (request.method === 'GET' && ['/assets/storefront.js', '/assets/merchant.js'].includes(url.pathname)) {
+    const headers = new Headers({
+      'cache-control': 'public, max-age=300',
+      'content-type': 'text/javascript; charset=utf-8',
+      'x-content-type-options': 'nosniff',
+    })
+    setContentSecurityPolicy(headers, { mode: 'enforce', policy: "default-src 'none'" })
     return new Response(url.pathname === '/assets/merchant.js' ? merchantClientModule() : storefrontClientModule(), {
-      headers: {
-        'cache-control': 'public, max-age=300',
-        'content-type': 'text/javascript; charset=utf-8',
-        'content-security-policy': "default-src 'none'",
-        'x-content-type-options': 'nosniff',
-      },
+      headers,
     })
   }
   if (request.method === 'GET' && url.pathname === '/readyz') return readinessResponse(env, requestId)
