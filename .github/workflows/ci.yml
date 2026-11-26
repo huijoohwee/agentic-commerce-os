@@ -33,12 +33,12 @@ jobs:
           cache: npm
 
       - name: Enforce shared owner reuse
-        uses: huijoohwee/agentic-os/.github/actions/owner-reuse@3e35cdc1ccc7d294b142f3fc35e2d7cb21be8497
+        uses: huijoohwee/agentic-os/.github/actions/owner-reuse@1d8e340eba37d1ae66d26328dc309f236b69e181
         with:
           baseline: 3898af8a485c13c6c323173ee8ca74474b8c5d37
 
       - name: Qualify registered fleet reuse
-        uses: huijoohwee/agentic-os/.github/actions/fleet-reuse@3e35cdc1ccc7d294b142f3fc35e2d7cb21be8497
+        uses: huijoohwee/agentic-os/.github/actions/fleet-reuse@1d8e340eba37d1ae66d26328dc309f236b69e181
 
       - name: Verify public Agentic Base source
         run: git ls-remote https://github.com/huijoohwee/agentic-base.git HEAD
