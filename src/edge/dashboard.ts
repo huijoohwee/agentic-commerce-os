@@ -4,6 +4,7 @@ import { SHOPPER_PAGE } from './shopper-page'
 import { EXPERIENCE_STYLES } from './experience-styles'
 import { THEME_MANIFEST_DEFAULTS, type ThemeManifest } from '../shared/theme-manifest'
 import { graphWorkspaceUrl } from './graph-workspace'
+import { setContentSecurityPolicy } from 'agentic-os/content-security-policy'
 
 export type ConsoleMetadata = Readonly<{
   lane: string
@@ -44,15 +45,22 @@ export function consoleResponse(metadata: ConsoleMetadata, manifest: ThemeManife
   const content = closed ? `<article class="card"><h1>Delivery boundary</h1><p class="hint">Delivery boundary closed. This exact route exposes no nested storefront, API, WebMCP, or Sandbox authority.</p></article>` : role
     ? `<header class="page-heading"><section><p class="eyebrow">${role} workspace</p><h1 id="workspace-heading" tabindex="-1">${role === 'vendor' ? 'Storefront' : 'Overview'}</h1><p class="hint">${role === 'vendor' ? 'Build a store your first customer can trust.' : 'A clear view of your marketplace and the changes that need you.'}</p></section><span class="badge">${escapeHtml(metadata.lane)}</span></header><p class="notice">Full runtime · <span id="workspace-scope">No local merchant proposals</span> · Proposals stay in this browser. Publication requires connected human review.</p>${merchantPage(role)}${runtime}`
     : `<section class="hero" aria-labelledby="storefront-heading"><header class="hero-copy"><p class="eyebrow">Independent businesses · Agent-powered discovery</p><h1 id="storefront-heading">${escapeHtml(manifest.copy.headline)}</h1><p class="hint">${escapeHtml(manifest.copy.subhead)}</p><a class="button" href="#catalog">Explore offers <span role="img" aria-label="Explore offers icon">↗</span></a></header><aside class="hero-art"><p class="eyebrow">Good work starts here</p><ol class="journey"><li><b>01</b>Find an offer for your next step</li><li><b>02</b>Compare the details and total</li><li><b>03</b>You confirm every purchase</li></ol></aside></section>${SHOPPER_PAGE}`
-  return new Response(`<!doctype html><html lang="${escapeHtml(manifest.locale)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="${manifest.palette.background}"><meta name="ag-catalog-path" content="${escapeHtml(options.catalogPath ?? `${base}/v1/public/agents`)}"><meta name="ag-runtime-base-path" content="${escapeHtml(base)}"><meta name="ag-workspace-role" content="${role ?? 'shopper'}"><title>${role ? role[0]?.toUpperCase() + role.slice(1) + ' · ' : ''}${brand}</title>
+  const html = `<!doctype html><html lang="${escapeHtml(manifest.locale)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="${manifest.palette.background}"><meta name="ag-catalog-path" content="${escapeHtml(options.catalogPath ?? `${base}/v1/public/agents`)}"><meta name="ag-runtime-base-path" content="${escapeHtml(base)}"><meta name="ag-workspace-role" content="${role ?? 'shopper'}"><title>${role ? role[0]?.toUpperCase() + role.slice(1) + ' · ' : ''}${brand}</title>
   <style>:root { --ink: ${manifest.palette.ink}; --muted: ${manifest.palette.muted}; --line: ${manifest.palette.line}; --panel: ${manifest.palette.panel}; --accent: ${manifest.palette.accent}; --background: ${manifest.palette.background}; }${typography}${EXPERIENCE_STYLES}</style></head><body data-agentic-typography class="${role ? 'workspace' : 'shopper'}">
   <a href="#main-content" class="skip-link button">Skip to content</a><header class="topbar"><a class="brand" href="${home}" aria-label="${brand} home">${manifest.logo.href ? `<img class="logo" src="${escapeHtml(manifest.logo.href)}" alt="${escapeHtml(manifest.logo.alt)}">` : `<span class="brand-symbol" role="img" aria-label="Airvio mark">a↗</span>${brand}`}</a>${navigation}</header>
   <section class="${role ? 'workspace-shell' : ''}">${role && !closed ? merchantNavigation(role) : ''}<main id="main-content" class="${role ? 'workspace-main' : 'shop-main'}"><p id="offline-indicator" role="status" hidden>Offline — showing the last completed synchronization. Settlement is unavailable.</p>${content}<footer><span>${escapeHtml(manifest.copy.footer)}</span>${canvas}<span>${role ? 'Your changes, reviewed.' : 'Browse · choose · review'}</span></footer></main></section>
-  ${closed ? '' : `<script type="module" nonce="${nonce}" src="${modulePath}"></script>`}</body></html>`, { headers: {
+  ${closed ? '' : `<script type="module" nonce="${nonce}" src="${modulePath}"></script>`}</body></html>`
+  const headers = new Headers({
     'cache-control': 'no-store', 'content-type': 'text/html; charset=utf-8',
-    'content-security-policy': closed ? "default-src 'none'; style-src 'unsafe-inline'; script-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'" : `default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}'; connect-src 'self'; img-src 'self' https:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`,
     'permissions-policy': 'camera=(), microphone=(), geolocation=(), payment=()', 'referrer-policy': 'no-referrer',
-  } })
+  })
+  setContentSecurityPolicy(headers, {
+    mode: 'enforce',
+    policy: closed
+      ? "default-src 'none'; style-src 'unsafe-inline'; script-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+      : `default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}'; connect-src 'self'; img-src 'self' https:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`,
+  })
+  return new Response(html, { headers })
 }
 
 export function dashboardResponse(metadata: ConsoleMetadata, options: ConsoleOptions = {}): Response {
