@@ -7,6 +7,10 @@ on:
         description: Exact protected main for the selected reviewed checkout profile
         required: true
         type: string
+      mirror_sha:
+        description: Exact protected huijoohwee main commit containing the Commerce content mirror
+        required: true
+        type: string
       checkout_mode:
         description: Sandbox, paid-order reader with sales disabled, or live education sales
         required: true
@@ -55,6 +59,10 @@ jobs:
     timeout-minutes: 15
     env:
       CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+      MIRROR_SHA: ${{ inputs.mirror_sha }}
+      COMMERCE_CONTENT_MIRROR_ROOT: ${{ github.workspace }}/commerce-mirror/content/agentic-commerce-os
+      COMMERCE_CONTENT_MIRROR_SHA: ${{ inputs.mirror_sha }}
+      COMMERCE_CONTENT_MIRROR_REPOSITORY_ROOT: ${{ github.workspace }}/commerce-mirror
       LOCAL_FIRST_CHECKOUT: ${{ inputs.checkout_mode }}
       LOCAL_FIRST_LIVE_WEBHOOK_ID: ${{ inputs.live_webhook_id }}
       LOCAL_FIRST_WEBHOOK_PROVISIONING_JSON: ${{ inputs.live_webhook_provisioning }}
@@ -68,6 +76,13 @@ jobs:
           ref: ${{ inputs.candidate_sha }}
           fetch-depth: 0
           persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: huijoohwee/huijoohwee
+          ref: ${{ inputs.mirror_sha }}
+          path: commerce-mirror
+          fetch-depth: 0
+          persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: 22
@@ -76,12 +91,15 @@ jobs:
         run: |
           set -euo pipefail
           [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$MIRROR_SHA" =~ ^[0-9a-f]{40}$ ]]
           test "$GITHUB_RUN_ATTEMPT" = 1
           test "$GITHUB_REF" = refs/heads/main
           test "$GITHUB_SHA" = "$CANDIDATE_SHA"
           test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
           test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$CANDIDATE_SHA"
       - run: npm ci --ignore-scripts
+      - name: Verify the exact protected Commerce content mirror
+        run: node scripts/local-first-release/artifact.mjs verify-mirror
       - name: Validate the explicit checkout profile and retained reader reference
         id: live-inputs
         run: node scripts/local-first-release/live-profile.mjs preflight
@@ -120,6 +138,10 @@ jobs:
     environment: production
     env:
       CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+      MIRROR_SHA: ${{ inputs.mirror_sha }}
+      COMMERCE_CONTENT_MIRROR_ROOT: ${{ github.workspace }}/commerce-mirror/content/agentic-commerce-os
+      COMMERCE_CONTENT_MIRROR_SHA: ${{ inputs.mirror_sha }}
+      COMMERCE_CONTENT_MIRROR_REPOSITORY_ROOT: ${{ github.workspace }}/commerce-mirror
       LOCAL_FIRST_CHECKOUT: ${{ inputs.checkout_mode }}
       LOCAL_FIRST_LIVE_WEBHOOK_ID: ${{ inputs.live_webhook_id }}
       LOCAL_FIRST_WEBHOOK_PROVISIONING_JSON: ${{ inputs.live_webhook_provisioning }}
@@ -133,16 +155,34 @@ jobs:
           ref: ${{ inputs.candidate_sha }}
           fetch-depth: 0
           persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: huijoohwee/huijoohwee
+          ref: ${{ inputs.mirror_sha }}
+          path: commerce-mirror
+          fetch-depth: 0
+          persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: 22
           cache: npm
       - run: npm ci --ignore-scripts
+      - name: Recheck exact source and mirror before protected mutation
+        run: |
+          set -euo pipefail
+          [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ && "$MIRROR_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$CANDIDATE_SHA"
+          test "$(git -C commerce-mirror rev-parse HEAD)" = "$MIRROR_SHA"
+          test "$(git -C commerce-mirror ls-remote origin refs/heads/main | cut -f1)" = "$MIRROR_SHA"
+          node scripts/local-first-release/artifact.mjs verify-mirror
       - run: node_modules/.bin/playwright install --with-deps chromium
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
         with:
           name: local-first-prepared-${{ github.run_id }}
           path: ${{ env.LOCAL_FIRST_EVIDENCE_DIR }}
+      - name: Bind the prepared artifact to this exact mirror
+        run: node -e 'const fs=require("node:fs");const a=JSON.parse(fs.readFileSync(process.env.LOCAL_FIRST_EVIDENCE_DIR+"/artifact.json","utf8"));if(a.sourceRevision!==process.env.CANDIDATE_SHA||a.contentMirror?.mirrorSha!==process.env.MIRROR_SHA)throw Error("Prepared Worker artifact is not bound to the selected source and mirror");'
       - name: Verify scoped owner policy and actual run approval
         env:
           GH_TOKEN: ${{ github.token }}
