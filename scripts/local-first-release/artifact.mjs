@@ -22,6 +22,9 @@ export const STORAGE_MANAGEMENT_SOURCE_FILES = Object.freeze([
 ]);
 export const LOCAL_FIRST_ASSET_DIRECTORY = './node_modules/.cache/local-first-assets';
 export const LOCAL_FIRST_DEV_INDEX_ALIAS = '__local-first-index.html';
+export const CONTENT_MIRROR_MANIFEST = 'commerce-content-mirror.json';
+export const CONTENT_MIRROR_SCHEMA = 'commerce.local-first-content-mirror/v1';
+export const CONTENT_MIRROR_REPOSITORY = 'github.com/huijoohwee/huijoohwee';
 export const digest = value => createHash('sha256').update(value).digest('hex');
 function readDesignSystemStaticRelease() {
   const release = JSON.parse(fs.readFileSync('config/design-system-static-release.json', 'utf8'));
@@ -175,14 +178,58 @@ export function verifyStorageManagementSourceIndex() {
   return { sourceCount: seen.size, sourceFileCount: manifest.sources.reduce((total, source) => total + source.files.length, 0), totalBytes,
     servedFiles: STORAGE_MANAGEMENT_ASSETS.length }
 }
-export function prepareLocalFirstAssets() {
+export function verifyCommerceContentMirror(mirrorRoot, { sourceRevision, sourceTree, mirrorSha = null,
+  mirrorRepositoryRoot = null } = {}) {
+  if (!/^[0-9a-f]{40}$/.test(sourceRevision ?? '') || !/^[0-9a-f]{40}$/.test(sourceTree ?? '')
+    || git('rev-parse', 'HEAD') !== sourceRevision
+    || git('rev-parse', `${sourceRevision}^{tree}`) !== sourceTree) throw Error('Commerce mirror source identity mismatch');
+  if (typeof mirrorRoot !== 'string' || !mirrorRoot) throw Error('Commerce mirror root is required');
+  const root = path.resolve(mirrorRoot), stat = fs.lstatSync(root);
+  if (!stat.isDirectory() || stat.isSymbolicLink()) throw Error('Commerce mirror root must be a regular directory');
+  if (mirrorSha !== null) {
+    if (!/^[0-9a-f]{40}$/.test(mirrorSha) || !mirrorRepositoryRoot
+      || execFileSync('git', ['-C', path.resolve(mirrorRepositoryRoot), 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim() !== mirrorSha
+      || execFileSync('git', ['-C', path.resolve(mirrorRepositoryRoot), 'ls-remote', 'origin', 'refs/heads/main'], { encoding: 'utf8' }).trim() !== `${mirrorSha}\trefs/heads/main`)
+      throw Error('Commerce mirror repository revision is not current protected main');
+  }
+  const filename = path.join(root, CONTENT_MIRROR_MANIFEST), manifestStat = fs.lstatSync(filename);
+  if (!manifestStat.isFile() || manifestStat.isSymbolicLink()) throw Error('Commerce mirror manifest must be a regular file');
+  const manifest = JSON.parse(fs.readFileSync(filename, 'utf8'));
+  const { manifestDigest, ...body } = manifest;
+  const expectedFiles = [...FILES, ...PRIVATE_FILES].sort();
+  if (manifest.schema !== CONTENT_MIRROR_SCHEMA || manifest.repository !== 'github.com/huijoohwee/agentic-commerce-os'
+    || manifest.sourceRevision !== sourceRevision || manifest.sourceTree !== sourceTree
+    || JSON.stringify(manifest.files?.map(row => row.path)) !== JSON.stringify(expectedFiles)
+    || !Number.isSafeInteger(manifest.totalBytes) || manifest.totalBytes > 3000000
+    || !/^[0-9a-f]{64}$/.test(manifestDigest ?? '') || digest(JSON.stringify(body)) !== manifestDigest)
+    throw Error('Commerce mirror manifest identity or inventory mismatch');
+  const expectedInventory = [...expectedFiles, CONTENT_MIRROR_MANIFEST].sort();
+  const actualInventory = listRegularFiles(root);
+  if (JSON.stringify(actualInventory) !== JSON.stringify(expectedInventory)) throw Error('Commerce mirror contains missing or unexpected files');
+  let totalBytes = 0;
+  for (const row of manifest.files) {
+    if (!Number.isSafeInteger(row.bytes) || row.bytes < 0 || row.bytes >= 500000
+      || !/^[0-9a-f]{64}$/.test(row.sha256 ?? '')) throw Error(`Commerce mirror file record invalid: ${row.path}`);
+    const file = path.join(root, row.path), fileStat = fs.lstatSync(file), bytes = fs.readFileSync(file);
+    if (!fileStat.isFile() || fileStat.isSymbolicLink() || bytes.length !== row.bytes || digest(bytes) !== row.sha256
+      || !bytes.equals(readLocalFirstAsset(row.path))) throw Error(`Commerce mirror file differs from its protected source: ${row.path}`);
+    totalBytes += bytes.length;
+  }
+  if (totalBytes !== manifest.totalBytes) throw Error('Commerce mirror byte total mismatch');
+  if (totalBytes > 3000000) throw Error('Commerce mirror exceeds its total byte budget');
+  return { repository: CONTENT_MIRROR_REPOSITORY, mirrorSha, sourceRevision, sourceTree,
+    manifestDigest, fileCount: manifest.files.length, totalBytes };
+}
+
+export function prepareLocalFirstAssets(mirrorRoot = null) {
   const output = path.resolve(LOCAL_FIRST_ASSET_DIRECTORY)
   fs.rmSync(output, { recursive: true, force: true })
   fs.mkdirSync(output, { recursive: true })
   for (const file of [...FILES, ...PRIVATE_FILES]) {
     const target = path.resolve(output, file)
     fs.mkdirSync(path.dirname(target), { recursive: true })
-    fs.writeFileSync(target, readLocalFirstAsset(file), { flag: 'wx' })
+    const bytes = mirrorRoot ? fs.readFileSync(path.resolve(mirrorRoot, file)) : readLocalFirstAsset(file)
+    fs.writeFileSync(target, bytes, { flag: 'wx' })
   }
   fs.copyFileSync(path.join(output, 'index.html'), path.join(output, LOCAL_FIRST_DEV_INDEX_ALIAS), fs.constants.COPYFILE_EXCL)
   if (listRegularFiles(output).join() !== [...FILES, ...PRIVATE_FILES, LOCAL_FIRST_DEV_INDEX_ALIAS].sort().join()) {
@@ -451,25 +498,47 @@ export function sourceManifest(revision, selection = readCheckoutRelease()) {
     const bytes = fs.readFileSync(file); if (bytes.length >= 500000) throw Error('Artifact file exceeds 500 kB');
     return { path: file, bytes: bytes.length, digest: digest(bytes) };
   });
-  prepareLocalFirstAssets();
+  const mirrorRoot = process.env.COMMERCE_CONTENT_MIRROR_ROOT || null;
+  const contentMirror = mirrorRoot ? verifyCommerceContentMirror(mirrorRoot, {
+    sourceRevision: revision, sourceTree: git('rev-parse', 'HEAD^{tree}'),
+    mirrorSha: process.env.COMMERCE_CONTENT_MIRROR_SHA,
+    mirrorRepositoryRoot: process.env.COMMERCE_CONTENT_MIRROR_REPOSITORY_ROOT,
+  }) : null;
+  prepareLocalFirstAssets(mirrorRoot);
   const live = liveAuthorizationScope(selection);
   const body = { schema: live ? 'commerce.local-first-live-artifact/v1' : 'commerce.local-first-artifact/v2',
     profile: 'local-first', checkout: selection.checkout, ...(live ? {live} : {}),
-    sourceRevision: revision, sourceTree: git('rev-parse', 'HEAD^{tree}'), entries };
+    sourceRevision: revision, sourceTree: git('rev-parse', 'HEAD^{tree}'),
+    ...(contentMirror ? { contentMirror } : {}), entries };
   return { ...body, artifactDigest: digest(JSON.stringify(body)) };
 }
 export function assertCleanCandidate(revision) {
   if (git('rev-parse', 'HEAD') !== revision || git('status', '--porcelain', '--untracked-files=all')) throw Error('Candidate must be exact and clean');
 }
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const revision = process.env.CANDIDATE_SHA || git('rev-parse', 'HEAD');
-  const output = path.resolve(process.env.LOCAL_FIRST_EVIDENCE_DIR || 'node_modules/.cache/local-first-verification');
-  fs.mkdirSync(output, { recursive: true });
-  const manifest = sourceManifest(revision);
-  execFileSync(process.execPath, ['node_modules/wrangler/bin/wrangler.js', 'deploy', '-c', CONFIG, '--dry-run', '--minify',
-    '--outdir', path.join(output, 'bundle'), '--var', `RELEASE_CANDIDATE_SHA:${revision}`], { stdio: 'inherit', timeout: 120000 });
-  const bundle = fs.readdirSync(path.join(output, 'bundle')).filter(file => /\.m?js$/.test(file));
-  if (!bundle.length || bundle.some(file => fs.statSync(path.join(output, 'bundle', file)).size >= 500000)) throw Error('Worker chunk budget failed');
-  fs.writeFileSync(path.join(output, 'artifact.json'), JSON.stringify(manifest, null, 2) + '\n');
-  console.log(JSON.stringify({ ok: true, artifactDigest: manifest.artifactDigest, files: manifest.entries.length }));
+  try {
+    if (process.argv[2] === 'verify-mirror') {
+      const result = verifyCommerceContentMirror(process.env.COMMERCE_CONTENT_MIRROR_ROOT, {
+        sourceRevision: process.env.CANDIDATE_SHA,
+        sourceTree: git('rev-parse', `${process.env.CANDIDATE_SHA}^{tree}`),
+        mirrorSha: process.env.COMMERCE_CONTENT_MIRROR_SHA,
+        mirrorRepositoryRoot: process.env.COMMERCE_CONTENT_MIRROR_REPOSITORY_ROOT,
+      });
+      console.log(JSON.stringify({ ok: true, ...result }));
+    } else {
+      const revision = process.env.CANDIDATE_SHA || git('rev-parse', 'HEAD');
+      const output = path.resolve(process.env.LOCAL_FIRST_EVIDENCE_DIR || 'node_modules/.cache/local-first-verification');
+      fs.mkdirSync(output, { recursive: true });
+      const manifest = sourceManifest(revision);
+      execFileSync(process.execPath, ['node_modules/wrangler/bin/wrangler.js', 'deploy', '-c', CONFIG, '--dry-run', '--minify',
+        '--outdir', path.join(output, 'bundle'), '--var', `RELEASE_CANDIDATE_SHA:${revision}`], { stdio: 'inherit', timeout: 120000 });
+      const bundle = fs.readdirSync(path.join(output, 'bundle')).filter(file => /\.m?js$/.test(file));
+      if (!bundle.length || bundle.some(file => fs.statSync(path.join(output, 'bundle', file)).size >= 500000)) throw Error('Worker chunk budget failed');
+      fs.writeFileSync(path.join(output, 'artifact.json'), JSON.stringify(manifest, null, 2) + '\n');
+      console.log(JSON.stringify({ ok: true, artifactDigest: manifest.artifactDigest, files: manifest.entries.length }));
+    }
+  } catch (error) {
+    console.error(error.message);
+    process.exitCode = 1;
+  }
 }

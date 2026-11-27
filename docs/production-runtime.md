@@ -34,6 +34,13 @@ Run `npm run check:local-first` and `node scripts/local-first-release/artifact.m
 The protected source Integration Gate includes the local-first unit and browser checks. The separate
 `Local-first Production Release` workflow verifies the exact current main, builds
 asset identity, and repeats the real browser checks before production approval.
+Its `mirror_sha` input identifies one merged `huijoohwee/huijoohwee` main commit.
+The verifier checks that the mirror manifest names the same Commerce source SHA and
+tree as `candidate_sha`, and that each mirrored file matches the source allowlist
+and bytes. Preparation and the protected release job repeat this check against the
+same mirror commit. The mirror publisher only opens a reviewable content PR; this
+Commerce workflow remains the sole Worker deployment, route, and rollback owner.
+The Storage Management subtree keeps its separate source and static-release owner.
 The scoped local-first owner self-review exception began with the 2026-09-11 MVP; the release verifier binds the current permitted sandbox profile and exact artifact.
 Required production approval and the main-only environment branch policy remain enabled.
 The local-first verifier observes the actual GitHub run and approval, requires the repository
