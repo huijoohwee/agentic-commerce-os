@@ -18,7 +18,7 @@
   --agentic-base-text-secondary: light-dark(#4b5563, #9ca3af);
   --agentic-base-text-tertiary: light-dark(#6b7280, #6b7280);
 }
-:root[data-dark-variant="black"], :host([data-dark-variant="black"]) {
+:root[data-theme="dark"][data-dark-variant="black"], :host([data-theme="dark"][data-dark-variant="black"]) {
   --agentic-base-accent: #60a5fa;
   --agentic-base-action-hover: rgba(255, 255, 255, 0.06);
   --agentic-base-border: #404040;

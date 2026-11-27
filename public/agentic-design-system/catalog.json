@@ -265,7 +265,7 @@
         "consumerPins": [],
         "projection": {
           "path": "./vendor/base-profile.css",
-          "digest": "sha256:aeeebf62854d76f79dedd2771a46aa55312f835840249db998ac6c3f37097f5f"
+          "digest": "sha256:d7b34f1b882c972c4b2ec882688550ce2de1ceb43099ea9bc9035e4584140b2b"
         }
       },
       {
@@ -322,7 +322,7 @@
         "consumerPins": [],
         "projection": {
           "path": "./vendor/shared-ui-profile.css",
-          "digest": "sha256:ba95bb2de809f84c35aec409c89f305442b536741cbd0987d43ff8ecc6bf9e17"
+          "digest": "sha256:0b0436192730bf99e90896bf1668ff4c69c8c6539c76b06312196b979a31a047"
         }
       }
     ]
