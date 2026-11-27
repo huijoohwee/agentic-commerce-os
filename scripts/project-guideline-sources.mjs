@@ -18,7 +18,7 @@ const sources = {};
 for (const id of Object.values(guidelines)) {
   const ref = byId.get(id);
   if (ref?.kind !== 'guideline') throw Error('Unknown guideline: ' + id);
-  sources[id] = {reference_id: id, path: ref.owner + '/' + ref.path, version: ref.version, revision: ref.revision, digest: ref.digest};
+  sources[id] = {reference_id: id, version: ref.version, revision: ref.revision, digest: ref.digest};
 }
 const marker = /(?<=\/\/ Gateway guideline projection\n)[\s\S]*?(?=\/\/ End Gateway guideline projection)/g;
 if ([...source.matchAll(marker)].length !== 1) throw Error('Missing guideline projection');

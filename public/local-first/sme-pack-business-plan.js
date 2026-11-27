@@ -49,35 +49,30 @@ const pitchDeckRoles = Object.freeze([
 const gatewaySources = {
   "guideline/prd-tad-adr-mvp-gtm": {
     "reference_id": "guideline/prd-tad-adr-mvp-gtm",
-    "path": "huijoohwee.github.io/guidelines/prd-tad-adr-mvp-gtm-guidelines.md",
     "version": "3.5.1",
     "revision": "f07f1a3c27d6936f86233d750d8db7b7690d5fb4",
     "digest": "2bfe506681780ffe609eec676e61fe7ee5e5080edd3f26802c50217ee248bb88"
   },
   "guideline/pitch-deck": {
     "reference_id": "guideline/pitch-deck",
-    "path": "huijoohwee.github.io/guidelines/pitch-deck-guidelines.md",
     "version": "1.3.0",
     "revision": "f07f1a3c27d6936f86233d750d8db7b7690d5fb4",
     "digest": "eb183c27c0109029c523c45c99b8f6bf0525342532bd72d814cea34032199211"
   },
   "guideline/business-plan": {
     "reference_id": "guideline/business-plan",
-    "path": "huijoohwee.github.io/guidelines/business-plan-guidelines.md",
     "version": "1.2.1",
     "revision": "f07f1a3c27d6936f86233d750d8db7b7690d5fb4",
     "digest": "2f0d9a975a6f9f05b0f5a04a876dbd93d824e07449ea8490de04fece43e4bae1"
   },
   "guideline/financial-model": {
     "reference_id": "guideline/financial-model",
-    "path": "huijoohwee.github.io/guidelines/financial-model-guidelines.md",
     "version": "1.2.0",
     "revision": "f07f1a3c27d6936f86233d750d8db7b7690d5fb4",
     "digest": "795293db57eedda976c7ee91cfc8ce4d474910497e9f9513bac5e24930954818"
   },
   "guideline/pd-bp-fm": {
     "reference_id": "guideline/pd-bp-fm",
-    "path": "huijoohwee.github.io/guidelines/pd-bp-fm-guidelines.md",
     "version": "2.2.1",
     "revision": "f07f1a3c27d6936f86233d750d8db7b7690d5fb4",
     "digest": "3089f3126485098e4be3cc6218af74862ec73259d40ce1d9f29956147826c46b"

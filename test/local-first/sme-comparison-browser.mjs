@@ -120,7 +120,7 @@ export async function checkSmeComparisonBrowser({ browser, page, url, output, sm
   assert(hierarchyKeys.includes('group:Inputs.Buy/Build'))
   assert.match(dictionary.text, /sme\.business-plan/)
   assert.match(dictionary.text, /business\.plan\.build/)
-  assert.match(dictionary.text, /DICTIONARY-SEMANTIC/)
+  assert.match(dictionary.text, /route-dictionary\/semantic/)
   assert.match(dictionary.text, /pitch_deck_outline/)
   assert.match(dictionary.text, /Coverage output/)
   assert.match(dictionary.text, /workflow_columns/)

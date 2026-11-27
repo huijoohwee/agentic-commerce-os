@@ -32,9 +32,9 @@ const columns = [
   { id: 'review', name: 'Evidence / status' }, { id: 'source', name: 'Formula / source' }, { id: 'owner', name: 'Canonical owner' },
 ]
 const ownerRows = [
-  ['Shared token', '/', 'Reference implementation owner for invocation grammar and command metadata', 'agentic-os/docs/INVOCATION.md · catalog/dictionaries/DICTIONARY-COMMAND.md'],
-  ['Shared token', '#', 'Reference implementation owner for shared semantic terms; page fragments remain local routes', 'agentic-os/catalog/dictionaries/DICTIONARY-SEMANTIC.md'],
-  ['Shared token', '@', 'Reference implementation owner for binding references; no credentials or authority implied', 'agentic-os/catalog/dictionaries/DICTIONARY-BINDING.md'],
+  ['Shared token', '/', 'Reference implementation owner for invocation grammar and command metadata', 'Gateway command-catalog/invocation · route-dictionary/command'],
+  ['Shared token', '#', 'Reference implementation owner for shared semantic terms; page fragments remain local routes', 'Gateway route-dictionary/semantic'],
+  ['Shared token', '@', 'Reference implementation owner for binding references; no credentials or authority implied', 'Gateway route-dictionary/binding'],
   ['Skill metadata', 'agent.sme-care', 'Reference implementation for provider-neutral source-grounded assistance metadata; not a plan executor', 'agentic-canvas-os/docs/SKILLS.md'],
   ['Tool discovery', 'MCP · WebMCP', 'Reference implementation for the shared gateway; pack adapters expose the canonical tool schema', 'agentic-canvas-os/docs/MCP-GATEWAY.md · Commerce adapters'],
   ['Context schema', 'AgenticRAG', 'Reference implementation for shared JSON-LD context and invocation metadata terms', 'huijoohwee.github.io/schema/AgenticRAG/v1/context.jsonld'],
@@ -86,6 +86,7 @@ export function createSmePackDictionaryView(protocol, orientation = 'rows', onOr
     cells: [record, key, label, section, definition, type, required, unit, constraints, review, source, owner].map(display),
   })
   const guidelineById = Object.fromEntries(protocol.guideline_sources.map(source => [source.id, source]))
+  const referenceLabel = owner => owner ? `${owner.reference_id}@${owner.version}` : null
   add('Plan contract', protocol.pack.id, protocol.pack.label, 'Identity',
     'Versioned, user-defined planning schema. No unselected location, sector, benchmark, default, or currency is implied.', 'object', 'Yes', '',
     { version: protocol.pack.version, as_of: protocol.pack.as_of }, protocol.pack.review_status, protocol.schema, 'Active plan registry and protocol')
@@ -114,7 +115,7 @@ export function createSmePackDictionaryView(protocol, orientation = 'rows', onOr
     const owner = output.kind === 'projection' ? guidelineById[projection?.source_id] : null
     add('Coverage output', output.id, output.label, 'Workflow coverage', output.definition, 'derived coverage', 'No', '',
       output.projection_id ?? protocol.protocols.map(row => row.field_key), 'Coverage only · not a quality or conformance decision',
-      owner ? `${owner.path}@${owner.version}` : 'pack.protocol.protocols', owner?.path ?? 'Active plan evidence guidance')
+      referenceLabel(owner) ?? 'pack.protocol.protocols', referenceLabel(owner) ?? 'Active plan evidence guidance')
   }
   for (const column of protocol.workflow_columns) add('Workflow column', column.id, column.label, 'E2E workflow', column.definition,
     column.type ?? column.kind, 'No', column.unit ?? column.facet, { pattern: column.pattern, writable: column.writable, cardinality: column.cardinality }, 'Derived from the active plan protocol', `pack.protocol.workflow_columns.${column.id}`, 'Active plan protocol')
@@ -137,14 +138,14 @@ export function createSmePackDictionaryView(protocol, orientation = 'rows', onOr
   }
   for (const source of protocol.guideline_sources) add('Guideline source', source.id, source.title, 'Canonical owner',
     'Read-only owner reference. This schema records the source revision and anchor without copying its taxonomy or rules.',
-    'reference', 'Yes', '', { version: source.version, anchors: source.anchors }, 'Canonical · referenced, not redefined', source.path, source.path)
+    'reference', 'Yes', '', { version: source.version, anchors: source.anchors }, 'Canonical · referenced, not redefined', referenceLabel(source), referenceLabel(source))
   for (const requirement of protocol.guideline_alignment.shared_requirements) {
     const owner = guidelineById[requirement.source_id]
     if (!owner) throw Error('sme_dictionary_guideline_owner_missing')
     add('Shared requirement', requirement.key, requirement.label, 'Parent alignment',
       'Canonical parent requirement; this record reports product support without redefining the owner’s rule.', 'guideline reference',
       'For full contract', '', requirement.input_fields, `MVP status: ${requirement.status}`,
-      `${owner.path}@${owner.version}#${requirement.anchor}`, owner.path)
+      `${referenceLabel(owner)}#${requirement.anchor}`, referenceLabel(owner))
   }
   for (const projection of protocol.guideline_alignment.projections) {
     const owner = guidelineById[projection.source_id]
@@ -152,7 +153,7 @@ export function createSmePackDictionaryView(protocol, orientation = 'rows', onOr
     add('Projection contract', projection.id, projection.label, 'Audience projection',
       `Consumes the joined artifact; current product scope is ${projection.support_status}.`, 'projection reference',
       'For full contract', '', { artifact_id: projection.artifact_id, join_rule: protocol.guideline_alignment.join_rule },
-      `MVP scope: ${projection.support_status}`, `${owner.path}@${owner.version}`, owner.path)
+      `MVP scope: ${projection.support_status}`, referenceLabel(owner), referenceLabel(owner))
     for (const requirement of projection.requirements ?? []) {
       const requirementOwner = guidelineById[requirement.source_id ?? projection.source_id]
       if (!requirementOwner) throw Error('sme_dictionary_guideline_owner_missing')

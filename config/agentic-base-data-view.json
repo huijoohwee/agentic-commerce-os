@@ -1,1 +1,297 @@
-{"schema":"agentic-base/consumer-artifact/v1","source":{"repository":"github.com/huijoohwee/agentic-base","revision":"0157d4c1f34be78096a1588778f23903538dfbe3","sourceDirty":false,"package":"@agentic-base/views-react","packageVersion":"0.1.0","packagePath":"packages/views-react","buildManifest":"packages/views-react/dist/browser-data-view.manifest.json","buildManifestSha256":"6d92bd9e43135126d566e6f1ca4cf9031b2709fa08e171ee579d7c2c3734d0c5"},"contract":{"source":"agentic-base/browser-data-view/v1","browserExport":"mountDataView","cssScope":"shadow-root","hostThemeSlots":["--agentic-base-text","--agentic-base-surface","--agentic-base-border","--agentic-base-muted","--agentic-base-header","--agentic-base-selected","--agentic-base-hover","--agentic-base-focus"],"defaultLayout":"table","layoutModes":["table","multiDimensional","kanban"],"multiDimensionalOrientation":"Base-owned pivot control via optional onOrientationChange callback","toolbarExport":"mountRecordViewToolbar"},"build":{"esbuild":"0.25.12","react":"18.3.1","reactDom":"18.3.1","format":"esm","target":"es2022","offline":true},"inputs":[{"path":"packages/views-react/src/InlineCodeList.tsx","bytes":412,"sha256":"4e64b85c3441e332fdd97fa212af558c09962173d48962a34814ca548ffcc574"},{"path":"packages/views-react/src/browser/BrowserKanbanHost.tsx","bytes":2723,"sha256":"b4ddc6cc1c9653ef0ba1b1b126f61f39c5645a3f06f9204e60a7d5b43ea17ff6"},{"path":"packages/views-react/src/browser/DashboardChartBrowser.tsx","bytes":1873,"sha256":"f228f47d59d60ce1091f23c81c64f8cf2198a82f236a439c34171f12aa0132fc"},{"path":"packages/views-react/src/browser/DataViewBrowserAdapter.tsx","bytes":12816,"sha256":"97dca878075a0e0ca4a051f89ee9f522834cc9d43956a5f3ed060981d6cffcc1"},{"path":"packages/views-react/src/browser/RecordViewToolbar.tsx","bytes":5078,"sha256":"5e7724dec64ce8d9715c21853d157f79a6b68469a96765460cbf7dd603fae36f"},{"path":"packages/views-react/src/browser/base-profile.css","bytes":1984,"sha256":"aeeebf62854d76f79dedd2771a46aa55312f835840249db998ac6c3f37097f5f"},{"path":"packages/views-react/src/browser/base-profile.pin.json","bytes":652,"sha256":"e833e7252b1798c6d75f0da83cb75cc7ea5f5012d31120dfc1942bb533747c65"},{"path":"packages/views-react/src/browser/browserDataView.css","bytes":19373,"sha256":"ef97cfb2e305c2b17e9840184c921c53aec44a8b982f727331044826bdbe16ba"},{"path":"packages/views-react/src/browser/index.ts","bytes":448,"sha256":"15b68dcf1145f0491fc10b595ab93d71c518806690d43df974035edbca526e6d"},{"path":"packages/views-react/src/browser/mountBrowserView.ts","bytes":985,"sha256":"6cb3f7701026c5ec6de8f2863f9781295620b148cd0acd84d6f813e72fb03056"},{"path":"packages/views-react/src/browser/shared-ui-profile.css","bytes":25314,"sha256":"ba95bb2de809f84c35aec409c89f305442b536741cbd0987d43ff8ecc6bf9e17"},{"path":"packages/views-react/src/browser/shared-ui-profile.pin.json","bytes":1024,"sha256":"aa3ff354574907bcf2a072b36ad9d5b62acae74e4f490da8b8f0dd9c0b39205e"},{"path":"packages/views-react/src/controls/MenuControls.tsx","bytes":9808,"sha256":"cef335d346617edd185439028e0dca52c3d2cd03453387e2ecaee384d4aed5f4"},{"path":"packages/views-react/src/controls/dropdownMenu.ts","bytes":9118,"sha256":"e3a08bfa7fec688b43ab2c77acc73cda72450bd54ad9f914adbdf5fb00fe8944"},{"path":"packages/views-react/src/controls/icons.json","bytes":14205,"sha256":"c01cbadd47648837bb8514f6f88f20ad72ee36e1e53aaabff950be2e6214a0b6"},{"path":"packages/views-react/src/controls/icons.pin.json","bytes":285,"sha256":"1804796c197f2e86d42f43793493d3cad0ad078421df8be82be78ecad2a16c24"},{"path":"packages/views-react/src/controls/nativeSelect.ts","bytes":8852,"sha256":"5e0c64e5d53ecd4778d5553d02a71dd87cc1be915be94abf3f32c53814cfae78"},{"path":"packages/views-react/src/dashboard/DashboardCharts.tsx","bytes":10564,"sha256":"7e6f252084cfb288bf599b728ed039920a8221a58f36ffe0863ccfbb7f7c10e9"},{"path":"packages/views-react/src/kanban/KanbanCard.tsx","bytes":21866,"sha256":"4166effcb87cd47fe0bac7ca72fb4c13056da828c8dc6e38310066900d18c5fb"},{"path":"packages/views-react/src/kanban/KanbanCell.tsx","bytes":2146,"sha256":"e04b619ffc3017656663eabadbe6dd1fb0f1f34430c350250c0e6f5aab97be19"},{"path":"packages/views-react/src/kanban/KanbanDropPreview.tsx","bytes":2905,"sha256":"09b5567eb6c8bf3f5350825c1883f822a7bdf50b81bb1f5f19a047b44bca5302"},{"path":"packages/views-react/src/kanban/KanbanGroup.tsx","bytes":9246,"sha256":"d98bc331105d603b3c2ac2656221151837f40c024609c3f2efae6ed0b360d2a2"},{"path":"packages/views-react/src/kanban/KanbanHostContext.tsx","bytes":3368,"sha256":"74812fba0863d1fb2276f07b24dfd7c3fc0c1704bd1146efd8822803029afdbc"},{"path":"packages/views-react/src/kanban/KanbanNewRecordDividerRow.tsx","bytes":412,"sha256":"e12b5be6ed25e720dccdf3c8abb2df45d8dffe9e1a9f7860dc650772cc071055"},{"path":"packages/views-react/src/kanban/KanbanTypeBadge.tsx","bytes":549,"sha256":"eeac8e7b8a5d450dcbc19bc3e47698ab4a599aa706e413f69154fd065aac18f2"},{"path":"packages/views-react/src/kanban/KanbanView.tsx","bytes":12047,"sha256":"4422b7ae6790a46f8b23bc388cc4eacfb9ca2337a0183d334aa26f367c7ea79d"},{"path":"packages/views-react/src/kanban/grouping.ts","bytes":1182,"sha256":"9501a78237db5ffcff3e64b4e8400c198187b57e826ea4638f6b985320ac7c66"},{"path":"packages/views-react/src/kanban/kanbanDragIntent.ts","bytes":1738,"sha256":"92e5fb6329fd2eaa5d2b73ad990b16569f6046c0d9109f61d5ec9acd8f75a867"},{"path":"packages/views-react/src/kanban/kanbanDragVisualState.ts","bytes":2226,"sha256":"d35e8fd8247b9b9dbed5e8733ce5c2428f965b163437560d2d5bd5ac24180da8"},{"path":"packages/views-react/src/kanban/kanbanMenu.ts","bytes":1331,"sha256":"35cfb8baf3f48b423912b4f7a37dacd7f26a1220ceb63e6442e559a8e66e4390"},{"path":"packages/views-react/src/kanban/kanbanMoveOutcomes.ts","bytes":2900,"sha256":"67b560735014109003b56797227c73a92517607b5cb7a7c63c6184e86f02df5d"},{"path":"packages/views-react/src/kanban/kanbanReorder.ts","bytes":4558,"sha256":"ed8d8068fd63b3ed11b8805e68d13035c1ec132980803dcd9671f1ae904cf942"},{"path":"packages/views-react/src/kanban/useKanbanDragAndDrop.ts","bytes":23423,"sha256":"005725d010b02b8cea651381ae53692d228e6a4256f64b41cf4df127999de523"},{"path":"packages/views-react/src/table/BaseColumnHeaderMenu.tsx","bytes":10222,"sha256":"3acf43d743e622aaca56786440a9557fb13f28667bbae4ea9e5a934bdf8064e5"},{"path":"packages/views-react/src/table/BaseTableHost.tsx","bytes":30418,"sha256":"7711f52e17712da5d1dd3eb5f3bd445dc05b4d0d8ca9cea84d7d71bec8bedcee"},{"path":"packages/views-react/src/table/ColumnsTableView.tsx","bytes":13068,"sha256":"cb380791c4092908db9d460a2a56e7c1d324c6725dada51bc965103acc0f5bdc"},{"path":"packages/views-react/src/table/MultiDimTableView.tsx","bytes":1819,"sha256":"f2a81aa25df8b58ff9ce29344afa35f69f78537621fc0b71c236c0b9192c1718"},{"path":"packages/views-react/src/table/TableCore.tsx","bytes":1814,"sha256":"e52e4a6341ab362410efacb4cbfee8fb49962e99c034d31bdebc14330a576ace"},{"path":"packages/views-react/src/table/TableHostContext.tsx","bytes":1370,"sha256":"6db07011e56ba2d5091ed010791e49b77c78a883f13bd0be623e9f0781cc24f9"},{"path":"packages/views-react/src/table/TableView.tsx","bytes":29701,"sha256":"638600189722f707266ac099a330c3a07f55299bdbfc39ec91ce1d421ec0efe4"},{"path":"packages/views-react/src/table/TableViewHeader.tsx","bytes":7304,"sha256":"1b96a129f9829bebf8f244a67e6b71a5d08f7b93fbd8091b14653c395f795d86"},{"path":"packages/views-react/src/table/ViewColumnType.ts","bytes":1543,"sha256":"3971e7e50ddf1fc5c3cbcdfe752e04b8421901d4394851f1fbe3cf1334e0e463"},{"path":"packages/views-react/src/table/dataViewDensity.ts","bytes":1183,"sha256":"75d33565efdafad586e1c1b0822be9fec1fc2925b1b26e134c1dda471580c8fd"},{"path":"packages/views-react/src/table/rowSelection.ts","bytes":4724,"sha256":"cf124567da7bbbe7f7d225d7ebe50a0c8d0cefd7f09ed3db1bd306cddff63e4a"},{"path":"packages/views-react/src/table/stickyHierarchy.ts","bytes":7950,"sha256":"69a2d79dfa288b8084a437f3862e04a7ae1dfcdcb83749a1f4df1c3021bc36c7"},{"path":"src/record-links.mjs","bytes":4081,"sha256":"6937780170163adee7e2c356a9c7769fb0ddfe206c90497fcaa36e8b97f9f046"}],"outputs":[{"path":"agentic-base-data-view.js","bytes":392778,"sha256":"ca82f6798827a667c297efdea1e1e5d088d831b81c272f0b9f3b2c25d421f7ea","sourcePath":"browser-data-view.js"},{"path":"dropdown-menus.js","bytes":22277,"sha256":"c6aabf38c8d0b0b7479ec9bf9bf9a0557a0df8a16382dd7cf847c74b9a97cf0d","sourcePath":"dropdown-menus.js"},{"path":"agentic-base-data-view.css","bytes":55320,"sha256":"ee65a362ac87245a061fb6b8812866f3351b905e54c97b44e81b60fc90a8d54e","sourcePath":"browser-data-view.css"}]}
+{
+  "schema": "agentic-base/consumer-artifact/v1",
+  "source": {
+    "repository": "github.com/huijoohwee/agentic-base",
+    "revision": "a0d5a1f0f52f564dfb89a9035f37fe03e4539541",
+    "sourceDirty": false,
+    "package": "@agentic-base/views-react",
+    "packageVersion": "0.1.0",
+    "packagePath": "packages/views-react",
+    "buildManifest": "packages/views-react/dist/browser-data-view.manifest.json",
+    "buildManifestSha256": "70ce715d6db03553559395a12a5a2043a69e0a8215fbf820654d1811b84bf681"
+  },
+  "contract": {
+    "source": "agentic-base/browser-data-view/v1",
+    "browserExport": "mountDataView",
+    "cssScope": "shadow-root",
+    "hostThemeSlots": [
+      "--agentic-base-text",
+      "--agentic-base-surface",
+      "--agentic-base-border",
+      "--agentic-base-muted",
+      "--agentic-base-header",
+      "--agentic-base-selected",
+      "--agentic-base-hover",
+      "--agentic-base-focus"
+    ],
+    "defaultLayout": "table",
+    "layoutModes": [
+      "table",
+      "multiDimensional",
+      "kanban"
+    ],
+    "multiDimensionalOrientation": "Base-owned pivot control via optional onOrientationChange callback",
+    "toolbarExport": "mountRecordViewToolbar"
+  },
+  "build": {
+    "esbuild": "0.25.12",
+    "react": "18.3.1",
+    "reactDom": "18.3.1",
+    "format": "esm",
+    "target": "es2022",
+    "offline": true
+  },
+  "inputs": [
+    {
+      "path": "packages/views-react/src/InlineCodeList.tsx",
+      "bytes": 412,
+      "sha256": "4e64b85c3441e332fdd97fa212af558c09962173d48962a34814ca548ffcc574"
+    },
+    {
+      "path": "packages/views-react/src/browser/BrowserKanbanHost.tsx",
+      "bytes": 2723,
+      "sha256": "b4ddc6cc1c9653ef0ba1b1b126f61f39c5645a3f06f9204e60a7d5b43ea17ff6"
+    },
+    {
+      "path": "packages/views-react/src/browser/DashboardChartBrowser.tsx",
+      "bytes": 1873,
+      "sha256": "f228f47d59d60ce1091f23c81c64f8cf2198a82f236a439c34171f12aa0132fc"
+    },
+    {
+      "path": "packages/views-react/src/browser/DataViewBrowserAdapter.tsx",
+      "bytes": 12816,
+      "sha256": "97dca878075a0e0ca4a051f89ee9f522834cc9d43956a5f3ed060981d6cffcc1"
+    },
+    {
+      "path": "packages/views-react/src/browser/RecordViewToolbar.tsx",
+      "bytes": 5078,
+      "sha256": "5e7724dec64ce8d9715c21853d157f79a6b68469a96765460cbf7dd603fae36f"
+    },
+    {
+      "path": "packages/views-react/src/browser/base-profile.css",
+      "bytes": 1984,
+      "sha256": "aeeebf62854d76f79dedd2771a46aa55312f835840249db998ac6c3f37097f5f"
+    },
+    {
+      "path": "packages/views-react/src/browser/base-profile.pin.json",
+      "bytes": 652,
+      "sha256": "e833e7252b1798c6d75f0da83cb75cc7ea5f5012d31120dfc1942bb533747c65"
+    },
+    {
+      "path": "packages/views-react/src/browser/browserDataView.css",
+      "bytes": 19373,
+      "sha256": "ef97cfb2e305c2b17e9840184c921c53aec44a8b982f727331044826bdbe16ba"
+    },
+    {
+      "path": "packages/views-react/src/browser/index.ts",
+      "bytes": 448,
+      "sha256": "15b68dcf1145f0491fc10b595ab93d71c518806690d43df974035edbca526e6d"
+    },
+    {
+      "path": "packages/views-react/src/browser/mountBrowserView.ts",
+      "bytes": 985,
+      "sha256": "6cb3f7701026c5ec6de8f2863f9781295620b148cd0acd84d6f813e72fb03056"
+    },
+    {
+      "path": "packages/views-react/src/browser/shared-ui-profile.css",
+      "bytes": 26122,
+      "sha256": "0b0436192730bf99e90896bf1668ff4c69c8c6539c76b06312196b979a31a047"
+    },
+    {
+      "path": "packages/views-react/src/browser/shared-ui-profile.pin.json",
+      "bytes": 1024,
+      "sha256": "0c54f9939cd45df7953118b64550bc17fb558ff0ce421ee4368223c82c0ee709"
+    },
+    {
+      "path": "packages/views-react/src/controls/MenuControls.tsx",
+      "bytes": 9808,
+      "sha256": "cef335d346617edd185439028e0dca52c3d2cd03453387e2ecaee384d4aed5f4"
+    },
+    {
+      "path": "packages/views-react/src/controls/dropdownMenu.ts",
+      "bytes": 9118,
+      "sha256": "e3a08bfa7fec688b43ab2c77acc73cda72450bd54ad9f914adbdf5fb00fe8944"
+    },
+    {
+      "path": "packages/views-react/src/controls/icons.json",
+      "bytes": 14205,
+      "sha256": "c01cbadd47648837bb8514f6f88f20ad72ee36e1e53aaabff950be2e6214a0b6"
+    },
+    {
+      "path": "packages/views-react/src/controls/icons.pin.json",
+      "bytes": 285,
+      "sha256": "c5872f3ffa4f7acf6f54297b92de7b528a31be4843b3df8e6b4f1b53727f236f"
+    },
+    {
+      "path": "packages/views-react/src/controls/nativeSelect.ts",
+      "bytes": 8852,
+      "sha256": "5e0c64e5d53ecd4778d5553d02a71dd87cc1be915be94abf3f32c53814cfae78"
+    },
+    {
+      "path": "packages/views-react/src/dashboard/DashboardCharts.tsx",
+      "bytes": 10564,
+      "sha256": "7e6f252084cfb288bf599b728ed039920a8221a58f36ffe0863ccfbb7f7c10e9"
+    },
+    {
+      "path": "packages/views-react/src/kanban/KanbanCard.tsx",
+      "bytes": 21866,
+      "sha256": "4166effcb87cd47fe0bac7ca72fb4c13056da828c8dc6e38310066900d18c5fb"
+    },
+    {
+      "path": "packages/views-react/src/kanban/KanbanCell.tsx",
+      "bytes": 2146,
+      "sha256": "e04b619ffc3017656663eabadbe6dd1fb0f1f34430c350250c0e6f5aab97be19"
+    },
+    {
+      "path": "packages/views-react/src/kanban/KanbanDropPreview.tsx",
+      "bytes": 2905,
+      "sha256": "09b5567eb6c8bf3f5350825c1883f822a7bdf50b81bb1f5f19a047b44bca5302"
+    },
+    {
+      "path": "packages/views-react/src/kanban/KanbanGroup.tsx",
+      "bytes": 9246,
+      "sha256": "d98bc331105d603b3c2ac2656221151837f40c024609c3f2efae6ed0b360d2a2"
+    },
+    {
+      "path": "packages/views-react/src/kanban/KanbanHostContext.tsx",
+      "bytes": 3368,
+      "sha256": "74812fba0863d1fb2276f07b24dfd7c3fc0c1704bd1146efd8822803029afdbc"
+    },
+    {
+      "path": "packages/views-react/src/kanban/KanbanNewRecordDividerRow.tsx",
+      "bytes": 412,
+      "sha256": "e12b5be6ed25e720dccdf3c8abb2df45d8dffe9e1a9f7860dc650772cc071055"
+    },
+    {
+      "path": "packages/views-react/src/kanban/KanbanTypeBadge.tsx",
+      "bytes": 549,
+      "sha256": "eeac8e7b8a5d450dcbc19bc3e47698ab4a599aa706e413f69154fd065aac18f2"
+    },
+    {
+      "path": "packages/views-react/src/kanban/KanbanView.tsx",
+      "bytes": 12047,
+      "sha256": "4422b7ae6790a46f8b23bc388cc4eacfb9ca2337a0183d334aa26f367c7ea79d"
+    },
+    {
+      "path": "packages/views-react/src/kanban/grouping.ts",
+      "bytes": 1182,
+      "sha256": "9501a78237db5ffcff3e64b4e8400c198187b57e826ea4638f6b985320ac7c66"
+    },
+    {
+      "path": "packages/views-react/src/kanban/kanbanDragIntent.ts",
+      "bytes": 1738,
+      "sha256": "92e5fb6329fd2eaa5d2b73ad990b16569f6046c0d9109f61d5ec9acd8f75a867"
+    },
+    {
+      "path": "packages/views-react/src/kanban/kanbanDragVisualState.ts",
+      "bytes": 2226,
+      "sha256": "d35e8fd8247b9b9dbed5e8733ce5c2428f965b163437560d2d5bd5ac24180da8"
+    },
+    {
+      "path": "packages/views-react/src/kanban/kanbanMenu.ts",
+      "bytes": 1331,
+      "sha256": "35cfb8baf3f48b423912b4f7a37dacd7f26a1220ceb63e6442e559a8e66e4390"
+    },
+    {
+      "path": "packages/views-react/src/kanban/kanbanMoveOutcomes.ts",
+      "bytes": 2900,
+      "sha256": "67b560735014109003b56797227c73a92517607b5cb7a7c63c6184e86f02df5d"
+    },
+    {
+      "path": "packages/views-react/src/kanban/kanbanReorder.ts",
+      "bytes": 4558,
+      "sha256": "ed8d8068fd63b3ed11b8805e68d13035c1ec132980803dcd9671f1ae904cf942"
+    },
+    {
+      "path": "packages/views-react/src/kanban/useKanbanDragAndDrop.ts",
+      "bytes": 23423,
+      "sha256": "005725d010b02b8cea651381ae53692d228e6a4256f64b41cf4df127999de523"
+    },
+    {
+      "path": "packages/views-react/src/table/BaseColumnHeaderMenu.tsx",
+      "bytes": 10222,
+      "sha256": "3acf43d743e622aaca56786440a9557fb13f28667bbae4ea9e5a934bdf8064e5"
+    },
+    {
+      "path": "packages/views-react/src/table/BaseTableHost.tsx",
+      "bytes": 30418,
+      "sha256": "7711f52e17712da5d1dd3eb5f3bd445dc05b4d0d8ca9cea84d7d71bec8bedcee"
+    },
+    {
+      "path": "packages/views-react/src/table/ColumnsTableView.tsx",
+      "bytes": 13068,
+      "sha256": "cb380791c4092908db9d460a2a56e7c1d324c6725dada51bc965103acc0f5bdc"
+    },
+    {
+      "path": "packages/views-react/src/table/MultiDimTableView.tsx",
+      "bytes": 1819,
+      "sha256": "f2a81aa25df8b58ff9ce29344afa35f69f78537621fc0b71c236c0b9192c1718"
+    },
+    {
+      "path": "packages/views-react/src/table/TableCore.tsx",
+      "bytes": 1814,
+      "sha256": "e52e4a6341ab362410efacb4cbfee8fb49962e99c034d31bdebc14330a576ace"
+    },
+    {
+      "path": "packages/views-react/src/table/TableHostContext.tsx",
+      "bytes": 1370,
+      "sha256": "6db07011e56ba2d5091ed010791e49b77c78a883f13bd0be623e9f0781cc24f9"
+    },
+    {
+      "path": "packages/views-react/src/table/TableView.tsx",
+      "bytes": 29701,
+      "sha256": "638600189722f707266ac099a330c3a07f55299bdbfc39ec91ce1d421ec0efe4"
+    },
+    {
+      "path": "packages/views-react/src/table/TableViewHeader.tsx",
+      "bytes": 7304,
+      "sha256": "1b96a129f9829bebf8f244a67e6b71a5d08f7b93fbd8091b14653c395f795d86"
+    },
+    {
+      "path": "packages/views-react/src/table/ViewColumnType.ts",
+      "bytes": 1543,
+      "sha256": "3971e7e50ddf1fc5c3cbcdfe752e04b8421901d4394851f1fbe3cf1334e0e463"
+    },
+    {
+      "path": "packages/views-react/src/table/dataViewDensity.ts",
+      "bytes": 1183,
+      "sha256": "75d33565efdafad586e1c1b0822be9fec1fc2925b1b26e134c1dda471580c8fd"
+    },
+    {
+      "path": "packages/views-react/src/table/rowSelection.ts",
+      "bytes": 4724,
+      "sha256": "cf124567da7bbbe7f7d225d7ebe50a0c8d0cefd7f09ed3db1bd306cddff63e4a"
+    },
+    {
+      "path": "packages/views-react/src/table/stickyHierarchy.ts",
+      "bytes": 7950,
+      "sha256": "69a2d79dfa288b8084a437f3862e04a7ae1dfcdcb83749a1f4df1c3021bc36c7"
+    },
+    {
+      "path": "src/record-links.mjs",
+      "bytes": 4081,
+      "sha256": "6937780170163adee7e2c356a9c7769fb0ddfe206c90497fcaa36e8b97f9f046"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "agentic-base-data-view.js",
+      "bytes": 392778,
+      "sha256": "f78ab4ae7ce9bee204b7d7ea957bd159df714f0eaa65f5d34d52c848d20b8b2b",
+      "sourcePath": "browser-data-view.js"
+    },
+    {
+      "path": "dropdown-menus.js",
+      "bytes": 22277,
+      "sha256": "c6aabf38c8d0b0b7479ec9bf9bf9a0557a0df8a16382dd7cf847c74b9a97cf0d",
+      "sourcePath": "dropdown-menus.js"
+    },
+    {
+      "path": "agentic-base-data-view.css",
+      "bytes": 56128,
+      "sha256": "3081c5dc655120e3db143d5bb07c363214c59becee4e1e32cec284771a92a14b",
+      "sourcePath": "browser-data-view.css"
+    }
+  ],
+  "inputDigest": "0a29d23985dd84d904c2124bc5c4def1ad3543768a7411fa613e3d35db8da32f"
+}
